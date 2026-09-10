@@ -1,0 +1,54 @@
+name: Deploy Portfolio Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/modules/portfolio-core.bicep'
+      - '.github/workflows/deploy-portfolio-infra.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  RESOURCE_GROUP: rg-portfolio-prod
+  LOCATION: westus2
+  STATIC_WEB_APP_NAME: research-portfolio
+  GITHUB_OWNER_NAME: pH34r-pH
+  GITHUB_REPOSITORY_NAME: portfolio
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if portfolio resource group
+        run: |
+          az deployment group what-if \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/modules/portfolio-core.bicep \
+            --parameters location="$LOCATION" \
+                         staticWebAppName="$STATIC_WEB_APP_NAME" \
+                         githubOwner="$GITHUB_OWNER_NAME" \
+                         githubRepository="$GITHUB_REPOSITORY_NAME"
+
+      - name: Deploy portfolio resource group
+        run: |
+          az deployment group create \
+            --resource-group "$RESOURCE_GROUP" \
+            --template-file infra/modules/portfolio-core.bicep \
+            --parameters location="$LOCATION" \
+                         staticWebAppName="$STATIC_WEB_APP_NAME" \
+                         githubOwner="$GITHUB_OWNER_NAME" \
+                         githubRepository="$GITHUB_REPOSITORY_NAME"
