@@ -1,0 +1,35 @@
+name: Bicep Validate
+
+on:
+  pull_request:
+    paths:
+      - 'infra/**'
+      - '.github/workflows/bicep-validate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/bicep-validate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure Bicep CLI is available
+        run: az bicep install
+
+      - name: Compile Bicep templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r file; do
+            echo "Building $file"
+            az bicep build --file "$file" --stdout >/dev/null
+          done < <(find infra -name '*.bicep' -type f | sort)
