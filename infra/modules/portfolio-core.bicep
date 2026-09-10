@@ -34,24 +34,14 @@ resource deploymentIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@20
   }
 }
 
+// Public pull requests are intentionally not trusted for Azure federation.
+// Manual and automatic Azure workflows must execute from refs/heads/main.
 resource mainFederation 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = {
   parent: deploymentIdentity
   name: 'github-main'
   properties: {
     issuer: 'https://token.actions.githubusercontent.com'
     subject: 'repo:${githubOwner}/${githubRepository}:ref:refs/heads/main'
-    audiences: [
-      'api://AzureADTokenExchange'
-    ]
-  }
-}
-
-resource prFederation 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = {
-  parent: deploymentIdentity
-  name: 'github-pull-request'
-  properties: {
-    issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:${githubOwner}/${githubRepository}:pull_request'
     audiences: [
       'api://AzureADTokenExchange'
     ]
