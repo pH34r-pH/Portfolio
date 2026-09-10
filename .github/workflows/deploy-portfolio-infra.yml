@@ -1,11 +1,6 @@
 name: Deploy Portfolio Infrastructure
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'infra/modules/portfolio-core.bicep'
-      - '.github/workflows/deploy-portfolio-infra.yml'
   workflow_dispatch:
 
 permissions:
@@ -24,10 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Azure Login (OIDC)
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
