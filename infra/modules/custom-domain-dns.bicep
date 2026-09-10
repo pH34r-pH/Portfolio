@@ -19,9 +19,11 @@ resource dnsZone 'Microsoft.Network/dnsZones@2018-05-01' existing = {
   name: dnsZoneName
 }
 
+// Static Web Apps' DNS-token flow uses the _dnsauth.www label for apex
+// ownership validation when the apex and www bindings are coordinated.
 resource apexTxtRecord 'Microsoft.Network/dnsZones/TXT@2018-05-01' = {
   parent: dnsZone
-  name: '_dnsauth'
+  name: '_dnsauth.${wwwLabel}'
   properties: {
     TTL: 300
     TXTRecords: [
