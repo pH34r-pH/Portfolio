@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/pH34r-pH/Portfolio/blob/main/publication.schema.json",
+  "title": "Portfolio immutable publication manifest",
+  "type": "object",
+  "required": ["schemaVersion", "builtAt", "sources", "notebooks"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "builtAt": { "type": "string", "format": "date-time" },
+    "sources": {
+      "type": "object",
+      "required": ["portfolio", "researchNotes", "theoremLibrary", "fleet"],
+      "additionalProperties": false,
+      "properties": {
+        "portfolio": { "$ref": "#/$defs/source" },
+        "researchNotes": { "$ref": "#/$defs/source" },
+        "theoremLibrary": { "$ref": "#/$defs/source" },
+        "fleet": { "$ref": "#/$defs/source" }
+      }
+    },
+    "notebooks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "title", "sha256"],
+        "properties": {
+          "path": { "type": "string" },
+          "title": { "type": "string" },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+      }
+    }
+  }
+}
