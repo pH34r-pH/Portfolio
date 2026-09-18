@@ -1,82 +1,31 @@
 # Portfolio
 
-Hosted research portfolio for the public [`research-notes`](https://github.com/pH34r-pH/research-notes) and [`theorem-library`](https://github.com/pH34r-pH/theorem-library) projects.
+Public research publication surface for Tyler J.H.G.
 
-The application is intentionally separate from its research content. The deployed site will discover notebook metadata and notebook files from `research-notes` at runtime, so publishing a new research notebook does not require rebuilding or redeploying this repository.
+This repository owns presentation code, JupyterLite configuration, and the immutable publication-bundle contract. Production Azure infrastructure, DNS, deployment authority, qualification, and release operations live in the private `pH34r-pH/long-haul-fleet` control plane.
 
-## Target architecture
+## Publication model
 
-```text
-research-notes ── runtime content ──► portfolio Static Web App
-                                         │
-theorem-library ───── links ─────────────┤
-                                         │
-                                  browser-side notebook
-                                  execution (JupyterLite)
+A deployed release is assembled from exact commit SHAs of:
 
-Azure subscription
-├── rg-personal-shared
-│   └── Azure DNS zone
-└── rg-portfolio-prod
-    ├── Azure Static Web App
-    └── GitHub deployment managed identity
-```
+- `pH34r-pH/Portfolio`
+- `pH34r-pH/research-notes`
+- `pH34r-pH/theorem-library`
+- `pH34r-pH/long-haul-fleet`
 
-## Infrastructure ownership
+Fleet copies the qualified notebook set into `publication/notebooks/`, builds JupyterLite, writes `publication.json`, and deploys the resulting static bundle. The deployed site does not fetch mutable notebook content from GitHub at runtime.
 
-This repository owns all Azure configuration required by the portfolio.
+## Notebook execution
 
-- `rg-portfolio-prod` contains portfolio-specific resources.
-- `rg-personal-shared` contains resources intended to outlive or be shared by individual personal applications, beginning with the personal Azure DNS zone.
-- GitHub Actions authentication uses Azure workload identity federation; no long-lived Azure client secret is required.
-- The DNS zone is shared infrastructure, but its declaration and bootstrap currently live here because this is its first consumer. If another personal service later consumes the zone, the shared layer can be extracted without changing the portfolio resource group.
+Published notebooks run in the visitor's browser through JupyterLite. There is no anonymous remote kernel and no path from notebook execution to Fleet credentials, Kestrel, Anchorage, or the Azure control plane.
 
-## Deployment phases
+Not every research notebook is automatically publishable. Fleet qualification is responsible for confirming that the selected notebook is compatible with the browser runtime and contains no private material.
 
-### 1. One-time bootstrap
+## Local source layout
 
-The first deployment must be performed from an already-authenticated Azure CLI session because the GitHub-federated identity does not exist yet.
+- `site/` — small public website shell.
+- `jupyter-lite.json` — browser-side Jupyter configuration.
+- `publication.schema.json` — provenance/publication contract.
+- `publication/` — generated publication inputs; notebooks are injected by Fleet.
 
-```bash
-az login
-az account set --subscription <subscription-id>
-az deployment sub create \
-  --location westus2 \
-  --template-file infra/main.bicep \
-  --parameters @infra/main.parameters.json \
-  --parameters dnsZoneName=<your-domain>
-```
-
-The deployment creates both resource groups, the Static Web App, the GitHub deployment identity, its federated credentials, and least-scope RBAC assignments.
-
-Record these deployment outputs as GitHub repository variables:
-
-- `AZURE_CLIENT_ID`
-- `AZURE_TENANT_ID`
-- `AZURE_SUBSCRIPTION_ID`
-
-These are identifiers, not secrets.
-
-### 2. Normal infrastructure changes
-
-After bootstrap, `.github/workflows/infra-whatif.yml` validates pull requests and `.github/workflows/deploy-infra.yml` deploys `main` using GitHub OIDC.
-
-### 3. Custom domain
-
-Domain binding is deliberately a second-stage deployment. Azure Static Web Apps emits a DNS validation token for the apex domain; `infra/custom-domain.bicep` coordinates that token with records in `rg-personal-shared` and then binds `www`.
-
-```bash
-az deployment sub create \
-  --location westus2 \
-  --template-file infra/custom-domain.bicep \
-  --parameters portfolioResourceGroupName=rg-portfolio-prod \
-               sharedResourceGroupName=rg-personal-shared \
-               staticWebAppName=research-portfolio \
-               dnsZoneName=<your-domain>
-```
-
-## Content boundary
-
-`portfolio` owns presentation, notebook rendering/execution, deployment, and DNS integration. It does not own the research chronology or theorem status.
-
-`research-notes` remains the public educational content source; `theorem-library` remains the public machine-checkable formal source; the private research repository remains authoritative for active experiments and theorem-ledger lifecycle state.
+The source checkout is intentionally incomplete as a deployable release until Fleet supplies an immutable publication bundle.
