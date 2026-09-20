@@ -4,14 +4,7 @@ Portfolio is the publicly shareable portion of my ongoing research project. It c
 
 ## Publication model
 
-A deployed release is assembled from exact commit SHAs of:
-
-- `pH34r-pH/Portfolio`
-- `pH34r-pH/research-notes`
-- `pH34r-pH/theorem-library`
-- `pH34r-pH/long-haul-fleet`
-
-Fleet copies the qualified notebook set into `publication/notebooks/`, builds JupyterLite, writes `publication.json`, and deploys the resulting static bundle. The deployed site does not fetch mutable notebook content from GitHub at runtime.
+Each published version of Portfolio is an immutable snapshot of the research selected for that release, including the exact source revisions used to build it. This keeps published results reproducible as the underlying research continues to change, while allowing new work to be added to the portfolio without modifying previous releases.
 
 ## Notebook execution
 
