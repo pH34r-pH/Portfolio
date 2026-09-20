@@ -1,5 +1,3 @@
 # Publication input
 
-This directory is populated by the private Fleet publication pipeline. Source control contains only this contract marker; generated notebooks and `publication.json` are immutable build inputs/outputs and are not hand-maintained here.
-
-The public repository owns presentation and JupyterLite configuration. Fleet pins and qualifies exact source revisions before producing a deployable bundle.
+This directory contains the notebooks and publication metadata included in a release. Its contents are generated from exact source revisions during publication rather than maintained by hand, allowing each release to remain reproducible.
