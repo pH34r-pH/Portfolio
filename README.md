@@ -8,9 +8,7 @@ Each published version of Portfolio is an immutable snapshot of the research sel
 
 ## Notebook execution
 
-Published notebooks run in the visitor's browser through JupyterLite. There is no anonymous remote kernel and no path from notebook execution to Fleet credentials, Kestrel, Anchorage, or the Azure control plane.
-
-Not every research notebook is automatically publishable. Fleet qualification is responsible for confirming that the selected notebook is compatible with the browser runtime and contains no private material.
+Published notebooks use JupyterLite to run Python directly in the browser, without requiring a local development environment or remote compute. Browser execution has some limitations compared with a conventional Python environment, so notebooks are tested for compatibility before publication; when a notebook can be published this way, the same code used to produce the result remains available to inspect, modify, and rerun.
 
 ## Local source layout
 
