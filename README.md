@@ -12,9 +12,7 @@ Published notebooks use JupyterLite to run Python directly in the browser, witho
 
 ## Local source layout
 
-- `site/` — small public website shell.
-- `jupyter-lite.json` — browser-side Jupyter configuration.
-- `publication.schema.json` — provenance/publication contract.
-- `publication/` — generated publication inputs; notebooks are injected by Fleet.
-
-The source checkout is intentionally incomplete as a deployable release until Fleet supplies an immutable publication bundle.
+- `site/` contains the portfolio website.
+- `jupyter-lite.json` configures browser-side notebook execution.
+- `publication.schema.json` defines the metadata recorded for each published release.
+- `publication/` contains the generated publication bundle, including notebooks selected for that release.
