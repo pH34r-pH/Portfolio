@@ -1,8 +1,6 @@
 # Portfolio
 
-Public research publication surface for Tyler J.H.G.
-
-This repository owns presentation code, JupyterLite configuration, and the immutable publication-bundle contract. Production Azure infrastructure, DNS, deployment authority, qualification, and release operations live in the private `pH34r-pH/long-haul-fleet` control plane.
+Portfolio is the publicly shareable portion of my ongoing research project. It contains selected results, research notes, and executable notebooks documenting both in-progress and completed work, and is hosted as part of my work-in-progress portfolio website. Where practical, notebooks can be run directly in the browser, allowing the underlying experiments and analysis to be inspected, reproduced, and modified.
 
 ## Publication model
 
