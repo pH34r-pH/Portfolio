@@ -28,4 +28,4 @@ jobs:
           server=$!
           trap 'kill $server || true' EXIT
           for i in {1..30}; do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
-          node scripts/ux-audit.mjs\n      - name: Enforce Lighthouse budgets\n        run: npx lhci autorun --config=./lighthouserc.cjs
+          node scripts/ux-audit.mjs\n\n      - name: Enforce Lighthouse budgets\n        run: npx lhci autorun --config=./lighthouserc.cjs
