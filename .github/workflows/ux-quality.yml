@@ -33,6 +33,6 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:4173/ >/dev/null
-          node scripts/ux-audit.mjs
-      - name: Enforce Lighthouse budgets
+          node scripts/ux-audit.mjs\n          node scripts/capture-ux-screenshots.mjs
+      - name: Upload UX review screenshots\n        if: always()\n        uses: actions/upload-artifact@v4\n        with:\n          name: ux-review-${{ github.sha }}\n          path: ux-screenshots/\n          if-no-files-found: error\n          retention-days: 30\n      - name: Enforce Lighthouse budgets
         run: npx lhci autorun --config=./lighthouserc.cjs
