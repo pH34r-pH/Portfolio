@@ -20,7 +20,7 @@ async function loadPublication(){
       list.replaceChildren(...notebooks.map((n,i)=>{
         const a=document.createElement('article');a.className='card';a.dataset.index=String(i+1).padStart(2,'0');
         const h=document.createElement('h3');h.textContent=n.title||n.path;
-        const meta=document.createElement('p');meta.className='card-meta';meta.textContent=n.modifiedAt?'Updated '+new Date(n.modifiedAt).toLocaleDateString():'Executable notebook · browser-local';
+        const meta=document.createElement('p');meta.className='card-meta';meta.textContent=n.modifiedAt?'Updated '+new Date(n.modifiedAt).toLocaleDateString()+' · readable notebook':'Readable notebook · executable source';
         const links=document.createElement('div');links.className='links';
         const read=document.createElement('a');read.href='/notebooks/'+encodeURIComponent(n.slug||n.path.split('/').pop().replace(/\.ipynb$/,''))+'/';read.textContent='Read notebook';
         const lab=document.createElement('a');lab.href='/lab/lab/index.html?path='+encodeURIComponent(n.jupyterPath||n.path.replace(/^publication\/notebooks\//,''));lab.textContent='Run in Lab ↗';
