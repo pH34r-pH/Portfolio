@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "issue-164-adamw",
+      "title": "#164 unit-hypersphere AdamW baseline",
+      "status": "fixture",
+      "download": "/experiments/issue-164-adamw.ro-crate.zip",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mediaType": "application/zip",
+      "profile": "RO-Crate / Process Run Crate",
+      "reproductionLevel": "technical-fixture",
+      "standards": [
+        "RO-Crate",
+        "Process Run Crate",
+        "Croissant",
+        "Croissant Tasks"
+      ],
+      "source": {
+        "repository": "pH34r-pH/domain-scaling-lab",
+        "issue": 342,
+        "experiment": "#164 unit_hypersphere_depth3"
+      },
+      "entrypoints": {
+        "metadata": "ro-crate-metadata.json",
+        "orientation": "README.md"
+      },
+      "receipt": {
+        "status": "pending",
+        "format": "content-addressed JSON receipt"
+      },
+      "sizeBytes": null
+    }
+  ]
+}
