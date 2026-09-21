@@ -41,7 +41,7 @@ for (const [name, width, height] of sizes) {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze();
     if (axe.violations.length) {
-      failures.push(`${name}/${palette}: axe ${axe.violations.map((v) => v.id).join(',')}`);
+      failures.push(`${name}/${palette}: axe ${axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} => ${n.failureSummary}`).join(' | ')}`).join(' || ')}`);
     }
   }
 
