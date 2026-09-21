@@ -45,8 +45,11 @@ for (const [name, width, height] of sizes) {
     }
   }
 
-  const download = await page.locator('#experiment-download').getAttribute('aria-disabled');
-  if (download !== 'true') failures.push(`${name}: fixture experiment download unexpectedly enabled`);
+  const downloadLink = page.locator('#experiment-download');
+  if (await downloadLink.count()) {
+    const download = await downloadLink.getAttribute('aria-disabled');
+    if (download !== 'true') failures.push(`${name}: fixture experiment download unexpectedly enabled`);
+  }
 
   await page.keyboard.press('Tab');
   const focus = await page.evaluate(() => {

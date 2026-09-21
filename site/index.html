@@ -8,34 +8,18 @@
   <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
-  <a class="skip-link" href="#work">Skip to research</a>
-  <div class="moire" aria-hidden="true"></div>\n  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ research systems</span></a><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="#work">Research</a><a href="#evergreen">Atlas</a><a href="/lab/">Lab</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="palette" role="group" aria-label="Display color palette"><span>Theme</span><button data-palette="nacre">Nacre</button><button data-palette="oxide">Oxide</button><button data-palette="violet">Violet</button><button data-palette="high-contrast">High contrast</button></div></div></header>
-  <main>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <div class="moire" aria-hidden="true"></div>\n  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ research systems</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a></nav><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="palette" role="group" aria-label="Display color palette"><span>Theme</span><button data-palette="nacre">Nacre</button><button data-palette="oxide">Oxide</button><button data-palette="violet">Violet</button><button data-palette="high-contrast">High contrast</button></div></div></header>
+  <main id="main-content" tabindex="-1">
     <header class="hero">
       <div class="register"><span>TYLER J.H.G.</span><span>RESEARCH / SYSTEMS / ML</span><span class="signal">PUBLIC NODE</span></div>
       <p class="eyebrow">Research engineer · machine learning · formal methods</p>
       <h1>Building strange things<br><em>carefully.</em></h1>
       <p class="lede">I build and test unusual machine-learning systems: compact representations, constrained architectures, distributed inference, and the machinery needed to tell whether an idea actually works.</p>
-      <div class="actions"><a class="primary" href="#work">Explore the research</a><a href="#evergreen">Open the visual atlas</a></div>
+      <div class="actions"><a class="primary" href="/research/">Browse research</a><a href="/atlas/">Open visual atlas</a></div>
     </header>
 
-    <section id="work" tabindex="-1" aria-labelledby="work-title">
-      <div class="case-study">
-        <p class="eyebrow">CURRENT PROGRAM / REPRESENTATION × ARCHITECTURE</p>
-        <div class="case-grid">
-          <div><span class="case-label">Research question</span><h2>What geometry should a language model think in?</h2><p class="case-kicker">Representation–architecture co-design / active</p></div>
-          <div class="case-copy"><p>I am testing whether compact geometric representations can preserve task-relevant distinctions while changing the compute and architecture required to consume them. The program combines mathematical elimination with frozen-model experiments so negative results narrow the design space instead of disappearing.</p><dl><div><dt>Method</dt><dd>Proof-first constraints, frozen-model probes, controlled consumer repairs, natural-source benchmarks.</dd></div><div><dt>Evidence</dt><dd>Checked theorem ledger, executable notebooks, reproducible empirical artifacts, and explicit boundaries on what each result establishes.</dd></div><div><dt>Status</dt><dd><span class="status-dot"></span> Active research program</dd></div></dl></div>
-        </div>
-      </div>
-      <div id="evergreen" class="evergreen"><p class="eyebrow">PINNED / EVERGREEN</p><h2>Visual Intuition Atlas</h2><p>A durable visual map of the research program: geometry, mechanisms, and results without requiring an IDE.</p><div class="atlas-actions"><a class="primary" href="/atlas/">Explore interactive atlas →</a><a href="/notebooks/visual_intuition_atlas/">Read source notebook</a></div></div>\n      <div class="section-head"><p class="eyebrow">01 / FIELD NOTES</p><h2 id="work-title">Executable research</h2></div>
-      <p class="section-copy">These are the working artifacts behind the research. Start with the readable notebook view; use the browser lab when you want to inspect code, change parameters, or rerun an experiment.</p>
-      <div id="notebook-list" class="grid"><p class="loading">Loading publication catalog…</p></div>
-    </section>
-
-    <section id="reproduce" class="reproduce" aria-labelledby="reproduce-title"><div><p class="eyebrow">03 / REPRODUCE</p><h2 id="reproduce-title">Take the experiment with you.</h2><p>Qualified experiments are published as standards-based research objects rather than a proprietary runtime. Download the package, inspect its provenance and acceptance criteria, or hand it to your own agent and ask it to reproduce the claim independently.</p></div><div class="repro-flow" aria-label="Experiment reproduction package contents"><span>Croissant task/data</span><b>→</b><span>RO-Crate</span><b>→</b><span>Protocol + environment</span><b>→</b><span>Evidence + receipt</span></div><details class="package-info"><summary>What am I downloading?</summary><p id="package-description">A portable, standards-based research object intended for independent human or agent inspection.</p><dl id="package-metadata"></dl></details><div class="repro-download"><a id="experiment-download" class="primary" href="/experiments/issue-164-adamw.ro-crate.zip" download aria-disabled="true">Download experiment package ↓</a><span id="experiment-download-status">Fixture route · qualification pending</span></div><p class="repro-status">First package: #164 unit-hypersphere AdamW baseline · compiler qualification in progress.</p></section><section class="lab-callout" aria-labelledby="lab-title">
-      <div><p class="eyebrow">02 / BROWSER LAB</p><h2 id="lab-title">Inspect the machinery.</h2><p>JupyterLite runs locally in your browser: no account, remote kernel, or Python install. The full workspace is intentionally secondary to the readable research surface and is best on a larger screen.</p></div>
-      <a href="/lab/">Launch full JupyterLab ↗</a>
-    </section>
+    <section class="landing-links" aria-label="Research surfaces"><h2 class="visually-hidden">Research surfaces</h2><a href="/research/"><span>01</span><h2>Research</h2><p>Chronological field notes and executable notebooks.</p></a><a href="/atlas/"><span>02</span><h2>Visual Atlas</h2><p>Interactive explanations of geometry, evidence and architecture.</p></a><a href="/reproduce/"><span>03</span><h2>Reproduce</h2><p>Portable standards-based experiment packages.</p></a><a href="/lab/"><span>04</span><h2>Lab</h2><p>The full browser-hosted Jupyter workspace.</p></a></section>
 
     <footer id="provenance">
       <div><strong>Tyler J.H.G.</strong><p>Machine learning · research engineering · systems.</p></div>
