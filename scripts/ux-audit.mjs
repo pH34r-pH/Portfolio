@@ -15,8 +15,8 @@ for (const [name,width,height] of sizes) {
   await page.goto('http://127.0.0.1:4173',{waitUntil:'networkidle'});
   const metrics=await page.evaluate(()=>({scrollWidth:document.documentElement.scrollWidth,clientWidth:document.documentElement.clientWidth,bodyWidth:document.body.getBoundingClientRect().width}));
   if(metrics.scrollWidth>metrics.clientWidth+1) failures.push(name+': horizontal overflow '+JSON.stringify(metrics));
-  const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag22aa']).analyze();
-  if(axe.violations.length) failures.push(name+': axe '+axe.violations.map(v=>v.id).join(','));
+  for (const palette of ['nacre','oxide','violet','high-contrast']) {\n    await page.evaluate(p=>{document.documentElement.dataset.palette=p},palette);\n    const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();\n    if(axe.violations.length) failures.push(name+'/'+palette+': axe '+axe.violations.map(v=>v.id).join(','));\n  }\n  const axe={violations:[]};
+  
   await page.keyboard.press('Tab');
   const focus=await page.evaluate(()=>{const e=document.activeElement,s=getComputedStyle(e);return {tag:e?.tagName,outline:s.outlineStyle,width:s.outlineWidth}});
   if(!focus.tag||focus.outline==='none'||focus.width==='0px') failures.push(name+': missing visible keyboard focus');
