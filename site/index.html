@@ -7,7 +7,7 @@
   <title>Tyler J.H.G. / Research Systems</title>
   <link rel="stylesheet" href="/assets/site.css">
 </head>
-<body>
+<body>\n  <a class="skip-link" href="#work">Skip to research</a>
   <div class="moire" aria-hidden="true"></div>
   <main>
     <header class="hero">
@@ -16,23 +16,23 @@
       <h1>Building strange things<br><em>carefully.</em></h1>
       <p class="lede">Research into representation, model architecture, distributed inference, and machine agency—published with the experiments and evidence attached.</p>
       <div class="actions"><a class="primary" href="#work">Read the work</a><a href="/lab/">Enter the lab</a></div>
-      <div class="palette" aria-label="Color palette"><span>interface</span><button data-palette="nacre" aria-label="Nacre palette">N</button><button data-palette="oxide" aria-label="Oxide palette">O</button><button data-palette="violet" aria-label="Violet palette">V</button><button data-palette="high-contrast" aria-label="High contrast palette">HC</button></div>
+      <div class="palette" role="group" aria-label="Display color palette"><span aria-hidden="true">interface</span><button data-palette="nacre" aria-label="Nacre palette">N</button><button data-palette="oxide" aria-label="Oxide palette">O</button><button data-palette="violet" aria-label="Violet palette">V</button><button data-palette="high-contrast" aria-label="High contrast palette">HC</button></div>
     </header>
 
-    <section id="work">
-      <div class="section-head"><p class="eyebrow">01 / FIELD NOTES</p><h2>Executable research</h2></div>
+    <section id="work" tabindex="-1" aria-labelledby="work-title">
+      <div class="section-head"><p class="eyebrow">01 / FIELD NOTES</p><h2 id="work-title">Executable research</h2></div>
       <p class="section-copy">The notebooks below are the working artifacts, not screenshots of results. Read them here; launch the browser lab when you want to inspect or modify the machinery.</p>
       <div id="notebook-list" class="grid"><p class="loading">Loading publication catalog…</p></div>
     </section>
 
-    <section class="lab-callout">
-      <div><p class="eyebrow">02 / BROWSER LAB</p><h2>The machinery is live.</h2><p>JupyterLite runs locally in your browser. Desktop is the better instrument panel; mobile works, but the full Lab UI is dense.</p></div>
+    <section class="lab-callout" aria-labelledby="lab-title">
+      <div><p class="eyebrow">02 / BROWSER LAB</p><h2 id="lab-title">The machinery is live.</h2><p>JupyterLite runs locally in your browser. Desktop is the better instrument panel; mobile works, but the full Lab UI is dense.</p></div>
       <a class="primary" href="/lab/">Launch JupyterLab ↗</a>
     </section>
 
     <footer id="provenance">
       <div><strong>Tyler J.H.G.</strong><p>Research published as inspectable artifacts.</p></div>
-      <details><summary>Build provenance <span id="build-id"></span></summary><pre id="provenance-data">Loading…</pre></details>
+      <details><summary>Build provenance <span id="build-id" aria-label="portfolio build revision"></span></summary><pre id="provenance-data">Loading…</pre></details>
     </footer>
   </main>
   <script src="/assets/site.js"></script>
