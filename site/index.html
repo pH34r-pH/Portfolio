@@ -1,30 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-palette="nacre">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="Tyler J.H.G. — research, formalization, and executable notebooks.">
-  <title>Tyler J.H.G. — Research Portfolio</title>
+  <meta name="description" content="Tyler J.H.G. — research, formalization, systems, and executable notebooks.">
+  <title>Tyler J.H.G. / Research Systems</title>
   <link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
+  <div class="moire" aria-hidden="true"></div>
   <main>
-    <header>
-      <p class="eyebrow">Tyler J.H.G. / research portfolio</p>
-      <h1>Research Portfolio</h1>
-      <p class="lede">This site collects publicly shareable results and work in progress from my ongoing research, including notes, formal results, and executable experiments. Where practical, the notebooks used for experiments can be opened and run directly in the browser.</p>
-      <nav><a href="#notebooks">Notebooks</a><a href="#provenance">Provenance</a><a href="/lab/">Open JupyterLab</a></nav>
+    <header class="hero">
+      <div class="register"><span>TYLER J.H.G.</span><span>RESEARCH / SYSTEMS / ML</span><span class="signal">PUBLIC NODE</span></div>
+      <p class="eyebrow">Research engineer · machine learning · formal methods</p>
+      <h1>Building strange things<br><em>carefully.</em></h1>
+      <p class="lede">Research into representation, model architecture, distributed inference, and machine agency—published with the experiments and evidence attached.</p>
+      <div class="actions"><a class="primary" href="#work">Read the work</a><a href="/lab/">Enter the lab</a></div>
+      <div class="palette" aria-label="Color palette"><span>interface</span><button data-palette="nacre" aria-label="Nacre palette">N</button><button data-palette="oxide" aria-label="Oxide palette">O</button><button data-palette="violet" aria-label="Violet palette">V</button><button data-palette="high-contrast" aria-label="High contrast palette">HC</button></div>
     </header>
-    <section id="notebooks">
-      <h2>Executable notebooks</h2>
-      <p>Published notebooks can be opened, modified, and run directly in the browser using JupyterLite. Execution happens locally in the browser, so no Python installation or remote compute environment is required.</p>
-      <div id="notebook-list" class="grid"><p>Notebook catalog is supplied by the publication bundle.</p></div>
+
+    <section id="work">
+      <div class="section-head"><p class="eyebrow">01 / FIELD NOTES</p><h2>Executable research</h2></div>
+      <p class="section-copy">The notebooks below are the working artifacts, not screenshots of results. Read them here; launch the browser lab when you want to inspect or modify the machinery.</p>
+      <div id="notebook-list" class="grid"><p class="loading">Loading publication catalog…</p></div>
     </section>
-    <section id="provenance">
-      <h2>Publication provenance</h2>
-      <p>Each release records the exact source revisions used to build it, making it possible to trace published results back to the research and code that produced them.</p>
-      <pre id="provenance-data">Loading publication manifest…</pre>
+
+    <section class="lab-callout">
+      <div><p class="eyebrow">02 / BROWSER LAB</p><h2>The machinery is live.</h2><p>JupyterLite runs locally in your browser. Desktop is the better instrument panel; mobile works, but the full Lab UI is dense.</p></div>
+      <a class="primary" href="/lab/">Launch JupyterLab ↗</a>
     </section>
+
+    <footer id="provenance">
+      <div><strong>Tyler J.H.G.</strong><p>Research published as inspectable artifacts.</p></div>
+      <details><summary>Build provenance <span id="build-id"></span></summary><pre id="provenance-data">Loading…</pre></details>
+    </footer>
   </main>
   <script src="/assets/site.js"></script>
 </body>
