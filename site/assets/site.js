@@ -9,9 +9,9 @@ async function loadPublication(){
   try{
     const response=await fetch('/publication.json',{cache:'no-store'});if(!response.ok)throw new Error();
     const manifest=await response.json(),sources=manifest.sources||{};
-    target.textContent=Object.entries(sources).map(([k,v])=>k+'  '+String(v.commit||'').slice(0,12)).join('\n');
-    build.textContent=sources.portfolio?.commit?' / '+sources.portfolio.commit.slice(0,8):'';
-    if(manifest.notebooks?.length){
+    if(target) target.textContent=Object.entries(sources).map(([k,v])=>k+'  '+String(v.commit||'').slice(0,12)).join('\n');
+    if(build) build.textContent=sources.portfolio?.commit?' / '+sources.portfolio.commit.slice(0,8):'';
+    if(list && manifest.notebooks?.length){
       const notebooks=[...manifest.notebooks].filter(n=>n.slug!=='visual_intuition_atlas').sort((a,b)=>{
         const ad=Date.parse(a.modifiedAt||a.publishedAt||'')||0,bd=Date.parse(b.modifiedAt||b.publishedAt||'')||0;
         if(ad!==bd)return bd-ad;
@@ -27,7 +27,7 @@ async function loadPublication(){
         links.append(read,lab);a.append(h,meta,links);return a;
       }));
     }
-  }catch(e){list.innerHTML='<p>Publication catalog unavailable.</p>';target.textContent='Build metadata unavailable.'}
+  }catch(e){if(list) list.innerHTML='<p>Publication catalog unavailable.</p>';if(target) target.textContent='Build metadata unavailable.'}
 }
 loadPublication();
 async function loadExperimentPackages(){const link=document.querySelector('#experiment-download'),status=document.querySelector('#experiment-download-status');if(!link)return;try{const r=await fetch('/experiments/index.json',{cache:'no-store'});if(!r.ok)throw new Error();const index=await r.json(),pkg=index.packages?.find(p=>p.id==='issue-164-adamw');if(!pkg)throw new Error();link.href=pkg.download;link.setAttribute('aria-disabled',String(pkg.status!=='qualified'));status.textContent=pkg.status==='qualified'?'Qualified · SHA-256 '+pkg.sha256.slice(0,12)+'…':'Fixture route · '+pkg.status;const meta=document.querySelector('#package-metadata');if(meta){const rows=[['Profile',pkg.profile],['Standards',(pkg.standards||[]).join(' · ')],['Reproduction',pkg.reproductionLevel],['Agent entry',pkg.entrypoints?.metadata],['Receipt',pkg.receipt?.status]];meta.replaceChildren(...rows.flatMap(([k,v])=>{const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=k;dd.textContent=v||'pending';return[dt,dd]}))}if(pkg.status!=='qualified')link.addEventListener('click',e=>e.preventDefault())}catch(e){link.setAttribute('aria-disabled','true');status.textContent='Package index unavailable';link.addEventListener('click',e=>e.preventDefault())}}loadExperimentPackages();
