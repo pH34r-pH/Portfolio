@@ -45,7 +45,10 @@ for (const [name, width, height] of sizes) {
     }
   }
 
-  const download = await page.locator('#experiment-download').getAttribute('aria-disabled');\n  if (download !== 'true') failures.push(`${name}: fixture experiment download unexpectedly enabled`);\n\n  await page.keyboard.press('Tab');
+  const download = await page.locator('#experiment-download').getAttribute('aria-disabled');
+  if (download !== 'true') failures.push(`${name}: fixture experiment download unexpectedly enabled`);
+
+  await page.keyboard.press('Tab');
   const focus = await page.evaluate(() => {
     const element = document.activeElement;
     const style = element ? getComputedStyle(element) : null;
