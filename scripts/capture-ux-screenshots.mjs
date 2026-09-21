@@ -14,9 +14,12 @@ for(const [view,width,height,mobile] of views){
     await page.screenshot({path:`ux-screenshots/${view}--${name}.png`,fullPage:true});
     await page.close();
   }
-  const manifest=await (await context.request.get(base+'/publication.json')).json();
-  const notebook=manifest.notebooks?.find(n=>n.slug!=='visual_intuition_atlas');
-  if(notebook){const page=await context.newPage();await page.goto(base+'/notebooks/'+encodeURIComponent(notebook.slug)+'/',{waitUntil:'networkidle'});await page.screenshot({path:`ux-screenshots/${view}--notebook.png`,fullPage:true});await page.close();}
+  const manifestResponse=await context.request.get(base+'/publication.json');
+  if(manifestResponse.ok()){
+    const manifest=await manifestResponse.json();
+    const notebook=manifest.notebooks?.find(n=>n.slug!=='visual_intuition_atlas');
+    if(notebook){const page=await context.newPage();await page.goto(base+'/notebooks/'+encodeURIComponent(notebook.slug)+'/',{waitUntil:'networkidle'});await page.screenshot({path:`ux-screenshots/${view}--notebook.png`,fullPage:true});await page.close();}
+  }
   await context.close();
 }
 await browser.close();
