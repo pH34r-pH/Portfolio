@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "series": [
+    {
+      "id": "revision-branch-utilization",
+      "kind": "empirical",
+      "title": "Revision-branch signal utilization",
+      "source": {
+        "program": "domain-scaling-lab",
+        "evidence": [
+          "#323 qualified Wikimedia L=32 benchmark",
+          "#328 frozen-state branch probe",
+          "#331 frozen next-byte consumer ladder"
+        ]
+      },
+      "metrics": [
+        {
+          "id": "affine-probe-gain",
+          "label": "Affine probe gain",
+          "value": 0.737664,
+          "unit": "nat",
+          "status": "reported-anchor"
+        },
+        {
+          "id": "native-consumer-gain",
+          "label": "Native consumer gain",
+          "value": 0.006446,
+          "unit": "nat",
+          "status": "reported-anchor"
+        }
+      ],
+      "boundary": "These frozen-state anchors distinguish accessible signal from native utilization. They do not identify the causal mechanism of under-utilization."
+    }
+  ]
+}
