@@ -43,5 +43,6 @@ jobs:
           path: ux-screenshots/
           if-no-files-found: error
           retention-days: 30
+      - name: Enforce Lighthouse budgets
         run: npx lhci autorun --config=./lighthouserc.cjs
 
