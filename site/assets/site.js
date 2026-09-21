@@ -1,3 +1,4 @@
+const menuButton=document.querySelector('.menu-toggle');const menu=document.querySelector('#site-menu');if(menuButton&&menu){menuButton.addEventListener('click',()=>{const open=menuButton.getAttribute('aria-expanded')==='true';menuButton.setAttribute('aria-expanded',String(!open));menu.hidden=open});menu.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.hidden=true;menuButton.setAttribute('aria-expanded','false')}));}
 const root=document.documentElement;
 function setPalette(name){root.dataset.palette=name;localStorage.setItem('portfolio-palette',name);document.querySelectorAll('.palette button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.palette===name)))}
 setPalette(localStorage.getItem('portfolio-palette')||'nacre');
@@ -11,7 +12,7 @@ async function loadPublication(){
     target.textContent=Object.entries(sources).map(([k,v])=>k+'  '+String(v.commit||'').slice(0,12)).join('\n');
     build.textContent=sources.portfolio?.commit?' / '+sources.portfolio.commit.slice(0,8):'';
     if(manifest.notebooks?.length){
-      const notebooks=[...manifest.notebooks].sort((a,b)=>{
+      const notebooks=[...manifest.notebooks].filter(n=>n.slug!=='visual_intuition_atlas').sort((a,b)=>{
         const ad=Date.parse(a.modifiedAt||a.publishedAt||'')||0,bd=Date.parse(b.modifiedAt||b.publishedAt||'')||0;
         if(ad!==bd)return bd-ad;
         return (b.path||'').localeCompare(a.path||'',undefined,{numeric:true});
