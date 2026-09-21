@@ -24,8 +24,15 @@ jobs:
       - name: Run responsive and accessibility audit
         shell: bash
         run: |
+          set -euo pipefail
           npx serve site -l 4173 >/tmp/portfolio-serve.log 2>&1 &
           server=$!
           trap 'kill $server || true' EXIT
-          for i in {1..30}; do curl -fsS http://127.0.0.1:4173 >/dev/null && break; sleep 1; done
-          node scripts/ux-audit.mjs\n\n      - name: Enforce Lighthouse budgets\n        run: npx lhci autorun --config=./lighthouserc.cjs
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/ >/dev/null
+          node scripts/ux-audit.mjs
+      - name: Enforce Lighthouse budgets
+        run: npx lhci autorun --config=./lighthouserc.cjs
