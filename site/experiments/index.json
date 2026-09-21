@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "issue-164-adamw",
+      "title": "#164 unit-hypersphere AdamW baseline",
+      "status": "fixture",
+      "download": "/experiments/issue-164-adamw.ro-crate.zip",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "mediaType": "application/zip",
+      "profile": "RO-Crate / Process Run Crate"
+    }
+  ]
+}
