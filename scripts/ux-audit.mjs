@@ -19,11 +19,12 @@ const browser = await chromium.launch({ headless: true });
 const failures = [];
 
 for (const [name, width, height] of sizes) {
-  const page = await browser.newPage({
+  const context = await browser.newContext({
     viewport: { width, height },
     isMobile: width < 600,
     hasTouch: width < 900,
   });
+  const page = await context.newPage();
   await page.goto('http://127.0.0.1:4173', { waitUntil: 'networkidle' });
 
   const metrics = await page.evaluate(() => ({
@@ -58,7 +59,7 @@ for (const [name, width, height] of sizes) {
     failures.push(`${name}: missing visible keyboard focus ${JSON.stringify(focus)}`);
   }
 
-  await page.close();
+  await context.close();
 }
 
 await browser.close();
