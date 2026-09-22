@@ -64,9 +64,8 @@ async function loadPublication() {
       const notebooks = [...manifest.notebooks]
         .filter((n) => n.slug !== "visual_intuition_atlas")
         .sort((a, b) => {
-          const ad = Date.parse(a.modifiedAt || a.publishedAt || "") || 0,
-            bd = Date.parse(b.modifiedAt || b.publishedAt || "") || 0;
-          if (ad !== bd) return bd - ad;
+          if (a.sequence && b.sequence && a.sequence !== b.sequence)
+            return b.sequence - a.sequence;
           return (b.path || "").localeCompare(a.path || "", undefined, {
             numeric: true,
           });
@@ -80,11 +79,12 @@ async function loadPublication() {
           h.textContent = n.title || n.path;
           const meta = document.createElement("p");
           meta.className = "card-meta";
-          meta.textContent = n.modifiedAt
-            ? "Updated " +
-              new Date(n.modifiedAt).toLocaleDateString() +
-              " · readable notebook"
+          meta.textContent = n.exampleKind === "illustrative"
+            ? "Readable notebook · illustrative code"
             : "Readable notebook · executable source";
+          const question = document.createElement("p");
+          question.className = "card-question";
+          question.textContent = n.question || "";
           const links = document.createElement("div");
           links.className = "links";
           const read = document.createElement("a");
@@ -105,9 +105,10 @@ async function loadPublication() {
             encodeURIComponent(
               n.jupyterPath || n.path.replace(/^publication\/notebooks\//, ""),
             );
-          lab.textContent = "Run in Lab ↗";
+          lab.textContent = n.exampleKind === "illustrative"
+            ? "Run example ↗" : "Inspect in Lab ↗";
           links.append(read, lab);
-          a.append(h, meta, links);
+          a.append(h, question, meta, links);
           return a;
         }),
       );
@@ -138,7 +139,7 @@ async function loadExperimentPackages() {
         ? "Qualified · SHA-256 " + pkg.sha256.slice(0, 12) + "…"
         : "Qualification pending · download unavailable";
     const meta = document.querySelector("#package-metadata");
-    if (meta) {
+    if (meta && pkg.status === "qualified") {
       const rows = [
         ["Profile", pkg.profile],
         ["Standards", (pkg.standards || []).join(" · ")],
@@ -155,6 +156,7 @@ async function loadExperimentPackages() {
           return [dt, dd];
         }),
       );
+      meta.hidden = false;
     }
     if (pkg.status !== "qualified")
       link.addEventListener("click", (e) => e.preventDefault());

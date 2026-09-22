@@ -41,3 +41,8 @@ body{padding-top:58px}.topbar{position:fixed;z-index:90;top:0;left:0;right:0;hei
 .evidence-map>span,.architecture-flow>span,.repro-flow>b{justify-self:center;width:24px;height:24px;text-align:center;pointer-events:none}
 html{scroll-padding-top:70px}.atlas-page :is(button,input,canvas){scroll-margin-top:120px;scroll-margin-bottom:24px}
 .notebook-content .highlight pre,.notebook-content .jp-OutputArea-output pre{overflow:visible}
+/* Keep the first action near the introduction, including on shorter screens. */
+.hero{min-height:0;padding:76px 0 56px}.hero h1{font-size:clamp(3rem,7vw,6rem);line-height:.94;max-width:18ch}.hero .lede{max-width:54ch;margin:16px 0}.hero .actions{margin-top:8px}.proof-line a{color:var(--ink);white-space:normal;text-underline-offset:3px}.card-question{font-size:.95rem;color:var(--muted);margin:16px 0 auto}.card h3{margin-bottom:0}.card .links{flex-wrap:wrap}.package-info{text-align:left}.package-info [hidden]{display:none}.notebook-content img{max-width:100%;height:auto}.notebook-content .jp-OutputArea-output{margin-block:12px 28px}.notebook-reader [tabindex="-1"]{scroll-margin-top:80px}
+@media(max-width:720px){.hero{padding-top:64px}.hero h1{font-size:clamp(2.8rem,11.5vw,4.8rem);max-width:18ch}.hero .lede{font-size:1.05rem}.hero .actions{margin-top:4px}}
+
+.atlas-panel aside a,.actions a:not(.primary){color:var(--ink);text-underline-offset:3px}
