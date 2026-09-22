@@ -106,7 +106,7 @@
       tr.style.setProperty("--nuisance-gain", Math.pow(0.7, n));
       tr.setAttribute(
         "aria-label",
-        `Conceptual finite-horizon trajectory over ${n} layers`,
+        `Conceptual finite-horizon trajectory over ${n} ${n === 1 ? "layer" : "layers"}`,
       );
     };
     hs.addEventListener("input", updateH);

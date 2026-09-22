@@ -6,3 +6,15 @@
 #portfolio-lab-return span{font-size:10px;font-weight:400}
 @media(max-width:480px){#portfolio-lab-return span{display:none}}
 @media(prefers-color-scheme:dark){#portfolio-lab-return{background:#191a18;color:#e7dfcf;border-color:#6d675d}#portfolio-lab-return a:focus-visible{outline-color:#d58a64}}
+/* Only Portfolio's return strip follows Portfolio appearance. The executable
+   workspace retains JupyterLab's own editor theme and accessibility settings. */
+html[data-palette=nacre]{--return-bg:#e8e3d8;--return-ink:#17191a;--return-line:#aaa497;--return-accent:#765466}
+html[data-palette=oxide]{--return-bg:#191a18;--return-ink:#e7dfcf;--return-line:#6d675d;--return-accent:#d58a64}
+html[data-palette=violet]{--return-bg:#111014;--return-ink:#e9e4eb;--return-line:#45404b;--return-accent:#9a7bb2}
+html[data-palette=high-contrast]{--return-bg:#000;--return-ink:#fff;--return-line:#fff;--return-accent:#fff}
+html[data-palette] #portfolio-lab-return{background:var(--return-bg);color:var(--return-ink);border-color:var(--return-line)}
+html[data-palette] #portfolio-lab-return a:focus-visible{outline-color:var(--return-accent)}
+html[data-style=orbit] #portfolio-lab-return a{border-radius:0 16px 0 0;border-right:1px solid var(--return-accent);padding-right:16px}
+html[data-style=register] #portfolio-lab-return{border-bottom:2px solid var(--return-accent)}
+html[data-style=overprint] #portfolio-lab-return{border-bottom:3px double var(--return-accent)}
+html[data-style=hinge] #portfolio-lab-return a{border-left:2px solid var(--return-accent);padding-left:10px}
