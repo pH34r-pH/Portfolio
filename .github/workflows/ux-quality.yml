@@ -34,9 +34,11 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/ >/dev/null
           node --check site/assets/site.js
+          node --check site/assets/appearance.js
           node --check site/assets/atlas.js
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
+          node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
       - name: Upload UX review screenshots
         if: always()
