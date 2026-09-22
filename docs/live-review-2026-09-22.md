@@ -31,6 +31,9 @@ these are regression-test observations, not physical-device observations.
 The assembled reader audit also found a non-focusable inner code scroller and
 insufficient Nacre comment contrast. Use one focusable scroll region and darken
 that palette's comment token slightly; keep the other syntax colors intact.
+Visual inspection of the repaired desktop Atlas also showed the tangent vector
+extending outside its diagram over the slider. Cap component lengths to fit the
+frame and make the radial component shrink as tangent share increases.
 
 Reproduce's disabled link still advertises a nonexistent fixture ZIP URL, while
 its loaded status exposes “Fixture route · fixture.” Keep it unavailable in HTML,

@@ -130,6 +130,29 @@ try {
         await expect(page.locator("#tangent-value")).toHaveText("0%");
         await tangent.press("End");
         await expect(page.locator("#tangent-value")).toHaveText("100%");
+        assert.equal(
+          await page
+            .locator(".radial-vector")
+            .evaluate((el) => getComputedStyle(el).width),
+          "0px",
+          "A fully tangent update has no radial component",
+        );
+        const vectorsFit = await page.locator("#vector-viz").evaluate((el) => {
+          const frame = el.getBoundingClientRect();
+          return [...el.children].every((vector) => {
+            const bounds = vector.getBoundingClientRect();
+            return (
+              bounds.top >= frame.top &&
+              bounds.bottom <= frame.bottom &&
+              bounds.left >= frame.left &&
+              bounds.right <= frame.right
+            );
+          });
+        });
+        assert.ok(
+          vectorsFit,
+          "Vector components must remain inside the diagram, clear of the slider",
+        );
         await expect(page.locator("#vector-viz")).toHaveAttribute(
           "aria-label",
           /100 percent/,
