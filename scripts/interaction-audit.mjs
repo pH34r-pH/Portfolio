@@ -35,8 +35,11 @@ try {
       manifest = await manifestResponse.json();
     }
     const paths = ["/", "/research/", "/atlas/", "/reproduce/"];
-    if (manifest?.notebooks?.length)
+    if (manifest?.notebooks?.length) {
       paths.push("/notebooks/" + manifest.notebooks[0].slug + "/");
+      if (manifest.notebooks.some(n => n.slug === "visual_intuition_atlas"))
+        paths.push("/notebooks/visual_intuition_atlas/");
+    }
     for (const path of paths) {
       await page.goto(base + path, { waitUntil: "networkidle" });
       assert.deepEqual(errors, [], `${width}${path}: page errors`);
@@ -230,6 +233,9 @@ try {
         ).toHaveAttribute("href", "/research/");
       }
       if (path === "/reproduce/") {
+        await page.locator('.package-info summary').click();
+        await expect(page.locator('.package-info')).not.toContainText('technical-fixture');
+        await expect(page.locator('#package-metadata')).toBeHidden();
         const download = page.getByRole("link", {
           name: "Download experiment package ↓",
         });
@@ -250,6 +256,16 @@ try {
           await code.focus();
           await expect(code).toBeFocused();
         }
+      }
+      if (path === "/research/" && manifest?.notebooks?.length) {
+        await expect(page.locator('#notebook-list')).not.toContainText('Updated');
+        if (manifest.notebooks[0].question)
+          await expect(page.locator('.card-question').first()).toHaveText(manifest.notebooks[0].question);
+      }
+      if (["/research/", "/reproduce/"].includes(path)) {
+        await page.locator('.skip-link').focus();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('main')).toBeFocused();
       }
       assert.deepEqual(
         errors,

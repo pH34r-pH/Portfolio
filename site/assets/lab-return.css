@@ -1,0 +1,8 @@
+/* Reserve space before JupyterLab lays out its shell. Do not overlay its menus. */
+#main.jp-LabShell{top:44px!important;height:calc(100% - 44px)!important}
+#portfolio-lab-return{position:fixed;inset:0 0 auto;z-index:10;height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#e8e3d8;color:#17191a;border-bottom:1px solid #aaa497;font:600 11px ui-monospace,monospace;letter-spacing:.04em}
+#portfolio-lab-return a{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:underline;text-underline-offset:3px}
+#portfolio-lab-return a:focus-visible{outline:3px solid #765466;outline-offset:-3px}
+#portfolio-lab-return span{font-size:10px;font-weight:400}
+@media(max-width:480px){#portfolio-lab-return span{display:none}}
+@media(prefers-color-scheme:dark){#portfolio-lab-return{background:#191a18;color:#e7dfcf;border-color:#6d675d}#portfolio-lab-return a:focus-visible{outline-color:#d58a64}}

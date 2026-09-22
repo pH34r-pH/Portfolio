@@ -26,6 +26,11 @@
         "properties": {
           "path": { "type": "string" },
           "title": { "type": "string" },
+          "question": { "type": "string", "minLength": 1 },
+          "sequence": { "type": "integer", "minimum": 1 },
+          "exampleKind": { "enum": ["illustrative"] },
+          "jupyterPath": { "type": "string" },
+          "slug": { "type": "string" },
           "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
         }
       }
