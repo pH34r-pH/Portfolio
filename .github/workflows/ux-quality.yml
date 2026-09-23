@@ -47,7 +47,7 @@ jobs:
           name: ux-review-${{ github.sha }}
           path: ux-screenshots/
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 3
       - name: Enforce Lighthouse budgets
         run: npx lhci autorun --config=./lighthouserc.cjs
       - name: Summarize public source qualification
@@ -64,3 +64,154 @@ jobs:
           else
             echo "PR UX result is review evidence; Fleet requires a separate passing main SHA." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  bundle:
+    name: Public publication candidate
+    needs: ux
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - name: Pin public input revisions
+        id: refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          portfolio="$GITHUB_SHA"
+          research_notes="$(git ls-remote https://github.com/pH34r-pH/research-notes.git refs/heads/main | cut -f1)"
+          theorem_library="$(git ls-remote https://github.com/pH34r-pH/theorem-library.git refs/heads/main | cut -f1)"
+          for revision in "$portfolio" "$research_notes" "$theorem_library"; do
+            [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected full source commit SHAs'; exit 1; }
+          done
+          {
+            echo "portfolio=$portfolio"
+            echo "research_notes=$research_notes"
+            echo "theorem_library=$theorem_library"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.refs.outputs.portfolio }}
+          path: Portfolio
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pH34r-pH/research-notes
+          ref: ${{ steps.refs.outputs.research_notes }}
+          path: research-notes
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: pH34r-pH/theorem-library
+          ref: ${{ steps.refs.outputs.theorem_library }}
+          path: theorem-library
+          persist-credentials: false
+      - name: Confirm pinned checkouts
+        shell: bash
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+        run: |
+          set -euo pipefail
+          test "$(git -C Portfolio rev-parse HEAD)" = "$PORTFOLIO_SHA"
+          test "$(git -C research-notes rev-parse HEAD)" = "$RESEARCH_NOTES_SHA"
+          test "$(git -C theorem-library rev-parse HEAD)" = "$THEOREM_LIBRARY_SHA"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install public publication tooling
+        run: python -m pip install --disable-pip-version-check nbconvert beautifulsoup4 jsonschema jupyterlite-core jupyterlite-pyodide-kernel jupyter-server
+      - name: Check reader and publication code
+        run: |
+          python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py
+          python Portfolio/scripts/test_portfolio_publication.py
+      - name: Assemble immutable public inputs
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+        run: |
+          python Portfolio/scripts/build_portfolio_bundle.py \
+            --portfolio Portfolio --research-notes research-notes \
+            --theorem-library theorem-library --output bundle \
+            --portfolio-sha "$PORTFOLIO_SHA" \
+            --research-notes-sha "$RESEARCH_NOTES_SHA" \
+            --theorem-library-sha "$THEOREM_LIBRARY_SHA"
+      - name: Validate pinned publication manifest
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from jsonschema import Draft202012Validator
+
+          manifest = json.loads(Path('bundle/publication.json').read_text())
+          schema = json.loads(Path('Portfolio/publication.schema.json').read_text())
+          Draft202012Validator(schema).validate(manifest)
+          assert manifest['schemaVersion'] == 2
+          assert {key: value['commit'] for key, value in manifest['sources'].items()} == {
+              'portfolio': os.environ['PORTFOLIO_SHA'],
+              'researchNotes': os.environ['RESEARCH_NOTES_SHA'],
+              'theoremLibrary': os.environ['THEOREM_LIBRARY_SHA'],
+          }
+          atlas = json.loads(Path('bundle/data/atlas-evidence.json').read_text())
+          atlas_schema = json.loads(Path('Portfolio/atlas-evidence.schema.json').read_text())
+          Draft202012Validator(atlas_schema).validate(atlas)
+          PY
+      - name: Build JupyterLite
+        run: |
+          jupyter lite build --contents bundle/publication/lab-contents \
+            --output-dir bundle/lab --config Portfolio/jupyter-lite.json
+      - name: Attach Portfolio Lab navigation
+        run: python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
+      - name: Qualify finished public bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
+            bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
+            bundle/lab/reference/glossary.md; do
+            test -s "$path"
+          done
+          count="$(find bundle/publication/notebooks -name '*.ipynb' -type f | wc -l)"
+          test "$count" -gt 0
+          echo "Qualified $count source notebooks"
+      - name: Hash exact upload bytes
+        id: digest
+        shell: bash
+        run: echo "sha256=$(python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
+      - name: Upload public publication candidate
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: portfolio-candidate-${{ steps.refs.outputs.portfolio }}-${{ steps.refs.outputs.research_notes }}-${{ steps.refs.outputs.theorem_library }}
+          path: bundle/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
+      - name: Summarize public candidate for private verification
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+          BUNDLE_SHA256: ${{ steps.digest.outputs.sha256 }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+        shell: bash
+        run: |
+          {
+            echo '## Public Portfolio publication candidate'
+            echo
+            echo "- Portfolio source: $PORTFOLIO_SHA"
+            echo "- research-notes source: $RESEARCH_NOTES_SHA"
+            echo "- theorem-library source: $THEOREM_LIBRARY_SHA"
+            echo "- Full bundle tree SHA-256: $BUNDLE_SHA256"
+            echo "- Exact artifact ID: $ARTIFACT_ID"
+            echo "- Public source and producer run/attempt: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
+            echo '- Private Fleet must recheck all source gates and the downloaded bundle digest before publication.'
+          } >> "$GITHUB_STEP_SUMMARY"

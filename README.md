@@ -9,9 +9,11 @@ Each published version of Portfolio is an immutable snapshot of the research sel
 
 ## Fleet publication handoff
 
-Private [long-haul-fleet](https://github.com/pH34r-pH/long-haul-fleet) selects a full 40-character Portfolio commit SHA on the trusted `main` history. The `Portfolio UX quality` workflow runs on every main push and PR on public GitHub-hosted runners with `contents: read`; its stable release gate is job `ux`. Fleet requires a completed successful **main push** run on the exact SHA it stages. Pending, failed, missing, canceled, PR-only, or different-SHA runs cannot authorize publication. UX screenshots are short-lived review evidence, not the deployable package or a passing gate by themselves.
+Private [long-haul-fleet](https://github.com/pH34r-pH/long-haul-fleet) selects a full 40-character Portfolio commit SHA on the trusted `main` history. The `Portfolio UX quality` workflow runs on every main push and PR on free public GitHub-hosted runners with `contents: read`; its stable source gate is job `ux`. Fleet requires a completed successful **main push** `ux` run on the exact SHA it stages. Pending, failed, missing, canceled, PR-only, or different-SHA runs cannot authorize publication. UX screenshots are short-lived review evidence, not the deployable package or a passing gate by themselves.
 
-The pinned source contains `site/**`, `jupyter-lite.json`, `publication.schema.json`, the selected `publication/**` material and build scripts. Fleet pins `research-notes`, `theorem-library` and any other selected inputs **before** a credential-free build, verifies their applicable public checks, records all source SHAs and final artifact SHA-256 in its protected publication receipt, then deploys that same artifact. `publication.schema.json` version 1 requires exact 40-character source commits. A dependency that changes, a failed UX check, or a mismatched package digest blocks promotion and exact-SHA manual retry. See Fleet #176/#177 and Portfolio #24 for the private identity and intake work.
+After a passing `ux` job on main, the same workflow's `Public publication candidate` job pins `research-notes` and `theorem-library` main revisions, checks out all three public source commits, and builds the complete static site, notebook readers and JupyterLite on another free hosted runner. This job has no Azure identity, deployment credential, or private repository access. Its one artifact is a **candidate**, identified by the producer run/attempt and artifact ID. The run summary records all three input SHAs and a path/content SHA-256 of the finished bundle. Pull requests run UX review only; they cannot create publication candidates.
+
+`publication.schema.json` version 2 records exactly those three full public source SHAs and the hashes of published notebooks. Version 1 remains accepted for existing bundles that also include a Fleet SHA. Fleet's own SHA belongs to its **protected release receipt** for a v2 candidate, because private Fleet code is not a public build input. Before promotion Fleet must verify the exact main `ux` and `bundle` results, each pinned dependency's applicable source checks, the v2 manifest, the requested input revisions, and the downloaded artifact's whole-tree digest. It then deploys those verified bytes and stores a durable rollback copy. A missing or changed source, pending/failed check, or digest mismatch blocks publication and exact-SHA manual retry. The public build does not dispatch private Fleet or publish production. For now a new candidate is built for each Portfolio main push; publishing a newer dependency alone needs a later exact-input trigger. See Fleet #176–#178 and Portfolio #24.
 
 ## Notebook execution
 
@@ -21,5 +23,6 @@ Published notebooks use JupyterLite to run Python directly in the browser, witho
 
 - `site/` contains the portfolio website.
 - `jupyter-lite.json` configures browser-side notebook execution.
-- `publication.schema.json` defines the metadata recorded for each published release.
+- `publication.schema.json` defines v1 legacy and v2 public candidate metadata.
+- `scripts/build_portfolio_bundle.py`, `scripts/finish_portfolio_lab.py` and `scripts/digest_bundle.py` assemble and hash a candidate from three pinned public source checkouts.
 - `publication/` contains the generated publication bundle, including notebooks selected for that release.
