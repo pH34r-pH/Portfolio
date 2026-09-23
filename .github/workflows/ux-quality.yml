@@ -50,3 +50,17 @@ jobs:
           retention-days: 30
       - name: Enforce Lighthouse budgets
         run: npx lhci autorun --config=./lighthouserc.cjs
+      - name: Summarize public source qualification
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            {
+              echo "## Portfolio source qualified for Fleet review"
+              echo
+              echo "- Source: pH34r-pH/Portfolio@$GITHUB_SHA"
+              echo '- Gate: Portfolio UX quality / ux passed for this exact main SHA.'
+              echo "- Private publication: Fleet verifies this run and all pinned research inputs, then records a separate deployment receipt."
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "PR UX result is review evidence; Fleet requires a separate passing main SHA." >> "$GITHUB_STEP_SUMMARY"
+          fi
