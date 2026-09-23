@@ -190,7 +190,7 @@ jobs:
         id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: portfolio-candidate-${{ steps.refs.outputs.portfolio }}-${{ steps.refs.outputs.research_notes }}-${{ steps.refs.outputs.theorem_library }}
+          name: portfolio-candidate-${{ steps.refs.outputs.portfolio }}-${{ steps.refs.outputs.research_notes }}-${{ steps.refs.outputs.theorem_library }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: bundle/
           include-hidden-files: true
           if-no-files-found: error
