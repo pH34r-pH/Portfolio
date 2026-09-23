@@ -202,6 +202,7 @@ jobs:
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
           BUNDLE_SHA256: ${{ steps.digest.outputs.sha256 }}
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_SHA256: ${{ steps.upload.outputs.artifact-digest }}
         shell: bash
         run: |
           {
@@ -212,6 +213,7 @@ jobs:
             echo "- theorem-library source: $THEOREM_LIBRARY_SHA"
             echo "- Full bundle tree SHA-256: $BUNDLE_SHA256"
             echo "- Exact artifact ID: $ARTIFACT_ID"
+            echo "- GitHub artifact ZIP SHA-256: $ARTIFACT_SHA256"
             echo "- Public source and producer run/attempt: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
             echo '- Private Fleet must recheck all source gates and the downloaded bundle digest before publication.'
           } >> "$GITHUB_STEP_SUMMARY"
