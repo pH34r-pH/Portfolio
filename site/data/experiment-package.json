@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "status": "pending",
+  "experiment": "domain-scaling-lab#164",
+  "sourceRepository": "pH34r-pH/domain-scaling-lab",
+  "sourceCommit": "139eaf0ca66c50665cf8f24469aa413c366e58cc",
+  "packageSha256": null,
+  "packageUrl": null,
+  "qualificationReceiptUrl": null,
+  "note": "Fleet #415 must replace pending fields with the exact qualified immutable package identity. Portfolio must not infer or construct them."
+}
