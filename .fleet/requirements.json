@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "repository": "pH34r-pH/Portfolio",
+  "manifests": [{"path":".github/workflows/ux-quality.yml","kind":"workflow"}],
+  "profiles": {
+    "ux": {
+      "phases":["test"],
+      "platforms":[{"os":"linux","arch":"amd64","abi":"glibc"}],
+      "tools": {
+        "node":{"sources":[".github/workflows/ux-quality.yml"]},
+        "npm":{"sources":[".github/workflows/ux-quality.yml"]},
+        "curl":{"sources":[".github/workflows/ux-quality.yml"]},
+        "playwright-chromium":{"sources":[".github/workflows/ux-quality.yml"],"notes":"Includes Playwright's browser system dependencies; installing Node alone is insufficient."}
+      },
+      "entrypoints":["node scripts/ux-audit.mjs","node scripts/interaction-audit.mjs","node scripts/appearance-audit.mjs","npx lhci autorun --config=./lighthouserc.cjs"],
+      "notes":"The current workflow owns audit package and Node version selections; do not copy them into Fleet. Keep full UX work off the short private PR lane."
+    },
+    "publication": {
+      "phases":["build","package"],
+      "platforms":[{"os":"linux","arch":"amd64","abi":"glibc"}],
+      "tools": {
+        "python":{"sources":[".github/workflows/ux-quality.yml"]},
+        "pip":{"sources":[".github/workflows/ux-quality.yml"]},
+        "git":{"sources":[".github/workflows/ux-quality.yml"]},
+        "jupyterlite":{"sources":[".github/workflows/ux-quality.yml"],"notes":"Use the workflow's nbconvert, beautifulsoup4, jsonschema, JupyterLite/Pyodide and Jupyter Server requirements."}
+      },
+      "entrypoints":["python scripts/test_portfolio_publication.py"],
+      "notes":"Requires separately pinned Research Notes and Theorem Library checkouts. Preserves the real JupyterLite Lab; no Azure authority belongs in this profile."
+    }
+  }
+}
