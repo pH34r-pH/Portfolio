@@ -12,6 +12,40 @@ const views = [
   [1366, 768],
 ];
 const palettes = ["nacre", "oxide", "violet", "high-contrast"];
+const catalogFixture = {
+  schemaVersion: 1,
+  experiments: [{
+    schemaVersion: 1,
+    id: "audit-fixture",
+    title: "Audit fixture",
+    profile: "compiled-experiment-v1",
+    hypothesis: "Can the catalog render derived experiment metadata?",
+    question: "Does the public catalog remain interactive?",
+    method: "Use a synthetic browser-only fixture.",
+    acceptance: {},
+    result: {
+      acceptancePassed: true,
+      metrics: {evalMse: {numerator: 1, denominator: 1000}},
+    },
+    environment: {python: ">=3.11,<4", networkRequired: false, accelerator: "none"},
+    resources: {
+      ram: {observedMaximumBytes: 20971520, planningRamBytes: 33554432},
+      accelerator: {peakVramBytes: 0},
+    },
+    contents: {
+      embedded: [{item: "test input", path: "experiment/input.json"}],
+      publicImmutableReferences: [],
+      unavailable: [],
+    },
+    reproduction: {entrypoint: "experiment/reproduce.py", networkRequired: false},
+    source: {repository: "example/research", commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    standards: {croissant: "1.1", roCrate: "1.3", processRunCrate: "0.6"},
+    package: {sha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", size: 14010},
+    packageUrl: "https://example.test/package.zip",
+    qualificationReceiptUrl: "https://example.test/receipt.json",
+  }],
+};
+
 const browser = await chromium.launch({ headless: true });
 try {
   for (const [width, height] of views) {
@@ -41,6 +75,11 @@ try {
         paths.push("/notebooks/visual_intuition_atlas/");
     }
     for (const path of paths) {
+      if (path === "/reproduce/") {
+        await page.route("**/data/experiment-catalog.json", route =>
+          route.fulfill({status: 200, contentType: "application/json", body: JSON.stringify(catalogFixture)}),
+        );
+      }
       await page.goto(base + path, { waitUntil: "networkidle" });
       assert.deepEqual(errors, [], `${width}${path}: page errors`);
       const menu = page.getByRole("button", { name: "Menu", exact: true });
@@ -233,18 +272,17 @@ try {
         ).toHaveAttribute("href", "/research/");
       }
       if (path === "/reproduce/") {
-        await page.locator('.package-info summary').click();
-        await expect(page.locator('.package-info')).not.toContainText('technical-fixture');
-        await expect(page.locator('#package-metadata')).toBeHidden();
+        await expect(page.locator("#catalog-status")).toHaveText("1 compiled experiment available.");
+        await expect(page.locator("#experiment-table-body")).toContainText("Audit fixture");
+        await page.locator(".experiment-package-detail summary").click();
+        await expect(page.locator(".experiment-package-detail")).toContainText("test input");
+        await expect(page.locator(".experiment-package-detail")).toContainText("experiment/reproduce.py");
         const download = page.getByRole("link", {
-          name: "Download experiment package ↓",
+          name: "Download compiled experiment ↓",
         });
-        await expect(download).toHaveAttribute("aria-disabled", "true");
-        assert.equal(
-          await download.getAttribute("href"),
-          null,
-          "Unqualified package must have no download URL",
-        );
+        await expect(download).toHaveAttribute("href", "https://example.test/package.zip");
+        await expect(page.locator(".package-info")).toHaveCount(0);
+        await page.unroute("**/data/experiment-catalog.json");
       }
       if (path.startsWith("/notebooks/")) {
         await expect(page.locator("main")).toHaveCount(1);
