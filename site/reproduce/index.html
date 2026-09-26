@@ -1,27 +1,178 @@
-<!doctype html><html lang="en" data-palette="nacre" data-style="orbit"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reproduce — Tyler J.H.G.</title><link rel="preload" href="/assets/fonts/long-measure/NimbusSansNarrow-Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#main-content">Skip to content</a><header class="topbar"><a class="wordmark" href="/">TJHG <span>/ reproduce</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a aria-current="page" href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a></nav><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Appearance settings"><fieldset class="style-options"><legend>Style</legend><button type="button" data-style="orbit" aria-pressed="true"><span class="style-mark mark-orbit" aria-hidden="true"></span>Orbit</button><button type="button" data-style="register" aria-pressed="false"><span class="style-mark mark-register" aria-hidden="true"></span>Register</button><button type="button" data-style="overprint" aria-pressed="false"><span class="style-mark mark-overprint" aria-hidden="true"></span>Overprint</button><button type="button" data-style="hinge" aria-pressed="false"><span class="style-mark mark-hinge" aria-hidden="true"></span>Hinge</button></fieldset><fieldset class="palette"><legend>Palette</legend><button type="button" data-palette="nacre" aria-pressed="true"><span class="palette-mark swatch-nacre" aria-hidden="true"></span>Nacre</button><button type="button" data-palette="oxide" aria-pressed="false"><span class="palette-mark swatch-oxide" aria-hidden="true"></span>Oxide</button><button type="button" data-palette="violet" aria-pressed="false"><span class="palette-mark swatch-violet" aria-hidden="true"></span>Violet</button><button type="button" data-palette="high-contrast" aria-pressed="false"><span class="palette-mark swatch-contrast" aria-hidden="true"></span>High contrast</button></fieldset><p>Combine any style with any palette.</p></div></div><script src="/assets/appearance.js"></script></header><main id="main-content" tabindex="-1" class="index-page"><header><p class="eyebrow">PORTABLE RESEARCH OBJECTS</p><h1 class="page-title"><span class="title-line">Take the experiment</span> <span class="title-line title-accent">with you.</span></h1><p class="lede">This is the handoff layer: after reading or inspecting an experiment here, take a standards-based research object completely outside this site and reproduce the declared claim in your own environment or with your own agent.</p></header><p class="orientation"><strong>Status:</strong> package availability is determined by the qualified immutable package metadata published with this site.</p><section class="reproduce"><div><p class="eyebrow">PACKAGE MODEL</p><h2>Standards over infrastructure.</h2><p>No proprietary experiment service is required.</p></div><div class="repro-flow"><span>Croissant task/data</span><b>→</b><span>RO-Crate</span><b>→</b><span>Protocol + environment</span><b>→</b><span>Evidence + receipt</span></div><details class="package-info"><summary>What will the package contain?</summary><p>The planned package describes the task and data, declares the claim being tested, records the protocol and environment, and includes evidence with a qualification receipt. A qualified package includes the task and data, declared claim, protocol and environment, plus evidence with its qualification receipt.</p><dl id="package-metadata" hidden></dl></details><div class="repro-download"><a id="experiment-download" class="primary" role="link" download aria-disabled="true">Download experiment package ↓</a><span id="experiment-download-status">Qualification pending</span></div></section></main><script>
-(async () => {
-  const link = document.getElementById("experiment-download");
-  const status = document.getElementById("experiment-download-status");
-  const metadata = document.getElementById("package-metadata");
-  try {
-    const response = await fetch("/data/experiment-package.json", {cache: "no-store"});
-    if (!response.ok) throw new Error("metadata unavailable");
-    const pkg = await response.json();
-    const digest = typeof pkg.packageSha256 === "string" && /^[0-9a-f]{64}$/.test(pkg.packageSha256);
-    const source = typeof pkg.sourceCommit === "string" && /^[0-9a-f]{40}$/.test(pkg.sourceCommit);
-    const url = typeof pkg.packageUrl === "string" && pkg.packageUrl.startsWith("https://");
-    if (pkg.status !== "qualified" || !digest || !source || !url) {
-      status.textContent = "Qualification pending";
-      return;
+<!doctype html><html lang="en" data-palette="nacre" data-style="orbit"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reproduce — Tyler J.H.G.</title><link rel="preload" href="/assets/fonts/long-measure/NimbusSansNarrow-Regular.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#main-content">Skip to content</a><header class="topbar"><a class="wordmark" href="/">TJHG <span>/ reproduce</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a aria-current="page" href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a></nav><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="/atlas/">Atlas</a><a href="/reproduce/">Reproduce</a><a href="/lab/">Lab</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Appearance settings"><fieldset class="style-options"><legend>Style</legend><button type="button" data-style="orbit" aria-pressed="true"><span class="style-mark mark-orbit" aria-hidden="true"></span>Orbit</button><button type="button" data-style="register" aria-pressed="false"><span class="style-mark mark-register" aria-hidden="true"></span>Register</button><button type="button" data-style="overprint" aria-pressed="false"><span class="style-mark mark-overprint" aria-hidden="true"></span>Overprint</button><button type="button" data-style="hinge" aria-pressed="false"><span class="style-mark mark-hinge" aria-hidden="true"></span>Hinge</button></fieldset><fieldset class="palette"><legend>Palette</legend><button type="button" data-palette="nacre" aria-pressed="true"><span class="palette-mark swatch-nacre" aria-hidden="true"></span>Nacre</button><button type="button" data-palette="oxide" aria-pressed="false"><span class="palette-mark swatch-oxide" aria-hidden="true"></span>Oxide</button><button type="button" data-palette="violet" aria-pressed="false"><span class="palette-mark swatch-violet" aria-hidden="true"></span>Violet</button><button type="button" data-palette="high-contrast" aria-pressed="false"><span class="palette-mark swatch-contrast" aria-hidden="true"></span>High contrast</button></fieldset><p>Combine any style with any palette.</p></div></div><script src="/assets/appearance.js"></script></header><main id="main-content" tabindex="-1" class="index-page reproduce-page">
+<header>
+  <p class="eyebrow">COMPILED EXPERIMENTS</p>
+  <h1 class="page-title"><span class="title-line">Research an agent</span> <span class="title-line title-accent">can pick up.</span></h1>
+  <p class="lede">A Compiled Experiment turns a research claim into a portable, machine-readable object: the hypothesis, task and data semantics, protocol, environment, implementation references, evidence, and qualification receipts needed to reproduce the work independently.</p>
+  <p class="compiled-pitch">Download one ZIP, hand it to an agent, and ask it to inspect the crate, reconstruct the declared reproduction environment, execute the included validation/reproduction protocol, and compare its evidence against the frozen claim.</p>
+</header>
+
+<section class="reproduce standards-section" aria-labelledby="standards-title">
+  <div>
+    <p class="eyebrow">PACKAGE MODEL</p>
+    <h2 id="standards-title">Standards over infrastructure.</h2>
+    <p>Compiled Experiments are assembled from open, interoperable research standards rather than a proprietary experiment service. Hover or focus a standard for its role; activate it to open the specification.</p>
+  </div>
+  <div class="standards-grid" aria-label="Open standards used by Compiled Experiments">
+    <a class="standard-card" href="https://docs.mlcommons.org/croissant/docs/croissant-spec-1.1.html" target="_blank" rel="noopener" data-tip="Machine-readable ML dataset, task, and interface semantics.">
+      <strong>Croissant</strong><span>task + data semantics</span>
+    </a>
+    <a class="standard-card" href="https://www.researchobject.org/ro-crate/specification/1.3/" target="_blank" rel="noopener" data-tip="Packages research files and linked metadata into a portable research object.">
+      <strong>RO-Crate</strong><span>portable research object</span>
+    </a>
+    <a class="standard-card" href="https://www.researchobject.org/workflow-run-crate/profiles/process_run_crate/" target="_blank" rel="noopener" data-tip="Records execution provenance: what ran, with which software, inputs, outputs, and evidence.">
+      <strong>Process Run Crate</strong><span>execution provenance</span>
+    </a>
+  </div>
+</section>
+
+<section class="compiled-catalog" aria-labelledby="catalog-title">
+  <div class="section-head catalog-head">
+    <div>
+      <p class="eyebrow">DOWNLOADABLE CATALOG</p>
+      <h2 id="catalog-title">Compiled Experiments</h2>
+    </div>
+    <p>Sort by scientific question or resource envelope. Resource numbers are carried from frozen qualifying evidence when available; missing measurements are shown as unreported rather than guessed.</p>
+  </div>
+  <div class="experiment-table-wrap">
+    <table class="experiment-table" id="experiment-table">
+      <thead>
+        <tr>
+          <th scope="col" aria-sort="ascending"><button type="button" data-sort="title">Title <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="hypothesis">Hypothesis <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="peakRamMiB">Peak RAM <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="peakVramMiB">Peak VRAM <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="parameterCount">Parameters <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="denseTrainingFlopsPerSeed">Compute / seed <span aria-hidden="true">↕</span></button></th>
+          <th scope="col">Package</th>
+        </tr>
+      </thead>
+      <tbody id="experiment-table-body">
+        <tr><td colspan="7">Loading compiled experiments…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p id="catalog-status" class="catalog-status" role="status"></p>
+</section>
+</main>
+<script>
+(() => {
+  const body = document.getElementById("experiment-table-body");
+  const table = document.getElementById("experiment-table");
+  const status = document.getElementById("catalog-status");
+  let packages = [];
+  let sortKey = "title";
+  let sortDirection = 1;
+
+  const numberOrNull = (value) => typeof value === "number" && Number.isFinite(value) ? value : null;
+  const formatMemory = (value, note) => value == null ? (note || "Not reported") : (value >= 1024 ? (value / 1024).toFixed(2) + " GiB" : Math.round(value) + " MiB");
+  const formatCount = (value) => value == null ? "Not reported" : new Intl.NumberFormat().format(value);
+  const formatFlops = (value) => {
+    if (value == null) return "Not reported";
+    if (value >= 1e12) return (value / 1e12).toFixed(2) + " TFLOP";
+    if (value >= 1e9) return (value / 1e9).toFixed(2) + " GFLOP";
+    return new Intl.NumberFormat().format(value) + " FLOP";
+  };
+  const compare = (a, b) => {
+    const av = sortKey in (a.requirements || {}) ? a.requirements[sortKey] : a[sortKey];
+    const bv = sortKey in (b.requirements || {}) ? b.requirements[sortKey] : b[sortKey];
+    const an = numberOrNull(av), bn = numberOrNull(bv);
+    if (an !== null || bn !== null) {
+      if (an === null) return 1;
+      if (bn === null) return -1;
+      return (an - bn) * sortDirection;
     }
-    metadata.hidden = false;
-    metadata.innerHTML = "<dt>Source commit</dt><dd><code>" + pkg.sourceCommit + "</code></dd>" +
-      "<dt>Package SHA-256</dt><dd><code>" + pkg.packageSha256 + "</code></dd>";
-    link.href = pkg.packageUrl;
-    link.removeAttribute("aria-disabled");
-    status.textContent = "Qualified immutable package";
-  } catch (_) {
-    status.textContent = "Qualification metadata unavailable";
-  }
+    return String(av || "").localeCompare(String(bv || ""), undefined, {numeric: true}) * sortDirection;
+  };
+  const text = (tag, value, className) => {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = value;
+    return node;
+  };
+  const renderPackageCell = (pkg) => {
+    const td = document.createElement("td");
+    const details = document.createElement("details");
+    details.className = "experiment-package-detail";
+    const summary = document.createElement("summary");
+    summary.textContent = "Contents + download";
+    const intro = text("p", pkg.resultSummary || "Qualified compiled experiment.", "package-result");
+    const contentsTitle = text("h3", "Inside this package");
+    const list = document.createElement("ul");
+    (pkg.contents || []).forEach((item) => list.append(text("li", item)));
+    const handoffTitle = text("h3", "Agent handoff");
+    const handoff = text("p", pkg.agentHandoff || "Give the package to an agent together with the declared reproduction goal.");
+    const provenance = document.createElement("dl");
+    provenance.className = "package-provenance";
+    [
+      ["Source commit", pkg.sourceCommit],
+      ["Package SHA-256", pkg.packageSha256],
+      ["Package size", pkg.packageSizeBytes ? new Intl.NumberFormat().format(pkg.packageSizeBytes) + " bytes" : "Not reported"],
+    ].forEach(([k, v]) => {
+      provenance.append(text("dt", k), text("dd", v || "Not reported"));
+    });
+    const actions = document.createElement("div");
+    actions.className = "package-actions";
+    const download = document.createElement("a");
+    download.className = "primary";
+    download.href = pkg.packageUrl;
+    download.download = "";
+    download.textContent = "Download compiled experiment ↓";
+    const receipt = document.createElement("a");
+    receipt.href = pkg.qualificationReceiptUrl;
+    receipt.textContent = "Qualification receipt ↗";
+    actions.append(download, receipt);
+    details.append(summary, intro, contentsTitle, list, handoffTitle, handoff, provenance, actions);
+    td.append(details);
+    return td;
+  };
+  const render = () => {
+    body.replaceChildren();
+    [...packages].sort(compare).forEach((pkg) => {
+      const req = pkg.requirements || {};
+      const tr = document.createElement("tr");
+      const titleCell = document.createElement("td");
+      titleCell.append(text("strong", pkg.title || pkg.experiment || "Untitled experiment"));
+      if (pkg.resultSummary) titleCell.append(text("span", pkg.resultSummary, "experiment-result-summary"));
+      tr.append(
+        titleCell,
+        text("td", pkg.hypothesis || "Not reported"),
+        text("td", formatMemory(numberOrNull(req.peakRamMiB))),
+        text("td", formatMemory(numberOrNull(req.peakVramMiB), req.peakVramNote)),
+        text("td", formatCount(numberOrNull(req.parameterCount))),
+        text("td", formatFlops(numberOrNull(req.denseTrainingFlopsPerSeed))),
+        renderPackageCell(pkg)
+      );
+      body.append(tr);
+    });
+    table.querySelectorAll("th").forEach((th) => th.removeAttribute("aria-sort"));
+    const active = table.querySelector('[data-sort="' + sortKey + '"]');
+    if (active) active.closest("th").setAttribute("aria-sort", sortDirection === 1 ? "ascending" : "descending");
+  };
+  table.addEventListener("click", (event) => {
+    const button = event.target.closest("button[data-sort]");
+    if (!button) return;
+    const next = button.dataset.sort;
+    if (sortKey === next) sortDirection *= -1;
+    else { sortKey = next; sortDirection = 1; }
+    render();
+  });
+  (async () => {
+    try {
+      const response = await fetch("/data/experiment-catalog.json", {cache: "no-store"});
+      if (!response.ok) throw new Error("catalog unavailable");
+      const catalog = await response.json();
+      packages = Array.isArray(catalog.packages) ? catalog.packages.filter((pkg) =>
+        pkg && pkg.status === "qualified" &&
+        typeof pkg.packageUrl === "string" &&
+        typeof pkg.qualificationReceiptUrl === "string"
+      ) : [];
+      if (!packages.length) throw new Error("no qualified packages");
+      render();
+      status.textContent = packages.length + (packages.length === 1 ? " compiled experiment available." : " compiled experiments available.");
+    } catch (_) {
+      body.innerHTML = '<tr><td colspan="7">Compiled experiment catalog unavailable.</td></tr>';
+      status.textContent = "No downloadable catalog could be loaded.";
+    }
+  })();
 })();
 </script><script src="/assets/site.js"></script></body></html>
