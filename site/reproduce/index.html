@@ -39,10 +39,10 @@
         <tr>
           <th scope="col" aria-sort="ascending"><button type="button" data-sort="title">Title <span aria-hidden="true">↕</span></button></th>
           <th scope="col"><button type="button" data-sort="hypothesis">Hypothesis <span aria-hidden="true">↕</span></button></th>
-          <th scope="col"><button type="button" data-sort="peakRamMiB">Peak RAM <span aria-hidden="true">↕</span></button></th>
-          <th scope="col"><button type="button" data-sort="peakVramMiB">Peak VRAM <span aria-hidden="true">↕</span></button></th>
-          <th scope="col"><button type="button" data-sort="parameterCount">Parameters <span aria-hidden="true">↕</span></button></th>
-          <th scope="col"><button type="button" data-sort="denseTrainingFlopsPerSeed">Compute / seed <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="peakRamBytes">Peak RAM <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="planningRamBytes">Planning RAM <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="peakVramBytes">Peak VRAM <span aria-hidden="true">↕</span></button></th>
+          <th scope="col"><button type="button" data-sort="runtime">Runtime <span aria-hidden="true">↕</span></button></th>
           <th scope="col">Package</th>
         </tr>
       </thead>
@@ -59,22 +59,29 @@
   const body = document.getElementById("experiment-table-body");
   const table = document.getElementById("experiment-table");
   const status = document.getElementById("catalog-status");
-  let packages = [];
+  let experiments = [];
   let sortKey = "title";
   let sortDirection = 1;
 
   const numberOrNull = (value) => typeof value === "number" && Number.isFinite(value) ? value : null;
-  const formatMemory = (value, note) => value == null ? (note || "Not reported") : (value >= 1024 ? (value / 1024).toFixed(2) + " GiB" : Math.round(value) + " MiB");
-  const formatCount = (value) => value == null ? "Not reported" : new Intl.NumberFormat().format(value);
-  const formatFlops = (value) => {
+  const formatBytes = (value) => {
     if (value == null) return "Not reported";
-    if (value >= 1e12) return (value / 1e12).toFixed(2) + " TFLOP";
-    if (value >= 1e9) return (value / 1e9).toFixed(2) + " GFLOP";
-    return new Intl.NumberFormat().format(value) + " FLOP";
+    if (value >= 1024 * 1024 * 1024) return (value / (1024 * 1024 * 1024)).toFixed(2) + " GiB";
+    if (value >= 1024 * 1024) return (value / (1024 * 1024)).toFixed(1) + " MiB";
+    return new Intl.NumberFormat().format(value) + " B";
+  };
+  const formatFraction = (value) => value && typeof value.numerator === "number" && typeof value.denominator === "number"
+    ? (value.numerator / value.denominator).toExponential(3)
+    : "not reported";
+  const valueFor = (exp, key) => {
+    if (key === "peakRamBytes") return exp.resources?.ram?.observedMaximumBytes ?? null;
+    if (key === "planningRamBytes") return exp.resources?.ram?.planningRamBytes ?? null;
+    if (key === "peakVramBytes") return exp.resources?.accelerator?.peakVramBytes ?? null;
+    if (key === "runtime") return exp.environment?.python || "";
+    return exp[key] ?? "";
   };
   const compare = (a, b) => {
-    const av = sortKey in (a.requirements || {}) ? a.requirements[sortKey] : a[sortKey];
-    const bv = sortKey in (b.requirements || {}) ? b.requirements[sortKey] : b[sortKey];
+    const av = valueFor(a, sortKey), bv = valueFor(b, sortKey);
     const an = numberOrNull(av), bn = numberOrNull(bv);
     if (an !== null || bn !== null) {
       if (an === null) return 1;
@@ -89,58 +96,79 @@
     node.textContent = value;
     return node;
   };
-  const renderPackageCell = (pkg) => {
+  const renderPackageCell = (exp) => {
     const td = document.createElement("td");
     const details = document.createElement("details");
     details.className = "experiment-package-detail";
     const summary = document.createElement("summary");
     summary.textContent = "Contents + download";
-    const intro = text("p", pkg.resultSummary || "Qualified compiled experiment.", "package-result");
+
+    const result = exp.result || {};
+    const intro = text(
+      "p",
+      "Acceptance " + (result.acceptancePassed ? "passed" : "not passed") +
+        "; held-out MSE " + formatFraction(result.metrics?.evalMse) + ".",
+      "package-result"
+    );
     const contentsTitle = text("h3", "Inside this package");
     const list = document.createElement("ul");
-    (pkg.contents || []).forEach((item) => list.append(text("li", item)));
+    (exp.contents?.embedded || []).forEach((item) => {
+      const label = item?.item || "Embedded item";
+      const path = item?.path ? " (" + item.path + ")" : "";
+      list.append(text("li", label + path));
+    });
+
     const handoffTitle = text("h3", "Agent handoff");
-    const handoff = text("p", pkg.agentHandoff || "Give the package to an agent together with the declared reproduction goal.");
+    const entrypoint = exp.reproduction?.entrypoint;
+    const handoff = text(
+      "p",
+      entrypoint
+        ? "Extract the package and run " + entrypoint + ". The package declares networkRequired=" + String(exp.reproduction?.networkRequired) + "."
+        : "Inspect the declared protocol and reproduction entrypoint."
+    );
+
     const provenance = document.createElement("dl");
     provenance.className = "package-provenance";
     [
-      ["Source commit", pkg.sourceCommit],
-      ["Package SHA-256", pkg.packageSha256],
-      ["Package size", pkg.packageSizeBytes ? new Intl.NumberFormat().format(pkg.packageSizeBytes) + " bytes" : "Not reported"],
-    ].forEach(([k, v]) => {
-      provenance.append(text("dt", k), text("dd", v || "Not reported"));
-    });
+      ["Source commit", exp.source?.commit],
+      ["Package SHA-256", exp.package?.sha256],
+      ["Package size", exp.package?.size ? new Intl.NumberFormat().format(exp.package.size) + " bytes" : "Not reported"],
+    ].forEach(([k, v]) => provenance.append(text("dt", k), text("dd", v || "Not reported")));
+
     const actions = document.createElement("div");
     actions.className = "package-actions";
     const download = document.createElement("a");
     download.className = "primary";
-    download.href = pkg.packageUrl;
+    download.href = exp.packageUrl;
     download.download = "";
     download.textContent = "Download compiled experiment ↓";
     const receipt = document.createElement("a");
-    receipt.href = pkg.qualificationReceiptUrl;
-    receipt.textContent = "Qualification receipt ↗";
+    receipt.href = exp.qualificationReceiptUrl;
+    receipt.textContent = "Publication receipt ↗";
     actions.append(download, receipt);
+
     details.append(summary, intro, contentsTitle, list, handoffTitle, handoff, provenance, actions);
     td.append(details);
     return td;
   };
   const render = () => {
     body.replaceChildren();
-    [...packages].sort(compare).forEach((pkg) => {
-      const req = pkg.requirements || {};
+    [...experiments].sort(compare).forEach((exp) => {
       const tr = document.createElement("tr");
       const titleCell = document.createElement("td");
-      titleCell.append(text("strong", pkg.title || pkg.experiment || "Untitled experiment"));
-      if (pkg.resultSummary) titleCell.append(text("span", pkg.resultSummary, "experiment-result-summary"));
+      titleCell.append(text("strong", exp.title || exp.id || "Untitled experiment"));
+      const result = exp.result || {};
+      if (result.acceptancePassed !== undefined) {
+        titleCell.append(text("span", "Acceptance " + (result.acceptancePassed ? "passed" : "not passed") + " · eval MSE " + formatFraction(result.metrics?.evalMse), "experiment-result-summary"));
+      }
       tr.append(
         titleCell,
-        text("td", pkg.hypothesis || "Not reported"),
-        text("td", formatMemory(numberOrNull(req.peakRamMiB))),
-        text("td", formatMemory(numberOrNull(req.peakVramMiB), req.peakVramNote)),
-        text("td", formatCount(numberOrNull(req.parameterCount))),
-        text("td", formatFlops(numberOrNull(req.denseTrainingFlopsPerSeed))),
-        renderPackageCell(pkg)
+        text("td", exp.hypothesis || exp.question || "Not reported"),
+        text("td", formatBytes(numberOrNull(exp.resources?.ram?.observedMaximumBytes))),
+        text("td", formatBytes(numberOrNull(exp.resources?.ram?.planningRamBytes))),
+        text("td", formatBytes(numberOrNull(exp.resources?.accelerator?.peakVramBytes))),
+        text("td", exp.environment?.python || "Not reported"),
+        renderPackageCell(exp)
       );
       body.append(tr);
     });
@@ -161,14 +189,14 @@
       const response = await fetch("/data/experiment-catalog.json", {cache: "no-store"});
       if (!response.ok) throw new Error("catalog unavailable");
       const catalog = await response.json();
-      packages = Array.isArray(catalog.packages) ? catalog.packages.filter((pkg) =>
-        pkg && pkg.status === "qualified" &&
-        typeof pkg.packageUrl === "string" &&
-        typeof pkg.qualificationReceiptUrl === "string"
+      experiments = Array.isArray(catalog.experiments) ? catalog.experiments.filter((exp) =>
+        exp && exp.profile === "compiled-experiment-v1" &&
+        typeof exp.packageUrl === "string" &&
+        typeof exp.qualificationReceiptUrl === "string"
       ) : [];
-      if (!packages.length) throw new Error("no qualified packages");
+      if (!experiments.length) throw new Error("no compiled experiments");
       render();
-      status.textContent = packages.length + (packages.length === 1 ? " compiled experiment available." : " compiled experiments available.");
+      status.textContent = experiments.length + (experiments.length === 1 ? " compiled experiment available." : " compiled experiments available.");
     } catch (_) {
       body.innerHTML = '<tr><td colspan="7">Compiled experiment catalog unavailable.</td></tr>';
       status.textContent = "No downloadable catalog could be loaded.";
