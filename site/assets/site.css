@@ -283,3 +283,7 @@ html[data-palette=high-contrast] .title-accent{color:var(--ink);background:none;
 }
 @media(prefers-reduced-motion:reduce){.standard-card:after{transition:none}}
 @media(forced-colors:active){.standard-card:after{background:Canvas;color:CanvasText}}
+
+.compiled-project-link{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;margin:16px 0 0;color:var(--muted)}
+.compiled-project-link a{color:var(--ink);font:700 10px ui-monospace,monospace;text-transform:uppercase;text-underline-offset:3px}
+.compiled-project-link span{font-size:.85rem}
