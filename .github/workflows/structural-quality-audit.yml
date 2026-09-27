@@ -1,0 +1,91 @@
+name: Structural quality audit
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: ESLint + Lizard + jscpd
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Lizard
+        run: python -m pip install --disable-pip-version-check "lizard==1.24.0"
+
+      - name: Native JavaScript structural lint (audit only)
+        shell: bash
+        run: |
+          set +e
+          mkdir -p quality-audit
+          npx --yes eslint@9.38.0 site scripts \
+            --no-config-lookup \
+            --ext .js,.mjs,.cjs \
+            --rule 'max-lines: ["warn", {"max": 500, "skipBlankLines": true, "skipComments": true}]' \
+            --rule 'max-lines-per-function: ["warn", {"max": 75, "skipBlankLines": true, "skipComments": true}]' \
+            --rule 'complexity: ["warn", 15]' \
+            --rule 'max-params: ["warn", 7]' \
+            --rule 'max-depth: ["warn", 4]' \
+            > quality-audit/eslint-structural.txt 2>&1
+          status=$?
+          cat quality-audit/eslint-structural.txt
+          echo "eslint_status=$status" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Lizard structural metrics (audit only)
+        shell: bash
+        run: |
+          set +e
+          lizard site scripts -C 15 -L 75 -a 7 -w > quality-audit/lizard.txt 2>&1
+          status=$?
+          cat quality-audit/lizard.txt
+          echo "lizard_status=$status" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Copy/paste duplication audit (audit only)
+        shell: bash
+        run: |
+          set +e
+          npx --yes jscpd@5.0.12 site scripts \
+            --min-lines 8 --min-tokens 60 \
+            --format javascript,typescript \
+            --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json" \
+            --reporters console,json --output quality-audit/jscpd \
+            > quality-audit/jscpd-console.txt 2>&1
+          status=$?
+          cat quality-audit/jscpd-console.txt
+          echo "jscpd_status=$status" >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Largest source files
+        shell: bash
+        run: |
+          {
+            echo "### Largest source files (physical lines; audit only)"
+            echo '~~~'
+            find site scripts -type f \( -name '*.js' -o -name '*.mjs' -o -name '*.cjs' \) -print0 \
+              | xargs -0 -r wc -l | sort -nr | head -41
+            echo '~~~'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: structural-quality-audit-${{ github.sha }}
+          path: quality-audit/
+          if-no-files-found: warn
+          retention-days: 14
