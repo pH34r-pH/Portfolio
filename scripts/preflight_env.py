@@ -22,6 +22,57 @@ PROFILES = {
 }
 
 
+def _check_ux_environment(failures: list[str]) -> None:
+    if shutil.which("node"):
+        version = subprocess.run(
+            ["node", "--version"], check=True, capture_output=True, text=True
+        ).stdout.strip()
+        if not version.startswith("v22."):
+            failures.append(f"Node 22 is required by package.json; found {version}")
+    try:
+        subprocess.run(["npm", "ls", "--depth=0"], check=True, capture_output=True, text=True)
+    except (OSError, subprocess.CalledProcessError):
+        failures.append("Locked UX packages are not installed; run npm ci")
+    try:
+        result = subprocess.run(
+            ["npx", "playwright", "install", "--list"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        if "chromium" not in result.stdout.lower():
+            failures.append("Playwright Chromium is not installed")
+    except (OSError, subprocess.CalledProcessError):
+        failures.append("Playwright Chromium is not installed or could not be queried")
+    try:
+        subprocess.run(
+            [
+                "node",
+                "-e",
+                "require('@playwright/test').chromium.launch()"
+                ".then(browser => browser.close())"
+                ".catch(error => { console.error(error); process.exit(1); })",
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        failures.append("Chromium cannot launch; check Playwright browser and system dependencies")
+
+
+def _check_jupyterlite(failures: list[str]) -> None:
+    try:
+        subprocess.run(
+            ["jupyter", "lite", "--version"],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        failures.append("JupyterLite is not installed or could not be queried")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("profile", choices=PROFILES)
@@ -36,63 +87,14 @@ def main() -> int:
         if shutil.which(executable) is None:
             failures.append(f"Required executable not found on PATH: {executable}")
 
-    if args.profile == "ux" and shutil.which("node"):
-        version = subprocess.run(
-            ["node", "--version"], check=True, capture_output=True, text=True
-        ).stdout.strip()
-        if not version.startswith("v22."):
-            failures.append(f"Node 22 is required by package.json; found {version}")
-
     for module in PROFILES[args.profile]["modules"]:
         if importlib.util.find_spec(module) is None:
             failures.append(f"Required installed module/tool not found: {module}")
 
     if args.profile == "ux":
-        try:
-            subprocess.run(
-                ["npm", "ls", "--depth=0"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except (OSError, subprocess.CalledProcessError):
-            failures.append("Locked UX packages are not installed; run npm ci")
-        try:
-            result = subprocess.run(
-                ["npx", "playwright", "install", "--list"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-            if "chromium" not in result.stdout.lower():
-                failures.append("Playwright Chromium is not installed")
-        except (OSError, subprocess.CalledProcessError):
-            failures.append("Playwright Chromium is not installed or could not be queried")
-        try:
-            subprocess.run(
-                [
-                    "node",
-                    "-e",
-                    "require('@playwright/test').chromium.launch()"
-                    ".then(browser => browser.close())"
-                    ".catch(error => { console.error(error); process.exit(1); })",
-                ],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except (OSError, subprocess.CalledProcessError):
-            failures.append("Chromium cannot launch; check Playwright browser and system dependencies")
+        _check_ux_environment(failures)
     else:
-        try:
-            subprocess.run(
-                ["jupyter", "lite", "--version"],
-                check=True,
-                capture_output=True,
-                text=True,
-            )
-        except (OSError, subprocess.CalledProcessError):
-            failures.append("JupyterLite is not installed or could not be queried")
+        _check_jupyterlite(failures)
 
     if failures:
         print("Environment preflight failed:", file=sys.stderr)
