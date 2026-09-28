@@ -1,7 +1,4 @@
-function setupSphere() {
-  const canvas = document.querySelector("#sphere-canvas");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+function spherePoints() {
   const points = [];
   for (let i = 0; i < 48; i++) {
     const y = 1 - (i / 47) * 2;
@@ -9,35 +6,47 @@ function setupSphere() {
     const a = i * 2.399963;
     points.push([Math.cos(a) * r, y, Math.sin(a) * r]);
   }
+  return points;
+}
+
+function drawSphere(canvas, ctx, points, angle) {
+  const w = canvas.width;
+  const h = canvas.height;
+  const s = Math.min(w, h) * 0.34;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--line");
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(w / 2, h / 2, s, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent");
+  points
+    .map(([x, y, z]) => [
+      x * Math.cos(angle) + z * Math.sin(angle),
+      y,
+      -x * Math.sin(angle) + z * Math.cos(angle),
+    ])
+    .sort((a, b) => a[2] - b[2])
+    .forEach(([x, y, z]) => {
+      ctx.globalAlpha = 0.35 + (z + 1) * 0.3;
+      ctx.beginPath();
+      ctx.arc(w / 2 + x * s, h / 2 + y * s, 5, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  ctx.globalAlpha = 1;
+}
+
+function setupSphere() {
+  const canvas = document.querySelector("#sphere-canvas");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
+  const points = spherePoints();
   let angle = 0.45;
   let drag = false;
   let last = 0;
 
   function draw() {
-    const w = canvas.width;
-    const h = canvas.height;
-    const s = Math.min(w, h) * 0.34;
-    ctx.clearRect(0, 0, w, h);
-    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--line");
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, s, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--accent");
-    points
-      .map(([x, y, z]) => [
-        x * Math.cos(angle) + z * Math.sin(angle),
-        y,
-        -x * Math.sin(angle) + z * Math.cos(angle),
-      ])
-      .sort((a, b) => a[2] - b[2])
-      .forEach(([x, y, z]) => {
-        ctx.globalAlpha = 0.35 + (z + 1) * 0.3;
-        ctx.beginPath();
-        ctx.arc(w / 2 + x * s, h / 2 + y * s, 5, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    ctx.globalAlpha = 1;
+    drawSphere(canvas, ctx, points, angle);
   }
 
   function set(next) {
