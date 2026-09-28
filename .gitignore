@@ -1,5 +1,10 @@
 publication/notebooks/
 publication.json
 _jupyter-lite/
+.jupyterlite.doit.db
 dist/
+node_modules/
+.venv/
 __pycache__/
+*.egg-info/
+ux-screenshots/

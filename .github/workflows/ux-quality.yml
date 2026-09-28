@@ -14,13 +14,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install audit tooling
-        run: npm install --no-save @playwright/test@1.55.0 @axe-core/playwright@4.10.2 serve@14.2.4 @lhci/cli@0.15.1
+      - name: Install locked audit tooling
+        run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
+      - name: Check UX environment
+        run: python3 scripts/preflight_env.py ux
       - name: Run responsive and accessibility audit
         shell: bash
         run: |
@@ -121,19 +126,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install public publication tooling
-        run: python -m pip install --disable-pip-version-check nbconvert beautifulsoup4 jsonschema jupyterlite-core jupyterlite-pyodide-kernel jupyter-server
+      - uses: astral-sh/setup-uv@v6
+      - name: Install locked publication tooling
+        run: uv sync --project Portfolio --locked --no-dev
+      - name: Check publication environment
+        run: uv run --project Portfolio --no-sync python Portfolio/scripts/preflight_env.py publication
       - name: Check reader and publication code
         run: |
-          python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py
-          python Portfolio/scripts/test_portfolio_publication.py
+          uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py
+          uv run --project Portfolio --no-sync python Portfolio/scripts/test_portfolio_publication.py
       - name: Assemble immutable public inputs
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
         run: |
-          python Portfolio/scripts/build_portfolio_bundle.py \
+          uv run --project Portfolio --no-sync python Portfolio/scripts/build_portfolio_bundle.py \
             --portfolio Portfolio --research-notes research-notes \
             --theorem-library theorem-library --output bundle \
             --portfolio-sha "$PORTFOLIO_SHA" \
@@ -145,7 +153,7 @@ jobs:
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
         run: |
-          python - <<'PY'
+          uv run --project Portfolio --no-sync python - <<'PY'
           import json
           import os
           from pathlib import Path
@@ -166,10 +174,10 @@ jobs:
           PY
       - name: Build JupyterLite
         run: |
-          jupyter lite build --contents bundle/publication/lab-contents \
+          uv run --project Portfolio --no-sync jupyter lite build --contents bundle/publication/lab-contents \
             --output-dir bundle/lab --config Portfolio/jupyter-lite.json
       - name: Attach Portfolio Lab navigation
-        run: python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
+        run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
       - name: Qualify finished public bundle
         shell: bash
         run: |
@@ -185,7 +193,7 @@ jobs:
       - name: Hash exact upload bytes
         id: digest
         shell: bash
-        run: echo "sha256=$(python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
+        run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
       - name: Upload public publication candidate
         id: upload
         uses: actions/upload-artifact@v4
