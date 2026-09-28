@@ -27,6 +27,12 @@ After qualification/archive, production promotion is a separate explicit protect
 
 Published notebooks use JupyterLite to run Python directly in the browser, without requiring a local development environment or remote compute. Browser execution has some limitations compared with a conventional Python environment, so notebooks are tested for compatibility before publication; when a notebook can be published this way, the same code used to produce the result remains available to inspect, modify, and rerun.
 
+## Build and qualification environments
+
+The UX audit toolchain is defined by `package.json` and `package-lock.json` (Node 22); its workflow installs Chromium and the required system packages through Playwright. The public bundle toolchain is defined by `pyproject.toml` and `uv.lock` (Python 3.12), including JupyterLite and the publication checks. CI uses `npm ci` and `uv sync --locked`; `scripts/preflight_env.py` checks that installed tools and browser prerequisites are present before each workload. These project files are the dependency authority. Fleet selects exact passing source revisions and artifacts for deployment and does not maintain a second build-tool catalog.
+
+For a local publication environment, run `uv sync --locked --no-dev` and `uv run --no-sync python scripts/preflight_env.py publication`. For UX qualification, run `npm ci`, `npx playwright install --with-deps chromium`, and `python scripts/preflight_env.py ux` with Python 3.12 and Node 22 available.
+
 ## Local source layout
 
 - `site/` contains the portfolio website.
