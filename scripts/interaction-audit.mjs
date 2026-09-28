@@ -84,26 +84,17 @@ async function auditAccessibility(page, width, path) {
   }
 }
 
-async function auditSliderTouch(page, locator, width, min, max, message, output, suffix) {
+async function auditSliderTouch(page, locator, width, options) {
   if (width >= 600) return;
   await locator.scrollIntoViewIfNeeded();
   const track = await locator.boundingBox();
   await page.touchscreen.tap(track.x + track.width / 2, track.y + track.height / 2);
   const value = await locator.inputValue();
-  assert.ok(Number(value) > min && Number(value) < max, message);
-  await expect(page.locator(output)).toHaveText(value + suffix);
+  assert.ok(Number(value) > options.min && Number(value) < options.max, options.message);
+  await expect(page.locator(options.output)).toHaveText(value + options.suffix);
 }
 
-async function auditAtlas(page, context, width) {
-  const meters = page.locator("#consumer-data meter");
-  await expect(meters).toHaveCount(2);
-  const evidence = await (await context.request.get(base + "/data/atlas-evidence.json")).json();
-  const metrics = evidence.series.find(s => s.id === "revision-branch-utilization").metrics;
-  for (const metric of metrics) {
-    await expect(page.getByRole("meter", { name: metric.label, exact: true }))
-      .toHaveAttribute("value", String(metric.value));
-  }
-
+async function auditSphere(page) {
   const sphere = page.locator("#sphere-canvas");
   await sphere.scrollIntoViewIfNeeded();
   await sphere.focus();
@@ -117,7 +108,9 @@ async function auditAtlas(page, context, width) {
   await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.5, { steps: 8 });
   await page.mouse.up();
   assert.ok(!rotated.equals(await sphere.screenshot()), "Sphere must visibly rotate by dragging");
+}
 
+async function auditVectorControls(page, width) {
   const tangent = page.locator("#tangent-slider");
   await tangent.press("Home");
   await expect(page.locator("#tangent-value")).toHaveText("0%");
@@ -138,11 +131,13 @@ async function auditAtlas(page, context, width) {
   });
   assert.ok(vectorsFit, "Vector components must remain inside the diagram, clear of the slider");
   await expect(page.locator("#vector-viz")).toHaveAttribute("aria-label", /100 percent/);
-  await auditSliderTouch(
-    page, tangent, width, 35, 65, "A touch tap must move the tangent slider",
-    "#tangent-value", "%",
-  );
+  await auditSliderTouch(page, tangent, width, {
+    min: 35, max: 65, message: "A touch tap must move the tangent slider",
+    output: "#tangent-value", suffix: "%",
+  });
+}
 
+async function auditHorizonControls(page, width) {
   const horizon = page.locator("#horizon-slider");
   await horizon.press("Home");
   const short = await page.locator(".trajectory-nuisance")
@@ -155,30 +150,47 @@ async function auditAtlas(page, context, width) {
     short,
     "Horizon must change the diagram, not only its label",
   );
-  await auditSliderTouch(
-    page, horizon, width, 1, 12, "A touch tap must move the horizon slider",
-    "#horizon-value", " layers",
-  );
+  await auditSliderTouch(page, horizon, width, {
+    min: 1, max: 12, message: "A touch tap must move the horizon slider",
+    output: "#horizon-value", suffix: " layers",
+  });
+}
 
+async function auditStageGroup(page, width, group, detail) {
+  for (const button of await page.locator(group + " button").all()) {
+    const previous = await page.locator(detail).textContent();
+    const selected = (await button.getAttribute("aria-pressed")) === "true";
+    await clickForViewport(button, width);
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(group + ' button[aria-pressed="true"]')).toHaveCount(1);
+    if (!selected) {
+      assert.notEqual(
+        await page.locator(detail).textContent(),
+        previous,
+        "Selecting a stage must update its explanation",
+      );
+    }
+  }
+}
+
+async function auditAtlas(page, context, width) {
+  const meters = page.locator("#consumer-data meter");
+  await expect(meters).toHaveCount(2);
+  const evidence = await (await context.request.get(base + "/data/atlas-evidence.json")).json();
+  const metrics = evidence.series.find(s => s.id === "revision-branch-utilization").metrics;
+  for (const metric of metrics) {
+    await expect(page.getByRole("meter", { name: metric.label, exact: true }))
+      .toHaveAttribute("value", String(metric.value));
+  }
+  await auditSphere(page);
+  await auditVectorControls(page, width);
+  await auditHorizonControls(page, width);
   for (const [group, detail] of [
     [".evidence-map", "#evidence-detail"],
     [".architecture-flow", "#architecture-detail"],
     [".ledger-grid", "#ledger-detail"],
   ]) {
-    for (const button of await page.locator(group + " button").all()) {
-      const previous = await page.locator(detail).textContent();
-      const selected = (await button.getAttribute("aria-pressed")) === "true";
-      await clickForViewport(button, width);
-      await expect(button).toHaveAttribute("aria-pressed", "true");
-      await expect(page.locator(group + ' button[aria-pressed="true"]')).toHaveCount(1);
-      if (!selected) {
-        assert.notEqual(
-          await page.locator(detail).textContent(),
-          previous,
-          "Selecting a stage must update its explanation",
-        );
-      }
-    }
+    await auditStageGroup(page, width, group, detail);
   }
   await expect(page.getByRole("link", { name: "Browse research notebooks →" }))
     .toHaveAttribute("href", "/research/");
