@@ -38,6 +38,12 @@ The Lab return strip follows the chosen style and palette. JupyterLab retains
 its own editor theme and controls. This keeps the executable workspace usable
 without imposing decorative publication styles on its menus or code editor.
 
+The public Compiler site is a related but independent surface. Its shared
+identity, palette, navigation, focus, and responsive behavior are specified in
+[`cross-site-contract.md`](cross-site-contract.md). Each site keeps its own
+stylesheet and runtime, so appearance choices are local and remain usable if
+either site is served independently.
+
 ## Validation
 
 `scripts/appearance-audit.mjs` exercises all 16 combinations at 320, 412, 768,

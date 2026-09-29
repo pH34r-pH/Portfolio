@@ -113,7 +113,11 @@ def _source_file_index(research_notes: Path) -> dict[str, Path]:
     candidates = []
     for folder in ("articles", "notebooks", "reference"):
         candidates.extend(path for path in (research_root / folder).rglob("*") if path.is_file())
-    candidates.extend(path for path in (research_root / "README.md", research_root / "CHRONOLOGY.md")
+    candidates.extend(path for path in (
+        research_root / "README.md",
+        research_root / "CHRONOLOGY.md",
+        research_root / "PUBLICATION-DISPOSITIONS.md",
+    )
                       if path.is_file())
     index = {}
     for path in sorted(candidates):
@@ -141,12 +145,54 @@ def _myst_asset_path(myst_html: Path, url_path: str) -> Path:
     return source
 
 
+def _myst_article_sources(research_notes: Path) -> list[Path]:
+    """Read the source order from the standard MyST project table of contents."""
+    config = (research_notes / "myst.yml").read_text(encoding="utf-8")
+    relative_paths = re.findall(r"^\s+- file:\s*(articles/\S+\.md)\s*$", config, re.MULTILINE)
+    if not relative_paths or len(relative_paths) != len(set(relative_paths)):
+        raise ValueError("MyST project.toc must list canonical article sources exactly once")
+    sources = []
+    for relative in relative_paths:
+        source = (research_notes / relative).resolve()
+        try:
+            source.relative_to((research_notes / "articles").resolve())
+        except ValueError as exc:
+            raise ValueError(f"MyST table-of-contents path leaves articles/: {relative}") from exc
+        if source.is_symlink() or not source.is_file():
+            raise ValueError(f"MyST table of contents points to a missing or unsafe article: {relative}")
+        sources.append(source)
+    article_files = {path.resolve() for path in (research_notes / "articles").glob("*.md")}
+    if set(sources) != article_files:
+        raise ValueError("MyST project.toc must include each canonical article source exactly once")
+    return sources
+
+
+def _myst_article_html_path(myst_html: Path, source: Path,
+                            ordered_sources: list[Path]) -> Path:
+    """Resolve MyST's static article route from its source filename."""
+    try:
+        position = ordered_sources.index(source.resolve())
+    except ValueError as exc:
+        raise ValueError(f"Article is absent from the MyST project table of contents: {source}") from exc
+    root = myst_html.parent.resolve()
+    route = re.sub(r"^\d{3}-", "", source.stem)
+    if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", route):
+        raise ValueError(f"Article filename does not map to a stable MyST route: {source.name}")
+    result = root / route / "index.html"
+    if result.is_symlink() or not result.is_file():
+        raise ValueError(f"MyST static output is missing the page for {source.name}: {result}")
+    return result
+
+
 def _canonical_myst_target(canonical: Path | None, context, suffix: str) -> tuple[str, bool] | None:
     if canonical is None:
         return None
     if canonical.suffix == ".ipynb":
         return f"/notebooks/{quote(canonical.stem)}/{suffix}", False
     if canonical.suffix == ".md":
+        article_root = context.research_notes.resolve() / "articles"
+        if canonical.parent == article_root:
+            return f"/articles/{quote(canonical.stem)}/{suffix}", False
         relative = canonical.relative_to(context.research_notes.resolve()).as_posix()
         url = f"https://github.com/pH34r-pH/research-notes/blob/{context.revision}/{quote(relative)}{suffix}"
         return url, True
@@ -211,6 +257,7 @@ def _prepare_article_execution(document) -> bool:
             raise ValueError("MyST executable cell is missing its source or output container")
         source["data-executable"] = ""
         source["aria-label"] = f"Editable illustrative Python cell {index}"
+        source["tabindex"] = "0"
         output["data-output"] = ""
         output["role"] = "status"
         output["aria-live"] = "polite"
@@ -229,15 +276,49 @@ def _prepare_article_execution(document) -> bool:
     return bool(cells)
 
 
+def _normalize_article_heading(document, source: str, title: str) -> None:
+    """Give each published article a level-one heading and stable source label."""
+    for anchor in document.select("a.anchor-link"):
+        anchor.decompose()
+    frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n", source, re.DOTALL)
+    body = source[frontmatter.end():] if frontmatter else source
+    label = re.match(r"\s*\(([A-Za-z0-9_-]+)\)=\s*\n", body)
+    identifier = label.group(1) if label else re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
+    heading = next(
+        (candidate for candidate in document.find_all(["h1", "h2"])
+         if candidate.get_text(" ", strip=True) == title),
+        None,
+    )
+    if heading is None:
+        heading = BeautifulSoup("", "html.parser").new_tag("h1")
+        heading.string = title
+        document.insert(0, heading)
+    else:
+        heading.name = "h1"
+    heading["id"] = identifier
+    for index, table in enumerate(document.find_all("table"), start=1):
+        container = table.find_parent("div", class_=re.compile(r"\boverflow-auto\b"))
+        target = container or table
+        target["tabindex"] = "0"
+        if container:
+            caption = table.find("caption") or table.find("th")
+            label = caption.get_text(" ", strip=True) if caption else f"table {index}"
+            container["role"] = "region"
+            container["aria-label"] = f"Scrollable table: {label}"
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
-                    source_digests: dict[str, Path]) -> dict:
+                    source_digests: dict[str, Path], sequence: int,
+                    ordered_sources: list[Path]) -> dict:
     source_text = src.read_text(encoding="utf-8")
     metadata = _article_metadata(source_text, src)
-    document = BeautifulSoup(args.myst_html.read_text(encoding="utf-8"), "html.parser")
+    article_html = _myst_article_html_path(args.myst_html, src, ordered_sources)
+    document = BeautifulSoup(article_html.read_text(encoding="utf-8"), "html.parser")
     article = document.select_one("article.myst-article")
     if article is None:
         raise ValueError("MyST static build is missing its server-rendered article")
     article = BeautifulSoup(str(article), "html.parser").article
+    _normalize_article_heading(article, source_text, metadata["title"])
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
@@ -246,12 +327,13 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     reader.mkdir(parents=True)
     article_source_url = (
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
-        f"{quote(src.relative_to(args.research_notes).as_posix())}"
+        f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
     page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
+        "sequence": sequence,
         "path": f"publication/articles/{src.name}",
         "slug": slug,
         "url": f"/articles/{slug}/",
@@ -351,6 +433,14 @@ def validate_sources(args: argparse.Namespace) -> None:
     if (args.myst_html.resolve() != expected_myst_html or args.myst_html.is_symlink() or
             not args.myst_html.is_file()):
         parser.error("MyST HTML must be the static build output inside the exact Research Notes checkout")
+    try:
+        ordered_sources = _myst_article_sources(args.research_notes)
+        for source in ordered_sources:
+            page = _myst_article_html_path(args.myst_html, source, ordered_sources)
+            if BeautifulSoup(page.read_text(encoding="utf-8"), "html.parser").select_one("article.myst-article") is None:
+                raise ValueError(f"MyST page has no static article content: {page}")
+    except (OSError, ValueError) as exc:
+        parser.error(f"The exact Research Notes MyST output is incomplete: {exc}")
 
 
 def prepare_output(args: argparse.Namespace) -> tuple[Path, Path]:
@@ -481,10 +571,9 @@ def main() -> None:
         for src in (args.research_notes / "notebooks").glob("*.ipynb")
     ]
     notebooks.sort(key=lambda item: (item.get("sequence", 0), item["path"]), reverse=True)
-    articles = [
-        publish_article(src, navigation, args, source_digests)
-        for src in sorted((args.research_notes / "articles").glob("*.md"))
-    ]
+    article_sources = _myst_article_sources(args.research_notes)
+    articles = [publish_article(src, navigation, args, source_digests, sequence, article_sources)
+                for sequence, src in enumerate(article_sources, start=1)]
     if not articles:
         raise ValueError("The exact Research Notes source has no canonical articles")
     if any(article["browserExecution"] for article in articles):

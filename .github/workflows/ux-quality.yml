@@ -40,7 +40,6 @@ jobs:
           curl -fsS http://127.0.0.1:4173/ >/dev/null
           node --check site/assets/site.js
           node --check site/assets/appearance.js
-          node --check site/assets/atlas.js
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/appearance-audit.mjs
@@ -224,6 +223,20 @@ jobs:
                   assert (root / 'lab/lab/index.html').is_file()
           print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
           PY
+      - name: Exercise representative article routes in the exact candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+          npx serve bundle -l 4173 >/tmp/portfolio-candidate-serve.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node Portfolio/scripts/interaction-audit.mjs
       - name: Hash exact upload bytes
         id: digest
         shell: bash

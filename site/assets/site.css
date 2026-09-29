@@ -296,7 +296,7 @@ html[data-palette=high-contrast] .title-accent{color:var(--ink);background:none;
 .myst-reader figure{margin:2em 0;padding:0}
 .myst-reader figure img,.myst-reader img{display:block;max-width:100%;height:auto;margin-inline:auto}
 .myst-reader figcaption{margin:12px auto 0;max-width:74ch;color:var(--muted);font-size:.9rem}
-.myst-reader table{width:100%;border-collapse:collapse;display:block;overflow-x:auto;margin:1.5em 0}
+.myst-reader .overflow-auto[role=region]{max-width:100%;overflow:auto}.myst-reader table{width:100%;border-collapse:collapse;display:table;overflow:visible;margin:1.5em 0}
 .myst-reader th,.myst-reader td{padding:10px 12px;border:1px solid var(--line);text-align:left;vertical-align:top}
 .myst-reader th{background:var(--bg)}
 .myst-reader pre{max-width:100%;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--line);white-space:pre}
