@@ -18,6 +18,10 @@ function routePaths(manifest) {
   if (manifest.notebooks.some(n => n.slug === "visual_intuition_atlas")) {
     paths.push("/notebooks/visual_intuition_atlas/");
   }
+  for (const slug of ["001-text-as-signal", "005-unit-hypersphere-anomaly", "accessible-does-not-imply-used"]) {
+    const article = manifest.articles?.find(item => item.slug === slug);
+    if (article) paths.push(article.url);
+  }
   return paths;
 }
 
@@ -73,106 +77,43 @@ async function auditSliderTouch(page, locator, width, options) {
   await expect(page.locator(options.output)).toHaveText(value + options.suffix);
 }
 
-async function auditSphere(page) {
-  const sphere = page.locator("#sphere-canvas");
-  await sphere.scrollIntoViewIfNeeded();
-  await sphere.focus();
-  const before = await sphere.screenshot();
-  await sphere.press("ArrowRight");
-  assert.ok(!before.equals(await sphere.screenshot()), "Sphere must visibly rotate by keyboard");
-  const box = await sphere.boundingBox();
-  const rotated = await sphere.screenshot();
-  await page.mouse.move(box.x + box.width * 0.4, box.y + box.height * 0.5);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.5, { steps: 8 });
-  await page.mouse.up();
-  assert.ok(!rotated.equals(await sphere.screenshot()), "Sphere must visibly rotate by dragging");
-}
-
-async function auditVectorControls(page, width) {
-  const tangent = page.locator("#tangent-slider");
-  await tangent.press("Home");
-  await expect(page.locator("#tangent-value")).toHaveText("0%");
-  await tangent.press("End");
-  await expect(page.locator("#tangent-value")).toHaveText("100%");
-  assert.equal(
-    await page.locator(".radial-vector").evaluate(el => getComputedStyle(el).width),
-    "0px",
-    "A fully tangent update has no radial component",
-  );
-  const vectorsFit = await page.locator("#vector-viz").evaluate(el => {
-    const frame = el.getBoundingClientRect();
-    return [...el.children].every(vector => {
-      const bounds = vector.getBoundingClientRect();
-      return bounds.top >= frame.top && bounds.bottom <= frame.bottom &&
-        bounds.left >= frame.left && bounds.right <= frame.right;
-    });
-  });
-  assert.ok(vectorsFit, "Vector components must remain inside the diagram, clear of the slider");
-  await expect(page.locator("#vector-viz")).toHaveAttribute("aria-label", /100 percent/);
-  await auditSliderTouch(page, tangent, width, {
-    min: 35, max: 65, message: "A touch tap must move the tangent slider",
-    output: "#tangent-value", suffix: "%",
-  });
-}
-
-async function auditHorizonControls(page, width) {
-  const horizon = page.locator("#horizon-slider");
-  await horizon.press("Home");
-  const short = await page.locator(".trajectory-nuisance")
-    .evaluate(el => getComputedStyle(el).transform);
-  await expect(page.locator("#horizon-value")).toHaveText("1 layer");
-  await horizon.press("End");
-  await expect(page.locator("#horizon-value")).toHaveText("12 layers");
-  assert.notEqual(
-    await page.locator(".trajectory-nuisance").evaluate(el => getComputedStyle(el).transform),
-    short,
-    "Horizon must change the diagram, not only its label",
-  );
-  await auditSliderTouch(page, horizon, width, {
-    min: 1, max: 12, message: "A touch tap must move the horizon slider",
-    output: "#horizon-value", suffix: " layers",
-  });
-}
-
-async function auditStageGroup(page, width, group, detail) {
-  for (const button of await page.locator(group + " button").all()) {
-    const previous = await page.locator(detail).textContent();
-    const selected = (await button.getAttribute("aria-pressed")) === "true";
-    await clickForViewport(button, width);
-    await expect(button).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(group + ' button[aria-pressed="true"]')).toHaveCount(1);
-    if (!selected) {
-      assert.notEqual(
-        await page.locator(detail).textContent(),
-        previous,
-        "Selecting a stage must update its explanation",
-      );
-    }
+async function auditAtlasCompatibility(page) {
+  const destinations = {
+    sphere: "/articles/005-unit-hypersphere-anomaly/",
+    tangent: "/articles/007-derive-before-training/",
+    consumer: "/articles/accessible-does-not-imply-used/",
+    horizon: "/articles/008-frozen-mechanism-tests/",
+    evidence: "/articles/009-theorem-ledger-method/",
+    architecture: "/articles/002-locating-representation-loss/",
+    ledger: "/articles/009-theorem-ledger-method/",
+  };
+  for (const [anchor, destination] of Object.entries(destinations)) {
+    const topic = page.locator(`#${anchor}`);
+    await expect(topic).toHaveCount(1);
+    await expect(topic.getByRole("link")).toHaveAttribute("href", destination);
   }
+  await expect(page.locator('header.topbar a[href="/atlas/"]')).toHaveCount(0);
 }
 
-async function auditAtlas(page, context, width) {
-  const meters = page.locator("#consumer-data meter");
-  await expect(meters).toHaveCount(2);
-  const evidence = await (await context.request.get(base + "/data/atlas-evidence.json")).json();
-  const metrics = evidence.series.find(s => s.id === "revision-branch-utilization").metrics;
-  for (const metric of metrics) {
-    await expect(page.getByRole("meter", { name: metric.label, exact: true }))
-      .toHaveAttribute("value", String(metric.value));
+async function auditArticle(page, manifest, path) {
+  const article = manifest.articles.find(item => item.url === path);
+  assert.ok(article, `${path}: article must exist in the exact publication manifest`);
+  await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+  await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
+  await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
+    .toHaveCount(1);
+  await expect(page.locator("article.myst-reader")).toContainText("Published teaching output (synthetic)");
+  await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
+    .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
+  if (article.slug === "005-unit-hypersphere-anomaly") {
+    await expect(page.locator('a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]'))
+      .toHaveCount(1);
   }
-  await auditSphere(page);
-  await auditVectorControls(page, width);
-  await auditHorizonControls(page, width);
-  for (const [group, detail] of [
-    [".evidence-map", "#evidence-detail"],
-    [".architecture-flow", "#architecture-detail"],
-    [".ledger-grid", "#ledger-detail"],
-  ]) {
-    await auditStageGroup(page, width, group, detail);
+  if (article.slug === "accessible-does-not-imply-used") {
+    await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
+    await expect(page.locator("article.myst-reader")).toContainText("There is no exact public Compiled Experiment package");
   }
-  await expect(page.getByRole("link", { name: "Browse research notebooks →" }))
-    .toHaveAttribute("href", "/research/");
 }
 
 async function auditNotebook(page) {
@@ -187,6 +128,8 @@ async function auditNotebook(page) {
 }
 
 async function auditResearch(page, manifest) {
+  await expect(page.getByRole("link", { name: /publication map and Atlas-to-article crosswalk/ }))
+    .toHaveAttribute("href", "https://github.com/pH34r-pH/research-notes/blob/main/PUBLICATION-DISPOSITIONS.md");
   if (!manifest?.notebooks?.length) return;
   await expect(page.locator("#notebook-list")).not.toContainText("Updated");
   if (manifest.notebooks[0].question) {
@@ -229,8 +172,9 @@ async function auditRoute(page, context, width, path, manifest, errors) {
   await auditMenuAndPalettes(page, width);
   await auditOverflow(page, width, path);
   await auditAccessibility(page, width, path);
-  if (path === "/atlas/") await auditAtlas(page, context, width);
+  if (path === "/atlas/") await auditAtlasCompatibility(page);
   if (path.startsWith("/notebooks/")) await auditNotebook(page);
+  if (path.startsWith("/articles/")) await auditArticle(page, manifest, path);
   if (path === "/research/") await auditResearch(page, manifest);
   if (path === "/research/") {
     await page.locator(".skip-link").focus();

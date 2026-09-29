@@ -40,9 +40,10 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["path", "slug", "url", "title", "description", "date", "sha256", "renderedSha256", "assets", "browserExecution"],
+        "required": ["sequence", "path", "slug", "url", "title", "description", "date", "sha256", "renderedSha256", "assets", "browserExecution"],
         "additionalProperties": false,
         "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
           "path": { "type": "string", "pattern": "^publication/articles/.+\\.md$" },
           "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
           "url": { "type": "string", "pattern": "^/articles/[a-z0-9-]+/$" },
