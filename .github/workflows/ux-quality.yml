@@ -236,7 +236,8 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node Portfolio/scripts/interaction-audit.mjs
+          cd Portfolio
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
       - name: Hash exact upload bytes
         id: digest
         shell: bash
