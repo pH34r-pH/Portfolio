@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: portfolio-ux-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ux:
     runs-on: ubuntu-latest
@@ -72,7 +76,7 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 50
     permissions:
@@ -223,7 +227,7 @@ jobs:
                   assert (root / 'lab/lab/index.html').is_file()
           print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
           PY
-      - name: Exercise representative article routes in the exact candidate
+      - name: Exercise every article route in the exact bundle
         shell: bash
         run: |
           set -euo pipefail
@@ -239,10 +243,12 @@ jobs:
           cd Portfolio
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
       - name: Hash exact upload bytes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: digest
         shell: bash
         run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
       - name: Upload public publication candidate
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: upload
         uses: actions/upload-artifact@v4
         with:
@@ -252,6 +258,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Summarize public candidate for private verification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}

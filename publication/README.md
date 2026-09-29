@@ -9,3 +9,5 @@ Portfolio extracts the server-rendered article from the pinned MyST build and su
 Articles containing equations ship KaTeX CSS and fonts from the locked MyST dependency tree. This presents one visual equation while retaining the MathML layer for assistive technology. Display equations are keyboard-scrollable on narrow screens, and the candidate audit verifies that the accessibility layer stays visually clipped.
 
 Code blocks and saved outputs also receive keyboard focus and region labels so wide examples remain scrollable on narrow screens.
+
+Pull requests build and audit the complete article bundle before merge. Candidate artifacts for Fleet are uploaded only by successful main-branch pushes.
