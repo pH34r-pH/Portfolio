@@ -255,6 +255,22 @@ def _copy_myst_assets(document, myst_html: Path, output: Path,
     return sorted(context.copied)
 
 
+def _rewrite_myst_article_routes(document, ordered_sources: list[Path]) -> None:
+    """Map MyST's native article routes to Portfolio's canonical routes."""
+    routes = {
+        '/' + re.sub(r'^\d{3}-', '', source.stem): f'/articles/{source.stem}/'
+        for source in ordered_sources
+    }
+    for link in document.find_all('a', href=True):
+        parsed = urlsplit(link['href'])
+        if parsed.scheme or parsed.netloc:
+            continue
+        target = routes.get(parsed.path.rstrip('/'))
+        if target:
+            suffix = ('?' + parsed.query if parsed.query else '') + ('#' + parsed.fragment if parsed.fragment else '')
+            link['href'] = target + suffix
+
+
 def _prepare_article_execution(document) -> bool:
     cells = document.select(".myst-jp-nb-block")
     for index, cell in enumerate(cells, 1):
@@ -383,6 +399,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         raise ValueError("MyST static build is missing its server-rendered article")
     article = BeautifulSoup(str(article), "html.parser").article
     _normalize_article_heading(article, source_text, metadata["title"])
+    _rewrite_myst_article_routes(article, ordered_sources)
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)

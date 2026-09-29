@@ -11,3 +11,5 @@ Articles containing equations ship KaTeX CSS and fonts from the locked MyST depe
 Code blocks and saved outputs also receive keyboard focus and region labels so wide examples remain scrollable on narrow screens.
 
 Pull requests build and audit the complete article bundle before merge. Candidate artifacts for Fleet are uploaded only by successful main-branch pushes.
+
+MyST's native article URLs are rewritten to the canonical `/articles/…/` routes, preserving queries and section fragments. The bundle audit follows local article links and verifies that linked articles resolve to article pages.
