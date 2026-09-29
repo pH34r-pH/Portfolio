@@ -92,9 +92,27 @@ async function auditAtlasCompatibility(page) {
   await expect(page.locator('header.topbar a[href="/atlas/"]')).toHaveCount(0);
 }
 
+async function auditArticleLinks(page, manifest, path) {
+  const nativeRoutes = new Set(manifest.articles.map(article => '/' + article.slug.replace(/^\d{3}-/, '')));
+  const articleRoutes = new Set(manifest.articles.map(article => article.url));
+  for (const link of await page.locator('article.myst-reader a[href]').all()) {
+    const href = await link.getAttribute('href');
+    if (!href.startsWith('/')) continue;
+    const url = new URL(href, base);
+    if (url.origin !== new URL(base).origin) continue;
+    assert.ok(!nativeRoutes.has(url.pathname.replace(/\/$/, '')), `${path}: unadapted MyST route ${href}`);
+    const response = await page.request.get(url.href);
+    assert.ok(response.ok(), `${path}: broken local link ${href} (${response.status()})`);
+    if (articleRoutes.has(url.pathname)) {
+      assert.ok((await response.text()).includes('myst-reader'), `${path}: article link resolved to a different surface`);
+    }
+  }
+}
+
 async function auditArticle(page, manifest, path) {
   const article = manifest.articles.find(item => item.url === path);
   assert.ok(article, `${path}: article must exist in the exact publication manifest`);
+  await auditArticleLinks(page, manifest, path);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
   await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
   await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))

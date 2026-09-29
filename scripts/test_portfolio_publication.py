@@ -12,13 +12,25 @@ from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from build_portfolio_bundle import (prepare_reader, copy_lab_contents, apply_output_descriptions,
                                     _myst_asset_path, _prepare_article_execution, copy_thebe_assets,
-                                    _source_file_index, main as build_bundle)
+                                    _source_file_index, _rewrite_myst_article_routes, main as build_bundle)
 from digest_bundle import digest_tree
 from finish_portfolio_lab import finish_lab
 import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_native_myst_article_routes_preserve_query_and_section(self):
+        document = BeautifulSoup(
+            '<a href="/endpoint-can-mislead?view=reading#interpretation">Next article</a>'
+            '<a href="/accessible-does-not-imply-used/">Probe article</a>'
+            '<a href="https://example.com/endpoint-can-mislead">External</a>', 'html.parser')
+        _rewrite_myst_article_routes(document, [
+            Path('006-endpoint-can-mislead.md'), Path('accessible-does-not-imply-used.md')])
+        self.assertEqual([link['href'] for link in document.select('a')], [
+            '/articles/006-endpoint-can-mislead/?view=reading#interpretation',
+            '/articles/accessible-does-not-imply-used/',
+            'https://example.com/endpoint-can-mislead'])
+
     def test_thebe_assets_copy_from_a_relative_exact_checkout(self):
         portfolio_root = Path(__file__).resolve().parents[1]
         helper = portfolio_root / "node_modules/thebe-core/bin/copy-thebe-assets.cjs"
