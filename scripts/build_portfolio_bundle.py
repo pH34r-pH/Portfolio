@@ -267,12 +267,13 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
 
 
 def copy_thebe_assets(args: argparse.Namespace) -> None:
-    helper = args.portfolio / "node_modules/thebe-core/bin/copy-thebe-assets.cjs"
-    destination = args.output / "assets/thebe"
+    portfolio = args.portfolio.resolve()
+    helper = portfolio / "node_modules/thebe-core/bin/copy-thebe-assets.cjs"
+    destination = (args.output / "assets/thebe").resolve()
     destination.mkdir(parents=True, exist_ok=True)
     if not helper.is_file():
         raise ValueError("Pinned Thebe asset helper is missing; install Portfolio npm dependencies")
-    subprocess.run(["node", str(helper), str(destination)], check=True, cwd=args.portfolio)
+    subprocess.run(["node", str(helper), str(destination)], check=True, cwd=portfolio)
     for required in ("thebe-lite.min.js", "index.js", "thebe.css"):
         if not (destination / required).is_file():
             raise ValueError(f"Thebe browser runtime is incomplete: {required}")
