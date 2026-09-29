@@ -108,6 +108,19 @@ async function auditArticle(page, manifest, path) {
     const box = await icon.boundingBox();
     assert.ok(box && box.width <= 32 && box.height <= 32, `${path}: inline icon exceeds text size`);
   }
+  if (await page.locator('article.myst-reader .katex').count()) {
+    await expect(page.locator('link[href="/assets/katex/katex.min.css"]')).toHaveCount(1);
+    const accessibleLayers = await page.locator('article.myst-reader .katex-mathml').evaluateAll(elements =>
+      elements.map(element => ({
+        position: getComputedStyle(element).position,
+        width: element.getBoundingClientRect().width,
+        height: element.getBoundingClientRect().height,
+      })),
+    );
+    assert.ok(accessibleLayers.every(layer => layer.position === 'absolute' && layer.width <= 2 && layer.height <= 2),
+      `${path}: MathML accessibility layer must not duplicate the visible equation`);
+    await expect(page.locator('article.myst-reader .katex-html').first()).toBeVisible();
+  }
   await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));

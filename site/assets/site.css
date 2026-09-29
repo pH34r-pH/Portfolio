@@ -306,6 +306,7 @@ html[data-palette=high-contrast] .title-accent{color:var(--ink);background:none;
 .myst-reader .hljs-keyword,.myst-reader .hljs-built_in{color:var(--accent);font-weight:700}
 .myst-reader .hljs-string,.myst-reader .hljs-number{color:var(--accent)}
 .myst-reader .hljs-comment{color:var(--muted);font-style:italic}
+.myst-reader .katex-display{max-width:100%;overflow-x:auto;overflow-y:hidden;margin:1.4em 0;padding-block:4px}
 .article-source-links{margin:26px 0;font:700 11px ui-monospace,monospace}
 .article-execution{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0;padding:16px;border:1px solid var(--line);background:var(--bg)}
 .article-execution button,.synthetic-projection-control button{min-height:44px;padding:10px 14px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:700 11px ui-monospace,monospace;cursor:pointer}

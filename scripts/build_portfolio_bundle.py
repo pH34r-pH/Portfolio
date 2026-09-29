@@ -338,6 +338,26 @@ def _normalize_article_heading(document, source: str, title: str) -> None:
             label = caption.get_text(" ", strip=True) if caption else f"table {index}"
             container["role"] = "region"
             container["aria-label"] = f"Scrollable table: {label}"
+    for index, equation in enumerate(document.select('.katex-display'), start=1):
+        equation['tabindex'] = '0'
+        equation['role'] = 'region'
+        equation['aria-label'] = f'Equation {index}'
+
+
+def copy_article_math_assets(args: argparse.Namespace) -> None:
+    """Keep KaTeX styling and fonts with the pinned, server-rendered equations."""
+    source = args.portfolio.resolve() / 'node_modules/katex'
+    destination = args.output / 'assets/katex'
+    if (destination / 'katex.min.css').is_file():
+        return
+    stylesheet = source / 'dist/katex.min.css'
+    fonts = source / 'dist/fonts'
+    if not stylesheet.is_file() or not fonts.is_dir():
+        raise ValueError('Pinned KaTeX styles and fonts are missing; install Portfolio npm dependencies')
+    destination.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(stylesheet, destination / 'katex.min.css')
+    shutil.copytree(fonts, destination / 'fonts')
+    shutil.copy2(source / 'LICENSE', destination / 'LICENSE')
 
 
 def publish_article(src: Path, navigation, args: argparse.Namespace,
@@ -355,6 +375,10 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
+    math_style = ''
+    if article.select_one('.katex'):
+        copy_article_math_assets(args)
+        math_style = '<link rel="stylesheet" href="/assets/katex/katex.min.css">'
     slug = src.stem
     reader = args.output / "articles" / slug
     reader.mkdir(parents=True)
@@ -362,7 +386,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
