@@ -309,10 +309,21 @@ def _preserve_article_section_links(document) -> None:
             heading.insert_before(document.new_tag('span', id=alias))
 
 
+def _mark_article_code_regions(document) -> None:
+    """Allow keyboard readers to scroll wide code and saved output."""
+    for index, block in enumerate(document.select('pre'), start=1):
+        code = block.find('code')
+        kind = 'Saved output' if code and 'language-text' in code.get('class', []) else 'Code sample'
+        block['tabindex'] = '0'
+        block['role'] = 'region'
+        block['aria-label'] = f'{kind} {index}'
+
+
 def _normalize_article_heading(document, source: str, title: str) -> None:
     """Give each published article a level-one heading and stable source label."""
     _strip_article_theme_controls(document)
     _preserve_article_section_links(document)
+    _mark_article_code_regions(document)
     frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n", source, re.DOTALL)
     body = source[frontmatter.end():] if frontmatter else source
     label = re.match(r"\s*\(([A-Za-z0-9_-]+)\)=\s*\n", body)
