@@ -126,7 +126,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: Portfolio/package-lock.json
       - uses: astral-sh/setup-uv@v6
+      - name: Install pinned Portfolio and MyST browser tooling
+        run: npm ci --prefix Portfolio
+      - name: Render canonical MyST articles from the pinned Research Notes checkout
+        working-directory: research-notes
+        run: ../Portfolio/node_modules/.bin/myst build --html --strict --ci
       - name: Install locked publication tooling
         run: uv sync --project Portfolio --locked --no-dev
       - name: Check publication environment
@@ -143,7 +153,8 @@ jobs:
         run: |
           uv run --project Portfolio --no-sync python Portfolio/scripts/build_portfolio_bundle.py \
             --portfolio Portfolio --research-notes research-notes \
-            --theorem-library theorem-library --output bundle \
+            --theorem-library theorem-library \
+            --myst-html research-notes/_build/html/index.html --output bundle \
             --portfolio-sha "$PORTFOLIO_SHA" \
             --research-notes-sha "$RESEARCH_NOTES_SHA" \
             --theorem-library-sha "$THEOREM_LIBRARY_SHA"
@@ -189,7 +200,30 @@ jobs:
           done
           count="$(find bundle/publication/notebooks -name '*.ipynb' -type f | wc -l)"
           test "$count" -gt 0
-          echo "Qualified $count source notebooks"
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          root = Path('bundle')
+          manifest = json.loads((root / 'publication.json').read_text())
+          articles = manifest.get('articles')
+          assert isinstance(articles, list) and articles, 'No canonical articles in the exact bundle'
+          for article in articles:
+              route = root / article['url'].strip('/') / 'index.html'
+              source = root / article['path']
+              assert route.is_file() and source.is_file(), f"Missing article route or source: {article['slug']}"
+              assert hashlib.sha256(route.read_bytes()).hexdigest() == article['renderedSha256']
+              assert hashlib.sha256(source.read_bytes()).hexdigest() == article['sha256']
+              body = route.read_text(encoding='utf-8')
+              assert 'myst-reader' in body and 'Canonical MyST source' in body
+              for asset in article['assets']:
+                  assert (root / 'publication/article-assets' / asset).is_file(), f"Missing MyST asset: {asset}"
+              if article['browserExecution']:
+                  assert '/assets/article-runtime.js' in body
+                  assert (root / 'assets/thebe/thebe-lite.min.js').is_file()
+                  assert (root / 'assets/thebe/index.js').is_file()
+                  assert (root / 'lab/lab/index.html').is_file()
+          print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
+          PY
       - name: Hash exact upload bytes
         id: digest
         shell: bash

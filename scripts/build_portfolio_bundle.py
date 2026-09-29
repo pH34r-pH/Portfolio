@@ -8,6 +8,8 @@ import json
 import nbformat
 import re
 import shutil
+import subprocess
+from dataclasses import dataclass, field
 from nbconvert import HTMLExporter
 from traitlets.config import Config
 from datetime import datetime, timezone
@@ -87,6 +89,193 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
     # The former flat notebook URLs resolve ../reference outside /files/.
     # Keep that read-only URL working for existing browser workspaces too.
     shutil.copytree(research_notes / "reference", output / "lab" / "reference")
+    if (research_notes / "articles").is_dir():
+        shutil.copytree(research_notes / "articles", output / "publication" / "articles")
+
+
+def _article_metadata(source: str, src: Path) -> dict:
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
+    if not match:
+        raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
+    metadata = {}
+    for field in ("title", "description", "date"):
+        value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+        if value:
+            metadata[field] = value.group(1).strip().strip("'\"")
+    for required in ("title", "description", "date"):
+        if not metadata.get(required):
+            raise ValueError(f"Canonical article requires {required}: {src}")
+    return metadata
+
+
+def _source_file_index(research_notes: Path) -> dict[str, Path]:
+    research_root = research_notes.resolve()
+    candidates = []
+    for folder in ("articles", "notebooks", "reference"):
+        candidates.extend(path for path in (research_root / folder).rglob("*") if path.is_file())
+    candidates.extend(path for path in (research_root / "README.md", research_root / "CHRONOLOGY.md")
+                      if path.is_file())
+    index = {}
+    for path in sorted(candidates):
+        index.setdefault(hashlib.sha256(path.read_bytes()).hexdigest(), path)
+    return index
+
+
+def _myst_asset_path(myst_html: Path, url_path: str) -> Path:
+    root = myst_html.parent.resolve()
+    parts = unquote(url_path).lstrip("/").split("/")
+    if not parts or any(part in {"", ".", ".."} for part in parts):
+        raise ValueError(f"MyST output asset path is malformed: {url_path}")
+    candidate = root
+    for part in parts:
+        candidate = candidate / part
+        if candidate.is_symlink():
+            raise ValueError(f"MyST output asset must not contain symlinks: {url_path}")
+    source = candidate.resolve()
+    try:
+        source.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"MyST output asset leaves its build directory: {url_path}") from exc
+    if source.is_symlink() or not source.is_file():
+        raise ValueError(f"MyST output references a missing or unsafe asset: {url_path}")
+    return source
+
+
+def _canonical_myst_target(canonical: Path | None, context, suffix: str) -> tuple[str, bool] | None:
+    if canonical is None:
+        return None
+    if canonical.suffix == ".ipynb":
+        return f"/notebooks/{quote(canonical.stem)}/{suffix}", False
+    if canonical.suffix == ".md":
+        relative = canonical.relative_to(context.research_notes.resolve()).as_posix()
+        url = f"https://github.com/pH34r-pH/research-notes/blob/{context.revision}/{quote(relative)}{suffix}"
+        return url, True
+    return None
+
+
+@dataclass
+class _MystAssetContext:
+    myst_html: Path
+    output: Path
+    source_digests: dict[str, Path]
+    research_notes: Path
+    revision: str
+    copied: set[str] = field(default_factory=set)
+
+    def _copy_asset(self, source: Path, parsed, element, attribute: str, digest: str, suffix: str) -> None:
+        name = Path(parsed.path).name
+        destination = self.output / "publication" / "article-assets" / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if name not in self.copied:
+            shutil.copy2(source, destination)
+            self.copied.add(name)
+        elif sha256(destination) != digest:
+            raise ValueError(f"MyST output asset basename collision: {name}")
+        element[attribute] = f"/publication/article-assets/{quote(name)}{suffix}"
+
+    def rewrite(self, element, attribute: str) -> None:
+        parsed = urlsplit(element[attribute])
+        if not parsed.path.startswith("/build/"):
+            return
+        source = _myst_asset_path(self.myst_html, parsed.path)
+        digest = sha256(source)
+        canonical = self.source_digests.get(digest)
+        suffix = ("?" + parsed.query if parsed.query else "") + ("#" + parsed.fragment if parsed.fragment else "")
+        target = _canonical_myst_target(canonical, self, suffix)
+        if target:
+            element[attribute] = target[0]
+            if target[1]:
+                element["target"] = "_blank"
+                element["rel"] = "noreferrer"
+            return
+        self._copy_asset(source, parsed, element, attribute, digest, suffix)
+
+
+def _copy_myst_assets(document, myst_html: Path, output: Path,
+                      source_digests: dict[str, Path], research_notes: Path,
+                      revision: str) -> list[str]:
+    context = _MystAssetContext(myst_html, output, source_digests, research_notes, revision)
+    for element in document.find_all(src=True):
+        context.rewrite(element, "src")
+    for element in document.find_all("a", href=True):
+        context.rewrite(element, "href")
+    return sorted(context.copied)
+
+
+def _prepare_article_execution(document) -> bool:
+    cells = document.select(".myst-jp-nb-block")
+    for index, cell in enumerate(cells, 1):
+        source = cell.select_one("pre")
+        output = cell.select_one('[data-name="outputs-container"]')
+        if source is None or output is None:
+            raise ValueError("MyST executable cell is missing its source or output container")
+        source["data-executable"] = ""
+        source["aria-label"] = f"Editable illustrative Python cell {index}"
+        output["data-output"] = ""
+        output["role"] = "status"
+        output["aria-live"] = "polite"
+        output["aria-label"] = f"Your session output for code cell {index}"
+        output["tabindex"] = "0"
+    if cells:
+        panel = document.new_tag("section", attrs={"class": "article-execution", "data-article-execution": ""})
+        panel["aria-label"] = "Browser-local code execution"
+        button = document.new_tag("button", attrs={"type": "button", "class": "primary", "data-load-browser-runtime": ""})
+        button.string = "Load browser Python"
+        status = document.new_tag("p", attrs={"role": "status", "aria-live": "polite", "data-runtime-status": ""})
+        status.string = "This tagged teaching cell runs in a local browser session when you activate it."
+        panel.append(button)
+        panel.append(status)
+        cells[0].insert_before(panel)
+    return bool(cells)
+
+
+def publish_article(src: Path, navigation, args: argparse.Namespace,
+                    source_digests: dict[str, Path]) -> dict:
+    source_text = src.read_text(encoding="utf-8")
+    metadata = _article_metadata(source_text, src)
+    document = BeautifulSoup(args.myst_html.read_text(encoding="utf-8"), "html.parser")
+    article = document.select_one("article.myst-article")
+    if article is None:
+        raise ValueError("MyST static build is missing its server-rendered article")
+    article = BeautifulSoup(str(article), "html.parser").article
+    copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
+                                      args.research_notes, args.research_notes_sha)
+    has_executable = _prepare_article_execution(article)
+    slug = src.stem
+    reader = args.output / "articles" / slug
+    reader.mkdir(parents=True)
+    article_source_url = (
+        f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
+        f"{quote(src.relative_to(args.research_notes).as_posix())}"
+    )
+    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    (reader / "index.html").write_text(page, encoding="utf-8")
+    rendered_article = reader / "index.html"
+    entry = {
+        "path": f"publication/articles/{src.name}",
+        "slug": slug,
+        "url": f"/articles/{slug}/",
+        "title": metadata["title"],
+        "description": metadata["description"],
+        "date": metadata["date"],
+        "sha256": hashlib.sha256(src.read_bytes()).hexdigest(),
+        "renderedSha256": sha256(rendered_article),
+        "assets": copied_assets,
+        "browserExecution": has_executable,
+    }
+    return entry
+
+
+def copy_thebe_assets(args: argparse.Namespace) -> None:
+    helper = args.portfolio / "node_modules/thebe-core/bin/copy-thebe-assets.cjs"
+    destination = args.output / "assets/thebe"
+    destination.mkdir(parents=True, exist_ok=True)
+    if not helper.is_file():
+        raise ValueError("Pinned Thebe asset helper is missing; install Portfolio npm dependencies")
+    subprocess.run(["node", str(helper), str(destination)], check=True, cwd=args.portfolio)
+    for required in ("thebe-lite.min.js", "index.js", "thebe.css"):
+        if not (destination / required).is_file():
+            raise ValueError(f"Thebe browser runtime is incomplete: {required}")
 
 def apply_output_descriptions(notebook, rendered: str) -> str:
     document = BeautifulSoup(rendered, "html.parser")
@@ -129,6 +318,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--portfolio", type=Path, required=True)
     parser.add_argument("--research-notes", type=Path, required=True)
     parser.add_argument("--theorem-library", type=Path, required=True)
+    parser.add_argument("--myst-html", type=Path, required=True,
+                        help="The server-rendered index.html produced by the pinned MyST build")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--portfolio-sha", required=True)
     parser.add_argument("--research-notes-sha", required=True)
@@ -148,12 +339,17 @@ def validate_sources(args: argparse.Namespace) -> None:
         args.portfolio / "site",
         args.research_notes / "notebooks",
         args.research_notes / "reference",
+        args.research_notes / "articles",
         args.theorem_library,
     ):
         if not source.is_dir():
             parser.error(f"Missing pinned public source directory: {source}")
         if any(path.is_symlink() for path in (source, *source.rglob("*"))):
             parser.error(f"Publication source contains a symlink: {source}")
+    expected_myst_html = (args.research_notes / "_build/html/index.html").resolve()
+    if (args.myst_html.resolve() != expected_myst_html or args.myst_html.is_symlink() or
+            not args.myst_html.is_file()):
+        parser.error("MyST HTML must be the static build output inside the exact Research Notes checkout")
 
 
 def prepare_output(args: argparse.Namespace) -> tuple[Path, Path]:
@@ -242,7 +438,7 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
     return entry
 
 
-def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict]) -> None:
+def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], articles: list[dict]) -> None:
     atlas_source = args.portfolio / "site" / "data" / "atlas-evidence.json"
     atlas_target = args.output / "data" / "atlas-evidence.json"
     atlas_target.parent.mkdir(parents=True, exist_ok=True)
@@ -259,6 +455,7 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict]) 
         "builtAt": datetime.now(timezone.utc).isoformat(),
         "sources": sources,
         "notebooks": notebooks,
+        "articles": articles,
     }
     (args.output / "publication.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
@@ -277,12 +474,21 @@ def main() -> None:
         for path in (args.research_notes / "notebooks").glob("*.ipynb")
     }
     navigation = publication_navigation(args.portfolio)
+    source_digests = _source_file_index(args.research_notes)
     notebooks = [
         publish_notebook(src, publication, reader_root, navigation, notebook_paths, args)
         for src in (args.research_notes / "notebooks").glob("*.ipynb")
     ]
     notebooks.sort(key=lambda item: (item.get("sequence", 0), item["path"]), reverse=True)
-    write_publication_metadata(args, notebooks)
+    articles = [
+        publish_article(src, navigation, args, source_digests)
+        for src in sorted((args.research_notes / "articles").glob("*.md"))
+    ]
+    if not articles:
+        raise ValueError("The exact Research Notes source has no canonical articles")
+    if any(article["browserExecution"] for article in articles):
+        copy_thebe_assets(args)
+    write_publication_metadata(args, notebooks, articles)
 
 
 if __name__ == "__main__":

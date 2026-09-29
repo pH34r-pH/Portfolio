@@ -3,24 +3,45 @@ import tempfile
 import unittest
 import json
 import sys
+import hashlib
+import os
 from pathlib import Path
 from unittest.mock import patch
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
-from build_portfolio_bundle import prepare_reader, copy_lab_contents, apply_output_descriptions, main as build_bundle
+from build_portfolio_bundle import (prepare_reader, copy_lab_contents, apply_output_descriptions,
+                                    _myst_asset_path, _prepare_article_execution,
+                                    _source_file_index, main as build_bundle)
 from digest_bundle import digest_tree
 from finish_portfolio_lab import finish_lab
 import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
-    def test_public_candidate_v2_has_exact_public_sources_and_v1_remains_valid(self):
+    def test_source_file_index_resolves_relative_checkout_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / 'research-notes/articles/source.md'
+            source.parent.mkdir(parents=True)
+            source.write_text('unique source bytes')
+            previous = os.getcwd()
+            os.chdir(root)
+            try:
+                index = _source_file_index(Path('research-notes'))
+            finally:
+                os.chdir(previous)
+            indexed = index[hashlib.sha256(source.read_bytes()).hexdigest()]
+            self.assertEqual(indexed, source.resolve())
+            self.assertEqual(indexed.relative_to((root / 'research-notes').resolve()), Path('articles/source.md'))
+
+    def test_public_candidate_v2_carries_articles_and_v1_remains_valid(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             portfolio, research, theorem, bundle = (root/name for name in
                                                    ('Portfolio', 'research-notes', 'theorem-library', 'bundle'))
             for directory_name in (portfolio/'site/research', portfolio/'site/data',
-                                   research/'notebooks', research/'reference', theorem):
+                                   research/'notebooks', research/'reference', research/'articles',
+                                   research/'_build/html', theorem):
                 directory_name.mkdir(parents=True)
             (portfolio/'site/index.html').write_text('<!doctype html><h1>Portfolio</h1>')
             (portfolio/'site/research/index.html').write_text('<header class="topbar"><nav>Research</nav></header>')
@@ -29,9 +50,29 @@ class ReaderPublicationTest(unittest.TestCase):
             (research/'reference/glossary.md').write_text('# Glossary')
             nbformat.write(nbformat.v4.new_notebook(cells=[nbformat.v4.new_markdown_cell('# A reader')]),
                            research/'notebooks/001_reader.ipynb')
+            article_source = (
+                '---\ntitle: Sample article\ndescription: Reviewed test article.\ndate: 2026-09-29\n---\n'
+                '# Sample article\n\nA static article body.\n'
+            )
+            (research/'articles/sample-article.md').write_text(article_source)
+            figure_bytes = b'<svg xmlns="http://www.w3.org/2000/svg"><title>Fixture</title></svg>'
+            (research/'articles/figure.svg').write_bytes(figure_bytes)
+            myst_html = research/'_build/html/index.html'
+            (myst_html.parent/'build').mkdir()
+            (myst_html.parent/'build/figure-hash.svg').write_bytes(figure_bytes)
+            notebook_bytes = (research/'notebooks/001_reader.ipynb').read_bytes()
+            (myst_html.parent/'build/notebook-hash.ipynb').write_bytes(notebook_bytes)
+            myst_html.write_text(
+                '<!doctype html><html><main><article class="myst-article">'
+                '<h1 id="sample-article">Sample article</h1><p>A static article body. '
+                '<a href="/build/notebook-hash.ipynb">Source notebook</a></p>'
+                '<figure><img src="/build/figure-hash.svg" alt="Fixture figure"></figure>'
+                '</article></main></html>'
+            )
             revisions = ('a'*40, 'b'*40, 'c'*40)
             args = ['build_portfolio_bundle.py', '--portfolio', str(portfolio),
                     '--research-notes', str(research), '--theorem-library', str(theorem),
+                    '--myst-html', str(myst_html),
                     '--output', str(bundle), '--portfolio-sha', revisions[0],
                     '--research-notes-sha', revisions[1], '--theorem-library-sha', revisions[2]]
             schema = json.loads((Path(__file__).resolve().parent.parent/'publication.schema.json').read_text())
@@ -43,6 +84,13 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual({key: source['commit'] for key, source in manifest['sources'].items()},
                              dict(zip(('portfolio', 'researchNotes', 'theoremLibrary'), revisions)))
             self.assertEqual(len(manifest['notebooks']), 1)
+            self.assertEqual(len(manifest['articles']), 1)
+            article_page = (bundle/'articles/sample-article/index.html').read_text()
+            self.assertIn('A static article body.', article_page)
+            self.assertIn('href="/notebooks/001_reader/"', article_page)
+            self.assertIn('src="/publication/article-assets/figure-hash.svg"', article_page)
+            self.assertIn('research-notes/blob/' + revisions[1] + '/articles/sample-article.md', article_page)
+            self.assertEqual((bundle/'publication/article-assets/figure-hash.svg').read_bytes(), figure_bytes)
             before = digest_tree(bundle)
             self.assertEqual(len(before), 64)
             (bundle/'site-change.txt').write_text('This changes the published bytes')
@@ -94,6 +142,33 @@ class ReaderPublicationTest(unittest.TestCase):
         self.assertEqual(doc.img['alt'], 'Synthetic curve, not benchmark evidence.')
         with self.assertRaises(ValueError):
             apply_output_descriptions(notebook, '<p>No image</p>')
+
+    def test_article_execution_requires_an_explicit_browser_activation(self):
+        document = BeautifulSoup(
+            '<article><div class="myst-jp-nb-block" id="example">'
+            '<pre><code>print(1)</code></pre>'
+            '<div data-name="outputs-container"></div></div></article>',
+            'html.parser',
+        )
+        self.assertTrue(_prepare_article_execution(document))
+        self.assertEqual(len(document.select('[data-executable]')), 1)
+        self.assertEqual(len(document.select('[data-output][aria-live="polite"]')), 1)
+        self.assertEqual(len(document.select('[data-load-browser-runtime]')), 1)
+
+    def test_myst_assets_must_stay_inside_the_generated_build(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            myst_html = root/'_build/html/index.html'
+            (root/'_build/html/build').mkdir(parents=True)
+            (root/'_build/html/build/figure.svg').write_text('<svg/>')
+            self.assertEqual(_myst_asset_path(myst_html, '/build/figure.svg'),
+                             (root/'_build/html/build/figure.svg').resolve())
+            with self.assertRaises(ValueError):
+                _myst_asset_path(myst_html, '/build/../../../outside.svg')
+            (root/'outside.svg').write_text('<svg/>')
+            (root/'_build/html/build/linked.svg').symlink_to(root/'outside.svg')
+            with self.assertRaises(ValueError):
+                _myst_asset_path(myst_html, '/build/linked.svg')
 
     def test_relative_references_and_notebook_links_keep_their_meaning(self):
         with tempfile.TemporaryDirectory() as directory:
