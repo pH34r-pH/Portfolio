@@ -302,6 +302,10 @@ html[data-palette=high-contrast] .title-accent{color:var(--ink);background:none;
 .myst-reader pre{max-width:100%;overflow:auto;padding:16px;background:var(--bg);border:1px solid var(--line);white-space:pre}
 .myst-reader blockquote{margin-inline:0;border-left:2px solid var(--accent);padding-left:18px;color:var(--muted)}
 .myst-reader a{overflow-wrap:anywhere}
+.myst-reader svg[data-slot=icon]{display:inline-block;width:1em;height:1em;max-width:1em;vertical-align:-.15em;margin-left:.25em}
+.myst-reader .hljs-keyword,.myst-reader .hljs-built_in{color:var(--accent);font-weight:700}
+.myst-reader .hljs-string,.myst-reader .hljs-number{color:var(--accent)}
+.myst-reader .hljs-comment{color:var(--muted);font-style:italic}
 .article-source-links{margin:26px 0;font:700 11px ui-monospace,monospace}
 .article-execution{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin:20px 0;padding:16px;border:1px solid var(--line);background:var(--bg)}
 .article-execution button,.synthetic-projection-control button{min-height:44px;padding:10px 14px;border:1px solid var(--ink);background:var(--ink);color:var(--bg);font:700 11px ui-monospace,monospace;cursor:pointer}
