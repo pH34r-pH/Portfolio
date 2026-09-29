@@ -230,9 +230,16 @@ class _MystAssetContext:
         target = _canonical_myst_target(canonical, self, suffix)
         if target:
             element[attribute] = target[0]
+            # MyST marks source attachments as downloads. Portfolio routes them
+            # to readers or source pages, so that icon no longer describes the link.
+            for icon in element.select('svg.link-icon'):
+                icon.decompose()
             if target[1]:
                 element["target"] = "_blank"
                 element["rel"] = "noreferrer"
+            else:
+                element.attrs.pop("target", None)
+                element.attrs.pop("rel", None)
             return
         self._copy_asset(source, parsed, element, attribute, digest, suffix)
 
@@ -269,17 +276,43 @@ def _prepare_article_execution(document) -> bool:
         button = document.new_tag("button", attrs={"type": "button", "class": "primary", "data-load-browser-runtime": ""})
         button.string = "Load browser Python"
         status = document.new_tag("p", attrs={"role": "status", "aria-live": "polite", "data-runtime-status": ""})
-        status.string = "This tagged teaching cell runs in a local browser session when you activate it."
+        status.string = "Run and edit this example in your browser."
         panel.append(button)
         panel.append(status)
         cells[0].insert_before(panel)
     return bool(cells)
 
 
+def _strip_article_theme_controls(document) -> None:
+    """Remove application controls from the static article fragment."""
+    for anchor in document.select('a.anchor-link, a[aria-label="Link to this Section"]'):
+        anchor.decompose()
+    # The static export includes controls owned by the hydrated MyST theme.
+    # Portfolio supplies its own navigation and source link; copy buttons here
+    # have no event handler after extracting the article from that application.
+    for control in document.select('button.myst-code-copy-icon'):
+        control.decompose()
+    for toolbar in document.select('div.col-screen'):
+        text = toolbar.get_text(' ', strip=True)
+        if 'Back to Article' in text and 'Download' in text:
+            toolbar.decompose()
+
+
+def _preserve_article_section_links(document) -> None:
+    """Keep section URLs published before the prose cleanup."""
+    for heading in document.find_all(['h2', 'h3']):
+        alias = {
+            'Interpretation': 'what-this-does-not-show',
+            'Try a small example': 'a-small-editable-teaching-example',
+        }.get(heading.get_text(' ', strip=True))
+        if alias and not document.find(id=alias):
+            heading.insert_before(document.new_tag('span', id=alias))
+
+
 def _normalize_article_heading(document, source: str, title: str) -> None:
     """Give each published article a level-one heading and stable source label."""
-    for anchor in document.select("a.anchor-link"):
-        anchor.decompose()
+    _strip_article_theme_controls(document)
+    _preserve_article_section_links(document)
     frontmatter = re.match(r"\A---\s*\n.*?\n---\s*\n", source, re.DOTALL)
     body = source[frontmatter.end():] if frontmatter else source
     label = re.match(r"\s*\(([A-Za-z0-9_-]+)\)=\s*\n", body)

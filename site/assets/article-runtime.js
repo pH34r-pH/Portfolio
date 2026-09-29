@@ -45,7 +45,7 @@ function addProjectionControl(figure) {
   const help = document.createElement("p");
   help.id = "projection-help";
   help.className = "control-help";
-  help.textContent = "Synthetic geometry only; these values are not measured model coordinates.";
+  help.textContent = "Rotate the readout to see how alignment changes the projection.";
   const result = document.createElement("output");
   result.id = "projection-value";
   result.setAttribute("aria-live", "polite");

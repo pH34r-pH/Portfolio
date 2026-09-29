@@ -18,10 +18,7 @@ function routePaths(manifest) {
   if (manifest.notebooks.some(n => n.slug === "visual_intuition_atlas")) {
     paths.push("/notebooks/visual_intuition_atlas/");
   }
-  for (const slug of ["001-text-as-signal", "005-unit-hypersphere-anomaly", "accessible-does-not-imply-used"]) {
-    const article = manifest.articles?.find(item => item.slug === slug);
-    if (article) paths.push(article.url);
-  }
+  for (const article of manifest.articles || []) paths.push(article.url);
   return paths;
 }
 
@@ -102,7 +99,15 @@ async function auditArticle(page, manifest, path) {
   await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
   await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
     .toHaveCount(1);
-  await expect(page.locator("article.myst-reader")).toContainText("Published teaching output (synthetic)");
+  await expect(page.locator("article.myst-reader")).toContainText("Saved output:");
+  await expect(page.locator('article.myst-reader a[aria-label="Link to this Section"]')).toHaveCount(0);
+  await expect(page.locator('article.myst-reader button.myst-code-copy-icon')).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Back to Article', exact: true })).toHaveCount(0);
+  await expect(page.locator('#what-this-does-not-show')).toHaveCount(1);
+  for (const icon of await page.locator('article.myst-reader svg[data-slot="icon"]').all()) {
+    const box = await icon.boundingBox();
+    assert.ok(box && box.width <= 32 && box.height <= 32, `${path}: inline icon exceeds text size`);
+  }
   await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
@@ -112,7 +117,7 @@ async function auditArticle(page, manifest, path) {
   }
   if (article.slug === "accessible-does-not-imply-used") {
     await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
-    await expect(page.locator("article.myst-reader")).toContainText("There is no exact public Compiled Experiment package");
+    await expect(page.locator("article.myst-reader")).toContainText("An exact frozen-model replay package is not currently published.");
   }
 }
 
