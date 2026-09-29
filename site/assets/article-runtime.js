@@ -1,81 +1,81 @@
-(() => {
-  const svgNS = "http://www.w3.org/2000/svg";
+const ARTICLE_SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 
-  function svgElement(tag, attributes = {}) {
-    const element = document.createElementNS(svgNS, tag);
-    for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
-    return element;
+function articleSvgElement(tag, attributes = {}) {
+  const element = document.createElementNS(ARTICLE_SVG_NAMESPACE, tag);
+  for (const [key, value] of Object.entries(attributes)) element.setAttribute(key, value);
+  return element;
+}
+
+function addProjectionControl(figure) {
+  if (!figure || figure.dataset.interactionReady === "true") return;
+  const image = figure.querySelector("img");
+  if (!image) return;
+  figure.dataset.interactionReady = "true";
+
+  const control = document.createElement("div");
+  control.className = "synthetic-projection-control";
+  const graphic = articleSvgElement("svg", {
+    viewBox: "0 0 360 240",
+    role: "img",
+    "aria-labelledby": "projection-title projection-description",
+  });
+  const title = articleSvgElement("title", { id: "projection-title" });
+  title.textContent = "Synthetic signal and readout directions";
+  const description = articleSvgElement("desc", { id: "projection-description" });
+  description.textContent = "The blue signal direction stays fixed. The orange dashed readout direction rotates with the slider.";
+  graphic.append(title, description);
+  graphic.append(articleSvgElement("circle", { cx: "120", cy: "120", r: "86", fill: "none", stroke: "currentColor", "stroke-opacity": ".45", "stroke-width": "2" }));
+  graphic.append(articleSvgElement("line", { x1: "34", y1: "120", x2: "206", y2: "120", stroke: "currentColor", "stroke-opacity": ".35" }));
+  graphic.append(articleSvgElement("line", { x1: "120", y1: "34", x2: "120", y2: "206", stroke: "currentColor", "stroke-opacity": ".35" }));
+  graphic.append(articleSvgElement("line", { x1: "120", y1: "120", x2: "192", y2: "120", stroke: "#287a9b", "stroke-width": "8", "stroke-linecap": "round" }));
+  const readout = articleSvgElement("line", { x1: "120", y1: "120", x2: "192", y2: "120", stroke: "#a43f2b", "stroke-width": "4", "stroke-dasharray": "7 6", "stroke-linecap": "round" });
+  graphic.append(readout, articleSvgElement("circle", { cx: "120", cy: "120", r: "5", fill: "currentColor" }));
+
+  const label = document.createElement("label");
+  label.htmlFor = "projection-angle";
+  label.textContent = "Rotate the synthetic readout direction";
+  const slider = document.createElement("input");
+  slider.id = "projection-angle";
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = "360";
+  slider.step = "5";
+  slider.value = "0";
+  slider.setAttribute("aria-describedby", "projection-help projection-value");
+  const help = document.createElement("p");
+  help.id = "projection-help";
+  help.className = "control-help";
+  help.textContent = "Synthetic geometry only; these values are not measured model coordinates.";
+  const result = document.createElement("output");
+  result.id = "projection-value";
+  result.setAttribute("aria-live", "polite");
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.textContent = "Reset direction";
+
+  function update() {
+    const angle = Number(slider.value) * Math.PI / 180;
+    const x = 120 + 72 * Math.cos(angle);
+    const y = 120 - 72 * Math.sin(angle);
+    readout.setAttribute("x2", x.toFixed(2));
+    readout.setAttribute("y2", y.toFixed(2));
+    result.textContent = `Angle ${slider.value}°. Synthetic projection: ${Math.cos(angle).toFixed(2)}.`;
   }
-
-  function addProjectionControl(figure) {
-    if (!figure || figure.dataset.interactionReady === "true") return;
-    const image = figure.querySelector("img");
-    if (!image) return;
-    figure.dataset.interactionReady = "true";
-
-    const control = document.createElement("div");
-    control.className = "synthetic-projection-control";
-    const graphic = svgElement("svg", {
-      viewBox: "0 0 360 240",
-      role: "img",
-      "aria-labelledby": "projection-title projection-description",
-    });
-    const title = svgElement("title", { id: "projection-title" });
-    title.textContent = "Synthetic signal and readout directions";
-    const description = svgElement("desc", { id: "projection-description" });
-    description.textContent = "The blue signal direction stays fixed. The orange dashed readout direction rotates with the slider.";
-    graphic.append(title, description);
-    graphic.append(svgElement("circle", { cx: "120", cy: "120", r: "86", fill: "none", stroke: "currentColor", "stroke-opacity": ".45", "stroke-width": "2" }));
-    graphic.append(svgElement("line", { x1: "34", y1: "120", x2: "206", y2: "120", stroke: "currentColor", "stroke-opacity": ".35" }));
-    graphic.append(svgElement("line", { x1: "120", y1: "34", x2: "120", y2: "206", stroke: "currentColor", "stroke-opacity": ".35" }));
-    graphic.append(svgElement("line", { x1: "120", y1: "120", x2: "192", y2: "120", stroke: "#287a9b", "stroke-width": "8", "stroke-linecap": "round" }));
-    const readout = svgElement("line", { x1: "120", y1: "120", x2: "192", y2: "120", stroke: "#a43f2b", "stroke-width": "4", "stroke-dasharray": "7 6", "stroke-linecap": "round" });
-    graphic.append(readout, svgElement("circle", { cx: "120", cy: "120", r: "5", fill: "currentColor" }));
-
-    const label = document.createElement("label");
-    label.htmlFor = "projection-angle";
-    label.textContent = "Rotate the synthetic readout direction";
-    const slider = document.createElement("input");
-    slider.id = "projection-angle";
-    slider.type = "range";
-    slider.min = "0";
-    slider.max = "360";
-    slider.step = "5";
+  slider.addEventListener("input", update);
+  reset.addEventListener("click", () => {
     slider.value = "0";
-    slider.setAttribute("aria-describedby", "projection-help projection-value");
-    const help = document.createElement("p");
-    help.id = "projection-help";
-    help.className = "control-help";
-    help.textContent = "Synthetic geometry only; these values are not measured model coordinates.";
-    const result = document.createElement("output");
-    result.id = "projection-value";
-    result.setAttribute("aria-live", "polite");
-    const reset = document.createElement("button");
-    reset.type = "button";
-    reset.textContent = "Reset direction";
-
-    function update() {
-      const angle = Number(slider.value) * Math.PI / 180;
-      const x = 120 + 72 * Math.cos(angle);
-      const y = 120 - 72 * Math.sin(angle);
-      readout.setAttribute("x2", x.toFixed(2));
-      readout.setAttribute("y2", y.toFixed(2));
-      result.textContent = `Angle ${slider.value}°. Synthetic projection: ${Math.cos(angle).toFixed(2)}.`;
-    }
-    slider.addEventListener("input", update);
-    reset.addEventListener("click", () => {
-      slider.value = "0";
-      update();
-      slider.focus();
-    });
-
-    control.append(graphic, label, slider, result, reset, help);
-    const caption = figure.querySelector("figcaption");
-    figure.insertBefore(control, caption || null);
-    image.hidden = true;
     update();
-  }
+    slider.focus();
+  });
 
+  control.append(graphic, label, slider, result, reset, help);
+  const caption = figure.querySelector("figcaption");
+  figure.insertBefore(control, caption || null);
+  image.hidden = true;
+  update();
+}
+addProjectionControl(document.getElementById("unit-circle-readout"));
+(() => {
   function loadScript(source) {
     return new Promise((resolve, reject) => {
       const script = document.createElement("script");
@@ -127,6 +127,5 @@
     });
   }
 
-  addProjectionControl(document.getElementById("unit-circle-readout"));
   setupBrowserExecution();
 })();

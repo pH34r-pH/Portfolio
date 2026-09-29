@@ -9,6 +9,7 @@ import nbformat
 import re
 import shutil
 import subprocess
+from dataclasses import dataclass, field
 from nbconvert import HTMLExporter
 from traitlets.config import Config
 from datetime import datetime, timezone
@@ -140,70 +141,65 @@ def _myst_asset_path(myst_html: Path, url_path: str) -> Path:
     return source
 
 
+def _canonical_myst_target(canonical: Path | None, context, suffix: str) -> tuple[str, bool] | None:
+    if canonical is None:
+        return None
+    if canonical.suffix == ".ipynb":
+        return f"/notebooks/{quote(canonical.stem)}/{suffix}", False
+    if canonical.suffix == ".md":
+        relative = canonical.relative_to(context.research_notes.resolve()).as_posix()
+        url = f"https://github.com/pH34r-pH/research-notes/blob/{context.revision}/{quote(relative)}{suffix}"
+        return url, True
+    return None
+
+
+@dataclass
+class _MystAssetContext:
+    myst_html: Path
+    output: Path
+    source_digests: dict[str, Path]
+    research_notes: Path
+    revision: str
+    copied: set[str] = field(default_factory=set)
+
+    def _copy_asset(self, source: Path, parsed, element, attribute: str, digest: str, suffix: str) -> None:
+        name = Path(parsed.path).name
+        destination = self.output / "publication" / "article-assets" / name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if name not in self.copied:
+            shutil.copy2(source, destination)
+            self.copied.add(name)
+        elif sha256(destination) != digest:
+            raise ValueError(f"MyST output asset basename collision: {name}")
+        element[attribute] = f"/publication/article-assets/{quote(name)}{suffix}"
+
+    def rewrite(self, element, attribute: str) -> None:
+        parsed = urlsplit(element[attribute])
+        if not parsed.path.startswith("/build/"):
+            return
+        source = _myst_asset_path(self.myst_html, parsed.path)
+        digest = sha256(source)
+        canonical = self.source_digests.get(digest)
+        suffix = ("?" + parsed.query if parsed.query else "") + ("#" + parsed.fragment if parsed.fragment else "")
+        target = _canonical_myst_target(canonical, self, suffix)
+        if target:
+            element[attribute] = target[0]
+            if target[1]:
+                element["target"] = "_blank"
+                element["rel"] = "noreferrer"
+            return
+        self._copy_asset(source, parsed, element, attribute, digest, suffix)
+
+
 def _copy_myst_assets(document, myst_html: Path, output: Path,
                       source_digests: dict[str, Path], research_notes: Path,
                       revision: str) -> list[str]:
-    copied = set()
-    for element, attribute in [(node, "src") for node in document.find_all(src=True)]:
-        parsed = urlsplit(element[attribute])
-        if not parsed.path.startswith("/build/"):
-            continue
-        source = _myst_asset_path(myst_html, parsed.path)
-        digest = sha256(source)
-        canonical = source_digests.get(digest)
-        if canonical and canonical.suffix == ".ipynb":
-            suffix = ("#" + parsed.fragment) if parsed.fragment else ""
-            element[attribute] = f"/notebooks/{quote(canonical.stem)}/{suffix}"
-            continue
-        if canonical and canonical.suffix == ".md":
-            relative = canonical.relative_to(research_notes.resolve()).as_posix()
-            suffix = ("#" + parsed.fragment) if parsed.fragment else ""
-            element[attribute] = (
-                f"https://github.com/pH34r-pH/research-notes/blob/{revision}/"
-                f"{quote(relative)}{suffix}"
-            )
-            element["target"] = "_blank"
-            element["rel"] = "noreferrer"
-            continue
-        name = Path(parsed.path).name
-        destination = output / "publication" / "article-assets" / name
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        if name not in copied:
-            shutil.copy2(source, destination)
-            copied.add(name)
-        elif sha256(destination) != digest:
-            raise ValueError(f"MyST output asset basename collision: {name}")
-        suffix = "?" + parsed.query if parsed.query else ""
-        suffix += "#" + parsed.fragment if parsed.fragment else ""
-        element[attribute] = f"/publication/article-assets/{quote(name)}{suffix}"
-    for link in document.find_all("a", href=True):
-        href = urlsplit(link["href"])
-        if not href.path.startswith("/build/"):
-            continue
-        source = _myst_asset_path(myst_html, href.path)
-        canonical = source_digests.get(sha256(source))
-        suffix = ("?" + href.query if href.query else "") + ("#" + href.fragment if href.fragment else "")
-        if canonical and canonical.suffix == ".ipynb":
-            link["href"] = "/notebooks/" + quote(canonical.stem) + "/" + suffix
-        elif canonical:
-            relative = canonical.relative_to(research_notes.resolve()).as_posix()
-            link["href"] = (
-                f"https://github.com/pH34r-pH/research-notes/blob/{revision}/"
-                f"{quote(relative)}{suffix}"
-            )
-            link["target"] = "_blank"
-            link["rel"] = "noreferrer"
-        else:
-            name = Path(href.path).name
-            destination = output / "publication" / "article-assets" / name
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            if name not in copied:
-                shutil.copy2(source, destination)
-                copied.add(name)
-            elif sha256(destination) != sha256(source):
-                raise ValueError(f"MyST output asset basename collision: {name}")
-            link["href"] = f"/publication/article-assets/{quote(name)}{suffix}"
-    return sorted(copied)
+    context = _MystAssetContext(myst_html, output, source_digests, research_notes, revision)
+    for element in document.find_all(src=True):
+        context.rewrite(element, "src")
+    for element in document.find_all("a", href=True):
+        context.rewrite(element, "href")
+    return sorted(context.copied)
 
 
 def _prepare_article_execution(document) -> bool:
