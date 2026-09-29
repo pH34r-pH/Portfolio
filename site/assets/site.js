@@ -1,6 +1,7 @@
 async function loadPublication() {
   const target = document.querySelector("#provenance-data"),
     list = document.querySelector("#notebook-list"),
+    articleList = document.querySelector("#article-list"),
     build = document.querySelector("#build-id");
   try {
     const response = await fetch("/publication.json", { cache: "no-store" });
@@ -15,6 +16,34 @@ async function loadPublication() {
       build.textContent = sources.portfolio?.commit
         ? " / " + sources.portfolio.commit.slice(0, 8)
         : "";
+    if (articleList && manifest.articles?.length) {
+      const articles = [...manifest.articles].sort((a, b) =>
+        (b.date || "").localeCompare(a.date || ""),
+      );
+      articleList.replaceChildren(
+        ...articles.map((article, index) => {
+          const card = document.createElement("article");
+          card.className = "card article-card";
+          card.dataset.index = String(index + 1).padStart(2, "0");
+          const heading = document.createElement("h3");
+          heading.textContent = article.title || article.slug;
+          const summary = document.createElement("p");
+          summary.className = "card-question";
+          summary.textContent = article.description || "";
+          const meta = document.createElement("p");
+          meta.className = "card-meta";
+          meta.textContent = `Reviewed article · ${article.date || ""}`;
+          const links = document.createElement("div");
+          links.className = "links";
+          const read = document.createElement("a");
+          read.href = article.url;
+          read.textContent = "Read article";
+          links.append(read);
+          card.append(heading, summary, meta, links);
+          return card;
+        }),
+      );
+    }
     if (list && manifest.notebooks?.length) {
       const notebooks = [...manifest.notebooks]
         .filter((n) => n.slug !== "visual_intuition_atlas")
@@ -34,9 +63,7 @@ async function loadPublication() {
           h.textContent = n.title || n.path;
           const meta = document.createElement("p");
           meta.className = "card-meta";
-          meta.textContent = n.exampleKind === "illustrative"
-            ? "Readable notebook · illustrative code"
-            : "Readable notebook · executable source";
+          meta.textContent = "Chronological notebook · preserved source";
           const question = document.createElement("p");
           question.className = "card-question";
           question.textContent = n.question || "";
@@ -60,8 +87,7 @@ async function loadPublication() {
             encodeURIComponent(
               n.jupyterPath || n.path.replace(/^publication\/notebooks\//, ""),
             );
-          lab.textContent = n.exampleKind === "illustrative"
-            ? "Run example ↗" : "Inspect in Lab ↗";
+          lab.textContent = "Open in JupyterLite ↗";
           links.append(read, lab);
           a.append(h, question, meta, links);
           return a;
@@ -70,6 +96,7 @@ async function loadPublication() {
     }
   } catch (e) {
     if (list) list.innerHTML = "<p>Publication catalog unavailable.</p>";
+    if (articleList) articleList.innerHTML = "<p>Article catalog unavailable.</p>";
     if (target) target.textContent = "Build metadata unavailable.";
   }
 }

@@ -5,27 +5,6 @@ import AxeBuilder from "@axe-core/playwright";
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 const views = [[360, 780], [412, 915], [768, 1016], [1366, 768]];
 const palettes = ["nacre", "oxide", "violet", "high-contrast"];
-const catalogFixture = {
-  schemaVersion: 1,
-  experiments: [{
-    schemaVersion: 1, id: "audit-fixture", title: "Audit fixture",
-    profile: "compiled-experiment-v1",
-    hypothesis: "Can the catalog render derived experiment metadata?",
-    question: "Does the public catalog remain interactive?",
-    method: "Use a synthetic browser-only fixture.", acceptance: {},
-    result: { acceptancePassed: true, metrics: { evalMse: { numerator: 1, denominator: 1000 } } },
-    environment: { python: ">=3.11,<4", networkRequired: false, accelerator: "none" },
-    resources: { ram: { observedMaximumBytes: 20971520, planningRamBytes: 33554432 }, accelerator: { peakVramBytes: 0 } },
-    contents: { embedded: [{ item: "test input", path: "experiment/input.json" }], publicImmutableReferences: [], unavailable: [] },
-    reproduction: { entrypoint: "experiment/reproduce.py", networkRequired: false },
-    source: { repository: "example/research", commit: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
-    standards: { croissant: "1.1", roCrate: "1.3", processRunCrate: "0.6" },
-    package: { sha256: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", size: 14010 },
-    packageUrl: "https://example.test/package.zip",
-    qualificationReceiptUrl: "https://example.test/receipt.json",
-  }],
-};
-
 async function loadManifest(context) {
   const response = await context.request.get(base + "/publication.json");
   if (!response.ok() || !response.headers()["content-type"]?.includes("json")) return undefined;
@@ -33,7 +12,7 @@ async function loadManifest(context) {
 }
 
 function routePaths(manifest) {
-  const paths = ["/", "/research/", "/atlas/", "/reproduce/"];
+  const paths = ["/", "/research/", "/atlas/"];
   if (!manifest?.notebooks?.length) return paths;
   paths.push("/notebooks/" + manifest.notebooks[0].slug + "/");
   if (manifest.notebooks.some(n => n.slug === "visual_intuition_atlas")) {
@@ -196,18 +175,6 @@ async function auditAtlas(page, context, width) {
     .toHaveAttribute("href", "/research/");
 }
 
-async function auditReproduce(page) {
-  await expect(page.locator("#catalog-status")).toHaveText("1 compiled experiment available.");
-  await expect(page.locator("#experiment-table-body")).toContainText("Audit fixture");
-  await page.locator(".experiment-package-detail summary").click();
-  await expect(page.locator(".experiment-package-detail")).toContainText("test input");
-  await expect(page.locator(".experiment-package-detail")).toContainText("experiment/reproduce.py");
-  const download = page.getByRole("link", { name: "Download compiled experiment ↓" });
-  await expect(download).toHaveAttribute("href", "https://example.test/package.zip");
-  await expect(page.locator(".package-info")).toHaveCount(0);
-  await page.unroute("**/data/experiment-catalog.json");
-}
-
 async function auditNotebook(page) {
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.locator("h1")).toHaveCount(1);
@@ -223,27 +190,49 @@ async function auditResearch(page, manifest) {
   if (!manifest?.notebooks?.length) return;
   await expect(page.locator("#notebook-list")).not.toContainText("Updated");
   if (manifest.notebooks[0].question) {
-    await expect(page.locator(".card-question").first())
+    await expect(page.locator("#notebook-list .card-question").first())
       .toHaveText(manifest.notebooks[0].question);
   }
 }
 
+async function auditArticleEnhancements(page) {
+  await page.setContent('<main><figure id="unit-circle-readout"><img alt="Synthetic unit-circle fallback" src="/static.svg"><figcaption>Synthetic only.</figcaption></figure><section data-article-execution><button type="button" data-load-browser-runtime>Load browser Python</button><p data-runtime-status role="status" aria-live="polite">Browser code has not been loaded.</p></section></main>');
+  await page.addScriptTag({ path: "site/assets/article-runtime.js" });
+  await expect(page.locator("#unit-circle-readout img")).toBeHidden();
+  const slider = page.getByRole("slider", { name: "Rotate the synthetic readout direction" });
+  await expect(slider).toHaveAttribute("aria-describedby", "projection-help projection-value");
+  await slider.press("ArrowRight");
+  await expect(slider).toHaveValue("5");
+  await expect(page.locator("#projection-value")).toContainText("Angle 5°. Synthetic projection: 1.00.");
+  await page.getByRole("button", { name: "Reset direction" }).click();
+  await expect(slider).toHaveValue("0");
+  await expect(page.locator("[data-load-browser-runtime]")).toBeEnabled();
+}
+
+async function auditLegacyExperimentsRedirect(browser) {
+  const context = await browser.newContext();
+  await context.route("https://experiments.tyharbin.com/**", route => route.fulfill({
+    status: 200,
+    contentType: "text/html",
+    body: "<!doctype html><html lang=\"en\"><title>Compiler destination fixture</title><body><h1>Compiler destination fixture</h1></body></html>",
+  }));
+  const page = await context.newPage();
+  await page.goto(base + "/reproduce/", { waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL("https://experiments.tyharbin.com/");
+  await expect(page.getByRole("heading", { name: "Compiler destination fixture" })).toBeVisible();
+  await context.close();
+}
+
 async function auditRoute(page, context, width, path, manifest, errors) {
-  if (path === "/reproduce/") {
-    await page.route("**/data/experiment-catalog.json", route =>
-      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(catalogFixture) }),
-    );
-  }
   await page.goto(base + path, { waitUntil: "networkidle" });
   assert.deepEqual(errors, [], `${width}${path}: page errors`);
   await auditMenuAndPalettes(page, width);
   await auditOverflow(page, width, path);
   await auditAccessibility(page, width, path);
   if (path === "/atlas/") await auditAtlas(page, context, width);
-  if (path === "/reproduce/") await auditReproduce(page);
   if (path.startsWith("/notebooks/")) await auditNotebook(page);
   if (path === "/research/") await auditResearch(page, manifest);
-  if (["/research/", "/reproduce/"].includes(path)) {
+  if (path === "/research/") {
     await page.locator(".skip-link").focus();
     await page.keyboard.press("Enter");
     await expect(page.locator("main")).toBeFocused();
@@ -276,6 +265,7 @@ async function auditView(browser, width, height) {
     await auditRoute(page, context, width, path, manifest, errors);
   }
   await auditNavigationPersistence(page);
+  await auditArticleEnhancements(page);
   console.log(
     `Route and interaction audit passed: ${width} × ${height}${manifest ? " with published notebook" : ""}`,
   );
@@ -285,6 +275,7 @@ async function auditView(browser, width, height) {
 const browser = await chromium.launch({ headless: true });
 try {
   for (const [width, height] of views) await auditView(browser, width, height);
+  await auditLegacyExperimentsRedirect(browser);
 } finally {
   await browser.close();
 }

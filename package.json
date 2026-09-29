@@ -8,6 +8,9 @@
     "@axe-core/playwright": "4.10.2",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "1.55.0",
-    "serve": "14.2.4"
+    "mystmd": "1.11.0",
+    "serve": "14.2.4",
+    "thebe": "0.9.3",
+    "thebe-lite": "0.5.0"
   }
 }
