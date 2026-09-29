@@ -186,7 +186,7 @@ jobs:
       - name: Build JupyterLite
         run: |
           uv run --project Portfolio --no-sync jupyter lite build --contents bundle/publication/lab-contents \
-            --output-dir bundle/lab --config Portfolio/jupyter-lite.json
+            --output-dir bundle/lab --lite-dir Portfolio
       - name: Attach Portfolio Lab navigation
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
       - name: Qualify finished public bundle

@@ -6,11 +6,12 @@ import sys
 import hashlib
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from build_portfolio_bundle import (prepare_reader, copy_lab_contents, apply_output_descriptions,
-                                    _myst_asset_path, _prepare_article_execution,
+                                    _myst_asset_path, _prepare_article_execution, copy_thebe_assets,
                                     _source_file_index, main as build_bundle)
 from digest_bundle import digest_tree
 from finish_portfolio_lab import finish_lab
@@ -18,6 +19,24 @@ import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_thebe_assets_copy_from_a_relative_exact_checkout(self):
+        portfolio_root = Path(__file__).resolve().parents[1]
+        helper = portfolio_root / "node_modules/thebe-core/bin/copy-thebe-assets.cjs"
+        if not helper.is_file():
+            self.skipTest("locked npm dependencies are not installed")
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "bundle"
+            previous = os.getcwd()
+            os.chdir(portfolio_root.parent)
+            try:
+                copy_thebe_assets(SimpleNamespace(
+                    portfolio=Path(portfolio_root.name), output=output,
+                ))
+            finally:
+                os.chdir(previous)
+            for name in ("thebe-lite.min.js", "index.js", "thebe.css"):
+                self.assertTrue((output / "assets/thebe" / name).is_file(), name)
+
     def test_source_file_index_resolves_relative_checkout_paths(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
