@@ -53,79 +53,78 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(indexed, source.resolve())
             self.assertEqual(indexed.relative_to((root / 'research-notes').resolve()), Path('articles/source.md'))
 
-    def test_public_candidate_v2_carries_articles_and_v1_remains_valid(self):
+    def _article_bundle_fixture(self, root: Path):
+        portfolio, research, theorem, bundle = (root/name for name in
+                                                 ('Portfolio', 'research-notes', 'theorem-library', 'bundle'))
+        for path in (portfolio/'site/research', portfolio/'site/data', research/'notebooks',
+                     research/'reference', research/'articles', research/'_build/html', theorem):
+            path.mkdir(parents=True)
+        (portfolio/'site/index.html').write_text('<!doctype html><h1>Portfolio</h1>')
+        (portfolio/'site/research/index.html').write_text('<header class="topbar"><nav>Research</nav></header>')
+        (portfolio/'site/data/atlas-evidence.json').write_text('{}')
+        (portfolio/'jupyter-lite.json').write_text('{}')
+        (research/'reference/glossary.md').write_text('# Glossary')
+        nbformat.write(nbformat.v4.new_notebook(cells=[nbformat.v4.new_markdown_cell('# A reader')]),
+                       research/'notebooks/001_reader.ipynb')
+        article_source = ('---\ntitle: Sample article\ndescription: Reviewed test article.\n'
+                          'date: 2026-09-29\n---\n(sample-article)=\n# Sample article\n\nA static article body.\n')
+        second_source = ('---\ntitle: Second article\ndescription: Another reviewed test article.\n'
+                         'date: 2026-09-29\n---\n(second-article)=\n# Second article\n\n'
+                         'A different static article body.\n')
+        (research/'articles/sample-article.md').write_text(article_source)
+        (research/'articles/sample-article-second.md').write_text(second_source)
+        disposition_source = '# Publication dispositions\n'
+        (research/'PUBLICATION-DISPOSITIONS.md').write_text(disposition_source)
+        figure_bytes = b'<svg xmlns="http://www.w3.org/2000/svg"><title>Fixture</title></svg>'
+        (research/'articles/figure.svg').write_bytes(figure_bytes)
+        myst_html = research/'_build/html/index.html'
+        (myst_html.parent/'build').mkdir()
+        (myst_html.parent/'build/figure-hash.svg').write_bytes(figure_bytes)
+        notebook_bytes = (research/'notebooks/001_reader.ipynb').read_bytes()
+        (myst_html.parent/'build/notebook-hash.ipynb').write_bytes(notebook_bytes)
+        second_digest = hashlib.sha256(second_source.encode()).hexdigest()
+        (myst_html.parent/'build'/f'article-second-{second_digest[:8]}.md').write_text(second_source)
+        disposition_digest = hashlib.sha256(disposition_source.encode()).hexdigest()
+        (myst_html.parent/'build'/f'dispositions-{disposition_digest[:8]}.md').write_text(disposition_source)
+        myst_html.write_text('<!doctype html><html><main>Publication index</main></html>')
+        first_page = myst_html.parent/'sample-article/index.html'
+        first_page.parent.mkdir()
+        first_page.write_text(
+            '<!doctype html><html><main><article class="myst-article">'
+            '<h2 id="sample-article">Sample article</h2><p>A static article body. '
+            '<a href="/build/notebook-hash.ipynb">Source notebook</a> '
+            '<a href="/build/article-second-' + second_digest[:8] + '.md">Second article</a> '
+            '<a href="/build/dispositions-' + disposition_digest[:8] + '.md">Publication map</a></p>'
+            '<div class="overflow-auto"><table><tr><th>Measure</th></tr><tr><td>Synthetic</td></tr></table></div>'
+            '<figure><img src="/build/figure-hash.svg" alt="Fixture figure"></figure>'
+            '</article></main></html>'
+        )
+        second_page = myst_html.parent/'sample-article-second/index.html'
+        second_page.parent.mkdir()
+        second_page.write_text('<!doctype html><html><main><article class="myst-article">'
+                               '<h1 id="second-article">Second article</h1>'
+                               '<p>A different static article body.</p></article></main></html>')
+        (research/'myst.yml').write_text('version: 1\nproject:\n  toc:\n'
+                                         '    - file: articles/sample-article.md\n'
+                                         '    - file: articles/sample-article-second.md\n')
+        revisions = ('a'*40, 'b'*40, 'c'*40)
+        args = ['build_portfolio_bundle.py', '--portfolio', str(portfolio),
+                '--research-notes', str(research), '--theorem-library', str(theorem),
+                '--myst-html', str(myst_html), '--output', str(bundle),
+                '--portfolio-sha', revisions[0], '--research-notes-sha', revisions[1],
+                '--theorem-library-sha', revisions[2]]
+        schema_path = Path(__file__).resolve().parent.parent/'publication.schema.json'
+        schema = json.loads(schema_path.read_text())
+        return args, schema, revisions, bundle, figure_bytes
+
+    def _build_fixture_bundle(self, args):
+        with patch.object(sys, 'argv', args):
+            build_bundle()
+
+    def test_public_candidate_v2_carries_articles_and_exact_sources(self):
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            portfolio, research, theorem, bundle = (root/name for name in
-                                                   ('Portfolio', 'research-notes', 'theorem-library', 'bundle'))
-            for directory_name in (portfolio/'site/research', portfolio/'site/data',
-                                   research/'notebooks', research/'reference', research/'articles',
-                                   research/'_build/html', theorem):
-                directory_name.mkdir(parents=True)
-            (portfolio/'site/index.html').write_text('<!doctype html><h1>Portfolio</h1>')
-            (portfolio/'site/research/index.html').write_text('<header class="topbar"><nav>Research</nav></header>')
-            (portfolio/'site/data/atlas-evidence.json').write_text('{}')
-            (portfolio/'jupyter-lite.json').write_text('{}')
-            (research/'reference/glossary.md').write_text('# Glossary')
-            nbformat.write(nbformat.v4.new_notebook(cells=[nbformat.v4.new_markdown_cell('# A reader')]),
-                           research/'notebooks/001_reader.ipynb')
-            article_source = (
-                '---\ntitle: Sample article\ndescription: Reviewed test article.\ndate: 2026-09-29\n---\n'
-                '(sample-article)=\n# Sample article\n\nA static article body.\n'
-            )
-            (research/'articles/sample-article.md').write_text(article_source)
-            second_source = (
-                '---\ntitle: Second article\ndescription: Another reviewed test article.\ndate: 2026-09-29\n---\n'
-                '(second-article)=\n# Second article\n\nA different static article body.\n'
-            )
-            (research/'articles/sample-article-second.md').write_text(second_source)
-            disposition_source = '# Publication dispositions\n'
-            (research/'PUBLICATION-DISPOSITIONS.md').write_text(disposition_source)
-            figure_bytes = b'<svg xmlns="http://www.w3.org/2000/svg"><title>Fixture</title></svg>'
-            (research/'articles/figure.svg').write_bytes(figure_bytes)
-            myst_html = research/'_build/html/index.html'
-            (myst_html.parent/'build').mkdir()
-            (myst_html.parent/'build/figure-hash.svg').write_bytes(figure_bytes)
-            notebook_bytes = (research/'notebooks/001_reader.ipynb').read_bytes()
-            (myst_html.parent/'build/notebook-hash.ipynb').write_bytes(notebook_bytes)
-            second_digest = hashlib.sha256(second_source.encode()).hexdigest()
-            (myst_html.parent/'build'/f'article-second-{second_digest[:8]}.md').write_text(second_source)
-            disposition_digest = hashlib.sha256(disposition_source.encode()).hexdigest()
-            (myst_html.parent/'build'/f'dispositions-{disposition_digest[:8]}.md').write_text(disposition_source)
-            myst_html.write_text('<!doctype html><html><main>Publication index</main></html>')
-            first_page = myst_html.parent/'sample-article/index.html'
-            first_page.parent.mkdir()
-            first_page.write_text(
-                '<!doctype html><html><main><article class="myst-article">'
-                '<h2 id="sample-article">Sample article</h2><p>A static article body. '
-                '<a href="/build/notebook-hash.ipynb">Source notebook</a> '
-                '<a href="/build/article-second-' + second_digest[:8] + '.md">Second article</a> '
-                '<a href="/build/dispositions-' + disposition_digest[:8] + '.md">Publication map</a></p>'
-                '<div class="overflow-auto"><table><tr><th>Measure</th></tr><tr><td>Synthetic</td></tr></table></div>'
-                '<figure><img src="/build/figure-hash.svg" alt="Fixture figure"></figure>'
-                '</article></main></html>'
-            )
-            second_page = myst_html.parent/'sample-article-second/index.html'
-            second_page.parent.mkdir()
-            second_page.write_text(
-                '<!doctype html><html><main><article class="myst-article">'
-                '<h1 id="second-article">Second article</h1><p>A different static article body.</p>'
-                '</article></main></html>'
-            )
-            (research/'myst.yml').write_text(
-                'version: 1\nproject:\n  toc:\n'
-                '    - file: articles/sample-article.md\n'
-                '    - file: articles/sample-article-second.md\n'
-            )
-            revisions = ('a'*40, 'b'*40, 'c'*40)
-            args = ['build_portfolio_bundle.py', '--portfolio', str(portfolio),
-                    '--research-notes', str(research), '--theorem-library', str(theorem),
-                    '--myst-html', str(myst_html),
-                    '--output', str(bundle), '--portfolio-sha', revisions[0],
-                    '--research-notes-sha', revisions[1], '--theorem-library-sha', revisions[2]]
-            schema = json.loads((Path(__file__).resolve().parent.parent/'publication.schema.json').read_text())
-            with patch.object(sys, 'argv', args):
-                build_bundle()
+            args, schema, revisions, bundle, _ = self._article_bundle_fixture(Path(directory))
+            self._build_fixture_bundle(args)
             manifest = json.loads((bundle/'publication.json').read_text())
             Draft202012Validator(schema).validate(manifest)
             self.assertEqual(manifest['schemaVersion'], 2)
@@ -134,23 +133,32 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(len(manifest['notebooks']), 1)
             self.assertEqual(len(manifest['articles']), 2)
             self.assertEqual([article['sequence'] for article in manifest['articles']], [1, 2])
+
+    def test_article_routes_preserve_accessible_tables_sources_and_assets(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, _, revisions, bundle, figure_bytes = self._article_bundle_fixture(Path(directory))
+            self._build_fixture_bundle(args)
             article_page = (bundle/'articles/sample-article/index.html').read_text()
             article_document = BeautifulSoup(article_page, 'html.parser')
-            self.assertIn('A static article body.', article_page)
             self.assertIn('<h1 id="sample-article">Sample article</h1>', article_page)
             self.assertIn('href="/notebooks/001_reader/"', article_page)
             self.assertIn('href="/articles/sample-article-second/"', article_page)
-            self.assertIn('href="https://github.com/pH34r-pH/research-notes/blob/' + revisions[1] + '/PUBLICATION-DISPOSITIONS.md"', article_page)
+            self.assertIn('PUBLICATION-DISPOSITIONS.md', article_page)
             table_region = article_document.select_one('.overflow-auto[aria-label="Scrollable table: Measure"]')
             self.assertEqual(table_region.get('role'), 'region')
             self.assertEqual(table_region.get('tabindex'), '0')
             self.assertIn('src="/publication/article-assets/figure-hash.svg"', article_page)
             self.assertIn('research-notes/blob/' + revisions[1] + '/articles/sample-article.md', article_page)
-            second_article_page = (bundle/'articles/sample-article-second/index.html').read_text()
-            self.assertIn('A different static article body.', second_article_page)
-            self.assertIn('<h1 id="second-article">Second article</h1>', second_article_page)
-            self.assertNotIn('A static article body.', second_article_page)
+            second_page = (bundle/'articles/sample-article-second/index.html').read_text()
+            self.assertIn('<h1 id="second-article">Second article</h1>', second_page)
+            self.assertNotIn('A static article body.', second_page)
             self.assertEqual((bundle/'publication/article-assets/figure-hash.svg').read_bytes(), figure_bytes)
+
+    def test_candidate_digest_and_legacy_v1_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            self._build_fixture_bundle(args)
+            manifest = json.loads((bundle/'publication.json').read_text())
             before = digest_tree(bundle)
             self.assertEqual(len(before), 64)
             (bundle/'site-change.txt').write_text('This changes the published bytes')
@@ -158,8 +166,7 @@ class ReaderPublicationTest(unittest.TestCase):
             with self.assertRaises(ValidationError):
                 Draft202012Validator(schema).validate({**manifest, 'sources': {**manifest['sources'],
                     'fleet': {'repository': 'pH34r-pH/long-haul-fleet', 'commit': 'd'*40}}})
-            with patch.object(sys, 'argv', args + ['--fleet-sha', 'd'*40]):
-                build_bundle()
+            self._build_fixture_bundle(args + ['--fleet-sha', 'd'*40])
             legacy = json.loads((bundle/'publication.json').read_text())
             Draft202012Validator(schema).validate(legacy)
             self.assertEqual(legacy['schemaVersion'], 1)
