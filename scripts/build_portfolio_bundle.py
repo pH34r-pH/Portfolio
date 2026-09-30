@@ -96,32 +96,79 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
         shutil.copytree(research_notes / "articles", output / "publication" / "articles")
 
 
+class _UniqueKeysLoader(yaml.SafeLoader):
+    pass
+
+
+def _unique_mapping(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise ValueError(f"Duplicate article frontmatter key: {key}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _unique_mapping)
+
+
+def _frontier_metadata(block: str, src: Path) -> dict:
+    frontier = {}
+    fields = (
+        ("frontier_observed_json", "observed"),
+        ("frontier_ruled_out_json", "ruledOut"),
+        ("frontier_open_json", "open"),
+        ("frontier_next_json", "next"),
+    )
+    for key, output_key in fields:
+        value = re.search(rf"^{key}:\s*(\[.*\])\s*$", block, re.MULTILINE)
+        if not value:
+            continue
+        try:
+            parsed = json.loads(value.group(1))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid {key} JSON in article frontmatter: {src}") from exc
+        if not isinstance(parsed, list) or not all(isinstance(item, str) and item.strip() for item in parsed):
+            raise ValueError(f"{key} must be a JSON array of non-empty strings: {src}")
+        frontier[output_key] = parsed
+    return frontier
+
+
 def _article_metadata(source: str, src: Path) -> dict:
     match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
     if not match:
         raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
+    block = match.group(1)
     metadata = {}
-    for field in ("title", "description", "date"):
-        value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+    for field in ("title", "description", "date", "modelFocus", "modelVariant", "status"):
+        value = re.search(rf"^{field}:\s*(.+?)\s*$", block, re.MULTILINE)
         if value:
             metadata[field] = value.group(1).strip().strip("'\"")
+
+    dependencies = re.search(r"^(?:dependsOn|depends_on):\s*\[(.*?)\]\s*$", block, re.MULTILINE)
+    if dependencies:
+        metadata["dependsOn"] = [
+            item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()
+        ]
+
+    aliases = (("model_focus", "modelFocus"), ("model_variant", "modelVariant"))
+    for source_key, target_key in aliases:
+        value = re.search(rf"^{source_key}:\s*(.+?)\s*$", block, re.MULTILINE)
+        if value and not metadata.get(target_key):
+            metadata[target_key] = value.group(1).strip().strip("'\"")
+
+    frontier = _frontier_metadata(block, src)
+    if frontier:
+        metadata["frontier"] = frontier
+
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
-    class UniqueKeysLoader(yaml.SafeLoader):
-        pass
-    def unique_mapping(loader, node, deep=False):
-        mapping = {}
-        for key_node, value_node in node.value:
-            key = loader.construct_object(key_node, deep=deep)
-            if key in mapping:
-                raise ValueError(f'Duplicate article frontmatter key: {key}')
-            mapping[key] = loader.construct_object(value_node, deep=deep)
-        return mapping
-    UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
-    structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
-    if isinstance(structured, dict) and 'compiled_experiment' in structured:
-        metadata['compiled_experiment'] = structured['compiled_experiment']
+
+    structured = yaml.load(block, Loader=_UniqueKeysLoader)
+    if isinstance(structured, dict) and "compiled_experiment" in structured:
+        metadata["compiled_experiment"] = structured["compiled_experiment"]
     return metadata
 
 
@@ -404,6 +451,57 @@ def copy_article_math_assets(args: argparse.Namespace) -> None:
     shutil.copy2(source / 'LICENSE', destination / 'LICENSE')
 
 
+def _default_model_focus(slug: str, title: str) -> str:
+    value = f"{slug} {title}".lower()
+    if re.search(r"token|byte|encoding|input", value):
+        return "tokenization"
+    if re.search(r"hypersphere|state|representation|normaliz", value):
+        return "representation"
+    if re.search(r"architecture|layer|recurrent|mechanism", value):
+        return "architecture"
+    if re.search(r"consumer|readout|probe|used", value):
+        return "consumer"
+    if re.search(r"prediction|output|loss|endpoint", value):
+        return "output"
+    return "full"
+
+
+def _model_instrument_html(focus: str, variant: str = "baseline", article: bool = False) -> str:
+    article_attr = " data-article-model" if article else ""
+    safe_focus = focus if focus in {
+        "input", "tokenization", "representation", "recurrent-state", "normalization",
+        "architecture", "consumer", "readout", "output", "full"
+    } else "full"
+    safe_variant = variant if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", variant or "") else "baseline"
+    return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}" data-variant="{safe_variant}"{article_attr}
+      aria-label="Interactive language model schematic">
+      <p class="visually-hidden">An interactive language-model workcell showing text entering an input buffer,
+      passing through tokenization, representation and model computation, and leaving as generated text.</p>
+      <div class="model-workcell">
+        <div class="model-port model-input-port">
+          <span class="machine-label">INPUT BUFFER / TOKEN FEED</span>
+          <label for="article-model-input">Model input</label>
+          <input id="article-model-input" data-model-input value="inspect the mechanism" autocomplete="off">
+          <button type="button" data-model-submit>Run</button>
+          <div class="token-rail" data-token-rail aria-hidden="true"></div>
+        </div>
+        <div class="model-stage">
+          <canvas class="model-canvas" aria-hidden="true"></canvas>
+          <div class="model-fallback" aria-hidden="true">
+            <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
+            <span data-stage="representation">state</span><span data-stage="architecture">model</span>
+            <span data-stage="consumer">readout</span><span data-stage="output">output</span>
+          </div>
+        </div>
+        <div class="model-port model-output-port">
+          <span class="machine-label">OUTPUT / TOKEN ASSEMBLY</span>
+          <div class="output-conveyor" data-output-rail aria-hidden="true"></div>
+          <p class="model-output" data-model-output aria-live="polite">Run the input to watch information move through the model.</p>
+        </div>
+      </div>
+    </section>"""
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
@@ -420,8 +518,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
-    math_style = ''
-    if article.select_one('.katex'):
+    math_style = ""
+    if article.select_one(".katex"):
         copy_article_math_assets(args)
         math_style = '<link rel="stylesheet" href="/assets/katex/katex.min.css">'
     slug = src.stem
@@ -431,15 +529,19 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
-    handoff = ''
-    if 'compiled_experiment' in metadata:
+    model_focus = metadata.get("modelFocus") or _default_model_focus(slug, metadata["title"])
+    model_variant = metadata.get("modelVariant") or "baseline"
+
+    handoff = ""
+    if "compiled_experiment" in metadata:
         if args.compiler_projection_data is None:
-            raise ValueError('Article compiled_experiment requires an explicit pinned offline public Compiler projection')
-        record = resolve_reference(metadata['compiled_experiment'],
+            raise ValueError("Article compiled_experiment requires an explicit pinned offline public Compiler projection")
+        record = resolve_reference(metadata["compiled_experiment"],
                                    args.compiler_projection_data,
-                                   f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
+                                   f"https://tyharbin.com/articles/{slug}/", args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+
+    page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, model_variant, article=True)}<article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>"""
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -454,9 +556,16 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "renderedSha256": sha256(rendered_article),
         "assets": copied_assets,
         "browserExecution": has_executable,
+        "modelFocus": model_focus,
+        "modelVariant": model_variant,
+        "dependsOn": metadata.get("dependsOn", []),
     }
-    if 'compiled_experiment' in metadata:
-        entry['compiled_experiment'] = metadata['compiled_experiment']
+    if metadata.get("frontier"):
+        entry["frontier"] = metadata["frontier"]
+    if metadata.get("status"):
+        entry["status"] = metadata["status"]
+    if "compiled_experiment" in metadata:
+        entry["compiled_experiment"] = metadata["compiled_experiment"]
     return entry
 
 

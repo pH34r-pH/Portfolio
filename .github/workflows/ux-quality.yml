@@ -2,6 +2,7 @@ name: Portfolio UX quality
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
 
@@ -30,6 +31,8 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Check UX environment
         run: python3 scripts/preflight_env.py ux
+      - name: Build static search index
+        run: npx -y pagefind@1.5.2 --site site
       - name: Run responsive and accessibility audit
         shell: bash
         run: |
@@ -45,6 +48,8 @@ jobs:
           node --check site/assets/site.js
           node --check site/assets/appearance.js
           node --check site/assets/article-runtime.js
+          node --check site/assets/model-instrument.js
+          test -s site/pagefind/pagefind.js
           node scripts/test-article-runtime.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
@@ -211,6 +216,8 @@ jobs:
           atlas_schema = json.loads(Path('Portfolio/atlas-evidence.schema.json').read_text())
           Draft202012Validator(atlas_schema).validate(atlas)
           PY
+      - name: Build Pagefind search index from the exact public content
+        run: npx -y pagefind@1.5.2 --site bundle
       - name: Build JupyterLite
         run: |
           uv run --project Portfolio --no-sync jupyter lite build --contents bundle/publication/lab-contents \
@@ -222,7 +229,7 @@ jobs:
         run: |
           set -euo pipefail
           for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
-            bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
+            bundle/pagefind/pagefind.js bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
             bundle/lab/reference/glossary.md; do
             test -s "$path"
           done

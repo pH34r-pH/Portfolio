@@ -1,50 +1,35 @@
 # Research and experiment publication contract
 
-The public research site at `tyharbin.com` and the Compiler site at
-`experiments.tyharbin.com` are two views of one publication system. Each site
-owns its own HTML, CSS, build, and browser runtime. They share a recognizable
-design language and linked context, not a coupled appearance preference or
-runtime dependency.
+The public research site at `tyharbin.com` and the Compiler site at `experiments.tyharbin.com` are two instruments in one publication system. Each keeps its own HTML, CSS, build, and browser runtime while sharing identity, interaction grammar, and evidence semantics.
 
 ## Shared design language
 
-- Use the `TJHG / …` wordmark and a fixed, 58px top navigation bar.
-- Use the Nacre family values as the light default: background `#e8e3d8`, panel
-  `#f2eee5`, ink `#17191a`, muted text `#62615c`, rule `#aaa497`, and accent
-  `#765466`. Keep contrast and state legible without relying on accent color.
-- Use compact monospace labels for navigation, metadata, and identifiers; keep
-  reading text open and comfortably sized.
-- Frame content with paper-like panels and fine rules. Article figures and
-  reported measurements remain authored content, not decorative surfaces.
-- Keep site navigation and buttons at least 44px tall, increasing to 48px for
-  coarse pointers. Provide a visible keyboard focus ring, reduced-motion
-  support, narrow-screen layouts, and forced-colors behavior.
+- fixed TJHG top navigation with a clear local-surface label
+- one blue research-instrument identity in light and dark appearances
+- electric blue for active state, focus, links, and instrument energy
+- sharp geometry, fine structural rules, compact monospace metadata, and narrow display type
+- motion only for state, causality, navigation, transformation, or execution
+- visible keyboard focus, reduced-motion and forced-colors support, and 44px minimum controls
+- phone-first composition
 
-The Compiler can simplify the research site's four composition styles to its
-own catalog and detail-page layouts. It does not need to copy the research
-site's menus, decoration, notebook controls, or appearance selector.
+The Compiler may be denser and more operational than the article surface, but it should not introduce a competing brand language.
 
-## Navigation and article context
+## Cross-surface continuity
 
-- The research site links to the experiment catalog with the label
-  **Experiments**.
-- Compiler pages link back to the research index with the label **Research**.
-- A published research article links to a Compiled Experiment only when that
-  exact package exists and the relationship is explicitly recorded.
-- A Compiled Experiment may link back to its contextual article through
-  `relatedArticles`, projected as catalog `backlinks`. Each backlink carries
-  the article title, canonical HTTPS URL, and exact 40-character source commit.
-- A backlink provides context; it does not claim that the package reproduces
-  the article's primary experiment. The article and package must state any
-  distinction clearly.
-- If no exact package is published, the article says so. Do not substitute a
-  similar run or infer a relationship from matching words.
+Article to experiment and experiment to article should feel like the same research object moving between instruments. Carry the article or experiment identifier and title across the handoff. The sites do not need a shared SPA runtime to create that continuity.
+
+## Evidence semantics
+
+Both surfaces use compatible visual language for published explanation, measured evidence, live browser exploration, package identity, source/provenance, formal assumptions or results, scientific interpretation, and reproduction status. No state relies on color alone.
+
+## Navigation
+
+- Portfolio labels the sister surface **Experiments**.
+- Compiler labels the return surface **Research**.
+- Articles link to an exact Compiled Experiment only when the relationship is explicitly recorded.
+- Compiler backlinks carry the article title, canonical HTTPS URL, and exact source revision.
+- Source GitHub links remain visually and semantically distinct from article/experiment navigation.
 
 ## Independence and verification
 
-The sites do not synchronize appearance settings or require shared client
-code. Their navigation works if either site is served independently. The
-Compiler owns the backlink projection and its escaping/validation tests; the
-Portfolio candidate audit checks generated article routes, canonical source
-pins, and the presence or absence of the correct experiment links. Both source
-and generated output are reviewed before protected publication.
+The sites do not synchronize theme state and do not require shared client code. Both remain independently buildable and deployable. Portfolio qualifies article routes, publication metadata, search, model-visualization fallback, and exact experiment links. Compiler owns package and backlink validation. Fleet remains the protected publication authority.
