@@ -118,7 +118,7 @@ class ReaderPublicationTest(unittest.TestCase):
         article_source = ('---\ntitle: Sample article\ndescription: Reviewed test article.\n'
                           'date: 2026-09-29\n---\n(sample-article)=\n# Sample article\n\nA static article body.\n')
         second_source = ('---\ntitle: Second article\ndescription: Another reviewed test article.\n'
-                         'date: 2026-09-29\ndepends_on: [sample-article]\nmodel_focus: consumer\nfrontier_observed_json: [\"A measured distinction survived.\"]\nfrontier_open_json: [\"Does the consumer use it?\"]\n---\n(second-article)=\n# Second article\n\n'
+                         'date: 2026-09-29\ndepends_on: [sample-article]\nmodel_focus: consumer\nmodel_variant: consumer-probe\nfrontier_observed_json: [\"A measured distinction survived.\"]\nfrontier_open_json: [\"Does the consumer use it?\"]\n---\n(second-article)=\n# Second article\n\n'
                          'A different static article body.\n')
         (research/'articles/sample-article.md').write_text(article_source)
         (research/'articles/sample-article-second.md').write_text(second_source)
@@ -184,6 +184,7 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual([article['sequence'] for article in manifest['articles']], [1, 2])
             self.assertEqual(manifest['articles'][1]['dependsOn'], ['sample-article'])
             self.assertEqual(manifest['articles'][1]['modelFocus'], 'consumer')
+            self.assertEqual(manifest['articles'][1]['modelVariant'], 'consumer-probe')
             self.assertEqual(manifest['articles'][1]['frontier']['observed'], ['A measured distinction survived.'])
             self.assertEqual(manifest['articles'][1]['frontier']['open'], ['Does the consumer use it?'])
 
