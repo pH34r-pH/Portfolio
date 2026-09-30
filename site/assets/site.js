@@ -34,7 +34,7 @@ function compareNotebooks(a, b) {
   return (b.path || "").localeCompare(a.path || "", undefined, { numeric: true });
 }
 
-function notebookCard(notebook, index) {
+const notebookCard = (notebook, index) => {
   const card = el("article", "card");
   card.dataset.index = String(index + 1).padStart(2, "0");
   const heading = el("h3", "", notebook.title || notebook.path);
@@ -50,7 +50,7 @@ function notebookCard(notebook, index) {
   links.append(read, lab);
   card.append(heading, question, meta, links);
   return card;
-}
+};
 
 function renderNotebookList(container, notebooks) {
   if (!container || !notebooks?.length) return;
