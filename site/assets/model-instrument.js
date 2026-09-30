@@ -53,6 +53,13 @@
 
       if (this.canvas) this.initGL();
       this.button?.addEventListener("click", this.activate);
+      this.root.addEventListener("portfolio:model-focus", event => {
+        this.focus = stageIndex(event.detail?.focus || "full");
+        this.root.querySelectorAll("[data-stage]").forEach((el, index) => {
+          el.classList.toggle("is-focus", this.focus < 0 || index === this.focus);
+        });
+        this.draw(performance.now());
+      });
       this.input?.addEventListener("keydown", event => {
         if (event.key === "Enter") {
           event.preventDefault();
