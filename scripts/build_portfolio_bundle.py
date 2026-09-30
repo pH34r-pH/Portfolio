@@ -120,8 +120,34 @@ def _article_metadata(source: str, src: Path) -> dict:
         return mapping
     UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
     structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
-    if isinstance(structured, dict) and 'compiled_experiment' in structured:
-        metadata['compiled_experiment'] = structured['compiled_experiment']
+    if isinstance(structured, dict):
+        if 'compiled_experiment' in structured:
+            metadata['compiled_experiment'] = structured['compiled_experiment']
+        for source_key, target_key in {
+            'short_title': 'shortTitle',
+            'model_focus': 'modelFocus',
+            'model_variant': 'modelVariant',
+            'depends_on': 'dependsOn',
+            'tags': 'tags',
+        }.items():
+            if source_key in structured:
+                metadata[target_key] = structured[source_key]
+        for source_key, target_key in {
+            'frontier_observed_json': 'frontierObserved',
+            'frontier_open_json': 'frontierOpen',
+            'frontier_next_json': 'frontierNext',
+        }.items():
+            if source_key not in structured:
+                continue
+            value = structured[source_key]
+            if isinstance(value, str):
+                try:
+                    value = json.loads(value)
+                except json.JSONDecodeError as error:
+                    raise ValueError(f'Invalid {source_key} JSON in {src}: {error}') from error
+            if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
+                raise ValueError(f'{source_key} must be a JSON/YAML list of non-empty strings: {src}')
+            metadata[target_key] = value
     return metadata
 
 
@@ -457,6 +483,12 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     }
     if 'compiled_experiment' in metadata:
         entry['compiled_experiment'] = metadata['compiled_experiment']
+    for key in (
+        'shortTitle', 'modelFocus', 'modelVariant', 'dependsOn', 'tags',
+        'frontierObserved', 'frontierOpen', 'frontierNext',
+    ):
+        if key in metadata:
+            entry[key] = metadata[key]
     return entry
 
 
