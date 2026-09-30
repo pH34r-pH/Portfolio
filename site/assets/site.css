@@ -85,6 +85,15 @@ pre{white-space:pre-wrap}
 .model-instrument[data-focus] [data-stage]{opacity:.32;transition:opacity .24s ease,color .24s ease}
 .model-instrument[data-focus="full"] [data-stage],.model-instrument [data-stage].is-focus{opacity:1;color:var(--blue-hot)}
 
+/* research frontier */
+.research-frontier{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+.frontier-card{grid-column:span 4;background:var(--panel);padding:18px;min-height:150px}
+.frontier-label{display:block;font:800 9px ui-monospace,monospace;letter-spacing:.13em;text-transform:uppercase;color:var(--blue)}
+.frontier-card ul{margin:18px 0 0;padding-left:1.1rem}
+.frontier-card li{margin:.5em 0;color:var(--muted)}
+.frontier-card[data-kind=next]{box-shadow:inset 3px 0 var(--blue)}
+.frontier-source{grid-column:1/-1;display:flex;align-items:center;min-height:46px;background:var(--bg);padding:10px 14px;text-decoration:none;font:750 10px ui-monospace,monospace;text-transform:uppercase}
+
 /* research topology */
 .research-topology{border:1px solid var(--line);background:var(--panel);padding:12px;overflow:hidden}
 .research-topology svg{display:block;width:100%;height:auto;min-height:260px}
@@ -197,9 +206,12 @@ strong.reader-emphasis-active{font-weight:820}
   .model-fallback{grid-template-columns:1fr;padding-top:44px;align-content:center}
   .model-fallback span{min-height:30px}
   .research-topology{padding:8px}
-  .research-topology svg{min-height:320px}
-  .graph-list{display:grid;gap:1px;margin-top:8px}
-  .graph-list a{display:block;border:1px solid var(--line);padding:11px;text-decoration:none;font-size:.9rem}
+  .research-frontier{display:block;border:0;background:none}.frontier-card{min-height:0;margin-bottom:1px;border:1px solid var(--line)}.frontier-source{border:1px solid var(--line)}
+  .research-topology svg{display:none}
+  .graph-list{display:grid;gap:1px;margin-top:0}
+  .graph-list-record{border:1px solid var(--line);background:var(--panel);padding:11px}
+  .graph-list a{display:block;text-decoration:none;font-size:.9rem;font-weight:700}
+  .graph-list-deps{margin:.45rem 0 0;color:var(--muted);font-size:.78rem}
   .notebook-reader{padding:30px 0 48px}
   .notebook-reader>header h1,.myst-reader h1{font-size:clamp(2.8rem,14vw,4.7rem)}
   .notebook-content{padding:14px}
