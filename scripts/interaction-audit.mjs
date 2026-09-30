@@ -145,7 +145,7 @@ async function auditArticle(page, manifest, path) {
   if (article.slug === "005-unit-hypersphere-anomaly") {
     const packageLink = 'a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]';
     await expect(page.locator('article.myst-reader').locator(packageLink)).toHaveCount(1);
-    await expect(page.locator('.article-experiment-link').locator(packageLink)).toHaveCount(1);
+    await expect(page.locator('aside[aria-label="Compiled experiment reference"]').locator(packageLink)).toHaveCount(1);
   }
   if (article.slug === "accessible-does-not-imply-used") {
     await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
