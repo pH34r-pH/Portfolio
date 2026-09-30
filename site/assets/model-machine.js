@@ -1,6 +1,5 @@
 const THREE_URL = "https://unpkg.com/three@0.186.1/build/three.module.js";
-const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
-const smallViewport = matchMedia("(max-width: 720px)");
+const [reduceMotion, smallViewport] = [matchMedia("(prefers-reduced-motion: reduce)"), matchMedia("(max-width: 720px)")];
 
 function tokenize(text) {
   return text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)?|[^\s\p{L}\p{N}]/gu)?.slice(0, 12) || [];
@@ -183,15 +182,12 @@ class MachineScene {
     this.machine = new THREE.Group();
     this.scene.add(this.machine);
     this.parts = new Map();
-    this.colors = themeColors(THREE);
-    this.materials = createMaterials(THREE, this.colors);
+    this.colors = themeColors(THREE); this.materials = createMaterials(THREE, this.colors);
     this.nodes = this.buildHardware();
     this.effectGroup = new THREE.Group();
     this.machine.add(this.effectGroup);
     this.addLights();
-    this.activeRun = null;
-    this.frame = 0;
-    this.visible = true;
+    this.activeRun = null; this.frame = 0; this.visible = true;
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(this.canvas);
     this.themeObserver = new MutationObserver(() => this.refreshTheme());
