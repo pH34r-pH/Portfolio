@@ -37,10 +37,15 @@ The Research page renders its map from `publication.json`.
 Canonical article frontmatter may include:
 
 ```yaml
-modelFocus: consumer
-dependsOn: [007-derive-before-training, 008-frozen-mechanism-tests]
-status: active
+model_focus: consumer
+model_variant: consumer-probe
+depends_on: [012-natural-source-distinctions]
+frontier_observed_json: ["The tested distinction is recoverable from the frozen state."]
+frontier_open_json: ["Does changing the consumer improve prediction?"]
+frontier_next_json: ["Intervene on the consumer under a matched evaluation."]
 ```
+
+The publication manifest normalizes those fields to `modelFocus`, `modelVariant`, `dependsOn`, and `frontier`. The shared WebGL model morphs from baseline into the declared geometry, while the Research page renders dependency and current-frontier views directly from the same immutable publication metadata.
 
 Declared dependencies are rendered as research edges. When older material has no dependency metadata, the UI may show chronology as a visibly different fallback; chronology is never promoted to a scientific dependency.
 
