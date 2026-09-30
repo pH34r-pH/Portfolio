@@ -72,13 +72,21 @@ async function homeModel(page) {
   await root.locator("[data-model-submit]").click();
   await expect(root.locator("[data-token-rail] .token-chip").first()).toBeVisible();
   await expect(root.locator("[data-model-output]")).not.toHaveText("");
+  await expect(root.locator("[data-output-rail] .output-chip").first()).toBeVisible();
 }
 
-async function researchMap(page, data) {
+async function researchMap(page, data, width) {
   if (!data?.articles?.length) return;
-  const graph = page.locator("#research-topology svg");
-  await expect(graph).toBeVisible();
-  await expect(graph.locator(".graph-node")).toHaveCount(data.articles.length);
+  if (width <= 760) {
+    const records = page.locator("#research-topology .graph-list-record");
+    await expect(records.first()).toBeVisible();
+    await expect(records).toHaveCount(data.articles.length);
+  } else {
+    const graph = page.locator("#research-topology svg");
+    await expect(graph).toBeVisible();
+    await expect(graph.locator(".graph-node")).toHaveCount(data.articles.length);
+  }
+  await expect(page.locator("#research-frontier")).toBeVisible();
 }
 
 async function generatedArticle(page, path) {
@@ -107,7 +115,7 @@ async function routeAudit(page,width,path,data,errors) {
   await noOverflow(page,width,path);
   await accessible(page,width,path);
   if (path==="/") await homeModel(page);
-  if (path==="/research/") await researchMap(page,data);
+  if (path==="/research/") await researchMap(page,data,width);
   await generatedArticle(page,path);
   await generatedNotebook(page,path);
   assert.deepEqual(errors.splice(0),[],`${width} ${path}: page errors after interaction`);
