@@ -1,6 +1,7 @@
 """Offline, fail-closed article handoff to the public Compiler projection."""
 import html
 import re
+from compiled_experiment_worklog import render_worklog
 
 ORIGIN = 'https://experiments.tyharbin.com'
 
@@ -94,11 +95,13 @@ def resolve_reference(reference, projection, article_url, article_commit):
 
 
 def render_handoff(record):
-    identifier = html.escape(record['id'])
+    exact_id = _reference_identifier({'ref': record.get('id')})
+    _record_identity(record, exact_id)
+    identifier = html.escape(exact_id)
     url = ORIGIN + record['detailUrl']
     return ('<aside aria-label="Compiled experiment reference"><p>'
             f'<a href="{html.escape(url, quote=True)}">Exact compiled experiment: {identifier}</a>. '
             'Compiler owns the package records and reproduction instructions. '
             'Qualification is unknown unless separately documented by Compiler; this reference '
             'does not establish execution, scientific acceptance, package integrity or independent '
-            'reproduction.</p></aside>')
+            'reproduction.</p>' + render_worklog(record) + '</aside>')
