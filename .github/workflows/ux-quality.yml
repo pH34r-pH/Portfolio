@@ -45,6 +45,8 @@ jobs:
           node --check site/assets/site.js
           node --check site/assets/appearance.js
           node --check site/assets/article-runtime.js
+          node --check site/assets/instrument.js
+          node --check site/assets/model-machine.js
           node scripts/test-article-runtime.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
@@ -194,11 +196,14 @@ jobs:
             --output-dir bundle/lab --lite-dir Portfolio
       - name: Attach Portfolio Lab navigation
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
+      - name: Build static research search index
+        run: npx --yes pagefind@1.4.0 --site bundle
       - name: Qualify finished public bundle
         shell: bash
         run: |
           set -euo pipefail
           for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
+            bundle/pagefind/pagefind.js bundle/assets/instrument.js bundle/assets/model-machine.js \
             bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
             bundle/lab/reference/glossary.md; do
             test -s "$path"
