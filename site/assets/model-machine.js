@@ -52,7 +52,7 @@ class ModelMachine {
         observer.disconnect();
         this.init();
       }
-    }, {rootMargin:"240px"});
+    }, {rootMargin:"0px"});
     observer.observe(this.root);
   }
   async init() {
