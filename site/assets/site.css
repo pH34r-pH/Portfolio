@@ -214,12 +214,15 @@ body.cross-site-leaving .cross-site-flash{animation:cross-site-scan .2s cubic-be
   section>h2,.program-preview>h2{font-size:clamp(2.1rem,10vw,3.2rem)}
   .program-grid,.grid{display:block;border:0;background:none}
   .program-grid article,.card{min-height:0;margin-bottom:1px;border:1px solid var(--line)}
-  .model-instrument{min-height:390px}
-  .model-stage{min-height:280px}
-  .model-console{grid-template-columns:1fr auto}
-  .model-console .model-output{grid-column:1/-1}
-  .model-fallback{grid-template-columns:1fr;padding-top:44px;align-content:center}
-  .model-fallback span{min-height:30px}
+  .model-instrument{padding-top:28px}
+  .model-workcell{grid-template-columns:1fr;min-height:0}
+  .model-input-port,.model-output-port{border-inline:0}
+  .model-input-port{border-bottom:1px solid var(--line)}
+  .model-output-port{border-top:1px solid var(--line)}
+  .model-input-port:after,.model-output-port:before{display:none}
+  .model-stage{min-height:300px}
+  .model-fallback{grid-template-columns:repeat(3,1fr);padding-top:38px}
+  .token-rail,.output-conveyor{min-height:42px;margin-top:8px}
   .research-topology{padding:8px}
   .research-frontier{display:block;border:0;background:none}.frontier-card{min-height:0;margin-bottom:1px;border:1px solid var(--line)}.frontier-source{border:1px solid var(--line)}
   .research-topology svg{display:none}
