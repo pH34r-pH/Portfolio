@@ -593,10 +593,10 @@ function initMachine(root) {
   });
 
   const observer = new IntersectionObserver((entries) => {
-    visible = entries.some((entry) => entry.isIntersecting);
+    visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= .15);
     scene?.setVisible(visible && !document.hidden);
     if (visible) boot();
-  }, { rootMargin: "320px 0px" });
+  }, { threshold: [.15] });
   observer.observe(stage);
 
   document.addEventListener("visibilitychange", () => {
