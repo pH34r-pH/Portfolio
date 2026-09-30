@@ -127,7 +127,8 @@
           "sha256",
           "renderedSha256",
           "assets",
-          "browserExecution"
+          "browserExecution",
+          "downloads"
         ],
         "additionalProperties": false,
         "properties": {
@@ -274,6 +275,34 @@
             "items": {
               "type": "string",
               "minLength": 1
+            }
+          },
+          "downloads": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "pdf",
+              "docx",
+              "latex",
+              "jats"
+            ],
+            "properties": {
+              "pdf": {
+                "type": "string",
+                "pattern": "^/article-exports/[a-z0-9-]+\\.pdf$"
+              },
+              "docx": {
+                "type": "string",
+                "pattern": "^/article-exports/[a-z0-9-]+\\.docx$"
+              },
+              "latex": {
+                "type": "string",
+                "pattern": "^/article-exports/[a-z0-9-]+-latex\\.zip$"
+              },
+              "jats": {
+                "type": "string",
+                "pattern": "^/article-exports/[a-z0-9-]+\\.xml$"
+              }
             }
           }
         }
