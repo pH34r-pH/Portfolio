@@ -252,4 +252,4 @@ body.cross-site-leaving .cross-site-flash{animation:cross-site-scan .2s cubic-be
 }
 @media(prefers-contrast:more){:root{--line:var(--ink);--muted:var(--ink)}.topbar,.notebook-content,.model-instrument,.card,.program-grid article{background:var(--bg)}}
 @media(forced-colors:active){body{background:Canvas}.topbar,.notebook-content,.model-instrument,.card,.program-grid article{background:Canvas}.model-canvas{display:none}.model-fallback{opacity:1}.primary{forced-color-adjust:auto}}
-@media print{.topbar,.search-dialog,.model-console{display:none!important}body{padding-top:0;background:#fff;color:#000}.model-canvas{display:none}.model-fallback{position:static;opacity:1}.notebook-content{border:0;padding:0}}
+@media print{.topbar,.search-dialog,.model-port{display:none!important}body{padding-top:0;background:#fff;color:#000}.model-canvas{display:none}.model-fallback{position:static;opacity:1}.notebook-content{border:0;padding:0}}
