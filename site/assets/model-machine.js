@@ -60,6 +60,7 @@ class ModelMachine {
     this.nodes = [];
     this.layers = [];
     this.edges = [];
+    this.nodeGroupTargetX = 0;
     this.tick = this.animate.bind(this);
     this.bind();
     this.bindArticleDock();
@@ -383,8 +384,7 @@ class ModelMachine {
       mesh.material.opacity = active ? 0.88 : 0.13;
       mesh.scale.setScalar(active ? 1.18 : 0.88);
     }
-    const targetX = {input: -2.6, state: -0.8, consumer: 1.2, output: 2.6}[stage] || 0;
-    this.nodeGroup.position.x += (targetX - this.nodeGroup.position.x) * 0.55;
+    this.nodeGroupTargetX = {input: -2.6, state: -0.8, consumer: 1.2, output: 2.6}[stage] || 0;
   }
 
   advanceInput(dt) {
@@ -503,6 +503,7 @@ class ModelMachine {
 
     this.updatePulses(dt);
     this.updateOutputBlocks(dt);
+    this.nodeGroup.position.x += (this.nodeGroupTargetX - this.nodeGroup.position.x) * Math.min(1, dt * 7);
     for (const node of this.nodes) node.mesh.position.lerp(node.target, Math.min(1, dt * 6.5));
     this.updateEdges();
     const breathe = 0.74 + 0.12 * Math.sin(now * 2.4);
