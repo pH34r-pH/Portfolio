@@ -98,6 +98,31 @@ async function generatedArticle(page, path) {
   await expect(page.locator("h1")).toHaveCount(1);
 }
 
+async function worklogDisclosures(page, width, path) {
+  const evidence = page.locator(".compiled-experiment-evidence");
+  if (!(await evidence.count())) return;
+  const minimumHeight = await page.evaluate(() => matchMedia("(pointer: coarse)").matches ? 48 : 44);
+  for (const summary of await evidence.locator("details > summary").all()) {
+    await summary.scrollIntoViewIfNeeded();
+    const box = await summary.boundingBox();
+    assert.ok(box && box.height >= minimumHeight, `${width} ${path}: evidence disclosure target is smaller than ${minimumHeight}px`);
+    const details = summary.locator("..");
+    await summary.click();
+    await expect(details).toHaveJSProperty("open", true);
+    await expect(details.locator(":scope > :not(summary)").first()).toBeVisible();
+    const protocol = details.locator('pre[aria-label="Full authoritative experiment protocol"]');
+    if (await protocol.count()) await expect(protocol).toBeVisible();
+    await noOverflow(page, width, path);
+    const overflow = await evidence.evaluate(element => element.scrollWidth - element.clientWidth);
+    assert.ok(overflow <= 1, `${width} ${path}: expanded experiment evidence overflows by ${overflow}px`);
+    await summary.focus();
+    await expect(summary).toBeFocused();
+    await summary.press("Enter");
+    await expect(details).toHaveJSProperty("open", false);
+    await expect(summary).toBeFocused();
+  }
+}
+
 async function generatedNotebook(page, path) {
   if (!path.startsWith("/notebooks/")) return;
   await expect(page.locator(".notebook-content")).toBeVisible();
@@ -117,6 +142,7 @@ async function routeAudit(page,width,path,data,errors) {
   if (path==="/") await homeModel(page);
   if (path==="/research/") await researchMap(page,data,width);
   await generatedArticle(page,path);
+  await worklogDisclosures(page,width,path);
   await generatedNotebook(page,path);
   assert.deepEqual(errors.splice(0),[],`${width} ${path}: page errors after interaction`);
 }
