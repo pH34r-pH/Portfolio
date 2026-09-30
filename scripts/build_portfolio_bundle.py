@@ -96,62 +96,77 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
         shutil.copytree(research_notes / "articles", output / "publication" / "articles")
 
 
-def _article_metadata(source: str, src: Path) -> dict:
-    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
-    if not match:
-        raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
-    metadata = {}
-    for field in ("title", "description", "date", "modelFocus", "modelVariant", "status"):
-        value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
-        if value:
-            metadata[field] = value.group(1).strip().strip("'\"")
-    dependencies = re.search(r"^(?:dependsOn|depends_on):\s*\[(.*?)\]\s*$", match.group(1), re.MULTILINE)
-    if dependencies:
-        metadata["dependsOn"] = [
-            item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()
-        ]
-    snake_focus = re.search(r"^model_focus:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
-    if snake_focus and not metadata.get("modelFocus"):
-        metadata["modelFocus"] = snake_focus.group(1).strip().strip("'\"")
-    snake_variant = re.search(r"^model_variant:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
-    if snake_variant and not metadata.get("modelVariant"):
-        metadata["modelVariant"] = snake_variant.group(1).strip().strip("'\"")
+class _UniqueKeysLoader(yaml.SafeLoader):
+    pass
+
+
+def _unique_mapping(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            raise ValueError(f"Duplicate article frontmatter key: {key}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+_UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _unique_mapping)
+
+
+def _frontier_metadata(block: str, src: Path) -> dict:
     frontier = {}
-    for key, output_key in (
+    fields = (
         ("frontier_observed_json", "observed"),
         ("frontier_ruled_out_json", "ruledOut"),
         ("frontier_open_json", "open"),
         ("frontier_next_json", "next"),
-    ):
-        value = re.search(rf"^{key}:\s*(\[.*\])\s*$", match.group(1), re.MULTILINE)
+    )
+    for key, output_key in fields:
+        value = re.search(rf"^{key}:\s*(\[.*\])\s*$", block, re.MULTILINE)
+        if not value:
+            continue
+        try:
+            parsed = json.loads(value.group(1))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid {key} JSON in article frontmatter: {src}") from exc
+        if not isinstance(parsed, list) or not all(isinstance(item, str) and item.strip() for item in parsed):
+            raise ValueError(f"{key} must be a JSON array of non-empty strings: {src}")
+        frontier[output_key] = parsed
+    return frontier
+
+
+def _article_metadata(source: str, src: Path) -> dict:
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
+    if not match:
+        raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
+    block = match.group(1)
+    metadata = {}
+    for field in ("title", "description", "date", "modelFocus", "modelVariant", "status"):
+        value = re.search(rf"^{field}:\s*(.+?)\s*$", block, re.MULTILINE)
         if value:
-            try:
-                parsed = json.loads(value.group(1))
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"Invalid {key} JSON in article frontmatter: {src}") from exc
-            if not isinstance(parsed, list) or not all(isinstance(item, str) and item.strip() for item in parsed):
-                raise ValueError(f"{key} must be a JSON array of non-empty strings: {src}")
-            frontier[output_key] = parsed
+            metadata[field] = value.group(1).strip().strip("'\"")
+
+    dependencies = re.search(r"^(?:dependsOn|depends_on):\s*\[(.*?)\]\s*$", block, re.MULTILINE)
+    if dependencies:
+        metadata["dependsOn"] = [
+            item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()
+        ]
+
+    aliases = (("model_focus", "modelFocus"), ("model_variant", "modelVariant"))
+    for source_key, target_key in aliases:
+        value = re.search(rf"^{source_key}:\s*(.+?)\s*$", block, re.MULTILINE)
+        if value and not metadata.get(target_key):
+            metadata[target_key] = value.group(1).strip().strip("'\"")
+
+    frontier = _frontier_metadata(block, src)
     if frontier:
         metadata["frontier"] = frontier
+
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
 
-    class UniqueKeysLoader(yaml.SafeLoader):
-        pass
-
-    def unique_mapping(loader, node, deep=False):
-        mapping = {}
-        for key_node, value_node in node.value:
-            key = loader.construct_object(key_node, deep=deep)
-            if key in mapping:
-                raise ValueError(f"Duplicate article frontmatter key: {key}")
-            mapping[key] = loader.construct_object(value_node, deep=deep)
-        return mapping
-
-    UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
-    structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
+    structured = yaml.load(block, Loader=_UniqueKeysLoader)
     if isinstance(structured, dict) and "compiled_experiment" in structured:
         metadata["compiled_experiment"] = structured["compiled_experiment"]
     return metadata
