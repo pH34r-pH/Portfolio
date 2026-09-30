@@ -51,7 +51,9 @@ jobs:
         shell: bash
         run: |
           set +e
-          lizard site scripts -x 'site/assets/vendor/*' -C 15 -L 75 -a 7 -w > quality-audit/lizard.txt 2>&1
+          # Lizard's JavaScript parser folds the ES202x WebGL class into the first function.
+          # ESLint still structurally audits model-machine.js; only Lizard skips that parser false positive.
+          lizard site scripts -x 'site/assets/vendor/*' -x 'site/assets/model-machine.js' -C 15 -L 75 -a 7 -w > quality-audit/lizard.txt 2>&1
           status=$?
           cat quality-audit/lizard.txt
           echo "lizard_status=$status" >> "$GITHUB_STEP_SUMMARY"
@@ -86,7 +88,7 @@ jobs:
             cd "$base_dir"
             set +e
             npx --yes eslint@9.38.0 site scripts               --no-config-lookup --ignore-pattern 'site/assets/vendor/**' --ext .js,.mjs,.cjs               --rule 'max-lines: ["warn", {"max": 500, "skipBlankLines": true, "skipComments": true}]'               --rule 'max-lines-per-function: ["warn", {"max": 75, "skipBlankLines": true, "skipComments": true}]'               --rule 'complexity: ["warn", 15]'               --rule 'max-params: ["warn", 7]'               --rule 'max-depth: ["warn", 4]'               > "$GITHUB_WORKSPACE/quality-audit/base/eslint.txt" 2>&1
-            lizard site scripts -x 'site/assets/vendor/*' -C 15 -L 75 -a 7 -w > "$GITHUB_WORKSPACE/quality-audit/base/lizard.txt" 2>&1
+            lizard site scripts -x 'site/assets/vendor/*' -x 'site/assets/model-machine.js' -C 15 -L 75 -a 7 -w > "$GITHUB_WORKSPACE/quality-audit/base/lizard.txt" 2>&1
             npx --yes jscpd@5.0.12 site scripts               --min-lines 8 --min-tokens 60 --format javascript,typescript               --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json,**/assets/vendor/**"               --reporters console > "$GITHUB_WORKSPACE/quality-audit/base/jscpd.txt" 2>&1
             true
           )
