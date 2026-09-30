@@ -109,10 +109,36 @@ async function auditArticleLinks(page, manifest, path) {
   }
 }
 
-async function auditArticle(page, manifest, path) {
+async function auditWorklogDisclosures(page, width, path) {
+  const evidence = page.locator(".compiled-experiment-evidence");
+  if (!(await evidence.count())) return;
+  const minimumHeight = await page.evaluate(() => matchMedia("(pointer: coarse)").matches ? 48 : 44);
+  for (const summary of await evidence.locator("details > summary").all()) {
+    await summary.scrollIntoViewIfNeeded();
+    const box = await summary.boundingBox();
+    assert.ok(box && box.height >= minimumHeight, `${width}${path}: evidence disclosure target is smaller than ${minimumHeight}px`);
+    const details = summary.locator("..");
+    await clickForViewport(summary, width);
+    await expect(details).toHaveJSProperty("open", true);
+    await expect(details.locator(":scope > :not(summary)").first()).toBeVisible();
+    const protocol = details.locator('pre[aria-label="Full authoritative experiment protocol"]');
+    if (await protocol.count()) await expect(protocol).toBeVisible();
+    await auditOverflow(page, width, path);
+    const overflow = await evidence.evaluate(element => element.scrollWidth - element.clientWidth);
+    assert.ok(overflow <= 1, `${width}${path}: expanded evidence overflows by ${overflow}px`);
+    await summary.focus();
+    await expect(summary).toBeFocused();
+    await summary.press("Enter");
+    await expect(details).toHaveJSProperty("open", false);
+    await expect(summary).toBeFocused();
+  }
+}
+
+async function auditArticle(page, manifest, path, width) {
   const article = manifest.articles.find(item => item.url === path);
   assert.ok(article, `${path}: article must exist in the exact publication manifest`);
   await auditArticleLinks(page, manifest, path);
+  await auditWorklogDisclosures(page, width, path);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
   await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
   await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
@@ -211,7 +237,7 @@ async function auditRoute(page, context, width, path, manifest, errors) {
   await auditAccessibility(page, width, path);
   if (path === "/atlas/") await auditAtlasCompatibility(page);
   if (path.startsWith("/notebooks/")) await auditNotebook(page);
-  if (path.startsWith("/articles/")) await auditArticle(page, manifest, path);
+  if (path.startsWith("/articles/")) await auditArticle(page, manifest, path, width);
   if (path === "/research/") await auditResearch(page, manifest);
   if (path === "/research/") {
     await page.locator(".skip-link").focus();

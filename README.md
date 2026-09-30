@@ -89,3 +89,14 @@ republished as a second catalog. Legacy/local builds without either Compiler
 input remain supported for articles without references. Existing unreferenced
 article bytes stay unchanged. The receipt records input identity, not scientific
 qualification, independent reproduction or deployment authorization.
+
+
+The article handoff also presents a compact evidence block from that same
+verified public record: exact package and scientific-source identity, declared
+question/method, execution attempts and retained result member references,
+source-owned interpretation, and the complete protocol text when available.
+Long protocols and result inventories expand on request. Missing declarations
+remain unavailable; active, failed and completed attempts retain their own
+labels. A source-reported acceptance check stays separate from execution,
+package integrity and independent reproduction. Source text is escaped, malformed
+records fail publication, and numeric metrics are not synthesized or defaulted.
