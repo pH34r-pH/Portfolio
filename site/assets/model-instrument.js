@@ -2,18 +2,16 @@
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const stages = ["input", "tokenization", "representation", "architecture", "consumer", "output"];
 
-  function tokenize(text) {
-    return (text.match(/\w+|[^\w\s]/g) || []).slice(0, 18);
-  }
+  const tokenize = text => (text.match(/\w+|[^\w\s]/g) || []).slice(0, 18);
 
-  function deterministicReply(tokens) {
+  const deterministicReply = tokens => {
     if (!tokens.length) return [];
     const words = ["signal", "moves", "through", "state", "and", "becomes", "a", "prediction", "."];
     const seed = tokens.join("").split("").reduce((n, ch) => (n + ch.charCodeAt(0)) % words.length, 0);
     return words.map((_, i) => words[(i + seed) % words.length]).slice(0, 9);
-  }
+  };
 
-  function stageIndex(focus) {
+  const stageIndex = focus => {
     const normalized = String(focus || "full").toLowerCase();
     const aliases = {
       "recurrent-state": "representation",
@@ -24,7 +22,7 @@
     };
     const resolved = aliases[normalized] || normalized;
     return resolved === "full" ? -1 : Math.max(0, stages.indexOf(resolved));
-  }
+  };
   const variantTransforms = {
     spectral(next, node, fraction) {
       if (node.stage !== 2) return next;
@@ -67,7 +65,7 @@
     },
   };
 
-  function variantNodes(base, variant) {
+  const variantNodes = (base, variant) => {
     const kind = String(variant || "baseline").toLowerCase();
     const transform = variantTransforms[kind];
     const counts = new Map(stages.map((_, stage) => [stage, base.filter(node => node.stage === stage).length]));
@@ -78,7 +76,7 @@
       const fraction = count <= 1 ? .5 : rank / (count - 1);
       return transform ? transform(next, node, fraction, rank) : next;
     });
-  }
+  };
 
 
   class Instrument {
@@ -435,9 +433,9 @@
     }
   }
 
-  function init() {
+  const init = () => {
     document.querySelectorAll("[data-model-lab]").forEach(root => new Instrument(root));
-  }
+  };
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", init, { once:true });
   else init();
 }
