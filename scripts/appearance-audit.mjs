@@ -35,10 +35,30 @@ async function auditMode(page, width, path, mode, title) {
 
   assert.equal(await page.locator('h1').innerText(), title, 'Changing environment must preserve title text');
 
-  const overflowing = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    const width = root.clientWidth;
+    const offenders = [...document.querySelectorAll('body *')]
+      .map(element => {
+        const box = element.getBoundingClientRect();
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id || null,
+          classes: [...element.classList].slice(0, 4),
+          left: Math.round(box.left * 10) / 10,
+          right: Math.round(box.right * 10) / 10,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+        };
+      })
+      .filter(item => item.left < -1 || item.right > width + 1 || item.scrollWidth > item.clientWidth + 1)
+      .slice(0, 12);
+    return { scrollWidth: root.scrollWidth, clientWidth: width, offenders };
+  });
+  assert.ok(
+    overflow.scrollWidth <= overflow.clientWidth + 1,
+    `${width} ${path} ${mode}: overflow ${JSON.stringify(overflow)}`,
   );
-  assert.equal(overflowing, false, `${width} ${path} ${mode}: overflow`);
 
   if (width === 412 || width === 1366) {
     const axe = await new AxeBuilder({ page })
