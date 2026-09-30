@@ -44,6 +44,8 @@ jobs:
           curl -fsS http://127.0.0.1:4173/ >/dev/null
           node --check site/assets/site.js
           node --check site/assets/appearance.js
+          node --check site/assets/article-runtime.js
+          node scripts/test-article-runtime.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/appearance-audit.mjs

@@ -74,16 +74,49 @@ function addProjectionControl(figure) {
   image.hidden = true;
   update();
 }
+function retainBrowserPythonPlaceholders(placeholders, outputs) {
+  // Thebe replaces source placeholders before the kernel is ready.
+  // Retain their positions so a failed bootstrap can render them again.
+  document.querySelectorAll("[data-executable]").forEach((source) => {
+    const marker = document.createComment("browser Python source");
+    source.before(marker);
+    placeholders.push({ source, marker });
+  });
+  document.querySelectorAll("[data-output]").forEach((output) => {
+    outputs.push({ output, children: Array.from(output.childNodes, child => child.cloneNode(true)) });
+  });
+}
+
+function restoreBrowserPythonPlaceholders(placeholders, outputs) {
+  if (!placeholders.length) return;
+  window.thebe.notebook?.dispose?.();
+  window.thebe.server?.dispose?.();
+  placeholders.forEach(({ source, marker }) => {
+    if (marker.nextSibling !== source) marker.nextSibling?.replaceWith(source);
+    marker.remove();
+  });
+  outputs.forEach(({ output, children }) => output.replaceChildren(...children));
+}
+
 addProjectionControl(document.getElementById("unit-circle-readout"));
 (() => {
+  const scripts = new Map();
+
   function loadScript(source) {
-    return new Promise((resolve, reject) => {
+    if (scripts.has(source)) return scripts.get(source);
+    const pending = new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = source;
       script.onload = resolve;
-      script.onerror = () => reject(new Error(`Could not load ${source}`));
+      script.onerror = () => {
+        script.remove();
+        scripts.delete(source);
+        reject(new Error(`Could not load ${source}`));
+      };
       document.head.append(script);
     });
+    scripts.set(source, pending);
+    return pending;
   }
 
   function loadStyle(source) {
@@ -99,16 +132,21 @@ addProjectionControl(document.getElementById("unit-circle-readout"));
       const button = panel.querySelector("[data-load-browser-runtime]");
       const status = panel.querySelector("[data-runtime-status]");
       if (!button || !status) return;
+      let ready = false;
       button.addEventListener("click", async () => {
+        if (button.disabled || ready) return;
         button.disabled = true;
         button.textContent = "Starting browser Python…";
         status.textContent = "Loading the local JupyterLite and Thebe runtime.";
         loadStyle("/assets/thebe/thebe.css");
         loadStyle("/assets/thebe/thebe-core.css");
+        const placeholders = [];
+        const outputs = [];
         try {
           await loadScript("/assets/thebe/thebe-lite.min.js");
           await loadScript("/assets/thebe/index.js");
           if (!window.thebe?.bootstrap) throw new Error("Thebe did not initialize.");
+          retainBrowserPythonPlaceholders(placeholders, outputs);
           await window.thebe.bootstrap({
             useBinder: false,
             useJupyterLite: true,
@@ -116,14 +154,17 @@ addProjectionControl(document.getElementById("unit-circle-readout"));
             outputSelector: "[data-output]",
             requestKernel: true,
           });
+          ready = true;
+          placeholders.forEach(({ marker }) => marker.remove());
           button.textContent = "Browser Python ready";
           status.textContent = "Your local Python session is ready. Edit the cell and use its Run control.";
         } catch (error) {
+          restoreBrowserPythonPlaceholders(placeholders, outputs);
           button.disabled = false;
           button.textContent = "Try browser Python again";
           status.textContent = `The browser session could not start: ${error.message}`;
         }
-      }, { once: true });
+      });
     });
   }
 
