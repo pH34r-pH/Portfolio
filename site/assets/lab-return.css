@@ -1,20 +1,27 @@
-/* Reserve space before JupyterLab lays out its shell. Do not overlay its menus. */
+/* Portfolio return strip for the independently themed JupyterLab workspace. */
 #main.jp-LabShell{top:44px!important;height:calc(100% - 44px)!important}
-#portfolio-lab-return{position:fixed;inset:0 0 auto;z-index:10;height:44px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#e8e3d8;color:#17191a;border-bottom:1px solid #aaa497;font:600 11px ui-monospace,monospace;letter-spacing:.04em}
-#portfolio-lab-return a{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:underline;text-underline-offset:3px}
-#portfolio-lab-return a:focus-visible{outline:3px solid #765466;outline-offset:-3px}
-#portfolio-lab-return span{font-size:10px;font-weight:400}
-@media(max-width:480px){#portfolio-lab-return span{display:none}}
-@media(prefers-color-scheme:dark){#portfolio-lab-return{background:#191a18;color:#e7dfcf;border-color:#6d675d}#portfolio-lab-return a:focus-visible{outline-color:#d58a64}}
-/* Only Portfolio's return strip follows Portfolio appearance. The executable
-   workspace retains JupyterLab's own editor theme and accessibility settings. */
-html[data-palette=nacre]{--return-bg:#e8e3d8;--return-ink:#17191a;--return-line:#aaa497;--return-accent:#765466}
-html[data-palette=oxide]{--return-bg:#191a18;--return-ink:#e7dfcf;--return-line:#6d675d;--return-accent:#d58a64}
-html[data-palette=violet]{--return-bg:#111014;--return-ink:#e9e4eb;--return-line:#45404b;--return-accent:#9a7bb2}
-html[data-palette=high-contrast]{--return-bg:#000;--return-ink:#fff;--return-line:#fff;--return-accent:#fff}
-html[data-palette] #portfolio-lab-return{background:var(--return-bg);color:var(--return-ink);border-color:var(--return-line)}
-html[data-palette] #portfolio-lab-return a:focus-visible{outline-color:var(--return-accent)}
-html[data-style=orbit] #portfolio-lab-return a{border-radius:0 16px 0 0;border-right:1px solid var(--return-accent);padding-right:16px}
-html[data-style=register] #portfolio-lab-return{border-bottom:2px solid var(--return-accent)}
-html[data-style=overprint] #portfolio-lab-return{border-bottom:3px double var(--return-accent)}
-html[data-style=hinge] #portfolio-lab-return a{border-left:2px solid var(--return-accent);padding-left:10px}
+#portfolio-lab-return{
+  position:fixed;inset:0 0 auto;z-index:10;height:44px;box-sizing:border-box;
+  display:flex;align-items:center;justify-content:space-between;padding:0 16px;
+  background:#f5faff;color:#04182c;border-bottom:1px solid #9bc7f5;
+  font:700 10px ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase
+}
+#portfolio-lab-return a{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:none}
+#portfolio-lab-return a:after{content:" / RETURN";margin-left:8px;color:#0068ff}
+#portfolio-lab-return a:focus-visible{outline:3px solid #0068ff;outline-offset:-3px}
+#portfolio-lab-return span{font-size:9px;font-weight:500;color:#49627d}
+@media(max-width:480px){#portfolio-lab-return{padding-inline:12px}#portfolio-lab-return span{display:none}}
+@media(prefers-color-scheme:dark){
+  #portfolio-lab-return{background:#00070e;color:#e8f6ff;border-color:#124a74}
+  #portfolio-lab-return span{color:#8ca9c3}
+  #portfolio-lab-return a:after{color:#2d8cff}
+  #portfolio-lab-return a:focus-visible{outline-color:#74bdff}
+}
+@media(prefers-contrast:more){
+  #portfolio-lab-return{border-color:currentColor}
+  #portfolio-lab-return span,#portfolio-lab-return a:after{color:currentColor}
+}
+@media(forced-colors:active){
+  #portfolio-lab-return{background:Canvas;color:CanvasText;border-color:CanvasText}
+  #portfolio-lab-return a:after,#portfolio-lab-return span{color:CanvasText}
+}
