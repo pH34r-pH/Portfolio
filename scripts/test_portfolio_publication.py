@@ -118,7 +118,7 @@ class ReaderPublicationTest(unittest.TestCase):
         article_source = ('---\ntitle: Sample article\ndescription: Reviewed test article.\n'
                           'date: 2026-09-29\n---\n(sample-article)=\n# Sample article\n\nA static article body.\n')
         second_source = ('---\ntitle: Second article\ndescription: Another reviewed test article.\n'
-                         'date: 2026-09-29\n---\n(second-article)=\n# Second article\n\n'
+                         'date: 2026-09-29\ndepends_on: [sample-article]\nmodel_focus: consumer\n---\n(second-article)=\n# Second article\n\n'
                          'A different static article body.\n')
         (research/'articles/sample-article.md').write_text(article_source)
         (research/'articles/sample-article-second.md').write_text(second_source)
@@ -182,6 +182,8 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(len(manifest['notebooks']), 1)
             self.assertEqual(len(manifest['articles']), 2)
             self.assertEqual([article['sequence'] for article in manifest['articles']], [1, 2])
+            self.assertEqual(manifest['articles'][1]['dependsOn'], ['sample-article'])
+            self.assertEqual(manifest['articles'][1]['modelFocus'], 'consumer')
 
     def test_article_routes_preserve_accessible_tables_sources_and_assets(self):
         with tempfile.TemporaryDirectory() as directory:
