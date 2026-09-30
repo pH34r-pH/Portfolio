@@ -124,7 +124,7 @@ class ModelMachine {
     this.scene.add(this.machineGroup, this.tokenGroup, this.nodeGroup, this.outputGroup);
   }
 
-  createBox(width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55) {
+  createBox({width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55}) {
     const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
     const mesh = new Mesh(
       new BoxGeometry(width, height, depth),
@@ -137,12 +137,12 @@ class ModelMachine {
 
   createMachinery() {
     const {CylinderGeometry, MeshBasicMaterial, Mesh} = this.THREE;
-    this.createBox(1.5, 3.8, 1.2, -5.55, 0, 0, 0x062238, 0.92);
-    this.createBox(1.05, 0.2, 0.86, -6.45, 0, 0, 0x168fd7, 0.42);
-    this.createBox(2.25, 0.16, 0.8, 5.45, -1.5, 0, 0x0b527f, 0.48);
-    this.createBox(0.62, 1.7, 0.92, 4.55, -0.55, 0, 0x07304d, 0.92);
-    this.createBox(0.62, 1.7, 0.92, 5.35, -0.55, 0, 0x07304d, 0.92);
-    this.createBox(0.62, 1.7, 0.92, 6.15, -0.55, 0, 0x07304d, 0.92);
+    this.createBox({width: 1.5, height: 3.8, depth: 1.2, x: -5.55, y: 0, z: 0, color: 0x062238, opacity: 0.92});
+    this.createBox({width: 1.05, height: 0.2, depth: 0.86, x: -6.45, y: 0, z: 0, color: 0x168fd7, opacity: 0.42});
+    this.createBox({width: 2.25, height: 0.16, depth: 0.8, x: 5.45, y: -1.5, z: 0, color: 0x0b527f, opacity: 0.48});
+    this.createBox({width: 0.62, height: 1.7, depth: 0.92, x: 4.55, y: -0.55, z: 0, color: 0x07304d, opacity: 0.92});
+    this.createBox({width: 0.62, height: 1.7, depth: 0.92, x: 5.35, y: -0.55, z: 0, color: 0x07304d, opacity: 0.92});
+    this.createBox({width: 0.62, height: 1.7, depth: 0.92, x: 6.15, y: -0.55, z: 0, color: 0x07304d, opacity: 0.92});
 
     const rollerMaterial = new MeshBasicMaterial({color: 0x1b9cff, transparent: true, opacity: 0.68});
     this.rollers = [-0.42, 0.42].map(y => {
@@ -247,7 +247,7 @@ class ModelMachine {
 
     if (!this.ready || REDUCED) {
       this.output.textContent = toyCompletion(text).join(" ");
-      this.status.textContent = \`\${tokens.length} TOKENS / PATH COMPLETE\`;
+      this.status.textContent = `${tokens.length} TOKENS / PATH COMPLETE`;
       return;
     }
 
@@ -258,7 +258,7 @@ class ModelMachine {
     this.cascadeStarted = false;
     this.outputStarted = false;
     this.started = performance.now() / 1000;
-    this.status.textContent = \`TOKENIZED / \${tokens.length} BLOCKS\`;
+    this.status.textContent = `TOKENIZED / ${tokens.length} BLOCKS`;
   }
 
   emitPulse(from, to, strength, delay = 0) {
