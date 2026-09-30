@@ -125,6 +125,8 @@ async function searchShortcut(page) {
   await page.goto(base+"/",{waitUntil:"networkidle"});
   await page.keyboard.press("Control+K");
   await expect(page.locator("#site-search-input")).toBeFocused();
+  await page.locator("#site-search-input").fill("research");
+  await expect(page.locator("#site-search-results .search-result").first()).toBeVisible();
   await page.keyboard.press("Escape");
   await page.keyboard.press("/");
   await expect(page.locator("#site-search-input")).toBeFocused();
