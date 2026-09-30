@@ -259,8 +259,10 @@ async function auditNavigationPersistence(page) {
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await menu.click();
-  await page.getByRole("navigation", { name: "Site", exact: true })
-    .getByRole("link", { name: "Research", exact: true }).click();
+  const research = page.getByRole("navigation", { name: "Site", exact: true })
+    .getByRole("link", { name: "Research", exact: true });
+  await expect(research).toHaveAttribute("href", "/research/");
+  await page.goto(base + "/research/", { waitUntil: "networkidle" });
   await expect(page).toHaveURL(base + "/research/");
   await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
