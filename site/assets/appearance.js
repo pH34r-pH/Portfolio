@@ -1,38 +1,29 @@
-/* Shared by Portfolio pages, generated readers, and the Lab return strip. */
+/* Shared menu and display-mode behavior for static pages and generated readers. */
 (() => {
   const root = document.documentElement;
-  const choices = {
-    style: ["orbit", "register", "overprint", "hinge"],
-    palette: ["nacre", "oxide", "violet", "high-contrast"],
-  };
-  function read(kind) {
-    try { return localStorage.getItem("portfolio-" + kind); }
-    catch { return null; }
+  root.removeAttribute("data-style");
+  root.removeAttribute("data-palette");
+  function readMode() {
+    try {
+      const saved = localStorage.getItem("portfolio-mode");
+      if (saved === "light" || saved === "dark") return saved;
+    } catch {}
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   }
-  function select(kind, value, persist = false) {
-    const name = choices[kind].includes(value) ? value : choices[kind][0];
-    root.dataset[kind] = name;
-    document.querySelectorAll(`.appearance button[data-${kind}]`).forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset[kind] === name));
-    });
-    if (persist) {
-      try { localStorage.setItem("portfolio-" + kind, name); }
-      catch { /* The current page still works when storage is unavailable. */ }
-    }
+  function selectMode(value, persist = false) {
+    const mode = value === "dark" ? "dark" : "light";
+    root.dataset.mode = mode;
+    document.querySelectorAll("[data-mode-choice]").forEach(button =>
+      button.setAttribute("aria-pressed", String(button.dataset.modeChoice === mode)));
+    if (persist) { try { localStorage.setItem("portfolio-mode", mode); } catch {} }
   }
-  for (const kind of Object.keys(choices)) select(kind, read(kind));
+  selectMode(readMode());
   document.addEventListener("click", event => {
-    const button = event.target.closest?.(".appearance button");
-    if (!button) return;
-    for (const kind of Object.keys(choices)) {
-      if (button.dataset[kind]) select(kind, button.dataset[kind], true);
-    }
+    const button = event.target.closest?.("[data-mode-choice]");
+    if (button) selectMode(button.dataset.modeChoice, true);
   });
   addEventListener("storage", event => {
-    for (const kind of Object.keys(choices)) {
-      if (event.key === "portfolio-" + kind || event.key === null)
-        select(kind, read(kind));
-    }
+    if (event.key === "portfolio-mode" || event.key === null) selectMode(readMode());
   });
 
   const menuButton = document.querySelector(".menu-toggle");
@@ -57,11 +48,8 @@
     });
   }
 
-  // Readers retain the exact authored title and its casing. Only a presentation
-  // span is added; source notebook cells and generated scientific output stay intact.
-  function prepareReaderTitle() {
-    const title = document.querySelector(".notebook-reader > header h1");
-    if (!title || title.querySelector(".title-accent")) return;
+  const title = document.querySelector(".notebook-reader > header h1");
+  if (title && !title.querySelector(".title-accent")) {
     const text = title.textContent;
     const split = text.indexOf(" — ");
     const accent = document.createElement("span");
@@ -69,6 +57,4 @@
     accent.textContent = split < 0 ? text : text.slice(split + 3);
     title.replaceChildren(...(split < 0 ? [] : [document.createTextNode(text.slice(0, split + 3))]), accent);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepareReaderTitle);
-  else prepareReaderTitle();
 })();
