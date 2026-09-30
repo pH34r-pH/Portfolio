@@ -26,20 +26,28 @@
 <div class="actions"><a class="primary" href="/research/">Enter the research</a><a href="/articles/accessible-does-not-imply-used/">Latest article</a><a href="/about/">Why I do this</a></div></header>
 <section class="model-instrument" data-model-lab data-focus="full" aria-labelledby="model-instrument-title">
   <h2 id="model-instrument-title" class="visually-hidden">Interactive language model schematic</h2>
-  <div class="model-stage">
-    <canvas class="model-canvas" aria-hidden="true"></canvas>
-    <div class="model-fallback" aria-hidden="true">
-      <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
-      <span data-stage="representation">state</span><span data-stage="architecture">model</span>
-      <span data-stage="consumer">readout</span><span data-stage="output">output</span>
+  <p class="visually-hidden">A toy language-model workcell showing text entering an input buffer, tokenization, representation and model computation, a readout, and generated text leaving the output buffer.</p>
+  <div class="model-workcell">
+    <div class="model-port model-input-port">
+      <span class="machine-label">INPUT BUFFER / TOKEN FEED</span>
+      <label for="model-input">Model input</label>
+      <input id="model-input" data-model-input value="the model learned a useful distinction" autocomplete="off">
+      <button type="button" data-model-submit>Inject</button>
+      <div class="token-rail" data-token-rail aria-hidden="true"></div>
     </div>
-    <div class="token-rail" data-token-rail aria-hidden="true"></div>
-  </div>
-  <div class="model-console">
-    <label for="model-input">Model input</label>
-    <input id="model-input" data-model-input value="the model learned a useful distinction" autocomplete="off">
-    <button type="button" data-model-submit>Run</button>
-    <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+    <div class="model-stage">
+      <canvas class="model-canvas" aria-hidden="true"></canvas>
+      <div class="model-fallback" aria-hidden="true">
+        <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
+        <span data-stage="representation">state</span><span data-stage="architecture">model</span>
+        <span data-stage="consumer">readout</span><span data-stage="output">output</span>
+      </div>
+    </div>
+    <div class="model-port model-output-port">
+      <span class="machine-label">OUTPUT DROPPER / ASSEMBLY</span>
+      <div class="output-conveyor" data-output-rail aria-hidden="true"></div>
+      <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+    </div>
   </div>
 </section>
 <section class="program-preview" aria-labelledby="program-title"><p class="eyebrow">CURRENT / NEXT</p><h2 id="program-title">Research in motion.</h2>
