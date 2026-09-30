@@ -275,7 +275,8 @@ jobs:
           count="$(find bundle/publication/notebooks -name '*.ipynb' -type f | wc -l)"
           test "$count" -gt 0
           python - <<'PY'
-          import hashlib, json
+          import hashlib, json, zipfile
+          import xml.etree.ElementTree as ET
           from pathlib import Path
           root = Path('bundle')
           manifest = json.loads((root / 'publication.json').read_text())
@@ -291,9 +292,15 @@ jobs:
               assert 'myst-reader' in body and 'Canonical MyST source' in body
               for label in ('PDF', 'Word', 'LaTeX source', 'JATS XML'):
                   assert label in body, f"Missing article download link {label}: {article['slug']}"
-              for kind, download in article['downloads'].items():
-                  artifact = root / download.lstrip('/')
+              downloads = {kind: root / path.lstrip('/') for kind, path in article['downloads'].items()}
+              for kind, artifact in downloads.items():
                   assert artifact.is_file() and artifact.stat().st_size > 0, f"Missing {kind} export: {article['slug']}"
+              assert downloads['pdf'].read_bytes().startswith(b'%PDF-'), f"Invalid PDF export: {article['slug']}"
+              assert zipfile.is_zipfile(downloads['docx']), f"Invalid DOCX export: {article['slug']}"
+              assert zipfile.is_zipfile(downloads['latex']), f"Invalid LaTeX ZIP: {article['slug']}"
+              with zipfile.ZipFile(downloads['latex']) as archive:
+                  assert any(name.endswith('.tex') for name in archive.namelist()), f"LaTeX ZIP has no .tex source: {article['slug']}"
+              ET.parse(downloads['jats'])
               for asset in article['assets']:
                   assert (root / 'publication/article-assets' / asset).is_file(), f"Missing MyST asset: {asset}"
               if article['browserExecution']:
