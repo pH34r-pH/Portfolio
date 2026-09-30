@@ -1,23 +1,46 @@
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const COARSE = matchMedia("(pointer: coarse)").matches;
+const DEFAULT_TEXT = "A model can store a signal without using it.";
 
 function splitTokens(text) {
   return (text.match(/[A-Za-z0-9_]+|[^\sA-Za-z0-9_]/g) || []).slice(0, 18);
 }
+
 function hashText(text) {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
-  return h >>> 0;
-}
-function toyCompletion(text, count = 8) {
-  const vocabulary = ["system","state","signal","context","maps","through","the","next","layer","into","a","usable","prediction","path","while","structure","remains","visible"];
-  let seed = hashText(text || "research");
-  const out = [];
-  for (let i = 0; i < count; i++) {
-    seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
-    out.push(vocabulary[Math.abs(seed) % vocabulary.length]);
+  let value = 2166136261;
+  for (let i = 0; i < text.length; i += 1) {
+    value = Math.imul(value ^ text.charCodeAt(i), 16777619);
   }
-  return out;
+  return value >>> 0;
+}
+
+function deterministicUnit(seed) {
+  let value = seed >>> 0;
+  value ^= value << 13;
+  value ^= value >>> 17;
+  value ^= value << 5;
+  return (value >>> 0) / 4294967295;
+}
+
+function toyCompletion(text, count = 8) {
+  const words = [
+    "system", "state", "signal", "context", "maps", "through", "the", "next",
+    "layer", "into", "a", "usable", "prediction", "path", "while", "structure",
+    "remains", "visible",
+  ];
+  let seed = hashText(text || "research");
+  const output = [];
+  for (let i = 0; i < count; i += 1) {
+    seed = hashText(String(seed));
+    output.push(words[seed % words.length]);
+  }
+  return output;
+}
+
+function disposeMesh(mesh) {
+  mesh.geometry?.dispose();
+  mesh.material?.dispose();
+  mesh.removeFromParent();
 }
 
 class ModelMachine {
@@ -31,214 +54,396 @@ class ModelMachine {
     this.runButton = root.querySelector("[data-machine-run]");
     this.stageButtons = [...root.querySelectorAll("[data-machine-stage-button]")];
     this.stage = root.dataset.stage || "all";
-    this.running = false;
-    this.frame = 0;
     this.pulses = [];
     this.tokenMeshes = [];
+    this.outputBlocks = [];
     this.nodes = [];
     this.layers = [];
+    this.tick = this.animate.bind(this);
     this.bind();
     this.observe();
   }
+
   bind() {
     this.runButton?.addEventListener("click", () => this.run());
     this.input?.addEventListener("keydown", event => {
       if ((event.metaKey || event.ctrlKey) && event.key === "Enter") this.run();
     });
-    this.stageButtons.forEach(button => button.addEventListener("click", () => this.focus(button.dataset.machineStageButton)));
+    for (const button of this.stageButtons) {
+      button.addEventListener("click", () => this.focus(button.dataset.machineStageButton));
+    }
   }
+
   observe() {
     const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        observer.disconnect();
-        this.init();
-      }
-    }, {rootMargin:"0px"});
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      observer.disconnect();
+      this.init();
+    }, {rootMargin: "0px"});
     observer.observe(this.root);
   }
+
   async init() {
     if (this.ready || REDUCED) return;
     try {
-      const THREE = await import("/assets/vendor/three.module.min.js");
-      this.THREE = THREE;
-      const {Scene,PerspectiveCamera,WebGLRenderer,Color,Group,BoxGeometry,MeshBasicMaterial,Mesh,EdgesGeometry,LineSegments,LineBasicMaterial,SphereGeometry,Vector3} = THREE;
-      this.scene = new Scene();
-      this.scene.background = new Color(0x020b13);
-      this.camera = new PerspectiveCamera(40, 1, .1, 100);
-      this.camera.position.set(0, 4.5, 14);
-      this.camera.lookAt(0,0,0);
-      this.renderer = new WebGLRenderer({antialias:true,powerPreference:"high-performance",alpha:false});
-      this.renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
-      this.renderer.domElement.setAttribute("aria-hidden","true");
-      this.viewport.append(this.renderer.domElement);
-
-      this.tokenGroup = new Group();
-      this.nodeGroup = new Group();
-      this.scene.add(this.tokenGroup,this.nodeGroup);
-
-      const layerX = [-4.6,-1.7,1.3,4.25];
-      const layerCounts = [4,7,6,4];
-      layerX.forEach((x, li) => {
-        const layer = new Group();
-        const count = layerCounts[li];
-        for (let i=0;i<count;i++) {
-          const y = (i-(count-1)/2)*.82;
-          const g = new SphereGeometry(.105,16,12);
-          const m = new MeshBasicMaterial({color: li === 3 ? 0x67c9ff : 0x1b9cff,transparent:true,opacity:.42});
-          const node = new Mesh(g,m);
-          node.position.set(x,y,(i%2)*.55-.27);
-          layer.add(node); this.nodes.push({mesh:node,layer:li});
-        }
-        this.nodeGroup.add(layer); this.layers.push(layer);
-      });
-
-      for(let li=0;li<layerX.length-1;li++){
-        const left=this.layers[li].children,right=this.layers[li+1].children;
-        left.forEach((a,ai)=>{
-          right.forEach((b,bi)=>{
-            if((ai+bi)%2) return;
-            const points=[a.getWorldPosition(new Vector3()),b.getWorldPosition(new Vector3())];
-            const geom=new THREE.BufferGeometry().setFromPoints(points);
-            const line=new THREE.Line(geom,new LineBasicMaterial({color:0x0b5d92,transparent:true,opacity:.13}));
-            this.scene.add(line);
-          });
-        });
-      }
+      this.THREE = await import("/assets/vendor/three.module.min.js");
+      this.createScene();
+      this.createMachinery();
+      this.createNetwork();
       this.resize();
-      new ResizeObserver(()=>this.resize()).observe(this.viewport);
+      new ResizeObserver(() => this.resize()).observe(this.viewport);
       this.ready = true;
       this.root.dataset.ready = "true";
       this.status.textContent = "READY / ENTER TEXT";
-      this.animate();
+      requestAnimationFrame(this.tick);
       this.run();
     } catch {
       this.status.textContent = "STATIC PATH";
     }
   }
+
+  createScene() {
+    const {Scene, PerspectiveCamera, WebGLRenderer, Color, Group} = this.THREE;
+    this.scene = new Scene();
+    this.scene.background = new Color(0x020b13);
+    this.camera = new PerspectiveCamera(38, 1, 0.1, 100);
+    this.camera.position.set(0, 4.7, 15.2);
+    this.camera.lookAt(0, 0, 0);
+    this.renderer = new WebGLRenderer({
+      antialias: true,
+      powerPreference: "high-performance",
+      alpha: false,
+    });
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
+    this.renderer.domElement.setAttribute("aria-hidden", "true");
+    this.viewport.append(this.renderer.domElement);
+    this.tokenGroup = new Group();
+    this.nodeGroup = new Group();
+    this.machineGroup = new Group();
+    this.outputGroup = new Group();
+    this.scene.add(this.machineGroup, this.tokenGroup, this.nodeGroup, this.outputGroup);
+  }
+
+  createBox(width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55) {
+    const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
+    const mesh = new Mesh(
+      new BoxGeometry(width, height, depth),
+      new MeshBasicMaterial({color, transparent: true, opacity}),
+    );
+    mesh.position.set(x, y, z);
+    this.machineGroup.add(mesh);
+    return mesh;
+  }
+
+  createMachinery() {
+    const {CylinderGeometry, MeshBasicMaterial, Mesh} = this.THREE;
+    this.createBox(1.5, 3.8, 1.2, -5.55, 0, 0, 0x062238, 0.92);
+    this.createBox(1.05, 0.2, 0.86, -6.45, 0, 0, 0x168fd7, 0.42);
+    this.createBox(2.25, 0.16, 0.8, 5.45, -1.5, 0, 0x0b527f, 0.48);
+    this.createBox(0.62, 1.7, 0.92, 4.55, -0.55, 0, 0x07304d, 0.92);
+    this.createBox(0.62, 1.7, 0.92, 5.35, -0.55, 0, 0x07304d, 0.92);
+    this.createBox(0.62, 1.7, 0.92, 6.15, -0.55, 0, 0x07304d, 0.92);
+
+    const rollerMaterial = new MeshBasicMaterial({color: 0x1b9cff, transparent: true, opacity: 0.68});
+    this.rollers = [-0.42, 0.42].map(y => {
+      const roller = new Mesh(new CylinderGeometry(0.32, 0.32, 1.05, 18), rollerMaterial.clone());
+      roller.rotation.z = Math.PI / 2;
+      roller.position.set(-5.55, y, 0);
+      this.machineGroup.add(roller);
+      return roller;
+    });
+  }
+
+  createNetwork() {
+    const {
+      SphereGeometry, MeshBasicMaterial, Mesh, Group, Vector3,
+      BufferGeometry, Line, LineBasicMaterial,
+    } = this.THREE;
+    const layerX = [-4.25, -1.45, 1.35, 3.85];
+    const counts = [4, 7, 6, 4];
+
+    layerX.forEach((x, layerIndex) => {
+      const layer = new Group();
+      for (let i = 0; i < counts[layerIndex]; i += 1) {
+        const y = (i - (counts[layerIndex] - 1) / 2) * 0.82;
+        const node = new Mesh(
+          new SphereGeometry(0.105, 16, 12),
+          new MeshBasicMaterial({
+            color: layerIndex === 3 ? 0x67c9ff : 0x1b9cff,
+            transparent: true,
+            opacity: 0.42,
+          }),
+        );
+        node.position.set(x, y, (i % 2) * 0.55 - 0.27);
+        layer.add(node);
+        this.nodes.push({mesh: node, layer: layerIndex});
+      }
+      this.nodeGroup.add(layer);
+      this.layers.push(layer);
+    });
+
+    for (let layerIndex = 0; layerIndex < this.layers.length - 1; layerIndex += 1) {
+      const left = this.layers[layerIndex].children;
+      const right = this.layers[layerIndex + 1].children;
+      left.forEach((from, fromIndex) => {
+        right.forEach((to, toIndex) => {
+          if ((fromIndex + toIndex) % 2) return;
+          const points = [from.getWorldPosition(new Vector3()), to.getWorldPosition(new Vector3())];
+          const geometry = new BufferGeometry().setFromPoints(points);
+          const material = new LineBasicMaterial({color: 0x0b5d92, transparent: true, opacity: 0.13});
+          this.scene.add(new Line(geometry, material));
+        });
+      });
+    }
+  }
+
   resize() {
     if (!this.renderer) return;
     const rect = this.viewport.getBoundingClientRect();
-    this.renderer.setSize(Math.max(1,rect.width),Math.max(1,rect.height),false);
-    this.camera.aspect = rect.width / Math.max(rect.height,1);
+    this.renderer.setSize(Math.max(1, rect.width), Math.max(1, rect.height), false);
+    this.camera.aspect = rect.width / Math.max(rect.height, 1);
     this.camera.updateProjectionMatrix();
   }
-  clearTokens() {
-    this.tokenMeshes.forEach(item => {
-      item.mesh.geometry.dispose(); item.mesh.material.dispose();
-      this.tokenGroup.remove(item.mesh);
-    });
+
+  clearTransientMeshes() {
+    for (const item of this.tokenMeshes) disposeMesh(item.mesh);
+    for (const item of this.pulses) disposeMesh(item.mesh);
+    for (const item of this.outputBlocks) disposeMesh(item.mesh);
     this.tokenMeshes = [];
-    this.pulses.forEach(item => {
-      item.mesh.geometry.dispose(); item.mesh.material.dispose();
-      this.scene.remove(item.mesh);
-    });
     this.pulses = [];
+    this.outputBlocks = [];
   }
+
+  makeTokenBlock(token, index) {
+    const {BoxGeometry, MeshBasicMaterial, Mesh, Vector3} = this.THREE;
+    const strength = 0.45 + deterministicUnit(hashText(token + index)) * 0.55;
+    const mesh = new Mesh(
+      new BoxGeometry(0.34, 0.22, 0.22),
+      new MeshBasicMaterial({
+        color: index % 3 === 0 ? 0x67c9ff : 0x118ff0,
+        transparent: true,
+        opacity: 0.55 + strength * 0.42,
+      }),
+    );
+    mesh.position.set(-7.1 - (index % 4) * 0.12, 2.25 - (index % 7) * 0.34, (index % 3) * 0.24 - 0.24);
+    mesh.scale.x = Math.min(1.9, 0.65 + token.length * 0.09);
+    this.tokenGroup.add(mesh);
+    return {
+      mesh,
+      delay: index * 0.075,
+      time: 0,
+      start: mesh.position.clone(),
+      target: new Vector3(-5.08, (index % 4 - 1.5) * 0.7, 0),
+      strength,
+      index,
+    };
+  }
+
   run() {
-    const text = (this.input?.value || "").trim() || "A model can store a signal without using it.";
+    const text = (this.input?.value || "").trim() || DEFAULT_TEXT;
     if (this.input && !this.input.value.trim()) this.input.value = text;
     const tokens = splitTokens(text);
     this.output.textContent = "";
+
     if (!this.ready || REDUCED) {
       this.output.textContent = toyCompletion(text).join(" ");
-      this.status.textContent = `${tokens.length} TOKENS / PATH COMPLETE`;
+      this.status.textContent = \`\${tokens.length} TOKENS / PATH COMPLETE\`;
       return;
     }
-    this.clearTokens();
-    const THREE = this.THREE;
-    const geo = new THREE.BoxGeometry(.34,.22,.22);
-    tokens.forEach((token,i)=>{
-      const mat = new THREE.MeshBasicMaterial({color: i%3===0?0x67c9ff:0x118ff0,transparent:true,opacity:.9});
-      const mesh = new THREE.Mesh(geo.clone(),mat);
-      mesh.position.set(-6.7,2.3 - (i%7)*.34, (i%3)*.24-.24);
-      mesh.scale.x = Math.min(1.9,.65 + token.length*.09);
-      this.tokenGroup.add(mesh);
-      this.tokenMeshes.push({mesh,delay:i*.075,t:0,target:new THREE.Vector3(-4.9,(i%4-1.5)*.75,0)});
-    });
+
+    this.clearTransientMeshes();
+    this.tokenMeshes = tokens.map((token, index) => this.makeTokenBlock(token, index));
     this.completion = toyCompletion(text);
     this.running = true;
-    this.started = performance.now()/1000;
-    this.status.textContent = `TOKENIZED / ${tokens.length} BLOCKS`;
+    this.cascadeStarted = false;
+    this.outputStarted = false;
+    this.started = performance.now() / 1000;
+    this.status.textContent = \`TOKENIZED / \${tokens.length} BLOCKS\`;
   }
-  emitPulse(from,to,delay=0) {
-    const THREE=this.THREE;
-    const mesh=new THREE.Mesh(new THREE.SphereGeometry(.08,12,8),new THREE.MeshBasicMaterial({color:0xb9eaff,transparent:true,opacity:.95}));
-    mesh.position.copy(from); this.scene.add(mesh);
-    this.pulses.push({mesh,from:from.clone(),to:to.clone(),t:-delay,speed:1.8+Math.random()*.7});
+
+  emitPulse(from, to, strength, delay = 0) {
+    const {SphereGeometry, MeshBasicMaterial, Mesh} = this.THREE;
+    const mesh = new Mesh(
+      new SphereGeometry(0.055 + strength * 0.065, 12, 8),
+      new MeshBasicMaterial({
+        color: strength > 0.72 ? 0xc8f3ff : 0x55c7ff,
+        transparent: true,
+        opacity: 0.42 + strength * 0.58,
+      }),
+    );
+    mesh.position.copy(from);
+    this.scene.add(mesh);
+    this.pulses.push({
+      mesh,
+      from: from.clone(),
+      to: to.clone(),
+      time: -delay,
+      speed: 1.8 + strength * 0.9,
+      strength,
+    });
   }
+
+  emitOutputBlock(word, index) {
+    const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
+    const strength = 0.55 + deterministicUnit(hashText(word + index)) * 0.45;
+    const mesh = new Mesh(
+      new BoxGeometry(Math.min(0.82, 0.26 + word.length * 0.055), 0.2, 0.36),
+      new MeshBasicMaterial({color: 0x67c9ff, transparent: true, opacity: 0.58 + strength * 0.4}),
+    );
+    mesh.position.set(4.55 + (index % 3) * 0.8, -1.15, 0);
+    this.outputGroup.add(mesh);
+    this.outputBlocks.push({mesh, speed: 1.25 + strength * 0.55});
+  }
+
   focus(stage) {
     this.stage = stage;
-    this.stageButtons.forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.machineStageButton===stage)));
-    this.nodes.forEach(({mesh,layer})=>{
-      const map={input:0,state:1,consumer:2,output:3};
-      const active=stage==="all"||map[stage]===layer;
-      mesh.material.opacity=active?.88:.16;
+    const map = {input: 0, state: 1, consumer: 2, output: 3};
+    for (const button of this.stageButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.machineStageButton === stage));
+    }
+    for (const {mesh, layer} of this.nodes) {
+      const active = stage === "all" || map[stage] === layer;
+      mesh.material.opacity = active ? 0.88 : 0.13;
+      mesh.scale.setScalar(active ? 1.18 : 0.88);
+    }
+    const targetX = {input: -2.6, state: -0.8, consumer: 1.2, output: 2.6}[stage] || 0;
+    this.nodeGroup.position.x += (targetX - this.nodeGroup.position.x) * 0.55;
+  }
+
+  advanceInput(dt) {
+    let settled = 0;
+    for (const item of this.tokenMeshes) {
+      item.time += dt;
+      const progress = Math.max(0, Math.min(1, (item.time - item.delay) * 1.8));
+      const eased = 1 - Math.pow(1 - progress, 4);
+      item.mesh.position.lerpVectors(item.start, item.target, eased);
+      item.mesh.rotation.z += dt * (2.1 + item.strength * 2.2);
+      item.mesh.rotation.x += dt * 0.7;
+      if (progress < 1) continue;
+      settled += 1;
+      if (item.fired) continue;
+      item.fired = true;
+      const from = this.layers[0].children[item.index % this.layers[0].children.length];
+      const to = this.layers[1].children[item.index % this.layers[1].children.length];
+      this.emitPulse(from.getWorldPosition(new this.THREE.Vector3()), to.getWorldPosition(new this.THREE.Vector3()), item.strength, item.index * 0.018);
+      item.mesh.material.opacity = 0.08;
+    }
+    return settled;
+  }
+
+  startCascade() {
+    this.cascadeStarted = true;
+    this.status.textContent = "PROPAGATING / ACTIVATION";
+    for (let layerIndex = 1; layerIndex < this.layers.length - 1; layerIndex += 1) {
+      this.layers[layerIndex].children.forEach((node, index) => {
+        const target = this.layers[layerIndex + 1].children[index % this.layers[layerIndex + 1].children.length];
+        const strength = 0.35 + deterministicUnit(hashText(String(layerIndex) + ":" + String(index))) * 0.65;
+        this.emitPulse(
+          node.getWorldPosition(new this.THREE.Vector3()),
+          target.getWorldPosition(new this.THREE.Vector3()),
+          strength,
+          layerIndex * 0.16 + index * 0.022,
+        );
+      });
+    }
+  }
+
+  startOutput() {
+    this.outputStarted = true;
+    this.status.textContent = "READOUT / EMITTING TOKENS";
+    let index = 0;
+    this.outputTimer = setInterval(() => {
+      if (index >= this.completion.length) {
+        clearInterval(this.outputTimer);
+        this.outputTimer = null;
+        this.status.textContent = "PATH COMPLETE";
+        this.running = false;
+        return;
+      }
+      const word = this.completion[index];
+      this.output.textContent += (index ? " " : "") + word;
+      this.emitOutputBlock(word, index);
+      index += 1;
+    }, 95);
+  }
+
+  updatePulses(dt) {
+    for (const pulse of this.pulses) {
+      pulse.time += dt * pulse.speed;
+      if (pulse.time < 0) continue;
+      const x = Math.min(1, pulse.time);
+      const eased = x * x * (3 - 2 * x);
+      pulse.mesh.position.lerpVectors(pulse.from, pulse.to, eased);
+      pulse.mesh.material.opacity = (0.42 + pulse.strength * 0.58) * (1 - Math.max(0, (x - 0.72) / 0.28));
+    }
+    this.pulses = this.pulses.filter(pulse => {
+      if (pulse.time <= 1) return true;
+      disposeMesh(pulse.mesh);
+      return false;
     });
   }
-  animate = () => {
+
+  updateOutputBlocks(dt) {
+    for (const item of this.outputBlocks) {
+      item.mesh.position.x += dt * item.speed;
+      item.mesh.rotation.y += dt * 0.9;
+      if (item.mesh.position.x > 7.2) item.mesh.material.opacity *= 0.82;
+    }
+    this.outputBlocks = this.outputBlocks.filter(item => {
+      if (item.mesh.position.x <= 7.8) return true;
+      disposeMesh(item.mesh);
+      return false;
+    });
+  }
+
+  animate(timeMs) {
     if (!this.renderer) return;
-    const now=performance.now()/1000;
-    const dt=Math.min(.034,now-(this.last||now)); this.last=now;
+    const now = timeMs / 1000;
+    const dt = Math.min(0.034, now - (this.last || now));
+    this.last = now;
+
+    for (const roller of this.rollers) roller.rotation.x += dt * 5.5;
+
     if (this.running) {
-      let settled=0;
-      this.tokenMeshes.forEach((item,i)=>{
-        item.t += dt;
-        const p=Math.max(0,Math.min(1,(item.t-item.delay)*1.75));
-        const e=1-Math.pow(1-p,4);
-        item.mesh.position.lerpVectors(new this.THREE.Vector3(-6.7,item.mesh.position.y,item.mesh.position.z),item.target,e);
-        item.mesh.rotation.z += dt*2.4;
-        if(p>=1){ settled++; if(!item.fired){item.fired=true; const n=this.layers[0].children[i%this.layers[0].children.length]; this.emitPulse(n.getWorldPosition(new this.THREE.Vector3()),this.layers[1].children[i%this.layers[1].children.length].getWorldPosition(new this.THREE.Vector3()),i*.018);}}
-      });
-      if(settled===this.tokenMeshes.length && !this.cascade){
-        this.cascade=true; this.status.textContent="PROPAGATING / ACTIVATION";
-        for(let li=1;li<this.layers.length-1;li++){
-          this.layers[li].children.forEach((n,i)=>{
-            const next=this.layers[li+1].children[i%this.layers[li+1].children.length];
-            this.emitPulse(n.getWorldPosition(new this.THREE.Vector3()),next.getWorldPosition(new this.THREE.Vector3()),li*.18+i*.025);
-          });
-        }
-      }
-      if(this.cascade && now-this.started>2.25 && !this.wrote){
-        this.wrote=true; this.status.textContent="READOUT / EMITTING TOKENS";
-        let i=0; const timer=setInterval(()=>{
-          if(i>=this.completion.length){clearInterval(timer);this.status.textContent="PATH COMPLETE";this.running=false;this.cascade=false;this.wrote=false;return;}
-          this.output.textContent += (i?" ":"")+this.completion[i++]; 
-        },95);
+      const settled = this.advanceInput(dt);
+      if (settled === this.tokenMeshes.length && !this.cascadeStarted) this.startCascade();
+      if (this.cascadeStarted && now - this.started > 2.15 && !this.outputStarted) this.startOutput();
+    }
+
+    this.updatePulses(dt);
+    this.updateOutputBlocks(dt);
+    const breathe = 0.74 + 0.12 * Math.sin(now * 2.4);
+    if (this.stage === "all") {
+      for (const {mesh} of this.nodes) {
+        mesh.material.opacity = Math.max(mesh.material.opacity * 0.985, breathe * 0.42);
       }
     }
-    this.pulses.forEach(p=>{
-      p.t += dt*p.speed;
-      if(p.t>=0){
-        const x=Math.min(1,p.t); const e=x*x*(3-2*x);
-        p.mesh.position.lerpVectors(p.from,p.to,e);
-        p.mesh.material.opacity = 1-Math.max(0,(x-.72)/.28);
-      }
-    });
-    this.pulses=this.pulses.filter(p=>{if(p.t<=1)return true;this.scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();return false;});
-    const breathe=.74+.12*Math.sin(now*2.4);
-    this.nodes.forEach(({mesh})=>{if(this.stage==="all")mesh.material.opacity=Math.max(mesh.material.opacity*.985,breathe*.42)});
-    this.renderer.render(this.scene,this.camera);
-    requestAnimationFrame(this.animate);
+
+    this.renderer.render(this.scene, this.camera);
+    requestAnimationFrame(this.tick);
   }
 }
 
-document.querySelectorAll("[data-model-machine]").forEach(root=>new ModelMachine(root));
-
-function inferredStage(element){
-  if(element.dataset.machineStage) return element.dataset.machineStage;
-  const text=(element.textContent||"").toLowerCase();
-  if(/token|input|encoding|representation/.test(text)) return /representation|state/.test(text) ? "state" : "input";
-  if(/consumer|readout|probe|prediction|decoder/.test(text)) return "consumer";
-  if(/output|generation|next[- ]?byte|next[- ]?token/.test(text)) return "output";
-  if(/state|recurrent|hidden|memory|sphere|normaliz/.test(text)) return "state";
+function inferredStage(element) {
+  if (element.dataset.machineStage) return element.dataset.machineStage;
+  const text = (element.textContent || "").toLowerCase();
+  if (/consumer|readout|probe|prediction|decoder/.test(text)) return "consumer";
+  if (/output|generation|next[- ]?byte|next[- ]?token/.test(text)) return "output";
+  if (/state|recurrent|hidden|memory|sphere|normaliz|representation/.test(text)) return "state";
+  if (/token|input|encoding/.test(text)) return "input";
   return "all";
 }
 
-const sectionObserver = new IntersectionObserver(entries=>{
-  const active=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
-  if(!active) return;
-  const stage=inferredStage(active.target);
-  const machine=document.querySelector("[data-model-machine]");
-  if(machine && stage) machine.machine?.focus(stage);
-},{rootMargin:"-30% 0px -52% 0px",threshold:[0,.2,.5]});
-document.querySelectorAll("[data-machine-stage],.myst-reader h2").forEach(el=>sectionObserver.observe(el));
+document.querySelectorAll("[data-model-machine]").forEach(root => new ModelMachine(root));
+
+const sectionObserver = new IntersectionObserver(entries => {
+  const visible = entries.filter(entry => entry.isIntersecting);
+  visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+  const active = visible[0];
+  if (!active) return;
+  document.querySelector("[data-model-machine]")?.machine?.focus(inferredStage(active.target));
+}, {rootMargin: "-30% 0px -52% 0px", threshold: [0, 0.2, 0.5]});
+
+document.querySelectorAll("[data-machine-stage], .myst-reader h2").forEach(element => {
+  sectionObserver.observe(element);
+});
