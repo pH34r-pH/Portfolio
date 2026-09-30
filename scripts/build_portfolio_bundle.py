@@ -102,11 +102,14 @@ def _article_metadata(source: str, src: Path) -> dict:
         value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
         if value:
             metadata[field] = value.group(1).strip().strip("'\"")
-    dependencies = re.search(r"^dependsOn:\s*\[(.*?)\]\s*$", match.group(1), re.MULTILINE)
+    dependencies = re.search(r"^(?:dependsOn|depends_on):\s*\[(.*?)\]\s*$", match.group(1), re.MULTILINE)
     if dependencies:
         metadata["dependsOn"] = [
             item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()
         ]
+    snake_focus = re.search(r"^model_focus:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+    if snake_focus and not metadata.get("modelFocus"):
+        metadata["modelFocus"] = snake_focus.group(1).strip().strip("'\"")
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
