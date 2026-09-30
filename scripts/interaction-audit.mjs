@@ -253,8 +253,12 @@ async function auditRoute(page, context, width, path, manifest, errors) {
 
 async function auditNavigationPersistence(page) {
   await page.goto(base + "/");
-  await page.getByRole("button", { name: "Menu", exact: true }).click();
+  const menu = page.getByRole("button", { name: "Menu", exact: true });
+  await menu.click();
   await page.locator('button[data-theme-choice="dark"]').click();
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await menu.click();
   await page.getByRole("navigation", { name: "Site", exact: true })
     .getByRole("link", { name: "Research", exact: true }).click();
   await expect(page).toHaveURL(base + "/research/");
