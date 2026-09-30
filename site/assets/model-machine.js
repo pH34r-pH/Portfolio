@@ -23,11 +23,8 @@ function deterministicUnit(seed) {
 }
 
 function toyCompletion(text, count = 8) {
-  const words = [
-    "system", "state", "signal", "context", "maps", "through", "the", "next",
-    "layer", "into", "a", "usable", "prediction", "path", "while", "structure",
-    "remains", "visible",
-  ];
+  const words = ["system", "state", "signal", "context", "maps", "through", "the", "next",
+    "layer", "into", "a", "usable", "prediction", "path", "while", "structure", "remains", "visible"];
   let seed = hashText(text || "research");
   const output = [];
   for (let i = 0; i < count; i += 1) {
@@ -140,11 +137,7 @@ class ModelMachine {
     this.camera = new PerspectiveCamera(38, 1, 0.1, 100);
     this.camera.position.set(0, 4.7, 15.2);
     this.camera.lookAt(0, 0, 0);
-    this.renderer = new WebGLRenderer({
-      antialias: true,
-      powerPreference: "high-performance",
-      alpha: false,
-    });
+    this.renderer = new WebGLRenderer({antialias: true, powerPreference: "high-performance", alpha: false});
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
     this.renderer.domElement.setAttribute("aria-hidden", "true");
     this.viewport.append(this.renderer.domElement);
@@ -158,10 +151,8 @@ class ModelMachine {
   createBox(options) {
     const {width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55} = options;
     const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
-    const mesh = new Mesh(
-      new BoxGeometry(width, height, depth),
-      new MeshBasicMaterial({color, transparent: true, opacity}),
-    );
+    const mesh = new Mesh(new BoxGeometry(width, height, depth),
+      new MeshBasicMaterial({color, transparent: true, opacity}));
     mesh.position.set(x, y, z);
     this.machineGroup.add(mesh);
     return mesh;
@@ -198,14 +189,9 @@ class ModelMachine {
       const layer = new Group();
       for (let i = 0; i < counts[layerIndex]; i += 1) {
         const y = (i - (counts[layerIndex] - 1) / 2) * 0.82;
-        const node = new Mesh(
-          new SphereGeometry(0.105, 16, 12),
-          new MeshBasicMaterial({
-            color: layerIndex === 3 ? 0x67c9ff : 0x1b9cff,
-            transparent: true,
-            opacity: 0.42,
-          }),
-        );
+        const node = new Mesh(new SphereGeometry(0.105, 16, 12),
+          new MeshBasicMaterial({color: layerIndex === 3 ? 0x67c9ff : 0x1b9cff,
+            transparent: true, opacity: 0.42}));
         node.position.set(x, y, (i % 2) * 0.55 - 0.27);
         layer.add(node);
         this.nodes.push({
@@ -257,14 +243,9 @@ class ModelMachine {
   makeTokenBlock(token, index) {
     const {BoxGeometry, MeshBasicMaterial, Mesh, Vector3} = this.THREE;
     const strength = 0.45 + deterministicUnit(hashText(token + index)) * 0.55;
-    const mesh = new Mesh(
-      new BoxGeometry(0.34, 0.22, 0.22),
-      new MeshBasicMaterial({
-        color: index % 3 === 0 ? 0x67c9ff : 0x118ff0,
-        transparent: true,
-        opacity: 0.55 + strength * 0.42,
-      }),
-    );
+    const mesh = new Mesh(new BoxGeometry(0.34, 0.22, 0.22),
+      new MeshBasicMaterial({color: index % 3 === 0 ? 0x67c9ff : 0x118ff0,
+        transparent: true, opacity: 0.55 + strength * 0.42}));
     mesh.position.set(-7.1 - (index % 4) * 0.12, 2.25 - (index % 7) * 0.34, (index % 3) * 0.24 - 0.24);
     mesh.scale.x = Math.min(1.9, 0.65 + token.length * 0.09);
     this.tokenGroup.add(mesh);
@@ -303,14 +284,9 @@ class ModelMachine {
 
   emitPulse(from, to, strength, delay = 0) {
     const {SphereGeometry, MeshBasicMaterial, Mesh} = this.THREE;
-    const mesh = new Mesh(
-      new SphereGeometry(0.055 + strength * 0.065, 12, 8),
-      new MeshBasicMaterial({
-        color: strength > 0.72 ? 0xc8f3ff : 0x55c7ff,
-        transparent: true,
-        opacity: 0.42 + strength * 0.58,
-      }),
-    );
+    const mesh = new Mesh(new SphereGeometry(0.055 + strength * 0.065, 12, 8),
+      new MeshBasicMaterial({color: strength > 0.72 ? 0xc8f3ff : 0x55c7ff,
+        transparent: true, opacity: 0.42 + strength * 0.58}));
     mesh.position.copy(from);
     this.scene.add(mesh);
     this.pulses.push({
@@ -326,10 +302,8 @@ class ModelMachine {
   emitOutputBlock(word, index) {
     const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
     const strength = 0.55 + deterministicUnit(hashText(word + index)) * 0.45;
-    const mesh = new Mesh(
-      new BoxGeometry(Math.min(0.82, 0.26 + word.length * 0.055), 0.2, 0.36),
-      new MeshBasicMaterial({color: 0x67c9ff, transparent: true, opacity: 0.58 + strength * 0.4}),
-    );
+    const mesh = new Mesh(new BoxGeometry(Math.min(0.82, 0.26 + word.length * 0.055), 0.2, 0.36),
+      new MeshBasicMaterial({color: 0x67c9ff, transparent: true, opacity: 0.58 + strength * 0.4}));
     mesh.position.set(4.55 + (index % 3) * 0.8, -1.15, 0);
     this.outputGroup.add(mesh);
     this.outputBlocks.push({mesh, speed: 1.25 + strength * 0.55});
