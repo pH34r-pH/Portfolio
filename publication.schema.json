@@ -21,6 +21,32 @@
       "type": "string",
       "format": "date-time"
     },
+    "compilerProjection": {
+      "type": "object",
+      "required": [
+        "repository",
+        "commit",
+        "sha256",
+        "schemaVersion"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "repository": {
+          "const": "pH34r-pH/experiment-compiler"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schemaVersion": {
+          "const": 2
+        }
+      }
+    },
     "sources": {
       "type": "object",
       "required": [
@@ -103,8 +129,8 @@
           "assets",
           "browserExecution",
           "modelFocus",
-          "dependsOn",
-          "modelVariant"
+          "modelVariant",
+          "dependsOn"
         ],
         "additionalProperties": false,
         "properties": {
@@ -154,6 +180,56 @@
           "browserExecution": {
             "type": "boolean"
           },
+          "compiled_experiment": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://experiments.tyharbin.com/data/article-reference-v1.schema.json",
+            "title": "Exact article reference v1 (public projection v2)",
+            "type": "object",
+            "required": [
+              "ref"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "ref": {
+                "type": "string",
+                "pattern": "^(?!.*(?:^|-)latest(?:-|$))[a-z0-9][a-z0-9-]{0,79}$"
+              },
+              "expected": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "sha256": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "profile": {
+                    "enum": [
+                      "compiled-experiment-v1",
+                      "compiled-experiment-lifecycle-v1"
+                    ]
+                  },
+                  "source": {
+                    "type": "object",
+                    "required": [
+                      "repository",
+                      "commit"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "repository": {
+                        "type": "string",
+                        "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+                      },
+                      "commit": {
+                        "type": "string",
+                        "pattern": "^[0-9a-f]{40}$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "modelFocus": {
             "enum": [
               "input",
@@ -167,6 +243,10 @@
               "output",
               "full"
             ]
+          },
+          "modelVariant": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           },
           "dependsOn": {
             "type": "array",
@@ -217,10 +297,6 @@
                 "uniqueItems": true
               }
             }
-          },
-          "modelVariant": {
-            "type": "string",
-            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           }
         }
       }
