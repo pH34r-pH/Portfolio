@@ -62,4 +62,21 @@
     });
     menu.querySelectorAll("a").forEach(link => link.addEventListener("click", () => close()));
   }
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const flash = document.createElement("div");
+    flash.className = "cross-site-flash";
+    flash.setAttribute("aria-hidden", "true");
+    document.body.append(flash);
+    document.addEventListener("click", event => {
+      const link = event.target.closest?.("a[href]");
+      if (!link || event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (link.target === "_blank" || link.hasAttribute("download")) return;
+      const target = new URL(link.href, location.href);
+      if (target.hostname !== "experiments.tyharbin.com") return;
+      event.preventDefault();
+      document.body.classList.add("cross-site-leaving");
+      setTimeout(() => { location.href = target.href; }, 165);
+    });
+  }
+
 })();
