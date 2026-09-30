@@ -436,17 +436,29 @@ def _model_instrument_html(focus: str, article: bool = False) -> str:
     } else "full"
     return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}"{article_attr}
       aria-label="Interactive language model schematic">
-      <div class="model-stage"><canvas class="model-canvas" aria-hidden="true"></canvas>
-      <div class="model-fallback" aria-hidden="true">
-        <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
-        <span data-stage="representation">state</span><span data-stage="architecture">model</span>
-        <span data-stage="consumer">readout</span><span data-stage="output">output</span>
-      </div><div class="token-rail" data-token-rail aria-hidden="true"></div></div>
-      <div class="model-console">
-        <label for="article-model-input">Model input</label>
-        <input id="article-model-input" data-model-input value="inspect the mechanism" autocomplete="off">
-        <button type="button" data-model-submit>Run</button>
-        <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+      <p class="visually-hidden">A toy language-model workcell showing text entering an input buffer,
+      tokenization, representation and model computation, a readout, and generated text leaving the output buffer.</p>
+      <div class="model-workcell">
+        <div class="model-port model-input-port">
+          <span class="machine-label">INPUT BUFFER / TOKEN FEED</span>
+          <label for="article-model-input">Model input</label>
+          <input id="article-model-input" data-model-input value="inspect the mechanism" autocomplete="off">
+          <button type="button" data-model-submit>Inject</button>
+          <div class="token-rail" data-token-rail aria-hidden="true"></div>
+        </div>
+        <div class="model-stage">
+          <canvas class="model-canvas" aria-hidden="true"></canvas>
+          <div class="model-fallback" aria-hidden="true">
+            <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
+            <span data-stage="representation">state</span><span data-stage="architecture">model</span>
+            <span data-stage="consumer">readout</span><span data-stage="output">output</span>
+          </div>
+        </div>
+        <div class="model-port model-output-port">
+          <span class="machine-label">OUTPUT DROPPER / ASSEMBLY</span>
+          <div class="output-conveyor" data-output-rail aria-hidden="true"></div>
+          <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+        </div>
       </div>
     </section>"""
 
