@@ -3,36 +3,86 @@
   "$id": "https://github.com/pH34r-pH/Portfolio/blob/main/publication.schema.json",
   "title": "Portfolio immutable publication manifest",
   "type": "object",
-  "required": ["schemaVersion", "builtAt", "sources", "notebooks"],
+  "required": [
+    "schemaVersion",
+    "builtAt",
+    "sources",
+    "notebooks"
+  ],
   "additionalProperties": false,
   "properties": {
-    "schemaVersion": { "enum": [1, 2] },
-    "builtAt": { "type": "string", "format": "date-time" },
+    "schemaVersion": {
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "builtAt": {
+      "type": "string",
+      "format": "date-time"
+    },
     "sources": {
       "type": "object",
-      "required": ["portfolio", "researchNotes", "theoremLibrary"],
+      "required": [
+        "portfolio",
+        "researchNotes",
+        "theoremLibrary"
+      ],
       "additionalProperties": false,
       "properties": {
-        "portfolio": { "$ref": "#/$defs/source" },
-        "researchNotes": { "$ref": "#/$defs/source" },
-        "theoremLibrary": { "$ref": "#/$defs/source" },
-        "fleet": { "$ref": "#/$defs/source" }
+        "portfolio": {
+          "$ref": "#/$defs/source"
+        },
+        "researchNotes": {
+          "$ref": "#/$defs/source"
+        },
+        "theoremLibrary": {
+          "$ref": "#/$defs/source"
+        },
+        "fleet": {
+          "$ref": "#/$defs/source"
+        }
       }
     },
     "notebooks": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["path", "title", "sha256"],
+        "required": [
+          "path",
+          "title",
+          "sha256"
+        ],
         "properties": {
-          "path": { "type": "string" },
-          "title": { "type": "string" },
-          "question": { "type": "string", "minLength": 1 },
-          "sequence": { "type": "integer", "minimum": 1 },
-          "exampleKind": { "enum": ["illustrative"] },
-          "jupyterPath": { "type": "string" },
-          "slug": { "type": "string" },
-          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "exampleKind": {
+            "enum": [
+              "illustrative"
+            ]
+          },
+          "jupyterPath": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
         }
       }
     },
@@ -40,41 +90,134 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["sequence", "path", "slug", "url", "title", "description", "date", "sha256", "renderedSha256", "assets", "browserExecution"],
+        "required": [
+          "sequence",
+          "path",
+          "slug",
+          "url",
+          "title",
+          "description",
+          "date",
+          "sha256",
+          "renderedSha256",
+          "assets",
+          "browserExecution"
+        ],
         "additionalProperties": false,
         "properties": {
-          "sequence": { "type": "integer", "minimum": 1 },
-          "path": { "type": "string", "pattern": "^publication/articles/.+\\.md$" },
-          "slug": { "type": "string", "pattern": "^[a-z0-9-]+$" },
-          "url": { "type": "string", "pattern": "^/articles/[a-z0-9-]+/$" },
-          "title": { "type": "string", "minLength": 1 },
-          "description": { "type": "string", "minLength": 1 },
-          "date": { "type": "string", "format": "date" },
-          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "renderedSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-          "assets": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
-          "browserExecution": { "type": "boolean" }
+          "sequence": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^publication/articles/.+\\.md$"
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^/articles/[a-z0-9-]+/$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "renderedSha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "browserExecution": {
+            "type": "boolean"
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "uniqueItems": true
+          }
         }
       }
     }
   },
   "allOf": [
     {
-      "if": { "properties": { "schemaVersion": { "const": 1 } } },
-      "then": { "properties": { "sources": { "required": ["fleet"] } } }
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "required": [
+              "fleet"
+            ]
+          }
+        }
+      }
     },
     {
-      "if": { "properties": { "schemaVersion": { "const": 2 } } },
-      "then": { "properties": { "sources": { "not": { "required": ["fleet"] } } } }
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "sources": {
+            "not": {
+              "required": [
+                "fleet"
+              ]
+            }
+          }
+        }
+      }
     }
   ],
   "$defs": {
     "source": {
       "type": "object",
-      "required": ["repository", "commit"],
+      "required": [
+        "repository",
+        "commit"
+      ],
       "properties": {
-        "repository": { "type": "string" },
-        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+        "repository": {
+          "type": "string"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
       }
     }
   }
