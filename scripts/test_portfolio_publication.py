@@ -2,6 +2,7 @@
 import tempfile
 import copy
 from compiled_experiment_reference import resolve_reference, render_handoff
+from compiler_projection_input import load_pin, verified_projection
 import unittest
 import json
 import sys
@@ -77,7 +78,11 @@ class ReaderPublicationTest(unittest.TestCase):
             path = Path(directory)/'compiler-projection.json'
             path.write_text(json.dumps(projection))
             with self.assertRaises(ValueError): self._build_fixture_bundle(args)
-            self._build_fixture_bundle(args + ['--compiler-projection',str(path)])
+            pin = Path(directory)/'compiler-pin.json'
+            pin.write_text(json.dumps({'schemaVersion':1,'repository':'pH34r-pH/experiment-compiler',
+                'commit':'e'*40,'projectionSha256':hashlib.sha256(path.read_bytes()).hexdigest()}))
+            self._build_fixture_bundle(args + ['--compiler-projection',str(path),
+                                              '--compiler-projection-pin',str(pin)])
             manifest = json.loads((bundle/'publication.json').read_text())
             Draft202012Validator(schema).validate(manifest)
             self.assertEqual(manifest['articles'][0]['compiled_experiment'],reference)
@@ -85,6 +90,59 @@ class ReaderPublicationTest(unittest.TestCase):
             handoff = page.select_one('aside[aria-label="Compiled experiment reference"]')
             self.assertEqual(handoff.a['href'], 'https://experiments.tyharbin.com' + projection['experiments'][0]['detailUrl'])
             self.assertIsNone(BeautifulSoup((bundle/'articles/sample-article-second/index.html').read_text(),'html.parser').select_one('aside[aria-label="Compiled experiment reference"]'))
+
+    def test_pinned_compiler_input_checks_exact_bytes_and_pin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            projection = root/'experiments.json'
+            projection.write_text(json.dumps(fixture['projection']))
+            pin = {'schemaVersion':1, 'repository':'pH34r-pH/experiment-compiler',
+                   'commit':'e'*40, 'projectionSha256':hashlib.sha256(projection.read_bytes()).hexdigest()}
+            pin_path = root/'pin.json'
+            pin_path.write_text(json.dumps(pin))
+            data, receipt = verified_projection(projection, pin_path)
+            self.assertEqual(data, fixture['projection'])
+            self.assertEqual(receipt['commit'], pin['commit'])
+            projection.write_text(projection.read_text() + '\n')
+            with self.assertRaises(ValueError): verified_projection(projection, pin_path)
+            for field, value in (('schemaVersion',1.0), ('commit','main'), ('commit','e'*39),
+                                 ('projectionSha256','f'*63), ('repository','private/other'),
+                                 ('unexpected',True)):
+                pin_path.write_text(json.dumps({**pin,field:value}))
+                with self.subTest(field=field), self.assertRaises(ValueError): load_pin(pin_path)
+            pin_path.write_text(json.dumps(pin))
+            link = root/'projection-link.json'; link.symlink_to(projection)
+            with self.assertRaises(ValueError): verified_projection(link,pin_path)
+            link = root/'pin-link.json'; link.symlink_to(pin_path)
+            with self.assertRaises(ValueError): load_pin(link)
+
+    def test_projection_receipt_preserves_unreferenced_articles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            path, pin = Path(directory)/'projection.json', Path(directory)/'pin.json'
+            path.write_text(json.dumps(fixture['projection']))
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            pin.write_text(json.dumps({'schemaVersion':1,'repository':'pH34r-pH/experiment-compiler',
+                'commit':'e'*40,'projectionSha256':digest}))
+            self._build_fixture_bundle(args)
+            original = [(bundle/article['url'].strip('/')/'index.html').read_bytes()
+                        for article in json.loads((bundle/'publication.json').read_text())['articles']]
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection',str(path)])
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection-pin',str(pin)])
+            self._build_fixture_bundle(args + ['--compiler-projection',str(path),'--compiler-projection-pin',str(pin)])
+            manifest = json.loads((bundle/'publication.json').read_text())
+            Draft202012Validator(schema).validate(manifest)
+            self.assertEqual(manifest['compilerProjection']['sha256'],digest)
+            self.assertEqual(set(manifest['sources']),{'portfolio','researchNotes','theoremLibrary'})
+            self.assertEqual(original,[(bundle/article['url'].strip('/')/'index.html').read_bytes()
+                                     for article in manifest['articles']])
+            path.write_text(path.read_text() + '\n')
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection',str(path),'--compiler-projection-pin',str(pin)])
 
     def test_notebook_evidence_handoff_preserves_bytes_and_exact_identity(self):
         for kind in (None, "illustrative", "historical", "<script>unsafe</script>"):
