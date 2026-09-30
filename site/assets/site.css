@@ -19,7 +19,7 @@ a:hover{color:var(--blue)}
 button,input{font:inherit}
 img,svg,canvas{max-width:100%}
 main{width:min(1180px,calc(100% - 32px));margin:auto}
-.skip-link{position:fixed;left:12px;top:10px;z-index:120;background:var(--ink);color:var(--bg);padding:11px 14px;transform:translateY(-180%);font:700 12px ui-monospace,monospace}
+.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}\n.skip-link{position:fixed;left:12px;top:10px;z-index:120;background:var(--ink);color:var(--bg);padding:11px 14px;transform:translateY(-180%);font:700 12px ui-monospace,monospace}
 .skip-link:focus{transform:none}
 a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--blue-hot);outline-offset:3px}
 .topbar{position:fixed;z-index:100;inset:0 0 auto;height:var(--topbar);display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:22px;padding:0 max(16px,calc((100vw - 1180px)/2));border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(18px) saturate(135%)}
