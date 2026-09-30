@@ -81,6 +81,7 @@
       this.baseNodes = this.buildNodes();
       this.nodes = variantNodes(this.baseNodes, this.variant);
       this.edges = this.buildEdges(this.baseNodes);
+      this.routes = this.buildRoutes(this.baseNodes, this.edges);
       this.frame = this.frame.bind(this);
       this.resize = this.resize.bind(this);
       this.activate = this.activate.bind(this);
@@ -138,6 +139,57 @@
       return edges;
     }
 
+    buildRoutes(nodes, edges) {
+      const groups = stages.map((_, stage) =>
+        nodes.map((node, index) => ({ ...node, index })).filter(node => node.stage === stage)
+      );
+      const outgoing = new Map();
+      edges.forEach(([from, to]) => {
+        if (!outgoing.has(from)) outgoing.set(from, []);
+        outgoing.get(from).push(to);
+      });
+      return groups[0].map((start, routeIndex) => {
+        const route = [start.index];
+        let current = start.index;
+        for (let stage = 0; stage < groups.length - 1; stage++) {
+          const candidates = (outgoing.get(current) || [])
+            .map(index => ({ ...nodes[index], index }))
+            .filter(node => node.stage === stage + 1)
+            .sort((a, b) => Math.abs(a.y - nodes[current].y) - Math.abs(b.y - nodes[current].y));
+          if (!candidates.length) break;
+          const choice = candidates[routeIndex % Math.min(2, candidates.length)] || candidates[0];
+          current = choice.index;
+          route.push(current);
+        }
+        return route;
+      }).filter(route => route.length === stages.length);
+    }
+
+    stageFrameData(now) {
+      const segments = [];
+      const frameEdges = [
+        [0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],
+        [0,4],[1,5],[2,6],[3,7],
+      ];
+      for (let stage = 1; stage < stages.length - 1; stage++) {
+        const members = this.nodes
+          .map((node, index) => ({ node: this.nodePosition(index, now), index }))
+          .filter(item => item.node.stage === stage);
+        if (!members.length) continue;
+        const x = members.reduce((sum, item) => sum + item.node.x, 0) / members.length;
+        const hx = stage === 3 ? .12 : .095;
+        const y0 = -.75, y1 = .75, z0 = -.39, z1 = .39;
+        const corners = [
+          [x-hx,y0,z0],[x+hx,y0,z0],[x+hx,y1,z0],[x-hx,y1,z0],
+          [x-hx,y0,z1],[x+hx,y0,z1],[x+hx,y1,z1],[x-hx,y1,z1],
+        ];
+        frameEdges.forEach(([a,b]) => {
+          segments.push(...corners[a], 1, ...corners[b], 1);
+        });
+      }
+      return segments;
+    }
+
     initGL() {
       const gl = this.canvas.getContext("webgl2", { alpha: true, antialias: true, powerPreference: "high-performance" });
       if (!gl) return;
@@ -153,15 +205,17 @@
         out float v_energy;
         void main(){
           vec3 p=a_position;
-          p.y += sin(u_time*.0007 + p.x*9.0 + p.z*7.0)*.012;
-          float depth=1.0 + p.z*.45;
-          vec2 xy=vec2(p.x, p.y)/depth;
-          xy.x/=max(.7,u_aspect);
-          gl_Position=vec4(xy,0.0,1.0);
-          gl_PointSize=a_size;
           float stage=floor((p.x + .94)/.31);
-          float focused=(u_focus<0.0 || abs(stage-u_focus)<.6)?1.0:.28;
-          v_alpha=mix(.18,focused,u_mode);
+          p.y += sin(u_time*.0007 + p.x*9.0 + p.z*7.0)*.009;
+          float yaw=.17;
+          p.xz=mat2(cos(yaw),-sin(yaw),sin(yaw),cos(yaw))*p.xz;
+          float depth=1.22 + p.z*.38;
+          vec2 xy=vec2(p.x,p.y)/max(.68,depth);
+          xy.x/=max(.72,u_aspect);
+          gl_Position=vec4(xy,clamp(p.z*.18,-.85,.85),1.0);
+          gl_PointSize=a_size/max(.72,depth*.88);
+          float focused=(u_focus<0.0 || abs(stage-u_focus)<.6)?1.0:.25;
+          v_alpha=mix(.16,focused,u_mode);
           v_energy=clamp((a_size-3.0)/25.0,.15,1.0);
         }`;
       const fs = `#version 300 es
@@ -227,24 +281,30 @@
     activate() {
       const tokens = tokenize(this.input?.value || "");
       if (!tokens.length) return;
+      this.root.classList.add("is-processing");
       this.rail?.replaceChildren(...tokens.map((token, index) => {
         const el = document.createElement("span");
         el.className = "token-chip";
-        el.style.animationDelay = `${index * 34}ms`;
+        el.style.animationDelay = `${index * 42}ms`;
         el.textContent = token;
         return el;
       }));
       const now = performance.now();
-      this.pulses = tokens.map((_, i) => ({
-        start: now + i * 95,
-        duration: 1050 + i * 22,
-        edge: i % Math.max(1, this.edges.length),
-        intensity: .65 + ((i * 37) % 35) / 100,
-      }));
+      const routeDuration = 1420;
+      this.pulses = tokens.map((token, i) => {
+        const energy = token.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0) % 44;
+        return {
+          start: now + i * 92,
+          duration: routeDuration,
+          route: this.routes[i % Math.max(1, this.routes.length)] || [],
+          intensity: .54 + energy / 100,
+        };
+      });
       const reply = deterministicReply(tokens);
       if (this.outputRail) this.outputRail.replaceChildren();
       if (this.output) {
         this.output.textContent = "";
+        const firstArrival = reduceMotion.matches ? 0 : routeDuration + Math.min(tokens.length - 1, 2) * 92;
         reply.forEach((token, i) => setTimeout(() => {
           this.output.textContent += (i && /^[\w]/.test(token) ? " " : "") + token;
           if (this.outputRail) {
@@ -253,9 +313,12 @@
             chip.textContent = token;
             this.outputRail.append(chip);
           }
-        }, reduceMotion.matches ? 0 : 690 + i * 95));
+        }, firstArrival + i * (reduceMotion.matches ? 0 : 105)));
+        clearTimeout(this.processingTimer);
+        this.processingTimer = setTimeout(() => this.root.classList.remove("is-processing"),
+          firstArrival + reply.length * (reduceMotion.matches ? 0 : 105) + 520);
       }
-      if (reduceMotion.matches) this.draw(now + 600);
+      if (reduceMotion.matches) this.draw(now + routeDuration);
     }
 
     nodePosition(index, now) {
@@ -273,25 +336,31 @@
     }
 
     pointForPulse(pulse, now) {
-      const edge = this.edges[pulse.edge];
-      if (!edge) return null;
-      const t = Math.max(0, Math.min(1, (now - pulse.start) / pulse.duration));
+      const route = pulse.route || [];
+      if (route.length < 2) return null;
+      const t = (now - pulse.start) / pulse.duration;
       if (t <= 0 || t >= 1) return null;
-      const a = this.nodePosition(edge[0], now), b = this.nodePosition(edge[1], now);
-      const eased = t * t * (3 - 2 * t);
+      const segmentCount = route.length - 1;
+      const scaled = t * segmentCount;
+      const segment = Math.min(segmentCount - 1, Math.floor(scaled));
+      const local = scaled - segment;
+      const eased = local * local * (3 - 2 * local);
+      const a = this.nodePosition(route[segment], now);
+      const b = this.nodePosition(route[segment + 1], now);
       return {
         x: a.x + (b.x - a.x) * eased,
         y: a.y + (b.y - a.y) * eased,
         z: a.z + (b.z - a.z) * eased,
-        size: 12 + pulse.intensity * 16,
+        size: 13 + pulse.intensity * 18,
       };
     }
 
     draw(now) {
       const gl = this.gl;
       if (!gl || !this.program) return;
-      gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.clearColor(0,0,0,0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+      gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LEQUAL);
       gl.useProgram(this.program);
       gl.uniform1f(this.uTime, now);
       gl.uniform1f(this.uAspect, this.canvas.width / Math.max(1, this.canvas.height));
@@ -301,6 +370,16 @@
       const hex = css.getPropertyValue("--blue-hot").trim() || "#1784ff";
       const rgb = hex.match(/[0-9a-f]{2}/gi)?.map(v => parseInt(v,16)/255) || [0.09,.52,1];
       gl.uniform3f(this.uColor, rgb[0], rgb[1], rgb[2]);
+
+      const frameData = this.stageFrameData(now);
+      gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(frameData),gl.DYNAMIC_DRAW);
+      gl.enableVertexAttribArray(this.position);
+      gl.vertexAttribPointer(this.position,3,gl.FLOAT,false,16,0);
+      gl.enableVertexAttribArray(this.size);
+      gl.vertexAttribPointer(this.size,1,gl.FLOAT,false,16,12);
+      gl.uniform1f(this.uMode,0); gl.uniform1f(this.uPoints,0);
+      gl.drawArrays(gl.LINES,0,frameData.length/4);
 
       const lineData = [];
       this.edges.forEach(([ai, bi]) => {
