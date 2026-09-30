@@ -8,6 +8,17 @@
   "properties": {
     "schemaVersion": { "enum": [1, 2] },
     "builtAt": { "type": "string", "format": "date-time" },
+    "compilerProjection": {
+      "type": "object",
+      "required": ["repository", "commit", "sha256", "schemaVersion"],
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "const": "pH34r-pH/experiment-compiler" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "schemaVersion": { "const": 2 }
+      }
+    },
     "sources": {
       "type": "object",
       "required": ["portfolio", "researchNotes", "theoremLibrary"],

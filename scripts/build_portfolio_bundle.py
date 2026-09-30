@@ -8,6 +8,7 @@ import json
 import nbformat
 import yaml
 from compiled_experiment_reference import resolve_reference, render_handoff
+from compiler_projection_input import verified_projection
 import re
 import shutil
 import subprocess
@@ -432,11 +433,10 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     )
     handoff = ''
     if 'compiled_experiment' in metadata:
-        projection_path = getattr(args, 'compiler_projection', None)
-        if projection_path is None or projection_path.is_symlink():
-            raise ValueError('Article compiled_experiment requires an explicit offline public Compiler projection')
+        if args.compiler_projection_data is None:
+            raise ValueError('Article compiled_experiment requires an explicit pinned offline public Compiler projection')
         record = resolve_reference(metadata['compiled_experiment'],
-                                   json.loads(projection_path.read_text()),
+                                   args.compiler_projection_data,
                                    f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
         handoff = render_handoff(record)
     page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
@@ -520,6 +520,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--research-notes-sha", required=True)
     parser.add_argument("--theorem-library-sha", required=True)
     parser.add_argument("--compiler-projection", type=Path, help="Offline versioned public Compiler experiments.json; required only for referenced articles")
+    parser.add_argument("--compiler-projection-pin", type=Path, help="Exact public Compiler source commit and projection byte digest")
     parser.add_argument("--fleet-sha", help="Legacy v1 manifest only; public candidate builds omit this private source")
     return parser.parse_args()
 
@@ -678,6 +679,8 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
         "notebooks": notebooks,
         "articles": articles,
     }
+    if args.compiler_projection_receipt is not None:
+        manifest["compilerProjection"] = args.compiler_projection_receipt
     (args.output / "publication.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
@@ -689,6 +692,12 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
 def main() -> None:
     args = parse_args()
     validate_sources(args)
+    args.compiler_projection_data, args.compiler_projection_receipt = None, None
+    if (args.compiler_projection is None) != (args.compiler_projection_pin is None):
+        raise ValueError('Compiler projection and pin must be provided together')
+    if args.compiler_projection is not None:
+        args.compiler_projection_data, args.compiler_projection_receipt = verified_projection(
+            args.compiler_projection, args.compiler_projection_pin)
     publication, reader_root = prepare_output(args)
     notebook_paths = {
         path.resolve()

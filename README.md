@@ -47,8 +47,12 @@ canonical MyST YAML frontmatter. The optional `expected` object asserts `sha256`
 replacement scientific metadata. Reference v1 uses Compiler's public projection
 v2, documented by `design/article-reference-v1.schema.json`.
 
-Build referenced articles with `--compiler-projection /path/to/experiments.json`,
-an explicitly supplied offline snapshot of Compiler's public static projection.
+Build referenced articles with `--compiler-projection /path/to/experiments.json`
+and `--compiler-projection-pin publication/compiler-projection.lock.json`.
+These inputs must be provided together. The pin identifies an immutable public
+Compiler source commit and the SHA-256 of its generated projection bytes.
+Before resolving an article, the assembler checks the exact bytes, projection
+schema version and Compiler authority, then holds the verified data in memory.
 The build performs no network lookup, internal Compiler import, CI lookup or
 credential access. It rejects unavailable, duplicate, latest or wildcard IDs,
 invalid package identity and unsafe or mismatched detail links. Compiler must
@@ -65,3 +69,23 @@ qualification remains unknown. Tests use a synthetic article relationship and
 the shared public contract fixture; no real article relationship or Muon claim
 is introduced. Real bindings require separately reviewed source-owned backlinks
 and a pinned public projection supplied to the publication build.
+
+The existing `Public publication candidate` job checks out the Compiler commit
+from `publication/compiler-projection.lock.json`, confirms the checkout SHA,
+and invokes Compiler's own static-site builder. That builder assembles public
+packages and metadata; it does not execute experiment members or reproduce
+science. The assembler consumes only the resulting public `data/experiments.json`
+and verifies its committed digest. A missing or changed projection blocks the
+candidate even when the articles have no experiment references. No mutable
+live-site download, private credential or successful Compiler CI run is a build
+input. Updating the Compiler input requires reviewing a new source commit and
+regenerating its exact projection digest together.
+
+`publication.json` records this input in optional `compilerProjection` metadata
+(repository, exact commit, projection SHA-256 and projection schema version).
+The existing three `sources` entries and candidate naming remain unchanged;
+the Portfolio source commit pins the Compiler lock file. The projection is not
+republished as a second catalog. Legacy/local builds without either Compiler
+input remain supported for articles without references. Existing unreferenced
+article bytes stay unchanged. The receipt records input identity, not scientific
+qualification, independent reproduction or deployment authorization.
