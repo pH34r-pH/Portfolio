@@ -68,7 +68,7 @@ pre{white-space:pre-wrap}
 
 /* 2071 model instrument */
 .model-instrument{position:relative;padding-top:30px;border:1px solid var(--line);background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 92%,transparent),color-mix(in srgb,var(--bg-2) 84%,transparent));overflow:hidden}
-.model-instrument:before{content:"MODEL / LIVE SCHEMATIC";position:absolute;z-index:3;left:12px;top:9px;font:750 9px ui-monospace,monospace;letter-spacing:.14em;color:var(--blue)}
+.model-instrument:before{content:"MODEL / LIVE SCHEMATIC";position:absolute;z-index:3;left:12px;top:9px;font:750 9px ui-monospace,monospace;letter-spacing:.14em;color:var(--blue)}.model-instrument:after{content:"GEOMETRY / " attr(data-variant);position:absolute;z-index:3;right:12px;top:9px;font:700 8px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .model-workcell{display:grid;grid-template-columns:minmax(180px,.7fr) minmax(360px,2fr) minmax(180px,.7fr);min-height:420px;border-top:1px solid var(--line)}
 .model-port{position:relative;z-index:2;display:flex;flex-direction:column;gap:10px;padding:18px 14px;background:color-mix(in srgb,var(--bg) 86%,transparent);overflow:hidden}
 .model-input-port{border-right:1px solid var(--line)}
