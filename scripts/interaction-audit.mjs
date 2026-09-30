@@ -143,8 +143,9 @@ async function auditArticle(page, manifest, path) {
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
   if (article.slug === "005-unit-hypersphere-anomaly") {
-    await expect(page.locator('a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]'))
-      .toHaveCount(1);
+    const packageLink = 'a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]';
+    await expect(page.locator('article.myst-reader').locator(packageLink)).toHaveCount(1);
+    await expect(page.locator('.article-experiment-link').locator(packageLink)).toHaveCount(1);
   }
   if (article.slug === "accessible-does-not-imply-used") {
     await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
