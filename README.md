@@ -27,7 +27,7 @@ Notebook readers label an example illustrative only when its source publication 
 
 ## Build and qualification environments
 
-The UX audit toolchain is defined by `package.json` and `package-lock.json` (Node 22); its workflow installs Chromium and the required system packages through Playwright. The public bundle toolchain is defined by `pyproject.toml` and `uv.lock` (Python 3.12), including JupyterLite and the publication checks. CI uses `npm ci` and `uv sync --locked`; `scripts/preflight_env.py` checks that installed tools and browser prerequisites are present before each workload. These project files are the dependency authority. Fleet selects exact passing source revisions and artifacts for deployment and does not maintain a second build-tool catalog.
+The UX audit toolchain is defined by `package.json` and `package-lock.json` (Node 22); its workflow installs Chromium and the required system packages through Playwright. Static search is generated after assembly with an explicitly pinned Pagefind CLI version in the workflow, so the search index is derived from the exact bytes being published rather than maintained as source. The public bundle toolchain is defined by `pyproject.toml` and `uv.lock` (Python 3.12), including JupyterLite and the publication checks. CI uses `npm ci` and `uv sync --locked`; `scripts/preflight_env.py` checks that installed tools and browser prerequisites are present before each workload. The lockfiles plus the workflow-pinned Pagefind version are the dependency authority. Fleet selects exact passing source revisions and artifacts for deployment and does not maintain a second build-tool catalog.
 
 For a local publication environment, run `uv sync --locked --no-dev` and `uv run --no-sync python scripts/preflight_env.py publication`. For UX qualification, run `npm ci`, `npx playwright install --with-deps chromium`, and `python scripts/preflight_env.py ux` with Python 3.12 and Node 22 available.
 
@@ -35,6 +35,6 @@ For a local publication environment, run `uv sync --locked --no-dev` and `uv run
 
 - `site/` contains the portfolio website and stable article/archive routes.
 - `jupyter-lite.json` configures browser-side notebook execution.
-- `publication.schema.json` defines v1 legacy and v2 public candidate metadata.
+- `publication.schema.json` defines v1 legacy and v2 public candidate metadata, including article dependency and model-focus fields used by the generated research topology and article instrument.
 - `scripts/build_portfolio_bundle.py`, `scripts/finish_portfolio_lab.py` and `scripts/digest_bundle.py` assemble and hash a candidate from three pinned public source checkouts.
 - `publication/` contains the generated publication bundle, including notebooks selected for that release.
