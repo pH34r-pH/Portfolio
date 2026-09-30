@@ -25,31 +25,36 @@ function renderArticleList(container, articles) {
   container.replaceChildren(...cards);
 }
 
+function publicNotebook(notebook) {
+  return notebook.slug !== "visual_intuition_atlas";
+}
+
+function compareNotebooks(a, b) {
+  if (a.sequence && b.sequence && a.sequence !== b.sequence) return b.sequence - a.sequence;
+  return (b.path || "").localeCompare(a.path || "", undefined, { numeric: true });
+}
+
+function notebookCard(notebook, index) {
+  const card = el("article", "card");
+  card.dataset.index = String(index + 1).padStart(2, "0");
+  const heading = el("h3", "", notebook.title || notebook.path);
+  const meta = el("p", "card-meta", "Preserved source notebook");
+  const question = el("p", "card-question", notebook.question || "");
+  const links = el("div", "links");
+  const read = el("a", "", "Read notebook");
+  const slug = notebook.slug || notebook.path.split("/").pop().replace(/\.ipynb$/, "");
+  read.href = "/notebooks/" + encodeURIComponent(slug) + "/";
+  const lab = el("a", "", "Open in JupyterLite ↗");
+  const jupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\/notebooks\//, "");
+  lab.href = "/lab/lab/index.html?path=" + encodeURIComponent(jupyterPath);
+  links.append(read, lab);
+  card.append(heading, question, meta, links);
+  return card;
+}
+
 function renderNotebookList(container, notebooks) {
   if (!container || !notebooks?.length) return;
-  const cards = [...notebooks]
-    .filter(notebook => notebook.slug !== "visual_intuition_atlas")
-    .sort((a, b) => {
-      if (a.sequence && b.sequence && a.sequence !== b.sequence) return b.sequence - a.sequence;
-      return (b.path || "").localeCompare(a.path || "", undefined, { numeric: true });
-    })
-    .map((notebook, index) => {
-      const card = el("article", "card");
-      card.dataset.index = String(index + 1).padStart(2, "0");
-      const heading = el("h3", "", notebook.title || notebook.path);
-      const meta = el("p", "card-meta", "Preserved source notebook");
-      const question = el("p", "card-question", notebook.question || "");
-      const links = el("div", "links");
-      const read = el("a", "", "Read notebook");
-      const slug = notebook.slug || notebook.path.split("/").pop().replace(/\.ipynb$/, "");
-      read.href = "/notebooks/" + encodeURIComponent(slug) + "/";
-      const lab = el("a", "", "Open in JupyterLite ↗");
-      const jupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\/notebooks\//, "");
-      lab.href = "/lab/lab/index.html?path=" + encodeURIComponent(jupyterPath);
-      links.append(read, lab);
-      card.append(heading, question, meta, links);
-      return card;
-    });
+  const cards = [...notebooks].filter(publicNotebook).sort(compareNotebooks).map(notebookCard);
   container.replaceChildren(...cards);
 }
 
