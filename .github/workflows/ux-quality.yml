@@ -217,12 +217,14 @@ jobs:
             --output-dir bundle/lab --lite-dir Portfolio
       - name: Attach Portfolio Lab navigation
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
+      - name: Build static publication search index
+        run: npx --yes pagefind@1.5.2 --site bundle --output-subdir pagefind --force-language en
       - name: Qualify finished public bundle
         shell: bash
         run: |
           set -euo pipefail
           for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
-            bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
+            bundle/pagefind/pagefind.js bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
             bundle/lab/reference/glossary.md; do
             test -s "$path"
           done
