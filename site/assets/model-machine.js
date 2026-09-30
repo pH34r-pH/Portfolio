@@ -22,7 +22,7 @@ function toyCompletion(text, count = 8) {
 
 class ModelMachine {
   constructor(root) {
-    this.root = root;
+    this.root = root;\n    root.machine = this;
     this.viewport = root.querySelector(".machine-viewport");
     this.input = root.querySelector("[data-machine-input]");
     this.output = root.querySelector("[data-machine-output]");
@@ -68,7 +68,7 @@ class ModelMachine {
       this.camera.lookAt(0,0,0);
       this.renderer = new WebGLRenderer({antialias:true,powerPreference:"high-performance",alpha:false});
       this.renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
-      this.viewport.append(this.renderer.domElement);
+      this.renderer.domElement.setAttribute("aria-hidden","true");\n      this.viewport.append(this.renderer.domElement);
 
       this.tokenGroup = new Group();
       this.nodeGroup = new Group();
@@ -222,11 +222,21 @@ class ModelMachine {
 
 document.querySelectorAll("[data-model-machine]").forEach(root=>new ModelMachine(root));
 
+function inferredStage(element){
+  if(element.dataset.machineStage) return element.dataset.machineStage;
+  const text=(element.textContent||"").toLowerCase();
+  if(/token|input|encoding|representation/.test(text)) return /representation|state/.test(text) ? "state" : "input";
+  if(/consumer|readout|probe|prediction|decoder/.test(text)) return "consumer";
+  if(/output|generation|next[- ]?byte|next[- ]?token/.test(text)) return "output";
+  if(/state|recurrent|hidden|memory|sphere|normaliz/.test(text)) return "state";
+  return "all";
+}
+
 const sectionObserver = new IntersectionObserver(entries=>{
   const active=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
   if(!active) return;
-  const stage=active.target.dataset.machineStage;
+  const stage=inferredStage(active.target);
   const machine=document.querySelector("[data-model-machine]");
-  if(machine && stage) machine.querySelector(`[data-machine-stage-button="${stage}"]`)?.click();
+  if(machine && stage) machine.machine?.focus(stage);
 },{rootMargin:"-30% 0px -52% 0px",threshold:[0,.2,.5]});
-document.querySelectorAll("[data-machine-stage]").forEach(el=>sectionObserver.observe(el));
+document.querySelectorAll("[data-machine-stage],.myst-reader h2").forEach(el=>sectionObserver.observe(el));
