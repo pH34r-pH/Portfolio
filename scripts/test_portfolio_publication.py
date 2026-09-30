@@ -73,6 +73,8 @@ class ReaderPublicationTest(unittest.TestCase):
             source.write_text(source.read_text().replace('date: 2026-09-29',
                 'date: 2026-09-29\ncompiled_experiment: ' + json.dumps(reference)))
             projection = fixture['projection']
+            projection['experiments'][0].update({key:value for key,value in self._worklog_record().items()
+                if key in ('question','method','protocol','executionAttempts','scientificInterpretation')})
             projection['experiments'][0]['backlinks'] = [{'title':'Sample article',
                 'url':'https://tyharbin.com/articles/sample-article/', 'sourceCommit':revisions[1]}]
             path = Path(directory)/'compiler-projection.json'
@@ -89,7 +91,92 @@ class ReaderPublicationTest(unittest.TestCase):
             page = BeautifulSoup((bundle/'articles/sample-article/index.html').read_text(),'html.parser')
             handoff = page.select_one('aside[aria-label="Compiled experiment reference"]')
             self.assertEqual(handoff.a['href'], 'https://experiments.tyharbin.com' + projection['experiments'][0]['detailUrl'])
+            self.assertIn('Mixed/inconclusive',handoff.get_text())
+            self.assertIn('evidence/result.json',handoff.get_text())
             self.assertIsNone(BeautifulSoup((bundle/'articles/sample-article-second/index.html').read_text(),'html.parser').select_one('aside[aria-label="Compiled experiment reference"]'))
+
+    def _worklog_record(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        record = fixture['projection']['experiments'][0]
+        record.update({'question':'Does the fixture answer its declared question?',
+                       'method':'Use synthetic data; retain failed comparisons.',
+                       'protocol':{'record':'experiment/protocol.md',
+                                   'text':'# Protocol\nUnits: loss per original byte.\nLimit: synthetic fixture.'},
+                       'executionAttempts':[{'id':'#attempt-fixture',
+                         'actionStatus':'https://schema.org/CompletedActionStatus',
+                         'result':['evidence/result.json']}],
+                       'scientificInterpretation':[{'record':'evidence/decision.md',
+                         'summary':'Mixed/inconclusive; no overall winner.', 'aboutAttempt':'#attempt-fixture'}]})
+        return record
+
+    def test_worklog_preserves_source_text_and_evidence_boundaries(self):
+        record = self._worklog_record()
+        page = BeautifulSoup(render_handoff(record),'html.parser')
+        self.assertEqual(page.select_one('pre[aria-label="Full authoritative experiment protocol"]').get_text(),
+                         record['protocol']['text'])
+        text = page.get_text(' ',strip=True)
+        for value in (record['question'],record['method'],record['scientificInterpretation'][0]['summary'],
+                      record['source']['commit'],record['package']['sha256'],'Completed',
+                      'evidence/result.json','Scientific acceptance is not declared',
+                      'does not independently verify its integrity','Independent reproduction is not established'):
+            self.assertIn(value,text)
+        self.assertEqual(page.select_one('a[download]')['href'],
+                         'https://experiments.tyharbin.com/packages/' + record['package']['sha256'] + '.zip')
+        self.assertTrue(page.select_one('details > summary'))
+        self.assertEqual(page.pre['tabindex'],'0')
+        self.assertNotIn('0%',text)
+
+    def test_worklog_missing_plan_and_failed_attempts_do_not_become_success(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        record = fixture['projection']['experiments'][0]
+        missing = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+        self.assertIn('Execution attempts are not declared',missing)
+        record['executionAttempts'] = []
+        plan = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+        self.assertIn('No execution attempts are recorded',plan)
+        self.assertIsNone(BeautifulSoup(render_handoff(record),'html.parser').select_one('strong'))
+        for status in ('Active','Failed','Completed'):
+            record = self._worklog_record()
+            record['executionAttempts'][0]['actionStatus'] = f'https://schema.org/{status}ActionStatus'
+            record['result'] = {'acceptancePassed':False, 'metrics':{}}
+            text = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+            self.assertIn(status,text)
+            self.assertIn('scientific acceptance checks failed',text)
+            self.assertIn('Mixed/inconclusive',text)
+            self.assertNotIn('checks passed',text)
+
+    def test_worklog_hostile_source_text_is_escaped(self):
+        record = self._worklog_record()
+        hostile = '<script>alert(1)</script><a href="javascript:bad">source</a>'
+        record['question'] = record['method'] = hostile
+        record['protocol']['text'] = hostile
+        record['scientificInterpretation'][0]['summary'] = hostile
+        page = BeautifulSoup(render_handoff(record),'html.parser')
+        self.assertFalse(page.select('script, a[href^="javascript:"]'))
+        self.assertEqual(page.pre.get_text(),hostile)
+        self.assertIn(hostile,page.get_text())
+
+    def test_worklog_rejects_malformed_records_and_nonfinite_values(self):
+        cases = [('question',True), ('method',{}), ('package',{'sha256':'bad','size':1}),
+                 ('source',{'repository':'javascript:bad','commit':'a'*40}), ('acceptance',[]), ('executionAttempts',{}),
+                 ('executionAttempts',[{'id':'x','actionStatus':'unknown','result':[]}]),
+                 ('executionAttempts',[{'id':'x','actionStatus':'https://schema.org/FailedActionStatus',
+                                       'result':['../escape']}]),
+                 ('protocol',{'record':'javascript:bad','text':'text'}),
+                 ('protocol',{'record':'CON.txt','text':'text'}),
+                 ('protocol',{'record':'protocol.md','text':False}), ('scientificInterpretation',{}),
+                 ('scientificInterpretation',[{'record':'decision.md','summary':'claim','aboutAttempt':'missing'}]),
+                 ('result',{'acceptancePassed':'true'}), ('result',[]),
+                 ('result',{'metrics':{'loss':float('nan')}}), ('acceptance',{'bound':float('inf')})]
+        for field, value in cases:
+            record = self._worklog_record(); record[field] = value
+            with self.subTest(field=field,value=value), self.assertRaises(ValueError): render_handoff(record)
+        record = self._worklog_record()
+        record['executionAttempts'].append(copy.deepcopy(record['executionAttempts'][0]))
+        with self.assertRaises(ValueError): render_handoff(record)
+        record = self._worklog_record()
+        record['executionAttempts'][0]['result'] *= 2
+        with self.assertRaises(ValueError): render_handoff(record)
 
     def test_pinned_compiler_input_checks_exact_bytes_and_pin(self):
         with tempfile.TemporaryDirectory() as directory:
