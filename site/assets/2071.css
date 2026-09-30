@@ -1334,3 +1334,13 @@ html[data-theme=dark] .portrait-optic:after{mix-blend-mode:screen;opacity:.2}
 .search-results a:hover{padding-left:12px;background:linear-gradient(90deg,var(--signal-soft),transparent)}
 .search-results strong{font-size:1rem}.search-results span{max-width:72ch;color:var(--muted);font-size:.82rem;line-height:1.45}
 @media(max-width:760px){.primary-nav+.search-toggle{margin-left:auto}.search-toggle kbd{display:none}.search-dialog{width:calc(100vw - 16px);max-height:calc(100dvh - 16px)}.search-shell{padding:18px}.search-results{max-height:50dvh}}
+
+
+/* Article form of the shared model-machine. */
+.myst-reader .article-model-machine{max-width:none;margin:2.4em 0 3.4em;padding:0;border-top:0}
+.article-model-machine .machine-heading{margin-bottom:18px}
+.article-model-machine .machine-heading h2{max-width:13ch;font-size:clamp(2.4rem,5vw,4.4rem)}
+.article-model-machine .machine-heading>p{font-size:.88rem;line-height:1.55}
+.article-model-machine .machine-stage{min-height:430px}
+.article-model-machine .machine-console{width:min(280px,32%)}
+@media(max-width:720px){.myst-reader .article-model-machine{margin:2em 0 2.8em}.article-model-machine .machine-stage{min-height:570px}.article-model-machine .machine-console{width:calc(100% - 28px)}}
