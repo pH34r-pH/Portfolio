@@ -1,5 +1,4 @@
 const THREE_URL = "https://unpkg.com/three@0.186.1/build/three.module.js";
-
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const smallViewport = matchMedia("(max-width: 720px)");
 
@@ -17,17 +16,26 @@ function hashText(text) {
 }
 
 function continuationFor(text) {
-  const continuations = [
+  const choices = [
     ["the", "signal", "survives", "but", "the", "consumer", "changes", "what", "gets", "used", "."],
     ["a", "small", "intervention", "moves", "the", "same", "information", "through", "a", "different", "path", "."],
     ["the", "representation", "keeps", "more", "than", "the", "prediction", "step", "can", "recover", "."],
     ["the", "next", "test", "changes", "one", "mechanism", "and", "leaves", "the", "rest", "frozen", "."],
   ];
-  return continuations[hashText(text) % continuations.length];
+  return choices[hashText(text) % choices.length];
 }
 
 function cssColor(name, fallback) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+function themeColors(THREE) {
+  return {
+    ink: new THREE.Color(cssColor("--ink", "#f4fbff")),
+    line: new THREE.Color(cssColor("--accent", "#31a8ff")),
+    depth: new THREE.Color(cssColor("--depth", "#001827")),
+    signal: new THREE.Color(cssColor("--signal", "#29a7ff")),
+  };
 }
 
 function renderTokens(container, tokens) {
@@ -40,581 +48,508 @@ function renderTokens(container, tokens) {
 
 function initFallback(root, reason = "") {
   root.dataset.render = "fallback";
-  const fallback = root.querySelector("[data-machine-fallback]");
-  fallback?.setAttribute("aria-hidden", "false");
+  root.querySelector("[data-machine-fallback]")?.setAttribute("aria-hidden", "false");
   if (reason) root.dataset.fallbackReason = reason;
 }
 
-function createScene(THREE, root) {
-  const canvas = root.querySelector("[data-machine-canvas]");
-  const context = canvas.getContext("webgl2", {
-    alpha: true,
-    antialias: !smallViewport.matches,
-    powerPreference: "high-performance",
-  }) || canvas.getContext("webgl", {
-    alpha: true,
-    antialias: !smallViewport.matches,
-    powerPreference: "high-performance",
-  });
+function createRenderer(THREE, canvas) {
+  const options = { alpha: true, antialias: !smallViewport.matches, powerPreference: "high-performance" };
+  const context = canvas.getContext("webgl2", options) || canvas.getContext("webgl", options);
   if (!context) throw new Error("WebGL unavailable");
-
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
-    context,
-    alpha: true,
-    antialias: !smallViewport.matches,
-    powerPreference: "high-performance",
-  });
+  const renderer = new THREE.WebGLRenderer({ canvas, context, ...options });
   renderer.setClearColor(0x000000, 0);
   renderer.setPixelRatio(Math.min(devicePixelRatio || 1, smallViewport.matches ? 1.35 : 1.8));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
+  return renderer;
+}
 
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(38, 1, .1, 40);
-  camera.position.set(0, .15, smallViewport.matches ? 11.8 : 10.6);
+function createMaterials(THREE, colors) {
+  return {
+    frame: new THREE.MeshStandardMaterial({
+      color: colors.depth, metalness: .78, roughness: .24,
+      emissive: colors.line, emissiveIntensity: .035,
+    }),
+    node: new THREE.MeshStandardMaterial({
+      color: colors.ink, metalness: .64, roughness: .22,
+      emissive: colors.signal, emissiveIntensity: .08,
+    }),
+    signal: new THREE.MeshStandardMaterial({
+      color: colors.signal, metalness: .05, roughness: .14,
+      emissive: colors.signal, emissiveIntensity: 2.4,
+    }),
+    token: new THREE.MeshStandardMaterial({
+      color: colors.ink, metalness: .68, roughness: .18,
+      emissive: colors.signal, emissiveIntensity: .14,
+    }),
+    edge: new THREE.LineBasicMaterial({ color: colors.line, transparent: true, opacity: .18 }),
+  };
+}
 
-  const machine = new THREE.Group();
-  scene.add(machine);
-  if (smallViewport.matches) machine.rotation.z = -Math.PI / 2;
+function register(parts, object, part) {
+  object.userData.part = part;
+  if (!parts.has(part)) parts.set(part, []);
+  parts.get(part).push(object);
+  return object;
+}
 
-  const ambient = new THREE.AmbientLight(0xffffff, 1.65);
-  scene.add(ambient);
-  const key = new THREE.PointLight(0x55bbff, 7.5, 22, 2);
-  key.position.set(-2.5, 3.8, 5);
-  scene.add(key);
-  const rim = new THREE.PointLight(0x1489ff, 5, 18, 2);
-  rim.position.set(4, -3, 3);
-  scene.add(rim);
-
-  const parts = new Map();
-  const trackedMaterials = new Set();
-  const nodes = [];
-  const effectGroup = new THREE.Group();
-  machine.add(effectGroup);
-
-  function register(object, part) {
-    object.userData.part = part;
-    if (!parts.has(part)) parts.set(part, []);
-    parts.get(part).push(object);
-    if (object.material) {
-      const materials = Array.isArray(object.material) ? object.material : [object.material];
-      materials.forEach((material) => trackedMaterials.add(material));
-    }
-    return object;
-  }
-
-  function palette() {
-    return {
-      ink: new THREE.Color(cssColor("--ink", "#f4fbff")),
-      muted: new THREE.Color(cssColor("--muted", "#9abbd1")),
-      line: new THREE.Color(cssColor("--accent", "#31a8ff")),
-      depth: new THREE.Color(cssColor("--depth", "#001827")),
-      signal: new THREE.Color(cssColor("--signal", "#29a7ff")),
-      bg: new THREE.Color(cssColor("--bg", "#00070d")),
-    };
-  }
-
-  let colors = palette();
-  const frameMaterial = new THREE.MeshStandardMaterial({
-    color: colors.depth,
-    metalness: .78,
-    roughness: .24,
-    emissive: colors.line,
-    emissiveIntensity: .035,
-  });
-  const nodeMaterial = new THREE.MeshStandardMaterial({
-    color: colors.ink,
-    metalness: .64,
-    roughness: .22,
-    emissive: colors.signal,
-    emissiveIntensity: .08,
-  });
-  const signalMaterial = new THREE.MeshStandardMaterial({
-    color: colors.signal,
-    metalness: .05,
-    roughness: .14,
-    emissive: colors.signal,
-    emissiveIntensity: 2.4,
-  });
-  const tokenMaterial = new THREE.MeshStandardMaterial({
-    color: colors.ink,
-    metalness: .68,
-    roughness: .18,
-    emissive: colors.signal,
-    emissiveIntensity: .14,
-  });
-  [frameMaterial, nodeMaterial, signalMaterial, tokenMaterial].forEach((material) => trackedMaterials.add(material));
-
+function addInputHardware(THREE, machine, materials, parts) {
   const railGeometry = new THREE.BoxGeometry(1.8, .07, .12);
-  const railTop = register(new THREE.Mesh(railGeometry, frameMaterial), "tokenizer");
-  railTop.position.set(-4.35, .55, 0);
-  machine.add(railTop);
-  const railBottom = register(new THREE.Mesh(railGeometry, frameMaterial), "tokenizer");
-  railBottom.position.set(-4.35, -.55, 0);
-  machine.add(railBottom);
-
+  for (const y of [.55, -.55]) {
+    const rail = register(parts, new THREE.Mesh(railGeometry, materials.frame), "tokenizer");
+    rail.position.set(-4.35, y, 0);
+    machine.add(rail);
+  }
   for (let index = 0; index < 4; index++) {
-    const gate = register(
-      new THREE.Mesh(new THREE.BoxGeometry(.14, 1.12, .34), frameMaterial),
-      "tokenizer",
-    );
+    const gate = register(parts, new THREE.Mesh(new THREE.BoxGeometry(.14, 1.12, .34), materials.frame), "tokenizer");
     gate.position.set(-4.95 + index * .4, 0, 0);
     machine.add(gate);
   }
-
-  const chute = register(
-    new THREE.Mesh(new THREE.CylinderGeometry(.34, .62, 1.05, 6, 1, false), frameMaterial),
-    "input",
-  );
+  const chute = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.34, .62, 1.05, 6), materials.frame), "input");
   chute.rotation.z = Math.PI / 2;
   chute.position.set(-3.25, 0, 0);
   machine.add(chute);
+}
 
-  const layerX = [-2.15, -1.1, 0, 1.1, 2.15];
-  const layerYs = [-.92, -.3, .3, .92];
-  const sphere = new THREE.SphereGeometry(.105, 14, 10);
-
-  const edgeMaterial = new THREE.LineBasicMaterial({
-    color: colors.line,
-    transparent: true,
-    opacity: .18,
-  });
-  trackedMaterials.add(edgeMaterial);
-
+function addNetworkHardware(THREE, machine, materials, parts) {
+  const nodes = [];
   const layerNodes = [];
-  layerX.forEach((x, layer) => {
-    const current = [];
-    layerYs.forEach((y, row) => {
-      const z = ((layer + row) % 3 - 1) * .16;
-      const node = register(new THREE.Mesh(sphere, nodeMaterial), layer < 3 ? "representation" : "consumer");
-      node.position.set(x, y, z);
-      node.userData.baseEmissive = .08;
+  const xPositions = [-2.15, -1.1, 0, 1.1, 2.15];
+  const yPositions = [-.92, -.3, .3, .92];
+  const sphere = new THREE.SphereGeometry(.105, 14, 10);
+  xPositions.forEach((x, layer) => {
+    const current = yPositions.map((y, row) => {
+      const part = layer < 3 ? "representation" : "consumer";
+      const node = register(parts, new THREE.Mesh(sphere, materials.node), part);
+      node.position.set(x, y, ((layer + row) % 3 - 1) * .16);
       machine.add(node);
       nodes.push(node);
-      current.push(node);
+      return node;
     });
     layerNodes.push(current);
   });
+  addNetworkEdges(THREE, machine, materials, parts, layerNodes);
+  return nodes;
+}
 
-  for (let layer = 0; layer < layerNodes.length - 1; layer++) {
-    for (let row = 0; row < layerNodes[layer].length; row++) {
+function addNetworkEdges(THREE, machine, materials, parts, layers) {
+  for (let layer = 0; layer < layers.length - 1; layer++) {
+    for (let row = 0; row < layers[layer].length; row++) {
       for (const offset of [0, 1]) {
-        const a = layerNodes[layer][row].position;
-        const b = layerNodes[layer + 1][(row + offset) % layerYs.length].position;
-        const geometry = new THREE.BufferGeometry().setFromPoints([a, b]);
-        const line = register(new THREE.Line(geometry, edgeMaterial), layer < 2 ? "representation" : "consumer");
-        machine.add(line);
+        const geometry = new THREE.BufferGeometry().setFromPoints([
+          layers[layer][row].position,
+          layers[layer + 1][(row + offset) % layers[layer].length].position,
+        ]);
+        const part = layer < 2 ? "representation" : "consumer";
+        machine.add(register(parts, new THREE.Line(geometry, materials.edge), part));
       }
     }
   }
+}
 
-  const readoutFrame = register(
-    new THREE.Mesh(new THREE.BoxGeometry(.8, 1.7, .24), frameMaterial),
-    "consumer",
-  );
-  readoutFrame.position.set(2.75, 0, -.12);
-  machine.add(readoutFrame);
-
+function addOutputHardware(THREE, machine, materials, parts) {
+  const frame = register(parts, new THREE.Mesh(new THREE.BoxGeometry(.8, 1.7, .24), materials.frame), "consumer");
+  frame.position.set(2.75, 0, -.12);
+  machine.add(frame);
   for (let index = 0; index < 3; index++) {
-    const dropper = register(
-      new THREE.Mesh(new THREE.CylinderGeometry(.13, .2, .55, 8), frameMaterial),
-      "output",
-    );
+    const dropper = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.13, .2, .55, 8), materials.frame), "output");
     dropper.rotation.z = Math.PI / 2;
     dropper.position.set(3.42, .42 - index * .42, 0);
     machine.add(dropper);
   }
-
-  const conveyor = register(
-    new THREE.Mesh(new THREE.BoxGeometry(2.1, .12, .58), frameMaterial),
-    "output",
-  );
+  const conveyor = register(parts, new THREE.Mesh(new THREE.BoxGeometry(2.1, .12, .58), materials.frame), "output");
   conveyor.position.set(4.35, -.78, 0);
   machine.add(conveyor);
-
   for (let index = 0; index < 5; index++) {
-    const roller = register(
-      new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .58, 12), frameMaterial),
-      "output",
-    );
+    const roller = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .58, 12), materials.frame), "output");
     roller.rotation.x = Math.PI / 2;
     roller.position.set(3.55 + index * .42, -.7, 0);
     machine.add(roller);
   }
+}
 
-  const resize = () => {
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    renderer.setSize(rect.width, rect.height, false);
-    camera.aspect = rect.width / rect.height;
-    camera.fov = smallViewport.matches ? 44 : 38;
-    camera.updateProjectionMatrix();
-    machine.rotation.z = smallViewport.matches ? -Math.PI / 2 : 0;
-    render();
-  };
+function ease(t) {
+  return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
-  const observer = new ResizeObserver(resize);
-  observer.observe(canvas);
-
-  let activeRun = null;
-  let frame = 0;
-  let visible = true;
-  let focus = "all";
-
-  function render() {
-    renderer.render(scene, camera);
+class MachineScene {
+  constructor(THREE, root) {
+    this.THREE = THREE;
+    this.root = root;
+    this.canvas = root.querySelector("[data-machine-canvas]");
+    this.renderer = createRenderer(THREE, this.canvas);
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(38, 1, .1, 40);
+    this.camera.position.set(0, .15, smallViewport.matches ? 11.8 : 10.6);
+    this.machine = new THREE.Group();
+    this.scene.add(this.machine);
+    this.parts = new Map();
+    this.colors = themeColors(THREE);
+    this.materials = createMaterials(THREE, this.colors);
+    this.nodes = this.buildHardware();
+    this.effectGroup = new THREE.Group();
+    this.machine.add(this.effectGroup);
+    this.addLights();
+    this.activeRun = null;
+    this.frame = 0;
+    this.visible = true;
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(this.canvas);
+    this.themeObserver = new MutationObserver(() => this.refreshTheme());
+    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    this.resize();
   }
 
-  function clearEffects() {
-    while (effectGroup.children.length) {
-      const child = effectGroup.children.pop();
+  buildHardware() {
+    addInputHardware(this.THREE, this.machine, this.materials, this.parts);
+    const nodes = addNetworkHardware(this.THREE, this.machine, this.materials, this.parts);
+    addOutputHardware(this.THREE, this.machine, this.materials, this.parts);
+    return nodes;
+  }
+
+  addLights() {
+    this.scene.add(new this.THREE.AmbientLight(0xffffff, 1.65));
+    this.key = new this.THREE.PointLight(0x55bbff, 7.5, 22, 2);
+    this.key.position.set(-2.5, 3.8, 5);
+    this.scene.add(this.key);
+    this.rim = new this.THREE.PointLight(0x1489ff, 5, 18, 2);
+    this.rim.position.set(4, -3, 3);
+    this.scene.add(this.rim);
+  }
+
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    this.renderer.setSize(rect.width, rect.height, false);
+    this.camera.aspect = rect.width / rect.height;
+    this.camera.fov = smallViewport.matches ? 44 : 38;
+    this.camera.updateProjectionMatrix();
+    this.machine.rotation.z = smallViewport.matches ? -Math.PI / 2 : 0;
+    this.render();
+  }
+
+  render() {
+    this.renderer.render(this.scene, this.camera);
+  }
+
+  clearEffects() {
+    while (this.effectGroup.children.length) {
+      const child = this.effectGroup.children.pop();
       child.geometry?.dispose?.();
-      if (child.material && !trackedMaterials.has(child.material)) child.material.dispose?.();
     }
   }
 
-  function makeBlock() {
-    const block = new THREE.Mesh(new THREE.BoxGeometry(.34, .18, .22), tokenMaterial);
-    effectGroup.add(block);
+  makeBlock() {
+    const block = new this.THREE.Mesh(new this.THREE.BoxGeometry(.34, .18, .22), this.materials.token);
+    this.effectGroup.add(block);
     return block;
   }
 
-  function makePulse() {
-    const pulse = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 8), signalMaterial);
-    effectGroup.add(pulse);
+  makePulse() {
+    const pulse = new this.THREE.Mesh(new this.THREE.SphereGeometry(.09, 12, 8), this.materials.signal);
+    this.effectGroup.add(pulse);
     return pulse;
   }
 
-  function routeFor(index, count) {
+  routeFor(index, count) {
     const lane = count <= 1 ? 0 : (index / (count - 1) - .5) * 1.5;
-    return new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-3.05, 0, 0),
-      new THREE.Vector3(-2.05, lane * .8, .08),
-      new THREE.Vector3(-1.05, -lane * .45, -.08),
-      new THREE.Vector3(.05, lane * .3, .16),
-      new THREE.Vector3(1.1, -lane * .6, -.06),
-      new THREE.Vector3(2.65, lane * .28, 0),
-      new THREE.Vector3(3.12, 0, 0),
+    const V = this.THREE.Vector3;
+    return new this.THREE.CatmullRomCurve3([
+      new V(-3.05, 0, 0), new V(-2.05, lane * .8, .08), new V(-1.05, -lane * .45, -.08),
+      new V(.05, lane * .3, .16), new V(1.1, -lane * .6, -.06), new V(2.65, lane * .28, 0),
+      new V(3.12, 0, 0),
     ]);
   }
 
-  function ease(t) {
-    return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  createInput(tokens, now) {
+    return tokens.map((token, index) => {
+      const block = this.makeBlock();
+      const pulse = this.makePulse();
+      block.position.set(-5.25, (index - (tokens.length - 1) / 2) * .22, 0);
+      pulse.visible = false;
+      return { token, block, pulse, route: this.routeFor(index, tokens.length), start: now + index * 115 };
+    });
   }
 
-  function setNodeActivity(x, strength = 1) {
-    for (const node of nodes) {
-      const distance = Math.abs(node.position.x - x);
-      const amount = Math.max(0, 1 - distance / .72) * strength;
+  createOutputs(tokens, now) {
+    return tokens.map((token, index) => {
+      const block = this.makeBlock();
+      block.visible = false;
+      block.position.set(3.26, -.78, 0);
+      return { token, block, start: now + 1750 + index * 145, emitted: false };
+    });
+  }
+
+  animateRun(tokens, generated, callbacks) {
+    this.clearEffects();
+    this.resetNodes();
+    const now = performance.now();
+    this.activeRun = {
+      now,
+      input: this.createInput(tokens, now),
+      outputs: this.createOutputs(generated, now),
+      stage: "",
+      completed: false,
+      ...callbacks,
+    };
+    if (this.visible && !this.frame) this.frame = requestAnimationFrame((time) => this.tick(time));
+  }
+
+  updateInputItem(item, time) {
+    const p = Math.max(0, Math.min(1, (time - item.start) / 1500));
+    if (p < .22) {
+      item.block.visible = p >= 0;
+      item.pulse.visible = false;
+      const t = ease(p / .22);
+      item.block.position.x = this.THREE.MathUtils.lerp(-5.25, -3.08, t);
+      item.block.position.y *= .965;
+      item.block.rotation.z = t * 1.8;
+      return { done: false, x: null };
+    }
+    item.block.visible = false;
+    if (p < .84) {
+      item.pulse.visible = true;
+      const point = item.route.getPoint(ease((p - .22) / .62));
+      item.pulse.position.copy(point);
+      return { done: false, x: point.x };
+    }
+    item.pulse.visible = false;
+    return { done: p >= 1, x: null };
+  }
+
+  updateInput(time) {
+    let allDone = true;
+    let activityX = null;
+    for (const item of this.activeRun.input) {
+      const state = this.updateInputItem(item, time);
+      allDone = allDone && state.done;
+      if (state.x !== null) activityX = state.x;
+    }
+    if (activityX === null) this.resetNodes();
+    else this.setNodeActivity(activityX);
+    return allDone;
+  }
+
+  updateOutputItem(item, time) {
+    const p = Math.max(0, Math.min(1, (time - item.start) / 520));
+    if (p > 0) {
+      item.block.visible = true;
+      const t = ease(p);
+      item.block.position.x = this.THREE.MathUtils.lerp(3.26, 5.32, t);
+      item.block.position.y = -.78 + Math.sin(t * Math.PI) * .22;
+      item.block.rotation.z = t * .5;
+    }
+    if (p >= .92 && !item.emitted) {
+      item.emitted = true;
+      this.activeRun.onEmit(item.token);
+    }
+    if (p >= 1) item.block.visible = false;
+    return p >= 1;
+  }
+
+  updateOutputs(time) {
+    let allDone = true;
+    for (const item of this.activeRun.outputs) allDone = this.updateOutputItem(item, time) && allDone;
+    return allDone;
+  }
+
+  updateStage(time) {
+    const elapsed = time - this.activeRun.now;
+    const next = elapsed < 620 ? "tokenizing" : elapsed < 1750 ? "activating" : "decoding";
+    if (next === this.activeRun.stage) return;
+    this.activeRun.stage = next;
+    this.activeRun.onStage(next);
+  }
+
+  tick(time) {
+    this.frame = 0;
+    if (!this.activeRun || !this.visible) return;
+    const inputDone = this.updateInput(time);
+    this.updateStage(time);
+    const outputDone = this.updateOutputs(time);
+    this.render();
+    const timedOut = time - this.activeRun.now > 5200;
+    if (inputDone && outputDone || timedOut) {
+      this.finishRun();
+      return;
+    }
+    this.frame = requestAnimationFrame((next) => this.tick(next));
+  }
+
+  finishRun() {
+    if (!this.activeRun.completed) this.activeRun.onComplete();
+    this.activeRun = null;
+    this.resetNodes();
+    this.render();
+  }
+
+  setNodeActivity(x) {
+    for (const node of this.nodes) {
+      const amount = Math.max(0, 1 - Math.abs(node.position.x - x) / .72);
       node.material.emissiveIntensity = .08 + amount * 2.4;
-      const scale = 1 + amount * .28;
-      node.scale.setScalar(scale);
+      node.scale.setScalar(1 + amount * .28);
     }
   }
 
-  function resetNodes() {
-    for (const node of nodes) {
+  resetNodes() {
+    for (const node of this.nodes) {
       node.material.emissiveIntensity = .08;
       node.scale.setScalar(1);
     }
   }
 
-  function setFocus(part = "all") {
-    focus = part;
-    for (const [name, objects] of parts) {
+  setFocus(part = "all") {
+    for (const [name, objects] of this.parts) {
       const selected = part === "all" || name === part;
       for (const object of objects) {
-        if (!object.material) continue;
         const materials = Array.isArray(object.material) ? object.material : [object.material];
         for (const material of materials) {
-          if ("opacity" in material) {
-            material.transparent = !selected;
-            material.opacity = selected ? 1 : .16;
-          }
+          if (!material || !("opacity" in material)) continue;
+          material.transparent = !selected;
+          material.opacity = selected ? 1 : .16;
         }
       }
     }
-    render();
+    this.render();
   }
 
-  function refreshTheme() {
-    colors = palette();
-    frameMaterial.color.copy(colors.depth);
-    frameMaterial.emissive.copy(colors.line);
-    nodeMaterial.color.copy(colors.ink);
-    nodeMaterial.emissive.copy(colors.signal);
-    signalMaterial.color.copy(colors.signal);
-    signalMaterial.emissive.copy(colors.signal);
-    tokenMaterial.color.copy(colors.ink);
-    tokenMaterial.emissive.copy(colors.signal);
-    edgeMaterial.color.copy(colors.line);
-    key.color.copy(colors.signal);
-    rim.color.copy(colors.line);
-    render();
+  refreshTheme() {
+    this.colors = themeColors(this.THREE);
+    this.materials.frame.color.copy(this.colors.depth);
+    this.materials.frame.emissive.copy(this.colors.line);
+    this.materials.node.color.copy(this.colors.ink);
+    this.materials.node.emissive.copy(this.colors.signal);
+    this.materials.signal.color.copy(this.colors.signal);
+    this.materials.signal.emissive.copy(this.colors.signal);
+    this.materials.token.color.copy(this.colors.ink);
+    this.materials.token.emissive.copy(this.colors.signal);
+    this.materials.edge.color.copy(this.colors.line);
+    this.key.color.copy(this.colors.signal);
+    this.rim.color.copy(this.colors.line);
+    this.render();
   }
 
-  function animateRun(tokens, generated, onEmit, onStage, onComplete) {
-    clearEffects();
-    resetNodes();
-
-    const now = performance.now();
-    const input = tokens.map((token, index) => ({
-      token,
-      index,
-      block: makeBlock(),
-      pulse: makePulse(),
-      route: routeFor(index, tokens.length),
-      start: now + index * 115,
-    }));
-    input.forEach(({ block, pulse, index }) => {
-      block.position.set(-5.25, (index - (input.length - 1) / 2) * .22, 0);
-      pulse.visible = false;
-    });
-
-    const outputs = generated.map((token, index) => ({
-      token,
-      index,
-      block: makeBlock(),
-      start: now + 1750 + index * 145,
-      emitted: false,
-    }));
-    outputs.forEach(({ block }) => {
-      block.visible = false;
-      block.position.set(3.26, -.78, 0);
-    });
-
-    activeRun = {
-      now,
-      input,
-      outputs,
-      onEmit,
-      onStage,
-      onComplete,
-      completed: false,
-      stage: "",
-    };
-
-    if (visible && !frame) frame = requestAnimationFrame(tick);
-  }
-
-  function tick(time) {
-    frame = 0;
-    if (!activeRun || !visible) return;
-
-    let allInputDone = true;
-    let activityX = null;
-    let activityStrength = 0;
-
-    for (const item of activeRun.input) {
-      const elapsed = time - item.start;
-      const p = Math.max(0, Math.min(1, elapsed / 1500));
-      if (p < 1) allInputDone = false;
-
-      if (p < .22) {
-        item.block.visible = p >= 0;
-        item.pulse.visible = false;
-        const t = ease(p / .22);
-        item.block.position.x = THREE.MathUtils.lerp(-5.25, -3.08, t);
-        item.block.position.y *= .965;
-        item.block.rotation.z = t * 1.8;
-      } else if (p < .84) {
-        item.block.visible = false;
-        item.pulse.visible = true;
-        const t = ease((p - .22) / .62);
-        const point = item.route.getPoint(t);
-        item.pulse.position.copy(point);
-        activityX = point.x;
-        activityStrength = 1;
-      } else {
-        item.block.visible = false;
-        item.pulse.visible = false;
-      }
-    }
-
-    if (activityX !== null) setNodeActivity(activityX, activityStrength);
-    else resetNodes();
-
-    const elapsedTotal = time - activeRun.now;
-    const nextStage = elapsedTotal < 620 ? "tokenizing" : elapsedTotal < 1750 ? "activating" : "decoding";
-    if (nextStage !== activeRun.stage) {
-      activeRun.stage = nextStage;
-      activeRun.onStage(nextStage);
-    }
-
-    let allOutputsDone = true;
-    for (const item of activeRun.outputs) {
-      const p = Math.max(0, Math.min(1, (time - item.start) / 520));
-      if (p < 1) allOutputsDone = false;
-      if (p > 0) {
-        item.block.visible = true;
-        const t = ease(p);
-        item.block.position.x = THREE.MathUtils.lerp(3.26, 5.32, t);
-        item.block.position.y = -.78 + Math.sin(t * Math.PI) * .22;
-        item.block.rotation.z = t * .5;
-      }
-      if (p >= .92 && !item.emitted) {
-        item.emitted = true;
-        activeRun.onEmit(item.token);
-      }
-      if (p >= 1) item.block.visible = false;
-    }
-
-    render();
-
-    if ((allInputDone && allOutputsDone) || elapsedTotal > 5200) {
-      if (!activeRun.completed) {
-        activeRun.completed = true;
-        activeRun.onComplete();
-      }
-      activeRun = null;
-      resetNodes();
-      render();
-      return;
-    }
-
-    frame = requestAnimationFrame(tick);
-  }
-
-  function setVisible(next) {
-    visible = next;
-    if (visible && activeRun && !frame) frame = requestAnimationFrame(tick);
-    if (!visible && frame) {
-      cancelAnimationFrame(frame);
-      frame = 0;
+  setVisible(next) {
+    this.visible = next;
+    if (next && this.activeRun && !this.frame) this.frame = requestAnimationFrame((time) => this.tick(time));
+    if (!next && this.frame) {
+      cancelAnimationFrame(this.frame);
+      this.frame = 0;
     }
   }
 
-  const themeObserver = new MutationObserver(refreshTheme);
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-
-  resize();
-  render();
-
-  return {
-    animateRun,
-    setFocus,
-    setVisible,
-    dispose() {
-      if (frame) cancelAnimationFrame(frame);
-      observer.disconnect();
-      themeObserver.disconnect();
-      clearEffects();
-      renderer.dispose();
-    },
-  };
+  dispose() {
+    if (this.frame) cancelAnimationFrame(this.frame);
+    this.resizeObserver.disconnect();
+    this.themeObserver.disconnect();
+    this.clearEffects();
+    this.renderer.dispose();
+  }
 }
 
-function initMachine(root) {
-  const stage = root.querySelector("[data-machine-stage]");
-  const form = root.querySelector("[data-machine-form]");
-  const input = form?.querySelector("input");
-  const tokenReadout = root.querySelector("[data-machine-token-readout]");
-  const output = root.querySelector("[data-machine-output]");
-  const status = root.querySelector("[data-machine-status]");
-  if (!stage || !form || !input || !tokenReadout || !output || !status) return;
+function machineStatusLabel(name) {
+  if (name === "tokenizing") return "tokenizing input";
+  if (name === "activating") return "activation moving through model";
+  return "decoding output";
+}
 
-  let scene = null;
-  let bootPromise = null;
-  let visible = false;
+class MachineController {
+  constructor(root) {
+    this.root = root;
+    this.stage = root.querySelector("[data-machine-stage]");
+    this.form = root.querySelector("[data-machine-form]");
+    this.input = this.form?.querySelector("input");
+    this.tokenReadout = root.querySelector("[data-machine-token-readout]");
+    this.output = root.querySelector("[data-machine-output]");
+    this.status = root.querySelector("[data-machine-status]");
+    this.scene = null;
+    this.bootPromise = null;
+    this.visible = false;
+    if (!this.stage || !this.form || !this.input || !this.tokenReadout || !this.output || !this.status) return;
+    this.form.addEventListener("submit", (event) => this.submit(event));
+    this.observe();
+    renderTokens(this.tokenReadout, tokenize(this.input.value));
+    root.addEventListener("portfolio:model-focus", (event) => this.scene?.setFocus(event.detail?.part || "all"));
+    this.publicApi = { run: (text) => this.run(text), focus: (part) => this.scene?.setFocus(part || "all") };
+    root.machine = this.publicApi;
+    window.PortfolioModelMachine ??= this.publicApi;
+  }
 
-  const setStatus = (text) => { status.textContent = text; };
+  observe() {
+    this.observer = new IntersectionObserver((entries) => {
+      this.visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= .15);
+      this.scene?.setVisible(this.visible && !document.hidden);
+      if (this.visible) this.boot();
+    }, { threshold: [.15] });
+    this.observer.observe(this.stage);
+    document.addEventListener("visibilitychange", () => {
+      this.scene?.setVisible(this.visible && !document.hidden);
+    });
+  }
 
-  async function boot() {
-    if (scene) return scene;
-    if (bootPromise) return bootPromise;
+  async boot() {
+    if (this.scene) return this.scene;
+    if (this.bootPromise) return this.bootPromise;
     if (reduceMotion.matches) {
-      initFallback(root, "reduced-motion");
-      setStatus("machine ready / reduced motion");
+      initFallback(this.root, "reduced-motion");
+      this.setStatus("machine ready / reduced motion");
       return null;
     }
-
-    root.dataset.render = "loading";
-    setStatus("initializing model space");
-
-    bootPromise = import(THREE_URL)
-      .then((THREE) => {
-        scene = createScene(THREE, root);
-        scene.setVisible(visible && !document.hidden);
-        root.dataset.render = "webgl";
-        root.querySelector("[data-machine-fallback]")?.setAttribute("aria-hidden", "true");
-        setStatus("machine ready");
-        return scene;
-      })
-      .catch((error) => {
-        initFallback(root, "webgl-load");
-        setStatus("machine ready / static view");
-        console.warn("Portfolio model machine fell back to static rendering.", error);
-        return null;
-      });
-
-    return bootPromise;
+    this.root.dataset.render = "loading";
+    this.setStatus("initializing model space");
+    this.bootPromise = import(THREE_URL).then((THREE) => this.finishBoot(THREE)).catch((error) => this.failBoot(error));
+    return this.bootPromise;
   }
 
-  function immediateRun(text) {
-    const generated = continuationFor(text);
-    output.textContent = generated.join(" ").replace(/\s+([.,!?;:])/g, "$1");
-    setStatus("complete");
+  finishBoot(THREE) {
+    this.scene = new MachineScene(THREE, this.root);
+    this.scene.setVisible(this.visible && !document.hidden);
+    this.scene.setFocus(this.root.dataset.modelFocus || "all");
+    this.root.dataset.render = "webgl";
+    this.root.querySelector("[data-machine-fallback]")?.setAttribute("aria-hidden", "true");
+    this.setStatus("machine ready");
+    return this.scene;
   }
 
-  async function run(text = input.value) {
-    const cleaned = text.trim() || "the model learned a useful distinction";
-    input.value = cleaned;
-    const tokens = tokenize(cleaned);
-    renderTokens(tokenReadout, tokens);
-    output.textContent = "";
-    setStatus("tokenizing input");
-
-    const current = await boot();
-    if (!current || reduceMotion.matches) {
-      immediateRun(cleaned);
-      return;
-    }
-
-    const generated = continuationFor(cleaned);
-    let emitted = [];
-
-    current.animateRun(
-      tokens,
-      generated,
-      (token) => {
-        emitted.push(token);
-        output.textContent = emitted.join(" ").replace(/\s+([.,!?;:])/g, "$1");
-      },
-      (name) => {
-        setStatus(name === "tokenizing" ? "tokenizing input" : name === "activating" ? "activation moving through model" : "decoding output");
-      },
-      () => setStatus("complete"),
-    );
+  failBoot(error) {
+    initFallback(this.root, "webgl-load");
+    this.setStatus("machine ready / static view");
+    console.warn("Portfolio model machine fell back to static rendering.", error);
+    return null;
   }
 
-  form.addEventListener("submit", (event) => {
+  submit(event) {
     event.preventDefault();
-    run();
-  });
+    this.run(this.input.value);
+  }
 
-  const observer = new IntersectionObserver((entries) => {
-    visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= .15);
-    scene?.setVisible(visible && !document.hidden);
-    if (visible) boot();
-  }, { threshold: [.15] });
-  observer.observe(stage);
+  setStatus(text) {
+    this.status.textContent = text;
+  }
 
-  document.addEventListener("visibilitychange", () => {
-    scene?.setVisible(visible && !document.hidden);
-  });
+  immediateRun(text) {
+    this.output.textContent = continuationFor(text).join(" ").replace(/\s+([.,!?;:])/g, "$1");
+    this.setStatus("complete");
+  }
 
-  renderTokens(tokenReadout, tokenize(input.value));
-
-  root.addEventListener("portfolio:model-focus", (event) => {
-    scene?.setFocus(event.detail?.part || "all");
-  });
-
-  root.machine = {
-    run,
-    focus(part) { scene?.setFocus(part || "all"); },
-  };
-
-  if (!window.PortfolioModelMachine) window.PortfolioModelMachine = root.machine;
+  async run(text = this.input.value) {
+    const cleaned = text.trim() || "the model learned a useful distinction";
+    this.input.value = cleaned;
+    const tokens = tokenize(cleaned);
+    renderTokens(this.tokenReadout, tokens);
+    this.output.textContent = "";
+    this.setStatus("tokenizing input");
+    const current = await this.boot();
+    if (!current || reduceMotion.matches) return this.immediateRun(cleaned);
+    const emitted = [];
+    current.animateRun(tokens, continuationFor(cleaned), {
+      onEmit: (token) => {
+        emitted.push(token);
+        this.output.textContent = emitted.join(" ").replace(/\s+([.,!?;:])/g, "$1");
+      },
+      onStage: (name) => this.setStatus(machineStatusLabel(name)),
+      onComplete: () => this.setStatus("complete"),
+    });
+  }
 }
 
-document.querySelectorAll("[data-model-machine]").forEach(initMachine);
+document.querySelectorAll("[data-model-machine]").forEach((root) => new MachineController(root));
