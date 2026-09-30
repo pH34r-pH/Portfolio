@@ -92,6 +92,8 @@ async function loadPublication() {
     const response = await fetch("/publication.json", { cache: "no-store" });
     if (!response.ok) throw new Error();
     const manifest = await response.json();
+    window.PortfolioPublication = manifest;
+    document.dispatchEvent(new CustomEvent("portfolio:publication", { detail: manifest }));
     const sources = manifest.sources || {};
     renderProvenance(sources, target, build);
     if (articleList) renderArticleList(articleList, manifest.articles);
