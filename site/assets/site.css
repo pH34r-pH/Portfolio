@@ -1369,3 +1369,8 @@ html[data-theme=dark] .portrait-optic:after{mix-blend-mode:screen;opacity:.2}
 
 html[data-theme="dark"] .machine-input button{background:#006ce0;border-color:#006ce0;color:#fff!important}
 html[data-theme="dark"] .primary,html[data-theme="dark"] .article-execution button,html[data-theme="dark"] .synthetic-projection-control button,html[data-theme="dark"] .topology-detail-actions a:hover{color:var(--2071-black)!important}
+
+@media(max-width:360px){
+  .about-hero .page-title{max-width:100%}
+  .portrait-optic:before{inset:-8px}
+}
