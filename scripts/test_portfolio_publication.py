@@ -1,5 +1,8 @@
 """Regression coverage for links and landmarks in generated notebook readers."""
 import tempfile
+import copy
+from compiled_experiment_reference import resolve_reference, render_handoff
+from compiler_projection_input import load_pin, verified_projection
 import unittest
 import json
 import sys
@@ -19,6 +22,215 @@ import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_exact_compiler_reference_contract(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        projection = fixture['projection']
+        article = fixture['article']
+        projection['experiments'][0]['backlinks'] = [article]
+        reference = fixture['compiled_experiment']
+        def resolve(data=projection, ref=reference):
+            return resolve_reference(ref, data, article['url'], article['sourceCommit'])
+        projection['experiments'][0]['backlinks'].append({'title':'Other canonical article',
+            'url':'https://tyharbin.com/articles/other/', 'sourceCommit':'a'*40})
+        invalid_extra = copy.deepcopy(projection)
+        invalid_extra['experiments'][0]['backlinks'].append({'title':'Foreign source',
+            'url':'https://example.org/other/', 'sourceCommit':'a'*40})
+        with self.assertRaises(ValueError): resolve(invalid_extra)
+        record = resolve()
+        self.assertEqual(record['id'], reference['ref'])
+        rendered = render_handoff(record)
+        self.assertIn('Qualification is unknown', rendered)
+        self.assertIn('does not establish execution', rendered)
+        for invalid in ('latest', 'experiment-latest', '*', 'missing', '../experiment'):
+            with self.subTest(ref=invalid), self.assertRaises(ValueError):
+                resolve(ref={'ref': invalid})
+        for field, value in (('schemaVersion', 3), ('schemaVersion', 2.0), ('project', {})):
+            changed = copy.deepcopy(projection); changed[field] = value
+            with self.assertRaises(ValueError): resolve(changed)
+        duplicate = copy.deepcopy(projection)
+        duplicate['experiments'].append(copy.deepcopy(duplicate['experiments'][0]))
+        with self.assertRaises(ValueError): resolve(duplicate)
+        for key, value in (('sha256', 'f'*64), ('profile', 'compiled-experiment-lifecycle-v1'),
+                           ('source', {'repository':'other/repo', 'commit':'a'*40})):
+            with self.subTest(assertion=key), self.assertRaises(ValueError):
+                resolve(ref={**reference, 'expected':{key:value}})
+        for field, value in (('detailUrl', 'javascript:alert(1)'), ('profile', 'unknown'),
+                             ('package', {'sha256':'invalid'}),
+                             ('package', {'sha256':'a'*64,'size':True}),
+                             ('package', {'sha256':'a'*64,'size':0}), ('source', {'repository':'other/repo','commit':'main'}),
+                             ('backlinks', []), ('backlinks', [{**article,'sourceCommit':'d'*40}]),
+                             ('backlinks', [{**article,'url':'https://other.example/articles/other/'}]),
+                             ('backlinks', [{**article,'url':'https://user:secret@tyharbin.com/articles/contract-fixture/'}])):
+            changed = copy.deepcopy(projection); changed['experiments'][0][field] = value
+            with self.subTest(field=field,value=value), self.assertRaises(ValueError): resolve(changed)
+
+    def test_compiler_handoff_uses_existing_article_publication_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, revisions, bundle, _ = self._article_bundle_fixture(Path(directory))
+            source = Path(directory)/'research-notes/articles/sample-article.md'
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            reference = fixture['compiled_experiment']
+            source.write_text(source.read_text().replace('date: 2026-09-29',
+                'date: 2026-09-29\ncompiled_experiment: ' + json.dumps(reference)))
+            projection = fixture['projection']
+            projection['experiments'][0].update({key:value for key,value in self._worklog_record().items()
+                if key in ('question','method','protocol','executionAttempts','scientificInterpretation')})
+            projection['experiments'][0]['backlinks'] = [{'title':'Sample article',
+                'url':'https://tyharbin.com/articles/sample-article/', 'sourceCommit':revisions[1]}]
+            path = Path(directory)/'compiler-projection.json'
+            path.write_text(json.dumps(projection))
+            with self.assertRaises(ValueError): self._build_fixture_bundle(args)
+            pin = Path(directory)/'compiler-pin.json'
+            pin.write_text(json.dumps({'schemaVersion':1,'repository':'pH34r-pH/experiment-compiler',
+                'commit':'e'*40,'projectionSha256':hashlib.sha256(path.read_bytes()).hexdigest()}))
+            self._build_fixture_bundle(args + ['--compiler-projection',str(path),
+                                              '--compiler-projection-pin',str(pin)])
+            manifest = json.loads((bundle/'publication.json').read_text())
+            Draft202012Validator(schema).validate(manifest)
+            self.assertEqual(manifest['articles'][0]['compiled_experiment'],reference)
+            page = BeautifulSoup((bundle/'articles/sample-article/index.html').read_text(),'html.parser')
+            handoff = page.select_one('aside[aria-label="Compiled experiment reference"]')
+            self.assertEqual(handoff.a['href'], 'https://experiments.tyharbin.com' + projection['experiments'][0]['detailUrl'])
+            self.assertIn('Mixed/inconclusive',handoff.get_text())
+            self.assertIn('evidence/result.json',handoff.get_text())
+            self.assertIsNone(BeautifulSoup((bundle/'articles/sample-article-second/index.html').read_text(),'html.parser').select_one('aside[aria-label="Compiled experiment reference"]'))
+
+    def _worklog_record(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        record = fixture['projection']['experiments'][0]
+        record.update({'question':'Does the fixture answer its declared question?',
+                       'method':'Use synthetic data; retain failed comparisons.',
+                       'protocol':{'record':'experiment/protocol.md',
+                                   'text':'# Protocol\nUnits: loss per original byte.\nLimit: synthetic fixture.'},
+                       'executionAttempts':[{'id':'#attempt-fixture',
+                         'actionStatus':'https://schema.org/CompletedActionStatus',
+                         'result':['evidence/result.json']}],
+                       'scientificInterpretation':[{'record':'evidence/decision.md',
+                         'summary':'Mixed/inconclusive; no overall winner.', 'aboutAttempt':'#attempt-fixture'}]})
+        return record
+
+    def test_worklog_preserves_source_text_and_evidence_boundaries(self):
+        record = self._worklog_record()
+        page = BeautifulSoup(render_handoff(record),'html.parser')
+        self.assertEqual(page.select_one('pre[aria-label="Full authoritative experiment protocol"]').get_text(),
+                         record['protocol']['text'])
+        text = page.get_text(' ',strip=True)
+        for value in (record['question'],record['method'],record['scientificInterpretation'][0]['summary'],
+                      record['source']['commit'],record['package']['sha256'],'Completed',
+                      'evidence/result.json','Scientific acceptance is not declared',
+                      'does not independently verify its integrity','Independent reproduction is not established'):
+            self.assertIn(value,text)
+        self.assertEqual(page.select_one('a[download]')['href'],
+                         'https://experiments.tyharbin.com/packages/' + record['package']['sha256'] + '.zip')
+        self.assertTrue(page.select_one('details > summary'))
+        self.assertEqual(page.pre['tabindex'],'0')
+        self.assertNotIn('0%',text)
+
+    def test_worklog_missing_plan_and_failed_attempts_do_not_become_success(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        record = fixture['projection']['experiments'][0]
+        missing = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+        self.assertIn('Execution attempts are not declared',missing)
+        record['executionAttempts'] = []
+        plan = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+        self.assertIn('No execution attempts are recorded',plan)
+        self.assertIsNone(BeautifulSoup(render_handoff(record),'html.parser').select_one('strong'))
+        for status in ('Active','Failed','Completed'):
+            record = self._worklog_record()
+            record['executionAttempts'][0]['actionStatus'] = f'https://schema.org/{status}ActionStatus'
+            record['result'] = {'acceptancePassed':False, 'metrics':{}}
+            text = BeautifulSoup(render_handoff(record),'html.parser').get_text(' ',strip=True)
+            self.assertIn(status,text)
+            self.assertIn('scientific acceptance checks failed',text)
+            self.assertIn('Mixed/inconclusive',text)
+            self.assertNotIn('checks passed',text)
+
+    def test_worklog_hostile_source_text_is_escaped(self):
+        record = self._worklog_record()
+        hostile = '<script>alert(1)</script><a href="javascript:bad">source</a>'
+        record['question'] = record['method'] = hostile
+        record['protocol']['text'] = hostile
+        record['scientificInterpretation'][0]['summary'] = hostile
+        page = BeautifulSoup(render_handoff(record),'html.parser')
+        self.assertFalse(page.select('script, a[href^="javascript:"]'))
+        self.assertEqual(page.pre.get_text(),hostile)
+        self.assertIn(hostile,page.get_text())
+
+    def test_worklog_rejects_malformed_records_and_nonfinite_values(self):
+        cases = [('question',True), ('method',{}), ('package',{'sha256':'bad','size':1}),
+                 ('source',{'repository':'javascript:bad','commit':'a'*40}), ('acceptance',[]), ('executionAttempts',{}),
+                 ('executionAttempts',[{'id':'x','actionStatus':'unknown','result':[]}]),
+                 ('executionAttempts',[{'id':'x','actionStatus':'https://schema.org/FailedActionStatus',
+                                       'result':['../escape']}]),
+                 ('protocol',{'record':'javascript:bad','text':'text'}),
+                 ('protocol',{'record':'CON.txt','text':'text'}),
+                 ('protocol',{'record':'protocol.md','text':False}), ('scientificInterpretation',{}),
+                 ('scientificInterpretation',[{'record':'decision.md','summary':'claim','aboutAttempt':'missing'}]),
+                 ('result',{'acceptancePassed':'true'}), ('result',[]),
+                 ('result',{'metrics':{'loss':float('nan')}}), ('acceptance',{'bound':float('inf')})]
+        for field, value in cases:
+            record = self._worklog_record(); record[field] = value
+            with self.subTest(field=field,value=value), self.assertRaises(ValueError): render_handoff(record)
+        record = self._worklog_record()
+        record['executionAttempts'].append(copy.deepcopy(record['executionAttempts'][0]))
+        with self.assertRaises(ValueError): render_handoff(record)
+        record = self._worklog_record()
+        record['executionAttempts'][0]['result'] *= 2
+        with self.assertRaises(ValueError): render_handoff(record)
+
+    def test_pinned_compiler_input_checks_exact_bytes_and_pin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            projection = root/'experiments.json'
+            projection.write_text(json.dumps(fixture['projection']))
+            pin = {'schemaVersion':1, 'repository':'pH34r-pH/experiment-compiler',
+                   'commit':'e'*40, 'projectionSha256':hashlib.sha256(projection.read_bytes()).hexdigest()}
+            pin_path = root/'pin.json'
+            pin_path.write_text(json.dumps(pin))
+            data, receipt = verified_projection(projection, pin_path)
+            self.assertEqual(data, fixture['projection'])
+            self.assertEqual(receipt['commit'], pin['commit'])
+            projection.write_text(projection.read_text() + '\n')
+            with self.assertRaises(ValueError): verified_projection(projection, pin_path)
+            for field, value in (('schemaVersion',1.0), ('commit','main'), ('commit','e'*39),
+                                 ('projectionSha256','f'*63), ('repository','private/other'),
+                                 ('unexpected',True)):
+                pin_path.write_text(json.dumps({**pin,field:value}))
+                with self.subTest(field=field), self.assertRaises(ValueError): load_pin(pin_path)
+            pin_path.write_text(json.dumps(pin))
+            link = root/'projection-link.json'; link.symlink_to(projection)
+            with self.assertRaises(ValueError): verified_projection(link,pin_path)
+            link = root/'pin-link.json'; link.symlink_to(pin_path)
+            with self.assertRaises(ValueError): load_pin(link)
+
+    def test_projection_receipt_preserves_unreferenced_articles(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            path, pin = Path(directory)/'projection.json', Path(directory)/'pin.json'
+            path.write_text(json.dumps(fixture['projection']))
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            pin.write_text(json.dumps({'schemaVersion':1,'repository':'pH34r-pH/experiment-compiler',
+                'commit':'e'*40,'projectionSha256':digest}))
+            self._build_fixture_bundle(args)
+            original = [(bundle/article['url'].strip('/')/'index.html').read_bytes()
+                        for article in json.loads((bundle/'publication.json').read_text())['articles']]
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection',str(path)])
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection-pin',str(pin)])
+            self._build_fixture_bundle(args + ['--compiler-projection',str(path),'--compiler-projection-pin',str(pin)])
+            manifest = json.loads((bundle/'publication.json').read_text())
+            Draft202012Validator(schema).validate(manifest)
+            self.assertEqual(manifest['compilerProjection']['sha256'],digest)
+            self.assertEqual(set(manifest['sources']),{'portfolio','researchNotes','theoremLibrary'})
+            self.assertEqual(original,[(bundle/article['url'].strip('/')/'index.html').read_bytes()
+                                     for article in manifest['articles']])
+            path.write_text(path.read_text() + '\n')
+            with self.assertRaises(ValueError):
+                self._build_fixture_bundle(args + ['--compiler-projection',str(path),'--compiler-projection-pin',str(pin)])
+
     def test_notebook_evidence_handoff_preserves_bytes_and_exact_identity(self):
         for kind in (None, "illustrative", "historical", "<script>unsafe</script>"):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
@@ -118,8 +330,10 @@ class ReaderPublicationTest(unittest.TestCase):
         article_source = ('---\ntitle: Sample article\ndescription: Reviewed test article.\n'
                           'date: 2026-09-29\n---\n(sample-article)=\n# Sample article\n\nA static article body.\n')
         second_source = ('---\ntitle: Second article\ndescription: Another reviewed test article.\n'
-                         'date: 2026-09-29\ndepends_on: [sample-article]\nmodel_focus: consumer\nmodel_variant: consumer-probe\nfrontier_observed_json: [\"A measured distinction survived.\"]\nfrontier_open_json: [\"Does the consumer use it?\"]\n---\n(second-article)=\n# Second article\n\n'
-                         'A different static article body.\n')
+                         'date: 2026-09-29\ndepends_on: [sample-article]\nmodel_focus: consumer\n'
+                         'model_variant: consumer-probe\nfrontier_observed_json: ["A measured distinction survived."]\n'
+                         'frontier_open_json: ["Does the consumer use it?"]\n---\n(second-article)=\n'
+                         '# Second article\n\nA different static article body.\n')
         (research/'articles/sample-article.md').write_text(article_source)
         (research/'articles/sample-article-second.md').write_text(second_source)
         disposition_source = '# Publication dispositions\n'
