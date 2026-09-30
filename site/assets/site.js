@@ -140,14 +140,49 @@ function renderResearchTopology(container, rawArticles) {
 
   const list = el("div", "graph-list");
   list.setAttribute("aria-label", "Research articles");
-  articles.forEach(article => {
+  articles.forEach((article, index) => {
+    const record = el("article", "graph-list-record");
     const link = el("a", "", `${String(article.sequence || "").padStart(3, "0")} · ${article.title}`);
     link.href = article.url;
-    list.append(link);
+    record.append(link);
+    const deps = graphDependencies(article, articles, index);
+    if (deps.length) {
+      const names = deps.map(dep => {
+        const match = articles.find(item => item.slug === dep.slug);
+        return match ? match.title : dep.slug;
+      });
+      const prefix = deps.every(dep => dep.kind === "chronology") ? "Follows publication chronology: " : "Depends on: ";
+      record.append(el("p", "graph-list-deps", prefix + names.join("; ")));
+    }
+    list.append(record);
   });
   container.replaceChildren(svg, list);
 }
 
+function renderResearchFrontier(container, rawArticles) {
+  if (!container || !rawArticles?.length) return;
+  const article = [...rawArticles].filter(item => item.frontier).sort((a, b) => (b.sequence || 0) - (a.sequence || 0))[0];
+  if (!article?.frontier) {
+    container.innerHTML = "<p>The current research frontier will appear with the next published state update.</p>";
+    return;
+  }
+  const groups = [["observed","Observed"],["ruledOut","Ruled out"],["open","Open"],["next","Next test"]];
+  const cards = [];
+  for (const [key, label] of groups) {
+    const values = article.frontier[key];
+    if (!Array.isArray(values) || !values.length) continue;
+    const card = el("article", "frontier-card");
+    card.dataset.kind = key;
+    card.append(el("span", "frontier-label", label));
+    const list = el("ul");
+    values.forEach(value => list.append(el("li", "", value)));
+    card.append(list);
+    cards.push(card);
+  }
+  const source = el("a", "frontier-source", "Current frontier from " + article.title + " →");
+  source.href = article.url;
+  container.replaceChildren(...cards, source);
+}
 function showCatalogUnavailable(list, articleList, target) {
   if (list) list.innerHTML = "<p>Publication catalog unavailable.</p>";
   if (articleList) articleList.innerHTML = "<p>Article catalog unavailable.</p>";
@@ -160,6 +195,7 @@ async function loadPublication() {
   const articleList = document.querySelector("#article-list");
   const build = document.querySelector("#build-id");
   const topology = document.querySelector("#research-topology");
+  const frontier = document.querySelector("#research-frontier");
   try {
     const response = await fetch("/publication.json", { cache: "no-store" });
     if (!response.ok) throw new Error();
@@ -169,9 +205,11 @@ async function loadPublication() {
     renderArticleList(articleList, manifest.articles);
     renderNotebookList(list, manifest.notebooks);
     renderResearchTopology(topology, manifest.articles);
+    renderResearchFrontier(frontier, manifest.articles);
   } catch {
     showCatalogUnavailable(list, articleList, target);
     if (topology) topology.innerHTML = "<p>Research map is available in the published build.</p>";
+    if (frontier) frontier.innerHTML = "<p>Research frontier is available in the published build.</p>";
   }
 }
 
