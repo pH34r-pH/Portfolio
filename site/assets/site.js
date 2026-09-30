@@ -26,44 +26,42 @@ function renderArticleList(container, articles) {
   container.replaceChildren(...cards);
 }
 
+function notebookCard(notebook, index) {
+  const card = document.createElement("article");
+  card.className = "card";
+  card.dataset.index = String(index + 1).padStart(2, "0");
+  const heading = document.createElement("h3");
+  heading.textContent = notebook.title || notebook.path;
+  const meta = document.createElement("p");
+  meta.className = "card-meta";
+  meta.textContent = "Chronological notebook · preserved source";
+  const question = document.createElement("p");
+  question.className = "card-question";
+  question.textContent = notebook.question || "";
+  const links = document.createElement("div");
+  links.className = "links";
+  const read = document.createElement("a");
+  const slug = notebook.slug || notebook.path.split("/").pop().replace(/\.ipynb$/, "");
+  read.href = "/notebooks/" + encodeURIComponent(slug) + "/";
+  read.textContent = "Read notebook";
+  const lab = document.createElement("a");
+  const jupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\/notebooks\//, "");
+  lab.href = "/lab/lab/index.html?path=" + encodeURIComponent(jupyterPath);
+  lab.textContent = "Open in JupyterLite ↗";
+  links.append(read, lab);
+  card.append(heading, question, meta, links);
+  return card;
+}
+
 function renderNotebookList(container, notebooks) {
   if (!notebooks?.length) return;
-  const cards = [...notebooks]
+  const ordered = [...notebooks]
     .filter((notebook) => notebook.slug !== "visual_intuition_atlas")
     .sort((a, b) => {
-      if (a.sequence && b.sequence && a.sequence !== b.sequence)
-        return b.sequence - a.sequence;
-      return (b.path || "").localeCompare(a.path || "", undefined, {
-        numeric: true,
-      });
-    })
-    .map((notebook, index) => {
-      const card = document.createElement("article");
-      card.className = "card";
-      card.dataset.index = String(index + 1).padStart(2, "0");
-      const heading = document.createElement("h3");
-      heading.textContent = notebook.title || notebook.path;
-      const meta = document.createElement("p");
-      meta.className = "card-meta";
-      meta.textContent = "Chronological notebook · preserved source";
-      const question = document.createElement("p");
-      question.className = "card-question";
-      question.textContent = notebook.question || "";
-      const links = document.createElement("div");
-      links.className = "links";
-      const read = document.createElement("a");
-      const slug = notebook.slug || notebook.path.split("/").pop().replace(/\.ipynb$/, "");
-      read.href = "/notebooks/" + encodeURIComponent(slug) + "/";
-      read.textContent = "Read notebook";
-      const lab = document.createElement("a");
-      const jupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\/notebooks\//, "");
-      lab.href = "/lab/lab/index.html?path=" + encodeURIComponent(jupyterPath);
-      lab.textContent = "Open in JupyterLite ↗";
-      links.append(read, lab);
-      card.append(heading, question, meta, links);
-      return card;
+      if (a.sequence && b.sequence && a.sequence !== b.sequence) return b.sequence - a.sequence;
+      return (b.path || "").localeCompare(a.path || "", undefined, { numeric: true });
     });
-  container.replaceChildren(...cards);
+  container.replaceChildren(...ordered.map(notebookCard));
 }
 
 function renderProvenance(sources, target, build) {
