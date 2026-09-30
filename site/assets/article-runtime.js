@@ -74,6 +74,30 @@ function addProjectionControl(figure) {
   image.hidden = true;
   update();
 }
+function retainBrowserPythonPlaceholders(placeholders, outputs) {
+  // Thebe replaces source placeholders before the kernel is ready.
+  // Retain their positions so a failed bootstrap can render them again.
+  document.querySelectorAll("[data-executable]").forEach((source) => {
+    const marker = document.createComment("browser Python source");
+    source.before(marker);
+    placeholders.push({ source, marker });
+  });
+  document.querySelectorAll("[data-output]").forEach((output) => {
+    outputs.push({ output, children: Array.from(output.childNodes, child => child.cloneNode(true)) });
+  });
+}
+
+function restoreBrowserPythonPlaceholders(placeholders, outputs) {
+  if (!placeholders.length) return;
+  window.thebe.notebook?.dispose?.();
+  window.thebe.server?.dispose?.();
+  placeholders.forEach(({ source, marker }) => {
+    if (marker.nextSibling !== source) marker.nextSibling?.replaceWith(source);
+    marker.remove();
+  });
+  outputs.forEach(({ output, children }) => output.replaceChildren(...children));
+}
+
 addProjectionControl(document.getElementById("unit-circle-readout"));
 (() => {
   const scripts = new Map();
@@ -122,16 +146,7 @@ addProjectionControl(document.getElementById("unit-circle-readout"));
           await loadScript("/assets/thebe/thebe-lite.min.js");
           await loadScript("/assets/thebe/index.js");
           if (!window.thebe?.bootstrap) throw new Error("Thebe did not initialize.");
-          // Thebe replaces source placeholders before the kernel is ready.
-          // Retain their positions so a failed bootstrap can render them again.
-          document.querySelectorAll("[data-executable]").forEach((source) => {
-            const marker = document.createComment("browser Python source");
-            source.before(marker);
-            placeholders.push({ source, marker });
-          });
-          document.querySelectorAll("[data-output]").forEach((output) => {
-            outputs.push({ output, children: Array.from(output.childNodes, child => child.cloneNode(true)) });
-          });
+          retainBrowserPythonPlaceholders(placeholders, outputs);
           await window.thebe.bootstrap({
             useBinder: false,
             useJupyterLite: true,
@@ -144,15 +159,7 @@ addProjectionControl(document.getElementById("unit-circle-readout"));
           button.textContent = "Browser Python ready";
           status.textContent = "Your local Python session is ready. Edit the cell and use its Run control.";
         } catch (error) {
-          if (placeholders.length) {
-            window.thebe.notebook?.dispose?.();
-            window.thebe.server?.dispose?.();
-            placeholders.forEach(({ source, marker }) => {
-              if (marker.nextSibling !== source) marker.nextSibling?.replaceWith(source);
-              marker.remove();
-            });
-            outputs.forEach(({ output, children }) => output.replaceChildren(...children));
-          }
+          restoreBrowserPythonPlaceholders(placeholders, outputs);
           button.disabled = false;
           button.textContent = "Try browser Python again";
           status.textContent = `The browser session could not start: ${error.message}`;
