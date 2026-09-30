@@ -1,50 +1,61 @@
 # Research and experiment publication contract
 
-The public research site at `tyharbin.com` and the Compiler site at
-`experiments.tyharbin.com` are two views of one publication system. Each site
-owns its own HTML, CSS, build, and browser runtime. They share a recognizable
-design language and linked context, not a coupled appearance preference or
-runtime dependency.
+The public research site at tyharbin.com and the Compiler site at experiments.tyharbin.com are two views of one publication system. Each site owns its own HTML, CSS, build, and browser runtime. They share a recognizable design and transition grammar, not a coupled frontend.
 
 ## Shared design language
 
-- Use the `TJHG / …` wordmark and a fixed, 58px top navigation bar.
-- Use the Nacre family values as the light default: background `#e8e3d8`, panel
-  `#f2eee5`, ink `#17191a`, muted text `#62615c`, rule `#aaa497`, and accent
-  `#765466`. Keep contrast and state legible without relying on accent color.
-- Use compact monospace labels for navigation, metadata, and identifiers; keep
-  reading text open and comfortably sized.
-- Frame content with paper-like panels and fine rules. Article figures and
-  reported measurements remain authored content, not decorative surfaces.
-- Keep site navigation and buttons at least 44px tall, increasing to 48px for
-  coarse pointers. Provide a visible keyboard focus ring, reduced-motion
-  support, narrow-screen layouts, and forced-colors behavior.
+Both surfaces use the **2071 Research Instrument** language:
 
-The Compiler can simplify the research site's four composition styles to its
-own catalog and detail-page layouts. It does not need to copy the research
-site's menus, decoration, notebook controls, or appearance selector.
+- TJHG identity with a site-local label.
+- 54px fixed navigation shell.
+- Light / blue and Dark / blue optical modes.
+- cold white or near-black background;
+- deep navy or near-white text;
+- saturated optical blue for active state, energy and execution;
+- compact monospace metadata and identifiers;
+- sharp panel geometry and low-alpha blue rules;
+- motion only for state, causality, navigation or transformation;
+- visible keyboard focus, reduced motion, forced colors, coarse-pointer targets and mobile-first composition.
+
+Portfolio owns the reference art direction. Compiler may be denser and more instrument-like, but it should feel like the same research object has moved from explanation into a reproduction console.
+
+The two sites do not need identical page templates or a shared runtime package.
+
+## Transition grammar
+
+Crossing between an article and an experiment should preserve the research object's identity:
+
+- article -> experiment: the exact experiment identifier becomes the transition anchor;
+- experiment -> article: the article identifier/title becomes the return anchor;
+- transitions remain fast, interruptible and optional;
+- reduced-motion mode performs ordinary navigation without the visual transition.
+
+A transition must never imply that a merely related package reproduces an article result.
 
 ## Navigation and article context
 
-- The research site links to the experiment catalog with the label
-  **Experiments**.
-- Compiler pages link back to the research index with the label **Research**.
-- A published research article links to a Compiled Experiment only when that
-  exact package exists and the relationship is explicitly recorded.
-- A Compiled Experiment may link back to its contextual article through
-  `relatedArticles`, projected as catalog `backlinks`. Each backlink carries
-  the article title, canonical HTTPS URL, and exact 40-character source commit.
-- A backlink provides context; it does not claim that the package reproduces
-  the article's primary experiment. The article and package must state any
-  distinction clearly.
-- If no exact package is published, the article says so. Do not substitute a
-  similar run or infer a relationship from matching words.
+- The research site labels the experiment surface **Experiments**.
+- Compiler pages link back with **Research** or **Read article**, depending on context.
+- A published research article links to a Compiled Experiment only when that exact package exists and the relationship is explicitly recorded.
+- A Compiled Experiment may link back through relatedArticles, projected as catalog backlinks. Each backlink carries article title, canonical HTTPS URL and exact source commit.
+- If no exact package is published, no substitute run is inferred from matching terms.
+
+## Epistemic semantics
+
+Shared UI must distinguish, structurally rather than through repetitive warning text:
+
+- authored explanation;
+- measured evidence;
+- browser-side exploration;
+- experiment/package identity;
+- formal result;
+- execution state;
+- interpretation.
+
+Color alone is never sufficient to communicate one of these states.
 
 ## Independence and verification
 
-The sites do not synchronize appearance settings or require shared client
-code. Their navigation works if either site is served independently. The
-Compiler owns the backlink projection and its escaping/validation tests; the
-Portfolio candidate audit checks generated article routes, canonical source
-pins, and the presence or absence of the correct experiment links. Both source
-and generated output are reviewed before protected publication.
+The sites do not synchronize appearance settings and do not require shared client code. Their navigation works if either site is served independently.
+
+Compiler owns backlink projection and package validation. Portfolio owns article/source qualification. Cross-site smoke checks verify canonical routes after publication; static builds do not depend on mutable network state.
