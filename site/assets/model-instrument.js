@@ -34,6 +34,7 @@
       this.button = root.querySelector("[data-model-submit]");
       this.output = root.querySelector("[data-model-output]");
       this.rail = root.querySelector("[data-token-rail]");
+      this.outputRail = root.querySelector("[data-output-rail]");
       this.focus = stageIndex(root.dataset.focus);
       this.start = performance.now();
       this.pulses = [];
@@ -201,10 +202,17 @@
         intensity: .65 + ((i * 37) % 35) / 100,
       }));
       const reply = deterministicReply(tokens);
+      if (this.outputRail) this.outputRail.replaceChildren();
       if (this.output) {
         this.output.textContent = "";
         reply.forEach((token, i) => setTimeout(() => {
           this.output.textContent += (i && /^[\w]/.test(token) ? " " : "") + token;
+          if (this.outputRail) {
+            const chip = document.createElement("span");
+            chip.className = "output-chip";
+            chip.textContent = token;
+            this.outputRail.append(chip);
+          }
         }, reduceMotion.matches ? 0 : 690 + i * 95));
       }
       if (reduceMotion.matches) this.draw(now + 600);
