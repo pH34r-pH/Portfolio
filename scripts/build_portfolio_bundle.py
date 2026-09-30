@@ -110,6 +110,24 @@ def _article_metadata(source: str, src: Path) -> dict:
     snake_focus = re.search(r"^model_focus:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
     if snake_focus and not metadata.get("modelFocus"):
         metadata["modelFocus"] = snake_focus.group(1).strip().strip("'\"")
+    frontier = {}
+    for key, output_key in (
+        ("frontier_observed_json", "observed"),
+        ("frontier_ruled_out_json", "ruledOut"),
+        ("frontier_open_json", "open"),
+        ("frontier_next_json", "next"),
+    ):
+        value = re.search(rf"^{key}:\s*(\[.*\])\s*$", match.group(1), re.MULTILINE)
+        if value:
+            try:
+                parsed = json.loads(value.group(1))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Invalid {key} JSON in article frontmatter: {src}") from exc
+            if not isinstance(parsed, list) or not all(isinstance(item, str) and item.strip() for item in parsed):
+                raise ValueError(f"{key} must be a JSON array of non-empty strings: {src}")
+            frontier[output_key] = parsed
+    if frontier:
+        metadata["frontier"] = frontier
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
@@ -479,6 +497,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "modelFocus": model_focus,
         "dependsOn": metadata.get("dependsOn", []),
     }
+    if metadata.get("frontier"):
+        entry["frontier"] = metadata["frontier"]
     if metadata.get("status"):
         entry["status"] = metadata["status"]
     return entry
