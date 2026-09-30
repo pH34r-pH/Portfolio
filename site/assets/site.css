@@ -279,3 +279,8 @@ body.cross-site-leaving .cross-site-flash{animation:cross-site-gate .19s cubic-b
 @media(prefers-contrast:more){:root{--line:var(--ink);--muted:var(--ink)}.topbar,.notebook-content,.model-instrument,.card,.program-grid article{background:var(--bg)}}
 @media(forced-colors:active){body{background:Canvas}.topbar,.notebook-content,.model-instrument,.card,.program-grid article{background:Canvas}.model-canvas{display:none}.model-fallback{opacity:1}.primary{forced-color-adjust:auto}}
 @media print{.topbar,.search-dialog,.model-port{display:none!important}body{padding-top:0;background:#fff;color:#000}.model-canvas{display:none}.model-fallback{position:static;opacity:1}.notebook-content{border:0;padding:0}}
+
+
+/* Artifact-derived experiment evidence inherits the 2071 reading system. */
+.compiled-experiment-evidence{max-width:100%;margin-top:1.5rem;overflow-wrap:anywhere}.compiled-experiment-evidence h2,.compiled-experiment-evidence h3{font-size:1.25rem;line-height:1.3;margin:1.2rem 0 .5rem}.compiled-experiment-evidence details{margin:.75rem 0}.compiled-experiment-evidence summary{box-sizing:border-box;min-height:44px;padding:10px 12px;line-height:1.5;color:var(--ink);cursor:pointer}.compiled-experiment-evidence .source-text{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%}.compiled-experiment-evidence pre{font-size:.875rem;line-height:1.6;padding:1rem;border:1px solid var(--line)}.compiled-experiment-evidence code{font-size:.875em}.compiled-experiment-evidence :focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+@media(pointer:coarse){.compiled-experiment-evidence summary{min-height:48px;padding:12px 14px}}
