@@ -105,6 +105,15 @@ jobs:
           ref: ${{ steps.refs.outputs.portfolio }}
           path: Portfolio
           persist-credentials: false
+      - name: Read immutable public Compiler input pin
+        id: compiler
+        run: python3 Portfolio/scripts/compiler_projection_input.py --pin Portfolio/publication/compiler-projection.lock.json >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          repository: pH34r-pH/experiment-compiler
+          ref: ${{ steps.compiler.outputs.commit }}
+          path: experiment-compiler
+          persist-credentials: false
       - uses: actions/checkout@v4
         with:
           repository: pH34r-pH/research-notes
@@ -123,11 +132,13 @@ jobs:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+          COMPILER_SHA: ${{ steps.compiler.outputs.commit }}
         run: |
           set -euo pipefail
           test "$(git -C Portfolio rev-parse HEAD)" = "$PORTFOLIO_SHA"
           test "$(git -C research-notes rev-parse HEAD)" = "$RESEARCH_NOTES_SHA"
           test "$(git -C theorem-library rev-parse HEAD)" = "$THEOREM_LIBRARY_SHA"
+          test "$(git -C experiment-compiler rev-parse HEAD)" = "$COMPILER_SHA"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -148,8 +159,10 @@ jobs:
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/preflight_env.py publication
       - name: Check reader and publication code
         run: |
-          uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py
+          uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py Portfolio/scripts/compiler_projection_input.py
           uv run --project Portfolio --no-sync python Portfolio/scripts/test_portfolio_publication.py
+      - name: Generate the pinned Compiler public static projection
+        run: python3 experiment-compiler/scripts/build_pages_site.py --output compiler-public
       - name: Assemble immutable public inputs
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
@@ -162,12 +175,16 @@ jobs:
             --myst-html research-notes/_build/html/index.html --output bundle \
             --portfolio-sha "$PORTFOLIO_SHA" \
             --research-notes-sha "$RESEARCH_NOTES_SHA" \
-            --theorem-library-sha "$THEOREM_LIBRARY_SHA"
+            --theorem-library-sha "$THEOREM_LIBRARY_SHA" \
+            --compiler-projection compiler-public/data/experiments.json \
+            --compiler-projection-pin Portfolio/publication/compiler-projection.lock.json
       - name: Validate pinned publication manifest
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+          COMPILER_SHA: ${{ steps.compiler.outputs.commit }}
+          COMPILER_PROJECTION_SHA256: ${{ steps.compiler.outputs.sha256 }}
         run: |
           uv run --project Portfolio --no-sync python - <<'PY'
           import json
@@ -183,6 +200,12 @@ jobs:
               'portfolio': os.environ['PORTFOLIO_SHA'],
               'researchNotes': os.environ['RESEARCH_NOTES_SHA'],
               'theoremLibrary': os.environ['THEOREM_LIBRARY_SHA'],
+          }
+          assert manifest['compilerProjection'] == {
+              'repository': 'pH34r-pH/experiment-compiler',
+              'commit': os.environ['COMPILER_SHA'],
+              'sha256': os.environ['COMPILER_PROJECTION_SHA256'],
+              'schemaVersion': 2,
           }
           atlas = json.loads(Path('bundle/data/atlas-evidence.json').read_text())
           atlas_schema = json.loads(Path('Portfolio/atlas-evidence.schema.json').read_text())
@@ -265,6 +288,8 @@ jobs:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
           THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+          COMPILER_SHA: ${{ steps.compiler.outputs.commit }}
+          COMPILER_PROJECTION_SHA256: ${{ steps.compiler.outputs.sha256 }}
           BUNDLE_SHA256: ${{ steps.digest.outputs.sha256 }}
           ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
           ARTIFACT_SHA256: ${{ steps.upload.outputs.artifact-digest }}
@@ -276,6 +301,8 @@ jobs:
             echo "- Portfolio source: $PORTFOLIO_SHA"
             echo "- research-notes source: $RESEARCH_NOTES_SHA"
             echo "- theorem-library source: $THEOREM_LIBRARY_SHA"
+            echo "- Compiler public projection source: $COMPILER_SHA"
+            echo "- Compiler public projection SHA-256: $COMPILER_PROJECTION_SHA256"
             echo "- Full bundle tree SHA-256: $BUNDLE_SHA256"
             echo "- Exact artifact ID: $ARTIFACT_ID"
             echo "- GitHub artifact ZIP SHA-256: $ARTIFACT_SHA256"
