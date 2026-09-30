@@ -18,7 +18,7 @@
   </nav></div>
 </header>
 <main id="main-content" tabindex="-1">
-<header class="hero"><div class="register"><span>TYLER J.H.G.</span><span>RESEARCH / SYSTEMS / ML</span><span class="signal">PUBLIC NODE</span></div>
+<header class="hero"><div class="register"><span>TYLER J.H.G.</span><span>RESEARCH / SYSTEMS / ML</span><span class="signal">OPEN RESEARCH</span></div>
 <p class="eyebrow">Research engineering · machine learning · agent systems</p>
 <h1 class="page-title"><span class="title-line">Building</span><span class="title-line title-accent">strange things</span><span class="title-line">carefully.</span></h1>
 <p class="lede">I build systems that can survive contact with reality, then take them apart until I understand <strong>why</strong> they work. The same discipline drives my work on agents, model architecture, and reproducible experiments.</p>
@@ -26,13 +26,13 @@
 <div class="actions"><a class="primary" href="/research/">Enter the research</a><a href="/articles/accessible-does-not-imply-used/">Latest article</a><a href="/about/">Why I do this</a></div></header>
 <section class="model-instrument" data-model-lab data-focus="full" data-variant="baseline" aria-labelledby="model-instrument-title">
   <h2 id="model-instrument-title" class="visually-hidden">Interactive language model schematic</h2>
-  <p class="visually-hidden">A toy language-model workcell showing text entering an input buffer, tokenization, representation and model computation, a readout, and generated text leaving the output buffer.</p>
+  <p class="visually-hidden">An interactive language-model workcell showing text entering an input buffer, passing through tokenization, representation and model computation, and leaving as generated text.</p>
   <div class="model-workcell">
     <div class="model-port model-input-port">
       <span class="machine-label">INPUT BUFFER / TOKEN FEED</span>
       <label for="model-input">Model input</label>
       <input id="model-input" data-model-input value="the model learned a useful distinction" autocomplete="off">
-      <button type="button" data-model-submit>Inject</button>
+      <button type="button" data-model-submit>Run</button>
       <div class="token-rail" data-token-rail aria-hidden="true"></div>
     </div>
     <div class="model-stage">
@@ -44,9 +44,9 @@
       </div>
     </div>
     <div class="model-port model-output-port">
-      <span class="machine-label">OUTPUT DROPPER / ASSEMBLY</span>
+      <span class="machine-label">OUTPUT / TOKEN ASSEMBLY</span>
       <div class="output-conveyor" data-output-rail aria-hidden="true"></div>
-      <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+      <p class="model-output" data-model-output aria-live="polite">Run the input to watch information move through the model.</p>
     </div>
   </div>
 </section>
