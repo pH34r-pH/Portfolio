@@ -340,3 +340,34 @@ body.route-leaving .route-flash{animation:route-scan .28s var(--r71-speed) forwa
   [data-transient] strong,.myst-reader[data-transient] strong{font-weight:700!important}
   [data-transient] em,.myst-reader[data-transient] em{font-style:italic!important}
 }
+
+/* Article machine continuity: full instrument becomes a compact live dock while reading. */
+.article-machine-placeholder{display:none}
+.article-machine-placeholder[data-active=true]{display:block}
+.article-machine-dock.is-docked{
+  position:fixed;z-index:78;right:max(18px,calc((100vw - 1240px)/2));bottom:16px;
+  width:min(620px,calc(100vw - 36px));margin:0;border:1px solid var(--r71-line-strong)!important;
+  box-shadow:0 18px 70px rgba(0,31,60,.26),0 0 36px var(--r71-glow);
+  background:color-mix(in srgb,var(--r71-panel-solid) 90%,transparent);
+  backdrop-filter:blur(22px) saturate(150%);
+}
+.article-machine-dock.is-docked .machine-terminal{display:none}
+.article-machine-dock.is-docked .model-machine-shell{display:block;min-height:0}
+.article-machine-dock.is-docked .machine-viewport{height:132px;min-height:132px}
+.article-machine-dock.is-docked:before{content:"MODEL / LIVE CONTEXT"}
+.article-machine-dock.is-docked .machine-status{bottom:9px}
+.article-machine-dock.is-docked .machine-stage-nav{top:8px;bottom:auto}
+body.machine-docked .notebook-reader{padding-bottom:170px}
+@media(max-width:760px){
+  .article-machine-dock.is-docked{
+    left:6px;right:6px;bottom:6px;width:auto;border-inline:1px solid var(--r71-line-strong)!important
+  }
+  .article-machine-dock.is-docked .machine-viewport{height:92px;min-height:92px}
+  .article-machine-dock.is-docked .machine-status{font-size:8px;max-width:45%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .article-machine-dock.is-docked .machine-stage-nav button{min-width:31px;min-height:28px;font-size:8px}
+  body.machine-docked .notebook-reader{padding-bottom:118px}
+}
+@media(prefers-reduced-motion:reduce){
+  .article-machine-dock.is-docked{position:static;width:auto;box-shadow:none}
+  body.machine-docked .notebook-reader{padding-bottom:34px}
+}
