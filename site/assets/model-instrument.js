@@ -25,6 +25,40 @@
     const resolved = aliases[normalized] || normalized;
     return resolved === "full" ? -1 : Math.max(0, stages.indexOf(resolved));
   }
+  function variantNodes(base, variant) {
+    const kind = String(variant || "baseline").toLowerCase();
+    const counts = new Map(stages.map((_, stage) => [stage, base.filter(node => node.stage === stage).length]));
+    return base.map((node, index) => {
+      const next = { ...node };
+      const rank = base.slice(0, index).filter(candidate => candidate.stage === node.stage).length;
+      const count = counts.get(node.stage) || 1;
+      const fraction = count <= 1 ? .5 : rank / (count - 1);
+      if (kind === "spectral" && node.stage === 2) {
+        const angle = fraction * Math.PI * 2;
+        next.y = Math.sin(angle) * .52;
+        next.z = Math.cos(angle) * .42;
+      } else if (kind === "phase-aware" && (node.stage === 2 || node.stage === 3)) {
+        next.y *= .78;
+        next.z = (rank % 2 ? .34 : -.34) + (fraction - .5) * .08;
+      } else if (kind === "hypersphere" && (node.stage === 2 || node.stage === 3)) {
+        const angle = -.72 * Math.PI + fraction * 1.44 * Math.PI;
+        next.y = Math.sin(angle) * .61;
+        next.z = Math.cos(angle) * .43;
+      } else if (kind === "dynamic-quotient" && node.stage === 2) {
+        next.y = [-.42, 0, .42][rank % 3];
+        next.z = (Math.floor(rank / 3) - .5) * .22;
+      } else if (kind === "geometry" && (node.stage === 2 || node.stage === 3)) {
+        next.y *= 1.08;
+        next.z *= 1.75;
+      } else if (kind === "consumer-probe" && node.stage === 4) {
+        next.x += .055;
+        next.y = -.68 + fraction * 1.36;
+        next.z = rank % 2 ? .32 : -.32;
+      }
+      return next;
+    });
+  }
+
 
   class Instrument {
     constructor(root) {
@@ -36,14 +70,17 @@
       this.rail = root.querySelector("[data-token-rail]");
       this.outputRail = root.querySelector("[data-output-rail]");
       this.focus = stageIndex(root.dataset.focus);
+      this.variant = root.dataset.variant || "baseline";
       this.start = performance.now();
+      this.morphStart = this.start;
       this.pulses = [];
       this.gl = null;
       this.program = null;
       this.lineBuffer = null;
       this.pointBuffer = null;
-      this.nodes = this.buildNodes();
-      this.edges = this.buildEdges();
+      this.baseNodes = this.buildNodes();
+      this.nodes = variantNodes(this.baseNodes, this.variant);
+      this.edges = this.buildEdges(this.baseNodes);
       this.frame = this.frame.bind(this);
       this.resize = this.resize.bind(this);
       this.activate = this.activate.bind(this);
@@ -87,8 +124,8 @@
       return nodes;
     }
 
-    buildEdges() {
-      const groups = stages.map((_, stage) => this.nodes.map((n, i) => ({...n, i})).filter(n => n.stage === stage));
+    buildEdges(nodes = this.nodes) {
+      const groups = stages.map((_, stage) => nodes.map((n, i) => ({...n, i})).filter(n => n.stage === stage));
       const edges = [];
       for (let c = 0; c < groups.length - 1; c++) {
         for (const a of groups[c]) {
@@ -113,6 +150,7 @@
         uniform float u_focus;
         uniform float u_mode;
         out float v_alpha;
+        out float v_energy;
         void main(){
           vec3 p=a_position;
           p.y += sin(u_time*.0007 + p.x*9.0 + p.z*7.0)*.012;
@@ -124,10 +162,12 @@
           float stage=floor((p.x + .94)/.31);
           float focused=(u_focus<0.0 || abs(stage-u_focus)<.6)?1.0:.28;
           v_alpha=mix(.18,focused,u_mode);
+          v_energy=clamp((a_size-3.0)/25.0,.15,1.0);
         }`;
       const fs = `#version 300 es
         precision highp float;
         in float v_alpha;
+        in float v_energy;
         uniform vec3 u_color;
         uniform float u_points;
         out vec4 outColor;
@@ -137,7 +177,7 @@
             vec2 q=gl_PointCoord-.5;
             float d=length(q);
             if(d>.5) discard;
-            a*=smoothstep(.5,.08,d);
+            a*=smoothstep(.5,.08,d)*mix(.35,1.0,v_energy);
           }
           outColor=vec4(u_color,a);
         }`;
@@ -218,12 +258,26 @@
       if (reduceMotion.matches) this.draw(now + 600);
     }
 
+    nodePosition(index, now) {
+      const target = this.nodes[index];
+      const base = this.baseNodes[index] || target;
+      if (!target) return base;
+      const raw = reduceMotion.matches ? 1 : Math.max(0, Math.min(1, (now - this.morphStart) / 920));
+      const t = raw * raw * (3 - 2 * raw);
+      return {
+        x: base.x + (target.x - base.x) * t,
+        y: base.y + (target.y - base.y) * t,
+        z: base.z + (target.z - base.z) * t,
+        stage: target.stage,
+      };
+    }
+
     pointForPulse(pulse, now) {
       const edge = this.edges[pulse.edge];
       if (!edge) return null;
       const t = Math.max(0, Math.min(1, (now - pulse.start) / pulse.duration));
       if (t <= 0 || t >= 1) return null;
-      const a = this.nodes[edge[0]], b = this.nodes[edge[1]];
+      const a = this.nodePosition(edge[0], now), b = this.nodePosition(edge[1], now);
       const eased = t * t * (3 - 2 * t);
       return {
         x: a.x + (b.x - a.x) * eased,
@@ -250,7 +304,7 @@
 
       const lineData = [];
       this.edges.forEach(([ai, bi]) => {
-        const a=this.nodes[ai], b=this.nodes[bi];
+        const a=this.nodePosition(ai, now), b=this.nodePosition(bi, now);
         lineData.push(a.x,a.y,a.z,1,b.x,b.y,b.z,1);
       });
       gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuffer);
@@ -262,7 +316,10 @@
       gl.uniform1f(this.uMode,1); gl.uniform1f(this.uPoints,0);
       gl.drawArrays(gl.LINES,0,lineData.length/4);
 
-      const points = this.nodes.map(n => [n.x,n.y,n.z, n.stage===this.focus || this.focus<0 ? 6.5 : 4]).flat();
+      const points = this.nodes.map((n, index) => {
+        const p = this.nodePosition(index, now);
+        return [p.x,p.y,p.z, n.stage===this.focus || this.focus<0 ? 6.5 : 4];
+      }).flat();
       this.pulses.map(p=>this.pointForPulse(p,now)).filter(Boolean).forEach(p=>points.push(p.x,p.y,p.z,p.size));
       gl.bindBuffer(gl.ARRAY_BUFFER,this.pointBuffer);
       gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(points),gl.DYNAMIC_DRAW);
