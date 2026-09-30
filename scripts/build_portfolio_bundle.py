@@ -640,6 +640,38 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
     return entry
 
 
+def validate_article_dependencies(articles: list[dict]) -> None:
+    """Require declared article dependencies to resolve and remain acyclic."""
+    by_slug = {article["slug"]: article for article in articles}
+    if len(by_slug) != len(articles):
+        raise ValueError("Canonical article slugs must be unique")
+    for article in articles:
+        for dependency in article.get("dependsOn", []):
+            if dependency == article["slug"]:
+                raise ValueError(f"Article cannot depend on itself: {article['slug']}")
+            if dependency not in by_slug:
+                raise ValueError(
+                    f"Article {article['slug']} depends on unpublished article {dependency}"
+                )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(slug: str) -> None:
+        if slug in visited:
+            return
+        if slug in visiting:
+            raise ValueError(f"Article dependency cycle includes {slug}")
+        visiting.add(slug)
+        for dependency in by_slug[slug].get("dependsOn", []):
+            visit(dependency)
+        visiting.remove(slug)
+        visited.add(slug)
+
+    for slug in by_slug:
+        visit(slug)
+
+
 def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], articles: list[dict]) -> None:
     atlas_source = args.portfolio / "site" / "data" / "atlas-evidence.json"
     atlas_target = args.output / "data" / "atlas-evidence.json"
@@ -687,6 +719,7 @@ def main() -> None:
                 for sequence, src in enumerate(article_sources, start=1)]
     if not articles:
         raise ValueError("The exact Research Notes source has no canonical articles")
+    validate_article_dependencies(articles)
     if any(article["browserExecution"] for article in articles):
         copy_thebe_assets(args)
     write_publication_metadata(args, notebooks, articles)
