@@ -45,9 +45,13 @@ jobs:
           node --check site/assets/site.js
           node --check site/assets/appearance.js
           node --check site/assets/article-runtime.js
+          node --check site/assets/model-machine.js
+          node --check site/assets/research-topology.js
+          node --check site/assets/search.js
           node scripts/test-article-runtime.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
+          node scripts/2071-audit.mjs
           node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
       - name: Upload UX review screenshots
@@ -269,6 +273,7 @@ jobs:
           curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
           cd Portfolio
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/2071-audit.mjs
       - name: Hash exact upload bytes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: digest
