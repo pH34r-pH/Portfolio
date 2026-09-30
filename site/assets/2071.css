@@ -670,3 +670,285 @@ section {
   .card,
   .program-grid article { box-shadow: none !important; background: white !important; }
 }
+
+
+/* Shared 3D model-machine */
+.model-machine {
+  position: relative;
+  padding-block: clamp(54px, 8vw, 96px);
+  border-top: 1px solid var(--line);
+  overflow: clip;
+}
+
+.machine-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, .9fr);
+  gap: clamp(24px, 5vw, 72px);
+  align-items: end;
+  margin-bottom: 28px;
+}
+
+.machine-heading h2 {
+  margin: .12em 0 0;
+  max-width: 12ch;
+  font-family: "Portfolio Long Measure", "Arial Narrow", sans-serif;
+  font-size: clamp(2.9rem, 7vw, 6.4rem);
+  font-weight: 400;
+  line-height: .9;
+  letter-spacing: -.04em;
+}
+
+.machine-heading > p {
+  max-width: 54ch;
+  color: var(--muted);
+}
+
+.machine-stage {
+  position: relative;
+  min-height: clamp(430px, 52vw, 620px);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(90deg, transparent 49.92%, color-mix(in srgb, var(--line) 48%, transparent) 50%, transparent 50.08%),
+    linear-gradient(transparent 49.92%, color-mix(in srgb, var(--line) 48%, transparent) 50%, transparent 50.08%),
+    radial-gradient(circle at center, var(--signal-soft), transparent 52%),
+    color-mix(in srgb, var(--bg) 94%, var(--depth));
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  box-shadow: inset 0 1px 0 var(--surface-specular), 0 30px 90px var(--shadow);
+  isolation: isolate;
+}
+
+.machine-stage::before,
+.machine-stage::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.machine-stage::before {
+  inset: 14px 14px auto;
+  height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent 28%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.machine-stage::after {
+  inset: auto 18px 16px auto;
+  width: 72px;
+  height: 72px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.machine-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+.machine-fallback {
+  position: absolute;
+  z-index: 1;
+  inset: 25% 8%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(6px, 2vw, 20px);
+  color: var(--muted);
+  font: 700 10px/1 ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.machine-fallback span {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+[data-model-machine][data-render="fallback"] .machine-fallback {
+  display: flex;
+}
+
+[data-model-machine][data-render="fallback"] .machine-canvas {
+  display: none;
+}
+
+.machine-console {
+  position: absolute;
+  z-index: 4;
+  width: min(310px, 34%);
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(13px) saturate(130%);
+  -webkit-backdrop-filter: blur(13px) saturate(130%);
+  box-shadow: 0 16px 46px var(--shadow), inset 0 1px 0 var(--surface-specular);
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 0 100%);
+}
+
+.machine-input {
+  left: 18px;
+  top: 18px;
+  padding: 13px;
+}
+
+.machine-output {
+  right: 18px;
+  bottom: 18px;
+  padding: 13px 14px 15px;
+}
+
+.machine-console label,
+.machine-console-label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--muted);
+  font: 700 9px/1 ui-monospace, monospace;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.machine-input > div:first-of-type {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px;
+}
+
+.machine-input input {
+  min-width: 0;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  color: var(--ink);
+  font: 600 12px/1.4 ui-monospace, monospace;
+}
+
+.machine-input button {
+  min-width: 58px;
+  min-height: 44px;
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  background: var(--accent);
+  color: white;
+  font: 800 10px/1 ui-monospace, monospace;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%);
+}
+
+.machine-token-readout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 20px;
+  margin-top: 9px;
+}
+
+.machine-token-readout span {
+  display: inline-flex;
+  min-height: 20px;
+  align-items: center;
+  padding: 3px 5px;
+  border: 1px solid color-mix(in srgb, var(--accent) 44%, var(--line));
+  background: var(--signal-soft);
+  color: var(--ink);
+  font: 700 9px/1 ui-monospace, monospace;
+}
+
+.machine-output p {
+  min-height: 3em;
+  margin: 0;
+  color: var(--ink);
+  font: 650 12px/1.55 ui-monospace, monospace;
+}
+
+.machine-status {
+  position: absolute;
+  z-index: 4;
+  left: 20px;
+  bottom: 18px;
+  margin: 0;
+  color: var(--muted);
+  font: 700 9px/1 ui-monospace, monospace;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.machine-status::before {
+  content: "◆";
+  margin-right: 7px;
+  color: var(--accent);
+  text-shadow: 0 0 9px color-mix(in srgb, var(--accent) 52%, transparent);
+}
+
+[data-model-machine][data-render="loading"] .machine-status::before {
+  animation: machine-signal 680ms steps(2, end) infinite;
+}
+
+@keyframes machine-signal {
+  50% { opacity: .25; }
+}
+
+@media (max-width: 720px) {
+  .machine-heading {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .machine-heading h2 {
+    max-width: 9ch;
+    font-size: clamp(3rem, 14vw, 5rem);
+  }
+
+  .machine-stage {
+    min-height: 620px;
+  }
+
+  .machine-console {
+    width: calc(100% - 28px);
+    max-width: none;
+  }
+
+  .machine-input {
+    inset: 14px 14px auto;
+  }
+
+  .machine-output {
+    inset: auto 14px 14px;
+  }
+
+  .machine-status {
+    left: 18px;
+    bottom: 118px;
+  }
+
+  .machine-fallback {
+    inset: 32% 9% 29%;
+    flex-direction: column;
+  }
+
+  .machine-fallback b {
+    transform: rotate(90deg);
+  }
+}
+
+@media (max-width: 380px) {
+  .machine-stage { min-height: 650px; }
+  .machine-input > div:first-of-type { grid-template-columns: 1fr; }
+  .machine-input button { width: 100%; }
+  .machine-status { bottom: 128px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-model-machine][data-render="fallback"] .machine-fallback,
+  [data-model-machine]:not([data-render]) .machine-fallback {
+    display: flex;
+  }
+}
