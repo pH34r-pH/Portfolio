@@ -98,7 +98,7 @@ async function articleLinks(page, data, path) {
     if (!href?.startsWith("/")) continue;
     const url = new URL(href, base);
     if (url.origin !== new URL(base).origin) continue;
-    assert.ok(!nativeRoutes.has(url.pathname.replace(/\\/$/, "")), `${path}: unadapted MyST route ${href}`);
+    assert.ok(!nativeRoutes.has(url.pathname.replace(/\/$/, "")), `${path}: unadapted MyST route ${href}`);
     const response = await page.request.get(url.href);
     assert.ok(response.ok(), `${path}: broken local link ${href} (${response.status()})`);
     if (articleRoutes.has(url.pathname)) {
