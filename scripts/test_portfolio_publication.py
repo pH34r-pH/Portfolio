@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
-from build_portfolio_bundle import (prepare_reader, copy_lab_contents, apply_output_descriptions,
+from build_portfolio_bundle import (prepare_reader, publish_notebook, copy_lab_contents, apply_output_descriptions,
                                     _myst_asset_path, _prepare_article_execution, copy_thebe_assets,
                                     _source_file_index, _rewrite_myst_article_routes, main as build_bundle)
 from digest_bundle import digest_tree
@@ -19,6 +19,43 @@ import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_notebook_evidence_handoff_preserves_bytes_and_exact_identity(self):
+        for kind in (None, "illustrative", "historical", "<script>unsafe</script>"):
+            with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                source = root / "research/notebooks/illustrative_name.ipynb"
+                source.parent.mkdir(parents=True)
+                notebook = nbformat.v4.new_notebook(cells=[
+                    nbformat.v4.new_markdown_cell("# Source notebook")])
+                if kind is not None:
+                    notebook.metadata["publication"] = {"exampleKind": kind}
+                nbformat.write(notebook, source)
+                original = source.read_bytes()
+                publication, readers = root / "publication", root / "readers"
+                publication.mkdir()
+                readers.mkdir()
+                args = SimpleNamespace(research_notes=root / "research", research_notes_sha="a" * 40)
+                entry = publish_notebook(source, publication, readers, "", {source}, args)
+                page = BeautifulSoup((readers/source.stem/"index.html").read_text(), "html.parser")
+                note = page.select_one('aside[aria-label="Notebook evidence and reproduction"]')
+                self.assertIsNotNone(note)
+                text = note.get_text(" ", strip=True)
+                self.assertIn("not independent reproduction", text)
+                self.assertIn("remains readable", text)
+                self.assertIn("scientific checks", text)
+                self.assertIn(entry["sha256"], text)
+                self.assertEqual(publication.joinpath(source.name).read_bytes(), original)
+                self.assertEqual(source.read_bytes(), original)
+                self.assertEqual(note.select_one("a")["href"],
+                                 "https://github.com/pH34r-pH/research-notes/blob/" + "a" * 40 +
+                                 "/notebooks/illustrative_name.ipynb")
+                self.assertTrue(note.select_one("a[download]"))
+                self.assertEqual("Illustrative browser example" in text, kind == "illustrative")
+                if kind != "illustrative":
+                    self.assertIn("execution status and scientific acceptance are not inferred", text)
+                self.assertNotIn("<script>", str(note))
+                self.assertIn("overflow-wrap:anywhere", str(note))
+
     def test_native_myst_article_routes_preserve_query_and_section(self):
         document = BeautifulSoup(
             '<a href="/endpoint-can-mislead?view=reading#interpretation">Next article</a>'
