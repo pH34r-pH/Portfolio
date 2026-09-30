@@ -1344,3 +1344,19 @@ html[data-theme=dark] .portrait-optic:after{mix-blend-mode:screen;opacity:.2}
 .article-model-machine .machine-stage{min-height:430px}
 .article-model-machine .machine-console{width:min(280px,32%)}
 @media(max-width:720px){.myst-reader .article-model-machine{margin:2em 0 2.8em}.article-model-machine .machine-stage{min-height:570px}.article-model-machine .machine-console{width:calc(100% - 28px)}}
+
+
+/* Article source and build-time download artifacts. */
+.article-source-links{
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;
+  margin:30px 0;padding:18px 0;border-block:1px solid var(--line);
+  font:700 10px/1.35 ui-monospace,monospace;letter-spacing:.04em;
+}
+.article-source-links a{min-height:44px;display:inline-flex;align-items:center;color:var(--ink);text-underline-offset:3px}
+.article-download-label{margin-left:auto;color:var(--muted);font-size:9px;letter-spacing:.11em;text-transform:uppercase}
+.article-download-label::before{content:"↓ ";color:var(--accent)}
+@media(max-width:640px){
+  .article-source-links{gap:4px 14px}
+  .article-download-label{flex-basis:100%;margin:6px 0 0}
+  .article-source-links>span[aria-hidden]{display:none}
+}
