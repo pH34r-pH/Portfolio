@@ -1,5 +1,5 @@
 /* Shared shell behavior for Portfolio 2071. */
-(() => {
+{
   const root = document.documentElement;
   const modes = new Set(["auto", "light", "dark"]);
   const mediaDark = matchMedia("(prefers-color-scheme: dark)");
@@ -162,4 +162,4 @@
 
     emphasized.forEach((node) => observer.observe(node));
   }
-})();
+}
