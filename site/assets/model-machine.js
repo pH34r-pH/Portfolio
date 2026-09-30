@@ -69,7 +69,8 @@ class ModelMachine {
       this.camera.lookAt(0,0,0);
       this.renderer = new WebGLRenderer({antialias:true,powerPreference:"high-performance",alpha:false});
       this.renderer.setPixelRatio(Math.min(devicePixelRatio, COARSE ? 1.5 : 2));
-      this.renderer.domElement.setAttribute("aria-hidden","true");\n      this.viewport.append(this.renderer.domElement);
+      this.renderer.domElement.setAttribute("aria-hidden","true");
+      this.viewport.append(this.renderer.domElement);
 
       this.tokenGroup = new Group();
       this.nodeGroup = new Group();
