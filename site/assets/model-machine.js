@@ -59,6 +59,7 @@ class ModelMachine {
     this.outputBlocks = [];
     this.nodes = [];
     this.layers = [];
+    this.edges = [];
     this.tick = this.animate.bind(this);
     this.bind();
     this.bindArticleDock();
@@ -187,7 +188,7 @@ class ModelMachine {
   createNetwork() {
     const {
       SphereGeometry, MeshBasicMaterial, Mesh, Group, Vector3,
-      BufferGeometry, Line, LineBasicMaterial,
+      BufferGeometry, BufferAttribute, Line, LineBasicMaterial,
     } = this.THREE;
     const layerX = [-4.25, -1.45, 1.35, 3.85];
     const counts = [4, 7, 6, 4];
@@ -223,10 +224,13 @@ class ModelMachine {
       left.forEach((from, fromIndex) => {
         right.forEach((to, toIndex) => {
           if ((fromIndex + toIndex) % 2) return;
-          const points = [from.getWorldPosition(new Vector3()), to.getWorldPosition(new Vector3())];
-          const geometry = new BufferGeometry().setFromPoints(points);
+          const positions = new Float32Array(6);
+          const geometry = new BufferGeometry();
+          geometry.setAttribute("position", new BufferAttribute(positions, 3));
           const material = new LineBasicMaterial({color: 0x0b5d92, transparent: true, opacity: 0.13});
-          this.scene.add(new Line(geometry, material));
+          const line = new Line(geometry, material);
+          this.scene.add(line);
+          this.edges.push({line, from, to});
         });
       });
     }
@@ -440,6 +444,20 @@ class ModelMachine {
     }, 95);
   }
 
+  updateEdges() {
+    const offset = this.nodeGroup.position;
+    for (const edge of this.edges) {
+      const data = edge.line.geometry.attributes.position.array;
+      data[0] = edge.from.position.x + offset.x;
+      data[1] = edge.from.position.y + offset.y;
+      data[2] = edge.from.position.z + offset.z;
+      data[3] = edge.to.position.x + offset.x;
+      data[4] = edge.to.position.y + offset.y;
+      data[5] = edge.to.position.z + offset.z;
+      edge.line.geometry.attributes.position.needsUpdate = true;
+    }
+  }
+
   updatePulses(dt) {
     for (const pulse of this.pulses) {
       pulse.time += dt * pulse.speed;
@@ -486,6 +504,7 @@ class ModelMachine {
     this.updatePulses(dt);
     this.updateOutputBlocks(dt);
     for (const node of this.nodes) node.mesh.position.lerp(node.target, Math.min(1, dt * 6.5));
+    this.updateEdges();
     const breathe = 0.74 + 0.12 * Math.sin(now * 2.4);
     if (this.stage === "all") {
       for (const {mesh} of this.nodes) {
