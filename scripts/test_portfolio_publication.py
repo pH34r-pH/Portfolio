@@ -1,5 +1,7 @@
 """Regression coverage for links and landmarks in generated notebook readers."""
 import tempfile
+import copy
+from compiled_experiment_reference import resolve_reference, render_handoff
 import unittest
 import json
 import sys
@@ -19,6 +21,71 @@ import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_exact_compiler_reference_contract(self):
+        fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+        projection = fixture['projection']
+        article = fixture['article']
+        projection['experiments'][0]['backlinks'] = [article]
+        reference = fixture['compiled_experiment']
+        def resolve(data=projection, ref=reference):
+            return resolve_reference(ref, data, article['url'], article['sourceCommit'])
+        projection['experiments'][0]['backlinks'].append({'title':'Other canonical article',
+            'url':'https://tyharbin.com/articles/other/', 'sourceCommit':'a'*40})
+        invalid_extra = copy.deepcopy(projection)
+        invalid_extra['experiments'][0]['backlinks'].append({'title':'Foreign source',
+            'url':'https://example.org/other/', 'sourceCommit':'a'*40})
+        with self.assertRaises(ValueError): resolve(invalid_extra)
+        record = resolve()
+        self.assertEqual(record['id'], reference['ref'])
+        rendered = render_handoff(record)
+        self.assertIn('Qualification is unknown', rendered)
+        self.assertIn('does not establish execution', rendered)
+        for invalid in ('latest', 'experiment-latest', '*', 'missing', '../experiment'):
+            with self.subTest(ref=invalid), self.assertRaises(ValueError):
+                resolve(ref={'ref': invalid})
+        for field, value in (('schemaVersion', 3), ('schemaVersion', 2.0), ('project', {})):
+            changed = copy.deepcopy(projection); changed[field] = value
+            with self.assertRaises(ValueError): resolve(changed)
+        duplicate = copy.deepcopy(projection)
+        duplicate['experiments'].append(copy.deepcopy(duplicate['experiments'][0]))
+        with self.assertRaises(ValueError): resolve(duplicate)
+        for key, value in (('sha256', 'f'*64), ('profile', 'compiled-experiment-lifecycle-v1'),
+                           ('source', {'repository':'other/repo', 'commit':'a'*40})):
+            with self.subTest(assertion=key), self.assertRaises(ValueError):
+                resolve(ref={**reference, 'expected':{key:value}})
+        for field, value in (('detailUrl', 'javascript:alert(1)'), ('profile', 'unknown'),
+                             ('package', {'sha256':'invalid'}),
+                             ('package', {'sha256':'a'*64,'size':True}),
+                             ('package', {'sha256':'a'*64,'size':0}), ('source', {'repository':'other/repo','commit':'main'}),
+                             ('backlinks', []), ('backlinks', [{**article,'sourceCommit':'d'*40}]),
+                             ('backlinks', [{**article,'url':'https://other.example/articles/other/'}]),
+                             ('backlinks', [{**article,'url':'https://user:secret@tyharbin.com/articles/contract-fixture/'}])):
+            changed = copy.deepcopy(projection); changed['experiments'][0][field] = value
+            with self.subTest(field=field,value=value), self.assertRaises(ValueError): resolve(changed)
+
+    def test_compiler_handoff_uses_existing_article_publication_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, revisions, bundle, _ = self._article_bundle_fixture(Path(directory))
+            source = Path(directory)/'research-notes/articles/sample-article.md'
+            fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
+            reference = fixture['compiled_experiment']
+            source.write_text(source.read_text().replace('date: 2026-09-29',
+                'date: 2026-09-29\ncompiled_experiment: ' + json.dumps(reference)))
+            projection = fixture['projection']
+            projection['experiments'][0]['backlinks'] = [{'title':'Sample article',
+                'url':'https://tyharbin.com/articles/sample-article/', 'sourceCommit':revisions[1]}]
+            path = Path(directory)/'compiler-projection.json'
+            path.write_text(json.dumps(projection))
+            with self.assertRaises(ValueError): self._build_fixture_bundle(args)
+            self._build_fixture_bundle(args + ['--compiler-projection',str(path)])
+            manifest = json.loads((bundle/'publication.json').read_text())
+            Draft202012Validator(schema).validate(manifest)
+            self.assertEqual(manifest['articles'][0]['compiled_experiment'],reference)
+            page = BeautifulSoup((bundle/'articles/sample-article/index.html').read_text(),'html.parser')
+            handoff = page.select_one('aside[aria-label="Compiled experiment reference"]')
+            self.assertEqual(handoff.a['href'], 'https://experiments.tyharbin.com' + projection['experiments'][0]['detailUrl'])
+            self.assertIsNone(BeautifulSoup((bundle/'articles/sample-article-second/index.html').read_text(),'html.parser').select_one('aside[aria-label="Compiled experiment reference"]'))
+
     def test_notebook_evidence_handoff_preserves_bytes_and_exact_identity(self):
         for kind in (None, "illustrative", "historical", "<script>unsafe</script>"):
             with self.subTest(kind=kind), tempfile.TemporaryDirectory() as directory:

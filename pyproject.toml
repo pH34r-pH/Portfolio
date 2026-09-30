@@ -9,6 +9,7 @@ dependencies = [
   "jupyterlite-core>=0.6,<0.7",
   "jupyterlite-pyodide-kernel>=0.6,<0.7",
   "nbconvert>=7.16,<8",
+  "pyyaml>=6.0.3,<7",
 ]
 
 [tool.uv]

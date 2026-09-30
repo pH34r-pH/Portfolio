@@ -6,6 +6,8 @@ import hashlib
 import html
 import json
 import nbformat
+import yaml
+from compiled_experiment_reference import resolve_reference, render_handoff
 import re
 import shutil
 import subprocess
@@ -105,6 +107,20 @@ def _article_metadata(source: str, src: Path) -> dict:
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
+    class UniqueKeysLoader(yaml.SafeLoader):
+        pass
+    def unique_mapping(loader, node, deep=False):
+        mapping = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            if key in mapping:
+                raise ValueError(f'Duplicate article frontmatter key: {key}')
+            mapping[key] = loader.construct_object(value_node, deep=deep)
+        return mapping
+    UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
+    structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
+    if isinstance(structured, dict) and 'compiled_experiment' in structured:
+        metadata['compiled_experiment'] = structured['compiled_experiment']
     return metadata
 
 
@@ -414,7 +430,16 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    handoff = ''
+    if 'compiled_experiment' in metadata:
+        projection_path = getattr(args, 'compiler_projection', None)
+        if projection_path is None or projection_path.is_symlink():
+            raise ValueError('Article compiled_experiment requires an explicit offline public Compiler projection')
+        record = resolve_reference(metadata['compiled_experiment'],
+                                   json.loads(projection_path.read_text()),
+                                   f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
+        handoff = render_handoff(record)
+    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -430,6 +455,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "assets": copied_assets,
         "browserExecution": has_executable,
     }
+    if 'compiled_experiment' in metadata:
+        entry['compiled_experiment'] = metadata['compiled_experiment']
     return entry
 
 
@@ -492,6 +519,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--portfolio-sha", required=True)
     parser.add_argument("--research-notes-sha", required=True)
     parser.add_argument("--theorem-library-sha", required=True)
+    parser.add_argument("--compiler-projection", type=Path, help="Offline versioned public Compiler experiments.json; required only for referenced articles")
     parser.add_argument("--fleet-sha", help="Legacy v1 manifest only; public candidate builds omit this private source")
     return parser.parse_args()
 

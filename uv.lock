@@ -506,6 +506,7 @@ dependencies = [
     { name = "jupyterlite-core" },
     { name = "jupyterlite-pyodide-kernel" },
     { name = "nbconvert" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -516,6 +517,7 @@ requires-dist = [
     { name = "jupyterlite-core", specifier = ">=0.6,<0.7" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.6,<0.7" },
     { name = "nbconvert", specifier = ">=7.16,<8" },
+    { name = "pyyaml", specifier = ">=6.0.3,<7" },
 ]
 
 [[package]]

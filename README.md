@@ -38,3 +38,30 @@ For a local publication environment, run `uv sync --locked --no-dev` and `uv run
 - `publication.schema.json` defines v1 legacy and v2 public candidate metadata.
 - `scripts/build_portfolio_bundle.py`, `scripts/finish_portfolio_lab.py` and `scripts/digest_bundle.py` assemble and hash a candidate from three pinned public source checkouts.
 - `publication/` contains the generated publication bundle, including notebooks selected for that release.
+
+### Exact article experiment references
+
+An article may declare `compiled_experiment: {ref: exact-package-id}` in its
+canonical MyST YAML frontmatter. The optional `expected` object asserts `sha256`,
+`profile`, or the complete `source: {repository, commit}`; it does not supply
+replacement scientific metadata. Reference v1 uses Compiler's public projection
+v2, documented by `design/article-reference-v1.schema.json`.
+
+Build referenced articles with `--compiler-projection /path/to/experiments.json`,
+an explicitly supplied offline snapshot of Compiler's public static projection.
+The build performs no network lookup, internal Compiler import, CI lookup or
+credential access. It rejects unavailable, duplicate, latest or wildcard IDs,
+invalid package identity and unsafe or mismatched detail links. Compiler must
+also declare a backlink to the exact `https://tyharbin.com/articles/{slug}/`
+article URL and the pinned Research Notes source commit. Missing relationships
+or failed expected assertions block publication. Articles without a reference
+need no projection and retain their existing publication behavior.
+
+The existing article reader links to Compiler's exact detail route; the
+publication manifest retains the reference, without creating a local catalog or
+copying results. The handoff distinguishes a reference from execution,
+scientific acceptance, package integrity and independent reproduction. Missing
+qualification remains unknown. Tests use a synthetic article relationship and
+the shared public contract fixture; no real article relationship or Muon claim
+is introduced. Real bindings require separately reviewed source-owned backlinks
+and a pinned public projection supplied to the publication build.
