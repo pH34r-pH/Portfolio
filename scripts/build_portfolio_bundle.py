@@ -98,7 +98,7 @@ def _article_metadata(source: str, src: Path) -> dict:
     if not match:
         raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
     metadata = {}
-    for field in ("title", "description", "date", "modelFocus", "status"):
+    for field in ("title", "description", "date", "modelFocus", "modelVariant", "status"):
         value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
         if value:
             metadata[field] = value.group(1).strip().strip("'\"")
@@ -110,6 +110,9 @@ def _article_metadata(source: str, src: Path) -> dict:
     snake_focus = re.search(r"^model_focus:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
     if snake_focus and not metadata.get("modelFocus"):
         metadata["modelFocus"] = snake_focus.group(1).strip().strip("'\"")
+    snake_variant = re.search(r"^model_variant:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
+    if snake_variant and not metadata.get("modelVariant"):
+        metadata["modelVariant"] = snake_variant.group(1).strip().strip("'\"")
     frontier = {}
     for key, output_key in (
         ("frontier_observed_json", "observed"),
@@ -428,13 +431,14 @@ def _default_model_focus(slug: str, title: str) -> str:
     return "full"
 
 
-def _model_instrument_html(focus: str, article: bool = False) -> str:
+def _model_instrument_html(focus: str, variant: str = "baseline", article: bool = False) -> str:
     article_attr = " data-article-model" if article else ""
     safe_focus = focus if focus in {
         "input", "tokenization", "representation", "recurrent-state", "normalization",
         "architecture", "consumer", "readout", "output", "full"
     } else "full"
-    return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}"{article_attr}
+    safe_variant = variant if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", variant or "") else "baseline"
+    return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}" data-variant="{safe_variant}"{article_attr}
       aria-label="Interactive language model schematic">
       <p class="visually-hidden">A toy language-model workcell showing text entering an input buffer,
       tokenization, representation and model computation, a readout, and generated text leaving the output buffer.</p>
@@ -491,7 +495,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
     model_focus = metadata.get("modelFocus") or _default_model_focus(slug, metadata["title"])
-    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, article=True)}<article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    model_variant = metadata.get("modelVariant") or "baseline"
+    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, model_variant, article=True)}<article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -507,6 +512,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "assets": copied_assets,
         "browserExecution": has_executable,
         "modelFocus": model_focus,
+        "modelVariant": model_variant,
         "dependsOn": metadata.get("dependsOn", []),
     }
     if metadata.get("frontier"):
