@@ -81,17 +81,15 @@ if (root) {
     return section;
   }
 
-  function select(slug, moveFocus = false) {
-    const article = articleBySlug(slug);
-    if (!article) return;
-
+  function setSelectionState(slug) {
     for (const [key, button] of buttons) {
       const selected = key === slug;
       button.classList.toggle("is-selected", selected);
       button.setAttribute("aria-pressed", String(selected));
     }
+  }
 
-    detail.replaceChildren();
+  function detailHeader(article) {
     const meta = document.createElement("p");
     meta.className = "eyebrow";
     meta.textContent = [
@@ -99,39 +97,56 @@ if (root) {
       article.modelFocus ? article.modelFocus.toUpperCase() : null,
       article.date ? `PUBLISHED ${article.date}` : null,
     ].filter(Boolean).join(" / ");
-
     const heading = document.createElement("h3");
     heading.textContent = nodeLabel(article);
     const description = document.createElement("p");
     description.textContent = article.description || "";
+    return [meta, heading, description];
+  }
 
+  function detailRelations(article) {
     const relation = document.createElement("p");
     relation.className = "topology-relations";
-    const deps = (dependencies.get(slug) || []).map((dep) => nodeLabel(articleBySlug(dep))).filter(Boolean);
-    const next = (children.get(slug) || []).map((child) => nodeLabel(articleBySlug(child))).filter(Boolean);
-    relation.textContent = [
-      deps.length ? `Built on: ${deps.join(", ")}.` : "Declared root: no earlier article dependency.",
-      next.length ? `Feeds: ${next.join(", ")}.` : "No published dependent article yet.",
-    ].join(" ");
+    const deps = (dependencies.get(article.slug) || []).map((dep) => nodeLabel(articleBySlug(dep))).filter(Boolean);
+    const next = (children.get(article.slug) || []).map((child) => nodeLabel(articleBySlug(child))).filter(Boolean);
+    const builtOn = deps.length ? `Built on: ${deps.join(", ")}.` : "Declared root: no earlier article dependency.";
+    const feeds = next.length ? `Feeds: ${next.join(", ")}.` : "No published dependent article yet.";
+    relation.textContent = `${builtOn} ${feeds}`;
+    return relation;
+  }
 
+  function detailActions(article) {
     const actions = document.createElement("div");
     actions.className = "topology-detail-actions";
     const read = document.createElement("a");
     read.href = article.url;
     read.textContent = "Read article →";
     actions.append(read);
+    return actions;
+  }
 
-    detail.append(meta, heading, description, relation);
-    for (const section of [
+  function appendFrontier(article) {
+    const blocks = [
       frontierBlock("Observed", article.frontierObserved, "is-observed"),
       frontierBlock("Open", article.frontierOpen, "is-open"),
       frontierBlock("Next test", article.frontierNext, "is-next"),
-    ]) if (section) detail.append(section);
-    detail.append(actions);
+    ].filter(Boolean);
+    detail.append(...blocks);
+  }
 
+  function select(slug, moveFocus = false) {
+    const article = articleBySlug(slug);
+    if (!article) return;
+    setSelectionState(slug);
+    detail.replaceChildren(...detailHeader(article), detailRelations(article));
+    appendFrontier(article);
+    detail.append(detailActions(article));
     root.dataset.selected = slug;
     drawEdges();
-    if (moveFocus) detail.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    if (moveFocus) {
+      const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      detail.scrollIntoView?.({ block: "nearest", behavior });
+    }
   }
 
   function drawEdges() {
