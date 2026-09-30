@@ -152,8 +152,27 @@ jobs:
           cache: npm
           cache-dependency-path: Portfolio/package-lock.json
       - uses: astral-sh/setup-uv@v6
+      - uses: typst-community/setup-typst@v4
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
+      - name: Prepare isolated article export sources
+        run: |
+          python3 Portfolio/scripts/prepare_article_exports.py \
+            --research-notes research-notes \
+            --output research-notes-exports \
+            --manifest article-exports.json
+      - name: Build PDF, Word, LaTeX and JATS article exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/portfolio-article-export-sources
+          import json
+          for item in json.load(open('article-exports.json', encoding='utf-8')):
+              print(item['source'])
+          PY
+          while IFS= read -r source; do
+            (cd research-notes-exports && ../Portfolio/node_modules/.bin/myst build "$source" --ci)
+          done < /tmp/portfolio-article-export-sources
       - name: Render canonical MyST articles from the pinned Research Notes checkout
         working-directory: research-notes
         run: ../Portfolio/node_modules/.bin/myst build --html --strict --ci
@@ -182,6 +201,27 @@ jobs:
             --theorem-library-sha "$THEOREM_LIBRARY_SHA" \
             --compiler-projection compiler-public/data/experiments.json \
             --compiler-projection-pin Portfolio/publication/compiler-projection.lock.json
+      - name: Attach static article export artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle/article-exports
+          python3 - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+          records = json.load(open('article-exports.json', encoding='utf-8'))
+          source = Path('research-notes-exports/_build/exports')
+          target = Path('bundle/article-exports')
+          for item in records:
+              for key in ('pdf', 'docx', 'latex', 'jats'):
+                  name = item[key]
+                  artifact = source / name
+                  if not artifact.is_file():
+                      raise SystemExit(f'Missing MyST export: {artifact}')
+                  shutil.copy2(artifact, target / name)
+          print(f"Attached {len(records) * 4} article exports")
+          PY
       - name: Validate pinned publication manifest
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
@@ -249,6 +289,11 @@ jobs:
               assert hashlib.sha256(source.read_bytes()).hexdigest() == article['sha256']
               body = route.read_text(encoding='utf-8')
               assert 'myst-reader' in body and 'Canonical MyST source' in body
+              for label in ('PDF', 'Word', 'LaTeX source', 'JATS XML'):
+                  assert label in body, f"Missing article download link {label}: {article['slug']}"
+              for kind, download in article['downloads'].items():
+                  artifact = root / download.lstrip('/')
+                  assert artifact.is_file() and artifact.stat().st_size > 0, f"Missing {kind} export: {article['slug']}"
               for asset in article['assets']:
                   assert (root / 'publication/article-assets' / asset).is_file(), f"Missing MyST asset: {asset}"
               if article['browserExecution']:
