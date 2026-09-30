@@ -394,6 +394,12 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(len(manifest['notebooks']), 1)
             self.assertEqual(len(manifest['articles']), 2)
             self.assertEqual([article['sequence'] for article in manifest['articles']], [1, 2])
+            self.assertEqual(manifest['articles'][0]['downloads'], {
+                'pdf': '/article-exports/sample-article.pdf',
+                'docx': '/article-exports/sample-article.docx',
+                'latex': '/article-exports/sample-article-latex.zip',
+                'jats': '/article-exports/sample-article.xml',
+            })
 
     def test_article_routes_preserve_accessible_tables_sources_and_assets(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -410,6 +416,10 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(table_region.get('tabindex'), '0')
             self.assertIn('src="/publication/article-assets/figure-hash.svg"', article_page)
             self.assertIn('research-notes/blob/' + revisions[1] + '/articles/sample-article.md', article_page)
+            self.assertIn('href="/article-exports/sample-article.pdf"', article_page)
+            self.assertIn('href="/article-exports/sample-article.docx"', article_page)
+            self.assertIn('href="/article-exports/sample-article-latex.zip"', article_page)
+            self.assertIn('href="/article-exports/sample-article.xml"', article_page)
             second_page = (bundle/'articles/sample-article-second/index.html').read_text()
             self.assertIn('<h1 id="second-article">Second article</h1>', second_page)
             self.assertNotIn('A static article body.', second_page)
