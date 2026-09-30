@@ -1367,4 +1367,5 @@ html[data-theme=dark] .portrait-optic:after{mix-blend-mode:screen;opacity:.2}
   .article-source-links>span[aria-hidden]{display:none}
 }
 
-html[data-theme="dark"] :is(.primary,.article-execution button,.synthetic-projection-control button,.machine-input button,.topology-detail-actions a:hover){color:var(--2071-black)!important}
+html[data-theme="dark"] .machine-input button{background:#006ce0;border-color:#006ce0;color:#fff!important}
+html[data-theme="dark"] .primary,html[data-theme="dark"] .article-execution button,html[data-theme="dark"] .synthetic-projection-control button,html[data-theme="dark"] .topology-detail-actions a:hover{color:var(--2071-black)!important}
