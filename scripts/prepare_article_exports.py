@@ -26,10 +26,16 @@ def inject_exports(source: str, slug: str, path: Path) -> str:
     match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
     if not match:
         raise ValueError(f"Article is missing YAML frontmatter: {path}")
-    if re.search(r"^exports\s*:", match.group(1), re.MULTILINE):
+    frontmatter = match.group(1)
+    if re.search(r"^exports\\s*:", frontmatter, re.MULTILINE):
         raise ValueError(f"Article already declares exports; reconcile instead of overriding: {path}")
-    frontmatter = match.group(1).rstrip()
-    replacement = f"---\n{frontmatter}\n{EXPORTS.format(slug=slug)}---\n"
+    if not re.search(r"^abstract\\s*:", frontmatter, re.MULTILINE):
+        description = re.search(r"^description:\\s*(.+?)\\s*$", frontmatter, re.MULTILINE)
+        if not description:
+            raise ValueError(f"Article requires description or abstract for manuscript export: {path}")
+        value = description.group(1).strip().strip("'\\\"")
+        frontmatter = frontmatter.rstrip() + "\\nabstract: " + json.dumps(value)
+    replacement = f"---\\n{frontmatter.rstrip()}\\n{EXPORTS.format(slug=slug)}---\\n"
     return replacement + source[match.end():]
 
 
