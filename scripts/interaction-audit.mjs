@@ -89,13 +89,48 @@ async function researchMap(page, data, width) {
   await expect(page.locator("#research-frontier")).toBeVisible();
 }
 
-async function generatedArticle(page, path) {
+async function articleLinks(page, data, path) {
+  if (!data?.articles?.length) return;
+  const nativeRoutes = new Set(data.articles.map(article => "/" + article.slug.replace(/^\\d{3}-/, "")));
+  const articleRoutes = new Set(data.articles.map(article => article.url));
+  for (const link of await page.locator("article.myst-reader a[href]").all()) {
+    const href = await link.getAttribute("href");
+    if (!href?.startsWith("/")) continue;
+    const url = new URL(href, base);
+    if (url.origin !== new URL(base).origin) continue;
+    assert.ok(!nativeRoutes.has(url.pathname.replace(/\\/$/, "")), `${path}: unadapted MyST route ${href}`);
+    const response = await page.request.get(url.href);
+    assert.ok(response.ok(), `${path}: broken local link ${href} (${response.status()})`);
+    if (articleRoutes.has(url.pathname)) {
+      assert.ok((await response.text()).includes("myst-reader"), `${path}: article link resolved to a different surface`);
+    }
+  }
+}
+
+async function generatedArticle(page, path, data) {
   if (!path.startsWith("/articles/")) return;
+  const article = data?.articles?.find(item => item.url === path);
+  assert.ok(article, `${path}: article must exist in the exact publication manifest`);
+  await articleLinks(page, data, path);
   await expect(page.locator("article.myst-reader")).toBeVisible();
   await expect(page.locator("[data-article-model]")).toBeVisible();
-  await expect(page.getByRole("link",{name:/Canonical MyST source/})).toBeVisible();
+  await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+  await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
+  await expect(page.locator('article.myst-reader a[aria-label="Link to this Section"]')).toHaveCount(0);
+  await expect(page.locator("article.myst-reader button.myst-code-copy-icon")).toHaveCount(0);
+  await expect(page.getByRole("link",{name:/Canonical MyST source/}))
+    .toHaveAttribute("href", new RegExp("research-notes/blob/" + data.sources.researchNotes.commit));
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.locator("h1")).toHaveCount(1);
+  if (article.slug === "005-unit-hypersphere-anomaly") {
+    const packageLink = 'a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]';
+    await expect(page.locator("article.myst-reader").locator(packageLink)).toHaveCount(1);
+    await expect(page.locator('aside[aria-label="Compiled experiment reference"]').locator(packageLink)).toHaveCount(1);
+  }
+  if (article.slug === "accessible-does-not-imply-used") {
+    await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
+    await expect(page.locator("article.myst-reader")).toContainText("An exact frozen-model replay package is not currently published.");
+  }
 }
 
 async function worklogDisclosures(page, width, path) {
@@ -141,7 +176,7 @@ async function routeAudit(page,width,path,data,errors) {
   await accessible(page,width,path);
   if (path==="/") await homeModel(page);
   if (path==="/research/") await researchMap(page,data,width);
-  await generatedArticle(page,path);
+  await generatedArticle(page,path,data);
   await worklogDisclosures(page,width,path);
   await generatedNotebook(page,path);
   assert.deepEqual(errors.splice(0),[],`${width} ${path}: page errors after interaction`);
