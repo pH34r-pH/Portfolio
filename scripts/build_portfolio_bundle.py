@@ -480,6 +480,32 @@ def render_article_model_machine(metadata: dict, slug: str) -> str:
       </div>
     </section>'''
 
+def article_downloads(slug: str) -> dict[str, str]:
+    root = f"/article-exports/{slug}"
+    return {
+        "pdf": root + ".pdf",
+        "docx": root + ".docx",
+        "latex": root + "-latex.zip",
+        "jats": root + ".xml",
+    }
+
+
+def render_article_source_links(slug: str, source_url: str) -> str:
+    downloads = article_downloads(slug)
+    return (
+        '<nav class="article-source-links" aria-label="Article source and downloads">'
+        '<a href="/research/">← Research index</a>'
+        '<span aria-hidden="true"> / </span>'
+        f'<a href="{html.escape(source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a>'
+        '<span class="article-download-label">Download</span>'
+        f'<a href="{downloads["pdf"]}" download>PDF</a>'
+        f'<a href="{downloads["docx"]}" download>Word</a>'
+        f'<a href="{downloads["latex"]}" download>LaTeX source</a>'
+        f'<a href="{downloads["jats"]}" download>JATS XML</a>'
+        '</nav>'
+    )
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
@@ -511,6 +537,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
+    source_links = render_article_source_links(slug, article_source_url)
     handoff = ''
     if 'compiled_experiment' in metadata:
         if args.compiler_projection_data is None:
@@ -519,7 +546,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/2071.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/model-machine.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/2071.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/model-machine.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -534,6 +561,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "renderedSha256": sha256(rendered_article),
         "assets": copied_assets,
         "browserExecution": has_executable,
+        "downloads": article_downloads(slug),
     }
     if 'compiled_experiment' in metadata:
         entry['compiled_experiment'] = metadata['compiled_experiment']
