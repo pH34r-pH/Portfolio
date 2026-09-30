@@ -1,74 +1,65 @@
-/* Shared by Portfolio pages, generated readers, and the Lab return strip. */
+/* Shared shell behavior: one art direction, environmental light/dark appearance. */
 (() => {
   const root = document.documentElement;
-  const choices = {
-    style: ["orbit", "register", "overprint", "hinge"],
-    palette: ["nacre", "oxide", "violet", "high-contrast"],
-  };
-  function read(kind) {
-    try { return localStorage.getItem("portfolio-" + kind); }
-    catch { return null; }
+  const storageKey = "portfolio-theme";
+
+  function readTheme() {
+    try {
+      const value = localStorage.getItem(storageKey);
+      return value === "light" || value === "dark" ? value : null;
+    } catch {
+      return null;
+    }
   }
-  function select(kind, value, persist = false) {
-    const name = choices[kind].includes(value) ? value : choices[kind][0];
-    root.dataset[kind] = name;
-    document.querySelectorAll(`.appearance button[data-${kind}]`).forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset[kind] === name));
+
+  function applyTheme(value, persist = false) {
+    if (value) root.dataset.theme = value;
+    else delete root.dataset.theme;
+    document.querySelectorAll("[data-theme-toggle]").forEach(button => {
+      const dark = (root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) === "dark";
+      button.setAttribute("aria-label", dark ? "Use light appearance" : "Use dark appearance");
+      button.setAttribute("aria-pressed", String(dark));
+      button.textContent = dark ? "Light" : "Dark";
     });
     if (persist) {
-      try { localStorage.setItem("portfolio-" + kind, name); }
-      catch { /* The current page still works when storage is unavailable. */ }
+      try {
+        if (value) localStorage.setItem(storageKey, value);
+        else localStorage.removeItem(storageKey);
+      } catch {}
     }
   }
-  for (const kind of Object.keys(choices)) select(kind, read(kind));
+
+  applyTheme(readTheme());
   document.addEventListener("click", event => {
-    const button = event.target.closest?.(".appearance button");
+    const button = event.target.closest?.("[data-theme-toggle]");
     if (!button) return;
-    for (const kind of Object.keys(choices)) {
-      if (button.dataset[kind]) select(kind, button.dataset[kind], true);
-    }
+    const current = root.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    applyTheme(current === "dark" ? "light" : "dark", true);
   });
+
   addEventListener("storage", event => {
-    for (const kind of Object.keys(choices)) {
-      if (event.key === "portfolio-" + kind || event.key === null)
-        select(kind, read(kind));
-    }
+    if (event.key === storageKey || event.key === null) applyTheme(readTheme());
   });
 
   const menuButton = document.querySelector(".menu-toggle");
   const menu = document.querySelector("#site-menu");
   if (menuButton && menu) {
-    const close = (focus = false) => {
+    const close = (restoreFocus = false) => {
       menu.hidden = true;
       menuButton.setAttribute("aria-expanded", "false");
-      if (focus) menuButton.focus();
+      if (restoreFocus) menuButton.focus();
     };
     menuButton.addEventListener("click", () => {
       const open = menuButton.getAttribute("aria-expanded") === "true";
-      menuButton.setAttribute("aria-expanded", String(!open));
       menu.hidden = open;
+      menuButton.setAttribute("aria-expanded", String(!open));
     });
     document.addEventListener("keydown", event => {
       if (event.key === "Escape" && !menu.hidden) close(true);
     });
-    menu.querySelectorAll("a").forEach(link => link.addEventListener("click", () => close()));
     document.addEventListener("click", event => {
       if (!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)) close();
     });
+    menu.querySelectorAll("a").forEach(link => link.addEventListener("click", () => close()));
   }
-
-  // Readers retain the exact authored title and its casing. Only a presentation
-  // span is added; source notebook cells and generated scientific output stay intact.
-  function prepareReaderTitle() {
-    const title = document.querySelector(".notebook-reader > header h1");
-    if (!title || title.querySelector(".title-accent")) return;
-    const text = title.textContent;
-    const split = text.indexOf(" — ");
-    const accent = document.createElement("span");
-    accent.className = "title-accent";
-    accent.textContent = split < 0 ? text : text.slice(split + 3);
-    title.replaceChildren(...(split < 0 ? [] : [document.createTextNode(text.slice(0, split + 3))]), accent);
-  }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepareReaderTitle);
-  else prepareReaderTitle();
 })();
