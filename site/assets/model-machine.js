@@ -61,6 +61,7 @@ class ModelMachine {
     this.layers = [];
     this.tick = this.animate.bind(this);
     this.bind();
+    this.bindArticleDock();
     this.observe();
   }
 
@@ -72,6 +73,34 @@ class ModelMachine {
     for (const button of this.stageButtons) {
       button.addEventListener("click", () => this.focus(button.dataset.machineStageButton));
     }
+  }
+
+  bindArticleDock() {
+    if (!this.root.classList.contains("article-machine-dock") || REDUCED) return;
+    const placeholder = document.createElement("div");
+    placeholder.className = "article-machine-placeholder";
+    placeholder.setAttribute("aria-hidden", "true");
+    this.root.before(placeholder);
+    this.dockPlaceholder = placeholder;
+    const update = () => {
+      const sentinelTop = placeholder.getBoundingClientRect().top;
+      const articleBottom = document.querySelector(".myst-reader")?.getBoundingClientRect().bottom ?? 0;
+      const dock = sentinelTop < 54 && articleBottom > 150;
+      if (dock && !this.root.classList.contains("is-docked")) {
+        placeholder.style.height = this.root.offsetHeight + "px";
+        placeholder.dataset.active = "true";
+      }
+      if (!dock) {
+        placeholder.dataset.active = "false";
+        placeholder.style.height = "0px";
+      }
+      this.root.classList.toggle("is-docked", dock);
+      document.body.classList.toggle("machine-docked", dock);
+      if (dock) this.resize();
+    };
+    document.addEventListener("scroll", update, {passive: true});
+    addEventListener("resize", update);
+    update();
   }
 
   observe() {
