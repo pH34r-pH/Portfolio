@@ -12,7 +12,8 @@ from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
 from build_portfolio_bundle import (prepare_reader, publish_notebook, copy_lab_contents, apply_output_descriptions,
                                     _myst_asset_path, _prepare_article_execution, copy_thebe_assets,
-                                    _source_file_index, _rewrite_myst_article_routes, main as build_bundle)
+                                    _source_file_index, _rewrite_myst_article_routes, validate_article_dependencies,
+                                    main as build_bundle)
 from digest_bundle import digest_tree
 from finish_portfolio_lab import finish_lab
 import nbformat
@@ -202,6 +203,27 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertIn('<h1 id="second-article">Second article</h1>', second_page)
             self.assertNotIn('A static article body.', second_page)
             self.assertEqual((bundle/'publication/article-assets/figure-hash.svg').read_bytes(), figure_bytes)
+
+    def test_article_dependencies_must_resolve_and_remain_acyclic(self):
+        valid = [
+            {"slug": "a", "dependsOn": []},
+            {"slug": "b", "dependsOn": ["a"]},
+            {"slug": "c", "dependsOn": ["a", "b"]},
+        ]
+        validate_article_dependencies(valid)
+        with self.assertRaisesRegex(ValueError, "unpublished article"):
+            validate_article_dependencies([
+                {"slug": "a", "dependsOn": ["missing"]},
+            ])
+        with self.assertRaisesRegex(ValueError, "cannot depend on itself"):
+            validate_article_dependencies([
+                {"slug": "a", "dependsOn": ["a"]},
+            ])
+        with self.assertRaisesRegex(ValueError, "dependency cycle"):
+            validate_article_dependencies([
+                {"slug": "a", "dependsOn": ["b"]},
+                {"slug": "b", "dependsOn": ["a"]},
+            ])
 
     def test_candidate_digest_and_legacy_v1_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
