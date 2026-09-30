@@ -9,7 +9,7 @@ const palettes = ['nacre', 'oxide', 'violet', 'high-contrast'];
 const shots = process.env.PORTFOLIO_STYLE_SCREENSHOTS;
 
 async function discoverPaths(context) {
-  const paths = ['/', '/research/', '/atlas/'];
+  const paths = ['/', '/research/', '/atlas/', '/about/'];
   const response = await context.request.get(base + '/publication.json');
   if (response.ok() && response.headers()['content-type']?.includes('json')) {
     const manifest = await response.json();

@@ -2,7 +2,7 @@ import { chromium } from '@playwright/test';
 import fs from 'node:fs/promises';
 
 const base='http://127.0.0.1:4173';
-const pages=[['home','/'],['research','/research/'],['atlas','/atlas/']];
+const pages=[['home','/'],['research','/research/'],['atlas','/atlas/'],['about','/about/']];
 const views=[['s23-ultra',360,780,true],['desktop',1440,900,false]];
 await fs.mkdir('ux-screenshots',{recursive:true});
 const browser=await chromium.launch({headless:true});
