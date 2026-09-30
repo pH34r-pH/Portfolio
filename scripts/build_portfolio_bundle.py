@@ -105,9 +105,9 @@ def _article_metadata(source: str, src: Path) -> dict:
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
-    dependencies = re.search(r"^depends_on:\\s*\\[(.*?)\\]\\s*$", match.group(1), re.MULTILINE)
+    dependencies = re.search(r"^depends_on:\s*\[(.*?)\]\s*$", match.group(1), re.MULTILINE)
     metadata["dependsOn"] = (
-        [item.strip().strip("'\\\"") for item in dependencies.group(1).split(",") if item.strip()]
+        [item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()]
         if dependencies else []
     )
     for dependency in metadata["dependsOn"]:
