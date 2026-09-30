@@ -11,6 +11,7 @@
   --r71-line:rgba(0,78,140,.28);
   --r71-line-strong:rgba(0,92,176,.58);
   --r71-blue:#006cff;
+  --r71-action:#0057c8;
   --r71-blue-hi:#00a8ff;
   --r71-blue-soft:#d8efff;
   --r71-glow:rgba(0,108,255,.18);
@@ -30,6 +31,7 @@ html[data-mode=dark]{
   --r71-line:rgba(31,155,255,.27);
   --r71-line-strong:rgba(53,174,255,.65);
   --r71-blue:#1b9cff;
+  --r71-action:#0067a8;
   --r71-blue-hi:#67c9ff;
   --r71-blue-soft:#062c4c;
   --r71-glow:rgba(0,150,255,.25);
@@ -92,7 +94,7 @@ body{padding-top:54px}
   font:700 10px ui-monospace,monospace;letter-spacing:.1em;text-transform:uppercase;
 }
 .mode-switch button+button{border-left:1px solid var(--r71-line)}
-.mode-switch button[aria-pressed=true]{background:var(--r71-blue);color:#fff}
+.mode-switch button[aria-pressed=true]{background:var(--r71-action);color:#fff}
 .eyebrow,.signal,.case-label,dt{color:var(--r71-blue)}
 .register{border-color:var(--r71-line);color:var(--r71-muted);top:74px}
 .hero{min-height:min(92svh,900px);padding-block:72px 54px}
@@ -125,7 +127,7 @@ body{padding-top:54px}
   border-color:var(--r71-blue);background:var(--r71-blue-soft);transform:translateY(-1px);
 }
 .primary{
-  background:var(--r71-blue)!important;color:#fff!important;border-color:var(--r71-blue)!important;
+  background:var(--r71-action)!important;color:#fff!important;border-color:var(--r71-action)!important;
   box-shadow:0 0 28px var(--r71-glow);
 }
 section{border-color:var(--r71-line)}
@@ -167,7 +169,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,t
 }
 .machine-output{margin:0;white-space:pre-wrap}
 .machine-terminal button{
-  min-height:44px;border:1px solid var(--r71-blue);background:var(--r71-blue);color:#fff;
+  min-height:44px;border:1px solid var(--r71-blue);background:var(--r71-action);color:#fff;
   font:800 10px ui-monospace,monospace;letter-spacing:.11em;text-transform:uppercase;cursor:pointer;
 }
 .machine-viewport{position:relative;min-height:430px;background:#020b13;overflow:hidden}
@@ -188,7 +190,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible,input:focus-visible,t
   min-width:34px;min-height:30px;border:1px solid rgba(62,182,255,.3);background:rgba(0,13,25,.72);color:#86cff8;
   font:700 9px ui-monospace,monospace;cursor:pointer
 }
-.machine-stage-nav button[aria-pressed=true]{background:#118ff0;color:#fff;border-color:#46bdff}
+.machine-stage-nav button[aria-pressed=true]{background:var(--r71-action);color:#fff;border-color:var(--r71-blue-hi)}
 
 /* Research graph: data-driven SVG, compact first on mobile. */
 .research-map{padding-top:28px!important}
