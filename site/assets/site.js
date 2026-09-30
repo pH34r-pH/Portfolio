@@ -69,45 +69,30 @@ function graphDependencies(article, articles, index) {
   return [{ slug: articles[index - 1].slug, kind: "chronology" }];
 }
 
-function renderResearchTopology(container, rawArticles) {
-  if (!container || !rawArticles?.length) return;
+function researchTopologyLayout(rawArticles) {
   const articles = [...rawArticles].sort((a, b) => (a.sequence || 0) - (b.sequence || 0));
-  const width = 920;
-  const cols = 3;
-  const nodeW = 250, nodeH = 72, gapX = 52, gapY = 46;
-  const rows = Math.ceil(articles.length / cols);
-  const height = Math.max(280, 38 + rows * (nodeH + gapY));
+  const nodeW = 250, nodeH = 72, gapX = 52, gapY = 46, cols = 3;
   const positions = new Map();
-  articles.forEach((article, i) => {
-    const col = i % cols, row = Math.floor(i / cols);
-    const x = 36 + col * (nodeW + gapX);
-    const y = 28 + row * (nodeH + gapY);
-    positions.set(article.slug, { x, y });
+  articles.forEach((article, index) => {
+    const col = index % cols, row = Math.floor(index / cols);
+    positions.set(article.slug, { x: 36 + col * (nodeW + gapX), y: 28 + row * (nodeH + gapY) });
   });
+  const rows = Math.ceil(articles.length / cols);
+  return { articles, positions, nodeW, nodeH, width: 920, height: Math.max(280, 38 + rows * (nodeH + gapY)) };
+}
 
+function appendTopologyEdges(svg, layout) {
   const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  svg.setAttribute("role", "img");
-  svg.setAttribute("aria-labelledby", "research-graph-title research-graph-desc");
-  const title = document.createElementNS(ns, "title");
-  title.id = "research-graph-title";
-  title.textContent = "Research dependency map";
-  const desc = document.createElementNS(ns, "desc");
-  desc.id = "research-graph-desc";
-  desc.textContent = "Published research articles connected by declared dependencies; faint fallback links show chronology when no dependency metadata is declared.";
-  svg.append(title, desc);
-
-  for (const [index, article] of articles.entries()) {
-    const to = positions.get(article.slug);
-    for (const dep of graphDependencies(article, articles, index)) {
-      const from = positions.get(dep.slug);
+  for (const [index, article] of layout.articles.entries()) {
+    const to = layout.positions.get(article.slug);
+    for (const dep of graphDependencies(article, layout.articles, index)) {
+      const from = layout.positions.get(dep.slug);
       if (!from || !to) continue;
       const line = document.createElementNS(ns, "line");
       line.classList.add("graph-edge");
-      line.setAttribute("x1", from.x + nodeW / 2);
-      line.setAttribute("y1", from.y + nodeH);
-      line.setAttribute("x2", to.x + nodeW / 2);
+      line.setAttribute("x1", from.x + layout.nodeW / 2);
+      line.setAttribute("y1", from.y + layout.nodeH);
+      line.setAttribute("x2", to.x + layout.nodeW / 2);
       line.setAttribute("y2", to.y);
       if (dep.kind === "chronology") {
         line.setAttribute("stroke-dasharray", "4 7");
@@ -116,16 +101,19 @@ function renderResearchTopology(container, rawArticles) {
       svg.append(line);
     }
   }
+}
 
-  articles.forEach(article => {
-    const pos = positions.get(article.slug);
+function appendTopologyNodes(svg, layout) {
+  const ns = "http://www.w3.org/2000/svg";
+  layout.articles.forEach(article => {
+    const pos = layout.positions.get(article.slug);
     const link = document.createElementNS(ns, "a");
     link.setAttribute("href", article.url);
     link.setAttribute("class", "graph-node");
-    link.setAttribute("data-status", article.status || (article === articles.at(-1) ? "active" : "published"));
+    link.setAttribute("data-status", article.status || (article === layout.articles.at(-1) ? "active" : "published"));
     const rect = document.createElementNS(ns, "rect");
     rect.setAttribute("x", pos.x); rect.setAttribute("y", pos.y);
-    rect.setAttribute("width", nodeW); rect.setAttribute("height", nodeH);
+    rect.setAttribute("width", layout.nodeW); rect.setAttribute("height", layout.nodeH);
     const label = document.createElementNS(ns, "text");
     label.setAttribute("x", pos.x + 12); label.setAttribute("y", pos.y + 28);
     const clean = (article.title || article.slug).replace(/\s+/g, " ");
@@ -137,7 +125,27 @@ function renderResearchTopology(container, rawArticles) {
     link.append(rect, label, meta);
     svg.append(link);
   });
+}
 
+function topologySvg(layout) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", `0 0 ${layout.width} ${layout.height}`);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-labelledby", "research-graph-title research-graph-desc");
+  const title = document.createElementNS(ns, "title");
+  title.id = "research-graph-title";
+  title.textContent = "Research dependency map";
+  const desc = document.createElementNS(ns, "desc");
+  desc.id = "research-graph-desc";
+  desc.textContent = "Published research articles connected by declared dependencies; faint fallback links show chronology when no dependency metadata is declared.";
+  svg.append(title, desc);
+  appendTopologyEdges(svg, layout);
+  appendTopologyNodes(svg, layout);
+  return svg;
+}
+
+function topologyList(articles) {
   const list = el("div", "graph-list");
   list.setAttribute("aria-label", "Research articles");
   articles.forEach((article, index) => {
@@ -147,16 +155,19 @@ function renderResearchTopology(container, rawArticles) {
     record.append(link);
     const deps = graphDependencies(article, articles, index);
     if (deps.length) {
-      const names = deps.map(dep => {
-        const match = articles.find(item => item.slug === dep.slug);
-        return match ? match.title : dep.slug;
-      });
+      const names = deps.map(dep => articles.find(item => item.slug === dep.slug)?.title || dep.slug);
       const prefix = deps.every(dep => dep.kind === "chronology") ? "Follows publication chronology: " : "Depends on: ";
       record.append(el("p", "graph-list-deps", prefix + names.join("; ")));
     }
     list.append(record);
   });
-  container.replaceChildren(svg, list);
+  return list;
+}
+
+function renderResearchTopology(container, rawArticles) {
+  if (!container || !rawArticles?.length) return;
+  const layout = researchTopologyLayout(rawArticles);
+  container.replaceChildren(topologySvg(layout), topologyList(layout.articles));
 }
 
 function renderResearchFrontier(container, rawArticles) {
