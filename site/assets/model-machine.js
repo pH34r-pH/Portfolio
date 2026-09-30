@@ -206,7 +206,12 @@ class ModelMachine {
         );
         node.position.set(x, y, (i % 2) * 0.55 - 0.27);
         layer.add(node);
-        this.nodes.push({mesh: node, layer: layerIndex});
+        this.nodes.push({
+          mesh: node,
+          layer: layerIndex,
+          base: node.position.clone(),
+          target: node.position.clone(),
+        });
       }
       this.nodeGroup.add(layer);
       this.layers.push(layer);
@@ -323,6 +328,44 @@ class ModelMachine {
     mesh.position.set(4.55 + (index % 3) * 0.8, -1.15, 0);
     this.outputGroup.add(mesh);
     this.outputBlocks.push({mesh, speed: 1.25 + strength * 0.55});
+  }
+
+  applyVariant(variant = "baseline") {
+    this.variant = variant;
+    for (const node of this.nodes) node.target.copy(node.base);
+    const stateNodes = this.nodes.filter(node => node.layer === 1);
+    const consumerNodes = this.nodes.filter(node => node.layer === 2);
+
+    if (variant === "hypersphere") {
+      stateNodes.forEach((node, index) => {
+        const angle = (index / stateNodes.length) * Math.PI * 2;
+        node.target.y = Math.sin(angle) * 1.8;
+        node.target.z = Math.cos(angle) * 1.8;
+      });
+    }
+    if (variant === "dual-consumer") {
+      consumerNodes.forEach((node, index) => {
+        node.target.z = index % 2 ? 0.95 : -0.95;
+        node.target.y *= 0.78;
+      });
+    }
+    if (variant === "phase") {
+      stateNodes.forEach((node, index) => {
+        const sign = index % 2 ? 1 : -1;
+        node.target.z = sign * (0.45 + index * 0.09);
+        node.target.y *= 0.82;
+      });
+    }
+    if (variant === "quotient") {
+      stateNodes.forEach((node, index) => {
+        const band = Math.floor(index / 2) - 1;
+        node.target.y = band * 1.05;
+        node.target.z = (index % 2 ? 1 : -1) * 0.18;
+      });
+    }
+    if (variant !== "baseline") {
+      this.status.textContent = "ARCHITECTURE / " + variant.toUpperCase().replace("-", " ");
+    }
   }
 
   focus(stage) {
@@ -442,6 +485,7 @@ class ModelMachine {
 
     this.updatePulses(dt);
     this.updateOutputBlocks(dt);
+    for (const node of this.nodes) node.mesh.position.lerp(node.target, Math.min(1, dt * 6.5));
     const breathe = 0.74 + 0.12 * Math.sin(now * 2.4);
     if (this.stage === "all") {
       for (const {mesh} of this.nodes) {
@@ -452,6 +496,17 @@ class ModelMachine {
     this.renderer.render(this.scene, this.camera);
     requestAnimationFrame(this.tick);
   }
+}
+
+function inferredVariant(element) {
+  const explicit = element.dataset.machineVariant;
+  if (explicit) return explicit;
+  const text = (element.textContent || "").toLowerCase();
+  if (/hypersphere|normaliz|radial|tangent/.test(text)) return "hypersphere";
+  if (/consumer|readout|probe|accessible|prediction layer/.test(text)) return "dual-consumer";
+  if (/phase|spectral|frequency/.test(text)) return "phase";
+  if (/quotient|invariance|equivalence/.test(text)) return "quotient";
+  return "baseline";
 }
 
 function inferredStage(element) {
@@ -471,7 +526,9 @@ const sectionObserver = new IntersectionObserver(entries => {
   visible.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
   const active = visible[0];
   if (!active) return;
-  document.querySelector("[data-model-machine]")?.machine?.focus(inferredStage(active.target));
+  const machine = document.querySelector("[data-model-machine]")?.machine;
+  machine?.focus(inferredStage(active.target));
+  machine?.applyVariant(inferredVariant(active.target));
 }, {rootMargin: "-30% 0px -52% 0px", threshold: [0, 0.2, 0.5]});
 
 document.querySelectorAll("[data-machine-stage], .myst-reader h2").forEach(element => {
