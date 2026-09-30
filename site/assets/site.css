@@ -4,8 +4,7 @@
 @media(pointer:coarse){.compiled-experiment-evidence summary{min-height:48px;padding:12px 14px}}
 @media(max-width:760px){main{width:calc(100% - 28px)}.primary-nav{display:none}.wordmark span{display:none}.topbar{gap:8px}.site-menu{right:10px;width:calc(100vw - 20px)}.person-intro{display:block}.profile-portrait{width:108px;height:108px;margin-bottom:20px}.program-grid{grid-template-columns:1fr}footer{display:block}.synthetic-projection-control{grid-template-columns:1fr}.synthetic-projection-control svg{grid-row:auto;max-width:280px}.synthetic-projection-control .control-help{grid-column:auto}}
 @media(max-width:360px){main,.notebook-reader{width:calc(100% - 20px)}}
-\n/* Portfolio 2071 — canonical presentation layer.
-   The legacy stylesheet remains underneath temporarily for structural compatibility. */
+/* Portfolio 2071 — canonical presentation layer. */
 
 :root {
   --2071-white: #f7fbff;
