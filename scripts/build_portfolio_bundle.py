@@ -597,7 +597,24 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         if metadata.get("exampleKind") == "illustrative"
         else "Inspect or run in Lab ↗"
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/site.js"></script></body></html>'''
+    evidence_note = (
+        "Illustrative browser example. Its outputs explain a method; they are not evidence "
+        "that the research experiment was reproduced."
+        if metadata.get("exampleKind") == "illustrative"
+        else "Preserved source notebook. Recorded outputs belong to the pinned source "
+        "snapshot; execution status and scientific acceptance are not inferred from them."
+    )
+    evidence_note += (
+        " Opening, downloading, or running a notebook is not independent reproduction. "
+        "Compare exact source, configuration and inputs, endpoint units, scientific checks "
+        "and acceptance criteria with the authoritative experiment record. Browser execution "
+        "may be unavailable; the published notebook remains readable."
+    )
+    source_url = (
+        "https://github.com/pH34r-pH/research-notes/blob/" + args.research_notes_sha
+        + "/" + quote(src.relative_to(args.research_notes).as_posix(), safe="/")
+    )
+    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/site.js"></script></body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     entry = {
         "path": f"publication/notebooks/{src.name}",
