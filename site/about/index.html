@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="description" content="About Tyler James Harbin-Giuntoli, a software developer at Microsoft working on independent machine-learning research, formal methods, and reproducible experiments.">
+  <meta name="description" content="About Tyler James Harbin-Giuntoli, a software engineer at Microsoft building agent infrastructure and pursuing independent machine-learning research.">
   <title>About — Tyler J.H.G.</title>
   <link rel="preload" href="/assets/fonts/long-measure/NimbusSansNarrow-Regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/site.css">
@@ -17,17 +17,27 @@
       <p class="eyebrow">ABOUT / TYLER J.H.G.</p>
       <h1 class="page-title"><span class="title-line">Curiosity needs</span> <span class="title-line title-accent">a test bench.</span></h1>
       <div class="person-intro"><img class="profile-portrait" src="/assets/images/tyler-harbin-giuntoli.jpg" alt="Tyler Harbin-Giuntoli" width="400" height="400" decoding="async"><div>
-      <p class="lede">I’m Tyler James Harbin-Giuntoli, a software developer at Microsoft. My independent work focuses on machine learning, research engineering, and formal methods.</p>
-      <p class="about-intro">I like questions that connect a model’s behavior to something I can inspect: a state, an operation, a proof, or a run record. This site follows those questions through the research and the systems that make the experiments practical.</p>
+      <p class="lede">I’m Tyler James Harbin-Giuntoli, a software engineer at Microsoft. I build agent infrastructure, cloud systems, and the experiments that let me take a machine-learning idea apart.</p>
+      <p class="about-intro">I like making things work better, then finding out why they work better. That can mean an agent recovering from a failed tool call, a model making better use of its state, or a piece of hardware doing more with the memory it already has.</p>
       </div></div>
     </header>
     <div class="about-sections">
+      <section aria-labelledby="what-i-build">
+        <h2 id="what-i-build">What I build</h2>
+        <p>My recent work at Microsoft is about making agents useful for the people doing the work. Micro Suite is used by all 26 people on my team. I built its benchmark suite around 850 evaluations, tuned prompt profiles to model families and versions, and added recovery so a failed tool call can be repaired within the same session. Reliable overnight work is running; a full weekend is the next horizon.</p>
+        <p>Auto Research takes a repository, an objective, and a way to measure improvement, then works through relevant papers, experiment proposals, tests, and POCs. I’m also building multi-agent livesite triage: automatic triage works today, and the next phase is a warm handoff between team agents that follows both teams’ policies.</p>
+        <p>Those systems connect to the independent work on this site. I’m investigating representations and model architecture, building <a href="https://experiments.tyharbin.com/">portable experiment packages</a>, working on <a href="https://github.com/pH34r-pH/long-haul">inference across different devices</a>, and using <a href="https://github.com/pH34r-pH/theorem-library">Lean proofs</a> to make the mathematical assumptions explicit.</p>
+      </section>
+      <section aria-labelledby="how-i-got-here">
+        <h2 id="how-i-got-here">How I got here</h2>
+        <p>I started with .NET web development at UCF’s Burnett Honors College, then spent three summers interning at Microsoft, from 2016 through 2018. I joined full-time in February 2019, building commerce data pipelines, reconciliation, and automation.</p>
+        <p>That work involved systems where a late job or a bad join has consequences. I cut a clearing job from roughly 35 hours to just over 3, built reporting for a reconciliation process covering about $360 million a month, and prototyped autoencoder-based ledger anomaly detection.</p>
+        <p>From 2022 onward, I worked on shared cloud services: Azure Functions modernization, durable dependency-aware scheduling, observability, privileged operations, and audit metadata. More recently, I’ve been bringing that operational experience into agent systems, including security repairs, incident triage, and moving audit metadata into the scheduler.</p>
+      </section>
       <section aria-labelledby="how-i-work">
         <h2 id="how-i-work">How I work</h2>
-        <p>My professional background is in enterprise commerce systems: cloud data pipelines, dashboards, monitoring, and machine-learning-based financial anomaly detection. Those systems have to deliver the right data on time, and give someone enough evidence to find the problem when they don’t.</p>
-        <p>I build machine-learning systems around questions I can test: what information a compact state preserves, how a model uses it, and how much computation the result costs.</p>
-        <p>I follow an idea through the experiment, the implementation, and the evidence. A useful explanation should make the mechanism clear enough that someone else can inspect it and try it. The articles explain the question and the comparison; the notebooks and experiment packages give the reader something to take apart.</p>
-        <p>Small examples are useful because you can see the whole mechanism at once. From there, the interesting question is what survives when the task, the data, or the available hardware changes.</p>
+        <p>An idea gets interesting when I can change something and see what happens. I want the comparison, the failure cases, and enough of the run record to explain the result. The articles follow the question; the notebooks, proofs, and experiment packages give you something to take apart.</p>
+        <p>I use small examples because you can see the whole mechanism at once. Then I change the task, the data, or the hardware and test what survives. The same approach applies to an agent: completing one task is a start; recovering when a tool breaks and leaving useful work behind is where the engineering gets interesting.</p>
       </section>
       <section aria-labelledby="what-keeps-me-interested">
         <h2 id="what-keeps-me-interested">What keeps me interested</h2>
