@@ -22,7 +22,8 @@ function toyCompletion(text, count = 8) {
 
 class ModelMachine {
   constructor(root) {
-    this.root = root;\n    root.machine = this;
+    this.root = root;
+    root.machine = this;
     this.viewport = root.querySelector(".machine-viewport");
     this.input = root.querySelector("[data-machine-input]");
     this.output = root.querySelector("[data-machine-output]");
