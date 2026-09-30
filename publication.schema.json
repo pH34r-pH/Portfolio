@@ -103,7 +103,8 @@
           "assets",
           "browserExecution",
           "modelFocus",
-          "dependsOn"
+          "dependsOn",
+          "modelVariant"
         ],
         "additionalProperties": false,
         "properties": {
@@ -216,6 +217,10 @@
                 "uniqueItems": true
               }
             }
+          },
+          "modelVariant": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           }
         }
       }
