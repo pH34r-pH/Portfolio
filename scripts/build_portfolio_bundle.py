@@ -6,6 +6,9 @@ import hashlib
 import html
 import json
 import nbformat
+import yaml
+from compiled_experiment_reference import resolve_reference, render_handoff
+from compiler_projection_input import verified_projection
 import re
 import shutil
 import subprocess
@@ -134,6 +137,23 @@ def _article_metadata(source: str, src: Path) -> dict:
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
+
+    class UniqueKeysLoader(yaml.SafeLoader):
+        pass
+
+    def unique_mapping(loader, node, deep=False):
+        mapping = {}
+        for key_node, value_node in node.value:
+            key = loader.construct_object(key_node, deep=deep)
+            if key in mapping:
+                raise ValueError(f"Duplicate article frontmatter key: {key}")
+            mapping[key] = loader.construct_object(value_node, deep=deep)
+        return mapping
+
+    UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
+    structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
+    if isinstance(structured, dict) and "compiled_experiment" in structured:
+        metadata["compiled_experiment"] = structured["compiled_experiment"]
     return metadata
 
 
@@ -440,14 +460,14 @@ def _model_instrument_html(focus: str, variant: str = "baseline", article: bool 
     safe_variant = variant if re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", variant or "") else "baseline"
     return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}" data-variant="{safe_variant}"{article_attr}
       aria-label="Interactive language model schematic">
-      <p class="visually-hidden">A toy language-model workcell showing text entering an input buffer,
-      tokenization, representation and model computation, a readout, and generated text leaving the output buffer.</p>
+      <p class="visually-hidden">An interactive language-model workcell showing text entering an input buffer,
+      passing through tokenization, representation and model computation, and leaving as generated text.</p>
       <div class="model-workcell">
         <div class="model-port model-input-port">
           <span class="machine-label">INPUT BUFFER / TOKEN FEED</span>
           <label for="article-model-input">Model input</label>
           <input id="article-model-input" data-model-input value="inspect the mechanism" autocomplete="off">
-          <button type="button" data-model-submit>Inject</button>
+          <button type="button" data-model-submit>Run</button>
           <div class="token-rail" data-token-rail aria-hidden="true"></div>
         </div>
         <div class="model-stage">
@@ -459,9 +479,9 @@ def _model_instrument_html(focus: str, variant: str = "baseline", article: bool 
           </div>
         </div>
         <div class="model-port model-output-port">
-          <span class="machine-label">OUTPUT DROPPER / ASSEMBLY</span>
+          <span class="machine-label">OUTPUT / TOKEN ASSEMBLY</span>
           <div class="output-conveyor" data-output-rail aria-hidden="true"></div>
-          <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+          <p class="model-output" data-model-output aria-live="polite">Run the input to watch information move through the model.</p>
         </div>
       </div>
     </section>"""
@@ -483,8 +503,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
-    math_style = ''
-    if article.select_one('.katex'):
+    math_style = ""
+    if article.select_one(".katex"):
         copy_article_math_assets(args)
         math_style = '<link rel="stylesheet" href="/assets/katex/katex.min.css">'
     slug = src.stem
@@ -496,7 +516,17 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     )
     model_focus = metadata.get("modelFocus") or _default_model_focus(slug, metadata["title"])
     model_variant = metadata.get("modelVariant") or "baseline"
-    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, model_variant, article=True)}<article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+
+    handoff = ""
+    if "compiled_experiment" in metadata:
+        if args.compiler_projection_data is None:
+            raise ValueError("Article compiled_experiment requires an explicit pinned offline public Compiler projection")
+        record = resolve_reference(metadata["compiled_experiment"],
+                                   args.compiler_projection_data,
+                                   f"https://tyharbin.com/articles/{slug}/", args.research_notes_sha)
+        handoff = render_handoff(record)
+
+    page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, model_variant, article=True)}<article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>"""
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -519,6 +549,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         entry["frontier"] = metadata["frontier"]
     if metadata.get("status"):
         entry["status"] = metadata["status"]
+    if "compiled_experiment" in metadata:
+        entry["compiled_experiment"] = metadata["compiled_experiment"]
     return entry
 
 
@@ -581,6 +613,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--portfolio-sha", required=True)
     parser.add_argument("--research-notes-sha", required=True)
     parser.add_argument("--theorem-library-sha", required=True)
+    parser.add_argument("--compiler-projection", type=Path, help="Offline versioned public Compiler experiments.json; required only for referenced articles")
+    parser.add_argument("--compiler-projection-pin", type=Path, help="Exact public Compiler source commit and projection byte digest")
     parser.add_argument("--fleet-sha", help="Legacy v1 manifest only; public candidate builds omit this private source")
     return parser.parse_args()
 
@@ -703,7 +737,7 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         "https://github.com/pH34r-pH/research-notes/blob/" + args.research_notes_sha
         + "/" + quote(src.relative_to(args.research_notes).as_posix(), safe="/")
     )
-    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script></body></html>'''
+    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/site.js"></script></body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     entry = {
         "path": f"publication/notebooks/{src.name}",
@@ -739,6 +773,8 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
         "notebooks": notebooks,
         "articles": articles,
     }
+    if args.compiler_projection_receipt is not None:
+        manifest["compilerProjection"] = args.compiler_projection_receipt
     (args.output / "publication.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
@@ -750,6 +786,12 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
 def main() -> None:
     args = parse_args()
     validate_sources(args)
+    args.compiler_projection_data, args.compiler_projection_receipt = None, None
+    if (args.compiler_projection is None) != (args.compiler_projection_pin is None):
+        raise ValueError('Compiler projection and pin must be provided together')
+    if args.compiler_projection is not None:
+        args.compiler_projection_data, args.compiler_projection_receipt = verified_projection(
+            args.compiler_projection, args.compiler_projection_pin)
     publication, reader_root = prepare_output(args)
     notebook_paths = {
         path.resolve()
