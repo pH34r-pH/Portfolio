@@ -98,10 +98,15 @@ def _article_metadata(source: str, src: Path) -> dict:
     if not match:
         raise ValueError(f"Canonical article is missing YAML frontmatter: {src}")
     metadata = {}
-    for field in ("title", "description", "date"):
+    for field in ("title", "description", "date", "modelFocus", "status"):
         value = re.search(rf"^{field}:\s*(.+?)\s*$", match.group(1), re.MULTILINE)
         if value:
             metadata[field] = value.group(1).strip().strip("'\"")
+    dependencies = re.search(r"^dependsOn:\s*\[(.*?)\]\s*$", match.group(1), re.MULTILINE)
+    if dependencies:
+        metadata["dependsOn"] = [
+            item.strip().strip("'\"") for item in dependencies.group(1).split(",") if item.strip()
+        ]
     for required in ("title", "description", "date"):
         if not metadata.get(required):
             raise ValueError(f"Canonical article requires {required}: {src}")
@@ -387,6 +392,44 @@ def copy_article_math_assets(args: argparse.Namespace) -> None:
     shutil.copy2(source / 'LICENSE', destination / 'LICENSE')
 
 
+def _default_model_focus(slug: str, title: str) -> str:
+    value = f"{slug} {title}".lower()
+    if re.search(r"token|byte|encoding|input", value):
+        return "tokenization"
+    if re.search(r"hypersphere|state|representation|normaliz", value):
+        return "representation"
+    if re.search(r"architecture|layer|recurrent|mechanism", value):
+        return "architecture"
+    if re.search(r"consumer|readout|probe|used", value):
+        return "consumer"
+    if re.search(r"prediction|output|loss|endpoint", value):
+        return "output"
+    return "full"
+
+
+def _model_instrument_html(focus: str, article: bool = False) -> str:
+    article_attr = " data-article-model" if article else ""
+    safe_focus = focus if focus in {
+        "input", "tokenization", "representation", "recurrent-state", "normalization",
+        "architecture", "consumer", "readout", "output", "full"
+    } else "full"
+    return f"""<section class="model-instrument" data-model-lab data-focus="{safe_focus}"{article_attr}
+      aria-label="Interactive language model schematic">
+      <div class="model-stage"><canvas class="model-canvas" aria-hidden="true"></canvas>
+      <div class="model-fallback" aria-hidden="true">
+        <span data-stage="input">input</span><span data-stage="tokenization">tokens</span>
+        <span data-stage="representation">state</span><span data-stage="architecture">model</span>
+        <span data-stage="consumer">readout</span><span data-stage="output">output</span>
+      </div><div class="token-rail" data-token-rail aria-hidden="true"></div></div>
+      <div class="model-console">
+        <label for="article-model-input">Model input</label>
+        <input id="article-model-input" data-model-input value="inspect the mechanism" autocomplete="off">
+        <button type="button" data-model-submit>Run</button>
+        <p class="model-output" data-model-output aria-live="polite">signal moves through state and becomes a prediction.</p>
+      </div>
+    </section>"""
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
@@ -414,7 +457,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    model_focus = metadata.get("modelFocus") or _default_model_focus(slug, metadata["title"])
+    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p>{_model_instrument_html(model_focus, article=True)}<article class="notebook-content myst-reader">{str(article)}</article><p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script><script src="/assets/model-instrument.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -429,7 +473,11 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "renderedSha256": sha256(rendered_article),
         "assets": copied_assets,
         "browserExecution": has_executable,
+        "modelFocus": model_focus,
+        "dependsOn": metadata.get("dependsOn", []),
     }
+    if metadata.get("status"):
+        entry["status"] = metadata["status"]
     return entry
 
 
@@ -614,7 +662,7 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         "https://github.com/pH34r-pH/research-notes/blob/" + args.research_notes_sha
         + "/" + quote(src.relative_to(args.research_notes).as_posix(), safe="/")
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/site.js"></script></body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/appearance.js"></script><script src="/assets/site.js"></script></body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     entry = {
         "path": f"publication/notebooks/{src.name}",
