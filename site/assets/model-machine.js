@@ -153,7 +153,8 @@ class ModelMachine {
     this.scene.add(this.machineGroup, this.tokenGroup, this.nodeGroup, this.outputGroup);
   }
 
-  createBox({width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55}) {
+  createBox(options) {
+    const {width, height, depth, x, y, z, color = 0x0a395c, opacity = 0.55} = options;
     const {BoxGeometry, MeshBasicMaterial, Mesh} = this.THREE;
     const mesh = new Mesh(
       new BoxGeometry(width, height, depth),
