@@ -1,4 +1,4 @@
-(() => {
+{
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
   const stages = ["input", "tokenization", "representation", "architecture", "consumer", "output"];
 
@@ -25,37 +25,58 @@
     const resolved = aliases[normalized] || normalized;
     return resolved === "full" ? -1 : Math.max(0, stages.indexOf(resolved));
   }
+  const variantTransforms = {
+    spectral(next, node, fraction) {
+      if (node.stage !== 2) return next;
+      const angle = fraction * Math.PI * 2;
+      next.y = Math.sin(angle) * .52;
+      next.z = Math.cos(angle) * .42;
+      return next;
+    },
+    "phase-aware"(next, node, fraction, rank) {
+      if (node.stage !== 2 && node.stage !== 3) return next;
+      next.y *= .78;
+      next.z = (rank % 2 ? .34 : -.34) + (fraction - .5) * .08;
+      return next;
+    },
+    hypersphere(next, node, fraction) {
+      if (node.stage !== 2 && node.stage !== 3) return next;
+      const angle = -.72 * Math.PI + fraction * 1.44 * Math.PI;
+      next.y = Math.sin(angle) * .61;
+      next.z = Math.cos(angle) * .43;
+      return next;
+    },
+    "dynamic-quotient"(next, node, _fraction, rank) {
+      if (node.stage !== 2) return next;
+      next.y = [-.42, 0, .42][rank % 3];
+      next.z = (Math.floor(rank / 3) - .5) * .22;
+      return next;
+    },
+    geometry(next, node) {
+      if (node.stage !== 2 && node.stage !== 3) return next;
+      next.y *= 1.08;
+      next.z *= 1.75;
+      return next;
+    },
+    "consumer-probe"(next, node, fraction, rank) {
+      if (node.stage !== 4) return next;
+      next.x += .055;
+      next.y = -.68 + fraction * 1.36;
+      next.z = rank % 2 ? .32 : -.32;
+      return next;
+    },
+  };
+
   function variantNodes(base, variant) {
     const kind = String(variant || "baseline").toLowerCase();
+    const transform = variantTransforms[kind];
     const counts = new Map(stages.map((_, stage) => [stage, base.filter(node => node.stage === stage).length]));
     return base.map((node, index) => {
       const next = { ...node };
       const rank = base.slice(0, index).filter(candidate => candidate.stage === node.stage).length;
       const count = counts.get(node.stage) || 1;
       const fraction = count <= 1 ? .5 : rank / (count - 1);
-      if (kind === "spectral" && node.stage === 2) {
-        const angle = fraction * Math.PI * 2;
-        next.y = Math.sin(angle) * .52;
-        next.z = Math.cos(angle) * .42;
-      } else if (kind === "phase-aware" && (node.stage === 2 || node.stage === 3)) {
-        next.y *= .78;
-        next.z = (rank % 2 ? .34 : -.34) + (fraction - .5) * .08;
-      } else if (kind === "hypersphere" && (node.stage === 2 || node.stage === 3)) {
-        const angle = -.72 * Math.PI + fraction * 1.44 * Math.PI;
-        next.y = Math.sin(angle) * .61;
-        next.z = Math.cos(angle) * .43;
-      } else if (kind === "dynamic-quotient" && node.stage === 2) {
-        next.y = [-.42, 0, .42][rank % 3];
-        next.z = (Math.floor(rank / 3) - .5) * .22;
-      } else if (kind === "geometry" && (node.stage === 2 || node.stage === 3)) {
-        next.y *= 1.08;
-        next.z *= 1.75;
-      } else if (kind === "consumer-probe" && node.stage === 4) {
-        next.x += .055;
-        next.y = -.68 + fraction * 1.36;
-        next.z = rank % 2 ? .32 : -.32;
-      }
-      return next;
+      return transform ? transform(next, node, fraction, rank) : next;
     });
   }
 
@@ -419,4 +440,4 @@
   }
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", init, { once:true });
   else init();
-})();
+}
