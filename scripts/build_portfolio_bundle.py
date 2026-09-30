@@ -96,6 +96,45 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
         shutil.copytree(research_notes / "articles", output / "publication" / "articles")
 
 
+
+_ARTICLE_METADATA_FIELDS = {
+    'short_title': 'shortTitle',
+    'model_focus': 'modelFocus',
+    'model_variant': 'modelVariant',
+    'depends_on': 'dependsOn',
+    'tags': 'tags',
+}
+_ARTICLE_FRONTIER_FIELDS = {
+    'frontier_observed_json': 'frontierObserved',
+    'frontier_open_json': 'frontierOpen',
+    'frontier_next_json': 'frontierNext',
+}
+
+
+def _frontier_metadata_value(value, source_key: str, src: Path) -> list[str]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(f'Invalid {source_key} JSON in {src}: {error}') from error
+    valid = isinstance(value, list) and all(isinstance(item, str) and item.strip() for item in value)
+    if not valid:
+        raise ValueError(f'{source_key} must be a JSON/YAML list of non-empty strings: {src}')
+    return value
+
+
+def _copy_structured_article_metadata(metadata: dict, structured, src: Path) -> None:
+    if not isinstance(structured, dict):
+        return
+    if 'compiled_experiment' in structured:
+        metadata['compiled_experiment'] = structured['compiled_experiment']
+    for source_key, target_key in _ARTICLE_METADATA_FIELDS.items():
+        if source_key in structured:
+            metadata[target_key] = structured[source_key]
+    for source_key, target_key in _ARTICLE_FRONTIER_FIELDS.items():
+        if source_key in structured:
+            metadata[target_key] = _frontier_metadata_value(structured[source_key], source_key, src)
+
 def _article_metadata(source: str, src: Path) -> dict:
     match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
     if not match:
@@ -120,34 +159,7 @@ def _article_metadata(source: str, src: Path) -> dict:
         return mapping
     UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
     structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
-    if isinstance(structured, dict):
-        if 'compiled_experiment' in structured:
-            metadata['compiled_experiment'] = structured['compiled_experiment']
-        for source_key, target_key in {
-            'short_title': 'shortTitle',
-            'model_focus': 'modelFocus',
-            'model_variant': 'modelVariant',
-            'depends_on': 'dependsOn',
-            'tags': 'tags',
-        }.items():
-            if source_key in structured:
-                metadata[target_key] = structured[source_key]
-        for source_key, target_key in {
-            'frontier_observed_json': 'frontierObserved',
-            'frontier_open_json': 'frontierOpen',
-            'frontier_next_json': 'frontierNext',
-        }.items():
-            if source_key not in structured:
-                continue
-            value = structured[source_key]
-            if isinstance(value, str):
-                try:
-                    value = json.loads(value)
-                except json.JSONDecodeError as error:
-                    raise ValueError(f'Invalid {source_key} JSON in {src}: {error}') from error
-            if not isinstance(value, list) or not all(isinstance(item, str) and item.strip() for item in value):
-                raise ValueError(f'{source_key} must be a JSON/YAML list of non-empty strings: {src}')
-            metadata[target_key] = value
+    _copy_structured_article_metadata(metadata, structured, src)
     return metadata
 
 
