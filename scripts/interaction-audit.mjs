@@ -4,7 +4,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 const views = [[360, 780], [412, 915], [768, 1016], [1366, 768]];
-const palettes = ["nacre", "oxide", "violet", "high-contrast"];
+const themes = ["light", "dark"];
 async function loadManifest(context) {
   const response = await context.request.get(base + "/publication.json");
   if (!response.ok() || !response.headers()["content-type"]?.includes("json")) return undefined;
@@ -27,16 +27,17 @@ async function clickForViewport(locator, width) {
   else await locator.click();
 }
 
-async function auditMenuAndPalettes(page, width) {
+async function auditMenuAndThemes(page, width) {
   const menu = page.getByRole("button", { name: "Menu", exact: true });
   await clickForViewport(menu, width);
   await expect(menu).toHaveAttribute("aria-expanded", "true");
   await expect(page.getByRole("navigation", { name: "Site", exact: true })).toBeVisible();
-  for (const palette of palettes) {
-    const button = page.locator(`button[data-palette="${palette}"]`);
+  for (const theme of themes) {
+    const button = page.locator(`button[data-theme-choice="${theme}"]`);
     await clickForViewport(button, width);
     await expect(button).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator("html")).toHaveAttribute("data-palette", palette);
+    await expect(page.locator("html")).toHaveAttribute("data-theme-mode", theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
   }
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
@@ -51,15 +52,18 @@ async function auditOverflow(page, width, path) {
 }
 
 async function auditAccessibility(page, width, path) {
-  for (const palette of palettes) {
-    await page.locator("html").evaluate((el, value) => { el.dataset.palette = value; }, palette);
+  for (const theme of themes) {
+    await page.locator("html").evaluate((el, value) => {
+      el.dataset.themeMode = value;
+      el.dataset.theme = value;
+    }, theme);
     const axe = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
       .analyze();
     assert.deepEqual(
       axe.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) })),
       [],
-      `${width}${path}/${palette}: axe`,
+      `${width}${path}/${theme}: axe`,
     );
   }
 }
@@ -232,7 +236,7 @@ async function auditLegacyExperimentsRedirect(browser) {
 async function auditRoute(page, context, width, path, manifest, errors) {
   await page.goto(base + path, { waitUntil: "networkidle" });
   assert.deepEqual(errors, [], `${width}${path}: page errors`);
-  await auditMenuAndPalettes(page, width);
+  await auditMenuAndThemes(page, width);
   await auditOverflow(page, width, path);
   await auditAccessibility(page, width, path);
   if (path === "/atlas/") await auditAtlasCompatibility(page);
@@ -250,11 +254,12 @@ async function auditRoute(page, context, width, path, manifest, errors) {
 async function auditNavigationPersistence(page) {
   await page.goto(base + "/");
   await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await page.getByRole("button", { name: "Oxide", exact: true }).click();
+  await page.locator('button[data-theme-choice="dark"]').click();
   await page.getByRole("navigation", { name: "Site", exact: true })
     .getByRole("link", { name: "Research", exact: true }).click();
   await expect(page).toHaveURL(base + "/research/");
-  await expect(page.locator("html")).toHaveAttribute("data-palette", "oxide");
+  await expect(page.locator("html")).toHaveAttribute("data-theme-mode", "dark");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 }
 
 async function auditView(browser, width, height) {
