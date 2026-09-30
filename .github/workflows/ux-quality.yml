@@ -258,7 +258,7 @@ jobs:
           path: bundle/
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 7
       - name: Summarize public candidate for private verification
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
