@@ -3,20 +3,23 @@ import { GRAPH, TOPOLOGY, clamp, hashText, layerX } from "./model-topology.js";
 import { ModelGestures } from "./model-gestures.js";
 import { SharedGlass } from "./model-glass.js";
 import { RenderMetrics } from "./model-render-metrics.js";
+import { ModelQuality } from "./model-quality.js";
+import { buildMachineHardware } from "./model-hardware.js";
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
   constructor(T, root, selectNode, fail, scrub, instruments) {
     this.T = T; this.root = root; this.canvas = root.querySelector("[data-machine-canvas]");
-    const options = { alpha: true, antialias: !mobile(), powerPreference: "low-power" };
+    const options = { alpha: true, antialias: false, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
     if (!context) throw new Error("WebGL2 unavailable");
+    this.quality = new ModelQuality(context);
     this.renderer = new T.WebGLRenderer({ canvas: this.canvas, context, ...options });
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
-    this.renderer.transmissionResolutionScale = mobile() ? .5 : .75;
+    this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
     this.renderer.info.autoReset = false; this.metrics = new RenderMetrics(this.renderer);
     this.scene = new T.Scene();
     this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
@@ -34,6 +37,7 @@ export class MachineScene {
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
     this.glass = new SharedGlass(T, this.scene, this.renderer, instruments);
+    this.glass.setQuality(this.quality.effective); instruments.quality(this.quality.effective);
     this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
     this.canvas.addEventListener("webglcontextlost", this.contextLost);
@@ -45,8 +49,9 @@ export class MachineScene {
   buildGraph() {
     const T = this.T;
     // Coordinates stay 1:1; small projected beads use a bounded geometry LOD.
-    this.beads = new T.InstancedMesh(new T.SphereGeometry(.0595, mobile() ? 6 : 8, mobile() ? 4 : 6), this.materials.node, GRAPH.nodes.length);
-    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 6, 4), this.materials.core, GRAPH.nodes.length);
+    this.beads = new T.InstancedMesh(this.quality.lightweight ? new T.OctahedronGeometry(.0595) : new T.SphereGeometry(.0595, 6, 4), this.materials.node, GRAPH.nodes.length);
+    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 4, 3), this.materials.core, GRAPH.nodes.length);
+    this.cores.count = this.quality.lightweight ? 0 : GRAPH.nodes.length;
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
@@ -76,38 +81,7 @@ export class MachineScene {
     this.select(this.selected);
   }
   buildHardware() {
-    const T = this.T;
-    this.frames = [];
-    const boltGeometry = new T.CylinderGeometry(.035, .035, .11, 6);
-    const bolts = new T.InstancedMesh(boltGeometry, this.materials.ceramic, TOPOLOGY.widths.length*8);
-    TOPOLOGY.radii.forEach((radius, layer) => {
-      const x = layerX(layer), outer = radius + .2;
-      const rim = new T.Mesh(new T.TorusGeometry(outer, .038, 8, 72), this.materials.shell);
-      rim.rotation.y = Math.PI / 2; rim.position.x = x; this.machine.add(rim); this.frames.push(rim);
-      const trim = new T.Mesh(new T.TorusGeometry(outer + .065, .008, 4, 72), this.materials.ceramic);
-      trim.rotation.y = Math.PI / 2; trim.position.x = x - .055; this.machine.add(trim);
-      for (let index = 0; index < 8; index++) {
-        const angle = index * Math.PI / 4;
-        this.dummy.position.set(x, Math.cos(angle) * outer, Math.sin(angle) * outer);
-        this.dummy.rotation.set(0, 0, Math.PI / 2); this.dummy.updateMatrix();
-        bolts.setMatrixAt(layer * 8 + index, this.dummy.matrix);
-      }
-    });
-    this.dummy.rotation.set(0, 0, 0); this.machine.add(bolts);
-    for (const side of [-1, 1]) {
-      const housing = new T.Mesh(new T.BoxGeometry(.34, 1.35, 1.05), this.materials.shell);
-      housing.position.set(side * 5.3, 0, 0); this.machine.add(housing);
-      for (let index = 0; index < 5; index++) {
-        const fin = new T.Mesh(new T.BoxGeometry(.05, 1.38, 1.08), this.materials.ceramic);
-        fin.position.set(side * (5.12 + index * .09), 0, 0); this.machine.add(fin);
-      }
-    }
-    // Sparse chassis lines sit behind the complete graph; never encode data.
-    const chassis = [];
-    for (const z of [-2.5, 2.5]) {
-      chassis.push(new T.Vector3(-4.6, -2.55, z), new T.Vector3(4.6, -2.55, z));
-    }
-    this.machine.add(new T.LineSegments(new T.BufferGeometry().setFromPoints(chassis), this.materials.probe));
+    this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
   }
   addLights() {
     const T = this.T;
@@ -123,7 +97,9 @@ export class MachineScene {
     const { width, height } = this.canvas.getBoundingClientRect();
     if (!width || !height) return;
     // Physical phone caps, including S23 Ultra DPR 3+, preserve the full graph.
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile() ? 1.25 : 1.65));
+    const ratio = this.quality.lightweight ? .8 : (mobile() ? 1.1 : 1.25);
+    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, ratio));
+    this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
     this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
     const tangent = Math.tan(14 * Math.PI / 180);
     this.distance = mobile() ? Math.max(9.3 / tangent, 2.9 / (tangent * this.camera.aspect))
@@ -144,6 +120,14 @@ export class MachineScene {
     this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld();
   }
   updateCamera() { this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
+  setQuality(mode) {
+    this.quality.set(mode); const low = this.quality.lightweight;
+    this.beads.geometry.dispose();
+    this.beads.geometry = low ? new this.T.OctahedronGeometry(.0595) : new this.T.SphereGeometry(.0595, 6, 4);
+    this.cores.count = low ? 0 : GRAPH.nodes.length;
+    this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
+    this.resize(); if (this.snapshot) this.applyFrame(this.run, this.snapshot);
+  }
   render() {
     if (this.disposed) return;
     this.glass?.sync(this.camera); this.renderer.info.reset(); this.metrics.begin();
@@ -265,7 +249,7 @@ export class MachineScene {
     const point = new this.T.Vector3().applyMatrix4(this.machine.matrixWorld).project(this.camera);
     return [(point.x + 1) * this.glass.viewport.width * .5, (1 - point.y) * this.glass.viewport.height * .5];
   }
-  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
+  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), quality:this.quality.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {
     if (this.disposed) return; this.disposed = true;
     this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();

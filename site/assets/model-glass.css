@@ -16,6 +16,10 @@
 .model-machine-replay .machine-glass-panel .machine-token-readout span { font-size: 11px; background: var(--bg); }
 .model-machine-replay .machine-glass-panel .machine-output p,.model-machine-replay .machine-glass-selection { font: 600 16px/1.55 ui-monospace,monospace; margin: 0 0 14px; min-height: 3em; background: color-mix(in srgb,var(--bg) 92%,transparent); padding: 8px; }
 .model-machine-replay .machine-glass-note { font: 500 12px/1.5 sans-serif; margin: 12px 0 0; color: var(--ink); }
+.model-machine-replay .machine-glass-panel :is(h3,.machine-glass-label,.machine-glass-note,.machine-console-label,.machine-console label) { background: color-mix(in srgb,var(--bg) 92%,transparent); box-shadow: 0 0 0 3px color-mix(in srgb,var(--bg) 92%,transparent); width: fit-content; max-width: 100%; }
+.model-machine-replay .machine-render-hint { position: absolute; z-index: 5; top: 68px; left: 24px; margin: 0; color: var(--muted); font: 500 10px/1.4 ui-monospace,monospace; }
+.model-machine-replay .machine-quality { display: grid; gap: 6px; max-width: 360px; color: var(--muted); font: 600 12px/1.4 ui-monospace,monospace; }
+.model-machine-replay .machine-quality select { min-height: 48px; width: 100%; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 8px; font: 500 16px/1.4 sans-serif; }
 .model-machine-replay .machine-instrument-nav { display: flex; gap: 8px; margin-top: 16px; }
 .model-machine-replay .machine-instrument-nav button,.model-machine-replay .machine-depth-view { min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 12px/1.4 ui-monospace,monospace; cursor: pointer; }
 .model-machine-replay .machine-instrument-nav button { flex: 1; }
@@ -32,6 +36,7 @@
  .model-machine-replay .machine-stage { height: 1080px; }
  .model-machine-replay [data-instruments=flow] .machine-instruments { grid-template-columns: minmax(0,1fr); }
  .model-machine-replay .machine-glass-panel h3 { font-size: 18px; }
+ .model-machine-replay .machine-render-hint { top: 108px; left: 16px; }
 }
 @media(prefers-reduced-motion:reduce), (forced-colors:active) {
  .model-machine-replay .machine-stage { height: 720px; }

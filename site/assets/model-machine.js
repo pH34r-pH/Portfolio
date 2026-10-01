@@ -93,6 +93,11 @@ class MachineController {
       () => { const settings = this.root.querySelector('[data-machine-settings]'); settings.open = true; this.layerSelect.focus(); },
       () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); this.instruments.viewButton.textContent = this.scene?.depthView ? 'Return view' : 'View depth'; });
     this.instruments.changed = () => this.scene?.resize();
+    const quality = element('label', 'machine-quality', 'Glass quality');
+    const choice = element('select', ''); choice.dataset.glassQuality = '';
+    choice.setAttribute('aria-label', 'Glass quality'); populate(choice, [['auto','Automatic'], ['refraction','Clear refraction'], ['lightweight','Lightweight']]);
+    choice.addEventListener('change', () => this.scene?.setQuality(choice.value)); quality.append(choice);
+    this.root.querySelector('.machine-settings-content').append(quality);
     this.root.dataset.topology = TOPOLOGY.id;
   }
   bindControls() {
@@ -165,11 +170,12 @@ class MachineController {
     return this.bootPromise;
   }
   setCameraEnabled(enabled) {
-    this.root.querySelectorAll("[data-camera]").forEach(button => { button.disabled = !enabled; });
+    this.root.querySelectorAll("[data-camera],[data-glass-quality]").forEach(button => { button.disabled = !enabled; });
   }
   fallback(reason) {
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
     this.instruments.setMode('flow', this.viewport.matches);
+    this.instruments.quality('fallback');
     this.setCameraEnabled(false); const fallback = this.root.querySelector("[data-machine-fallback]");
     fallback.setAttribute("aria-hidden", "false");
     if (!this.fallbackNodes) this.buildFallback(fallback);

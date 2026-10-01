@@ -47,11 +47,19 @@ function project(T, camera, mesh, size, viewport) {
 export class SharedGlass {
   constructor(T, scene, renderer, instruments) {
     this.T = T; this.scene = scene; this.instruments = instruments; this.panels = [];
-    this.environment = environment(T, renderer); scene.environment = this.environment.texture;
-    this.material = new T.MeshPhysicalMaterial({color: 0xb9dded, transmission: .90, opacity: 1, ior: 1.46, thickness: .58, roughness: .12, metalness: 0, side: T.DoubleSide, attenuationColor: 0x8ed0e8, attenuationDistance: 3, envMapIntensity: .65, clearcoat: matchMedia('(max-width:720px)').matches ? 0 : .3, clearcoatRoughness: .12});
-    this.trimMaterial = new T.LineBasicMaterial({color: 0x71b9d8, transparent: true, opacity: .55});
+    this.renderer = renderer; this.environment = null;
+    this.material = new T.MeshPhysicalMaterial({color: 0xffffff, transmission: .99, opacity: 1, ior: 1.46, thickness: .58, roughness: .025, metalness: 0, side: T.FrontSide, attenuationColor: 0xffffff, attenuationDistance: Infinity, envMapIntensity: .3, clearcoat: 0});
+    this.trimMaterial = new T.LineBasicMaterial({color: 0xc8dce5, transparent: true, opacity: .32});
     this.light = new T.PointLight(0x5bbfff, 0, 18, 2); scene.add(this.light);
     this.light.userData.replayPulse = true;
+  }
+  setQuality(mode) {
+    const low = mode === 'lightweight'; this.quality = mode;
+    if (!low && !this.environment) this.environment = environment(this.T, this.renderer);
+    this.scene.environment = low ? null : this.environment.texture;
+    this.material.transmission = low ? 0 : .99; this.material.opacity = low ? .07 : 1;
+    this.material.transparent = low; this.material.roughness = low ? .16 : .025;
+    this.material.needsUpdate = true;
   }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
@@ -95,9 +103,9 @@ export class SharedGlass {
   }
   diagnostics() {
     let lights = 0; this.scene.traverse(object => { if (object.isLight && object.userData.replayPulse) lights += 1; });
-    return {mode: this.mode, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: 128, lights,
-      material: {transmission: this.material.transmission, ior: this.material.ior, thickness: this.material.thickness},
+    return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
+      material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
-  dispose() { this.instruments.setMode('flow', this.phone); this.environment.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
+  dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

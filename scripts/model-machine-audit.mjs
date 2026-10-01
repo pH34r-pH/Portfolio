@@ -101,8 +101,8 @@ try {
     await expect(root.locator('[data-machine-settings] summary')).toBeFocused();await expect(root.locator('[data-camera="reset"]')).toBeHidden();
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
-    // Physical transmission adds one shared opaque capture plus panel faces.
-    const drawBudget=diagnostics.glass?.visible ? (width<600 ? 78 : 84) : 44;
+    // Batched hardware bounds both shared-capture and software-fallback draws.
+    const drawBudget=diagnostics.quality?.effective==='lightweight' ? 24 : 32;
     assert.ok(diagnostics.drawCalls<=drawBudget,`shared transmission draw budget ${drawBudget}`); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
     const playback=await auditPlayback(page,root,name);
     console.log(`${name} playback: ${JSON.stringify(playback)}`);

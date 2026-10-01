@@ -86,17 +86,36 @@ async function profile(root) {
   return root.evaluate(async node=>{
     // Delivered browser-frame opportunities, no claimed physical GPU throughput.
     const frames=[],start=performance.now();let previous;
-    for(let frame=0;frame<48;frame++) {
+    for(let frame=0;frame<24;frame++) {
       await new Promise(resolve=>requestAnimationFrame(time=>{if(previous!==undefined)frames.push(time-previous);previous=time;resolve();}));
-      node.machine.seek(frame*6);
+      node.machine.seek(frame*12);
     }
     return {elapsed:performance.now()-start,browserFrameIntervalsMs:frames,diagnostics:node.machine.diagnostics()};
   });
+}
+async function qualityChecks(page,root,name) {
+  const automatic=await diagnostics(root);
+  if(automatic.quality.detectedSoftware)assert.equal(automatic.quality.effective,'lightweight');
+  await root.locator('[data-machine-settings] summary').click();
+  await root.locator('[data-glass-quality]').selectOption('refraction');
+  const full=await diagnostics(root);
+  assert.equal(full.glass.material.transmission,.99);assert.equal(full.glass.material.tint,'ffffff');
+  assert.equal(full.glass.material.opacity,1);assert.ok(full.drawCalls<=32);assert.ok(full.triangles<=180000);
+  await root.locator('[data-glass-quality]').selectOption('lightweight');
+  const low=await diagnostics(root);assert.equal(low.glass.material.transmission,0);
+  assert.ok(low.drawCalls<=24);assert.ok(low.triangles<=30000);assert.ok(low.pixelRatio<=.8);
+  assert.equal(low.nodes,1668);assert.equal(low.edges,3601);
+  await expect(root.locator('.machine-render-hint')).toContainText('refraction off');
+  await accessibility(page,root);await renderShot(page,root,`${out}/${name}-lightweight.png`);
+  await root.locator('[data-glass-quality]').selectOption('refraction');
+  await root.locator('[data-machine-settings] summary').click();
+  return {automatic,full,low};
 }
 try {
   for(const [name,width,height] of [['desktop',1440,1100],['phone360',360,800],['phone320',320,780]]) {
     const phone=width<600,{context,page,root,errors}=await open({viewport:{width,height},deviceScaleFactor:phone?3:1,isMobile:phone,hasTouch:phone});
     await expect(root).toHaveAttribute('data-render','webgl');
+    const qualities=await qualityChecks(page,root,name);
     const movement=await motion(page,root,name,phone);await reflow(page,root,phone);
     for(const theme of ['light','dark']) {
       await page.evaluate(theme=>{document.documentElement.dataset.theme=theme;document.documentElement.dataset.themeMode=theme;},theme);
@@ -105,9 +124,10 @@ try {
     }
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
     const performance=await profile(root);assert.equal(performance.diagnostics.glass.pmremSize,128);
-    assert.equal(performance.diagnostics.glass.lights,2);assert.ok(performance.diagnostics.drawCalls<=(phone?78:84));
-    if(phone){assert.ok(performance.diagnostics.pixelRatio<=1.25);assert.equal(performance.diagnostics.transmissionScale,.5);}
-    assert.deepEqual(errors,[]);evidence.push({name,width,height,movement,performance,errors});await context.close();
+    assert.equal(performance.diagnostics.glass.lights,2);assert.ok(performance.diagnostics.drawCalls<=32);
+    assert.ok(performance.diagnostics.triangles<=180000);
+    if(phone){assert.ok(performance.diagnostics.pixelRatio<=1.1);assert.equal(performance.diagnostics.transmissionScale,.4);}
+    assert.deepEqual(errors,[]);evidence.push({name,width,height,qualities,movement,performance,errors});await context.close();
   }
   for(const mode of ['reduced-motion','webgl-unavailable','forced-colors']) {
     const options={viewport:{width:360,height:800},...(mode==='reduced-motion'?{reducedMotion:'reduce'}:{}),...(mode==='forced-colors'?{forcedColors:'active'}:{})};

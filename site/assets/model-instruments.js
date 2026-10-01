@@ -29,6 +29,7 @@ export class ModelInstruments {
     this.viewButton = make('button', 'machine-depth-view', 'View depth'); this.viewButton.type = 'button';
     this.viewButton.setAttribute('aria-pressed', 'false'); this.viewButton.addEventListener('click', view);
     this.nav.after(this.viewButton);
+    this.qualityHint = make('p', 'machine-render-hint'); this.qualityHint.hidden = true; stage.append(this.qualityHint);
     this.setMode('flow', matchMedia('(max-width:720px)').matches);
   }
   panel(id, label, title) {
@@ -42,6 +43,10 @@ export class ModelInstruments {
     if (!changed) return false;
     this.selection.textContent = `${node.id} · ${node.label}`;
     return changed;
+  }
+  quality(mode) {
+    this.qualityHint.hidden = mode !== 'lightweight';
+    this.qualityHint.textContent = mode === 'lightweight' ? 'Lightweight glass / refraction off' : '';
   }
   setMode(mode, phone) {
     this.mode = mode; this.host.dataset.instruments = mode;
