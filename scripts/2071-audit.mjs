@@ -29,6 +29,25 @@ async function auditSearchDialog(page, hasPagefind) {
   await expect(dialog).toBeHidden();
 }
 
+async function auditRenderedCopy(page) {
+  const selectors = [
+    ".hero .lede",
+    ".hero .proof-line",
+    ".hero .actions a",
+    ".machine-heading > p",
+    ".machine-console label",
+    ".machine-status",
+    ".program-grid article p",
+  ];
+  const metrics = await page.evaluate((items) => items.map((selector) => {
+    const element = document.querySelector(selector);
+    const box = element?.getBoundingClientRect();
+    return { selector, text: element?.textContent?.trim(), height: box?.height || 0 };
+  }), selectors);
+  assert.ok(metrics.every(metric => metric.text && metric.height > 0),
+    `key copy must paint with non-zero line boxes: ${JSON.stringify(metrics)}`);
+}
+
 async function auditLazyMachine(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -149,6 +168,7 @@ try {
   const hasPagefind = await pagefindAvailable(context);
   await page.goto(base + "/", { waitUntil: "networkidle" });
   await auditSearchDialog(page, hasPagefind);
+  await auditRenderedCopy(page);
   await auditTopology(page, manifest);
   await auditArticleMachine(page, manifest);
   await auditPagefindBoundaries(page, manifest);

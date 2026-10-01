@@ -1,3 +1,27 @@
+function setupFontEnvironment() {
+  const probe = document.createElement("p");
+  probe.textContent = "Aa readable copy 012";
+  Object.assign(probe.style, {
+    position: "absolute",
+    left: "-10000px",
+    top: "0",
+    display: "block",
+    width: "420px",
+    margin: "0",
+    font: '20px/1.6 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  });
+  document.body.append(probe);
+  const defaultHeight = probe.getBoundingClientRect().height;
+  probe.style.fontFamily = '"Portfolio Long Measure", sans-serif';
+  const bundledHeight = probe.getBoundingClientRect().height;
+  probe.remove();
+  if (defaultHeight === 0 && bundledHeight > 0) {
+    document.documentElement.dataset.fontFallback = "bundled";
+  }
+}
+
+setupFontEnvironment();
+
 function renderArticleList(container, articles) {
   if (!articles?.length) return;
   const cards = [...articles]

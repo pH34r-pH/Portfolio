@@ -1738,6 +1738,13 @@ body::after {
   }
 }
 
+/* Some managed preview browsers have no usable default sans/monospace metrics.
+   Switch the whole rendered surface to the bundled face only when the runtime
+   probe detects that condition; normal browsers retain their intended type. */
+html[data-font-fallback="bundled"] :not(code):not(pre) {
+  font-family: "Portfolio Long Measure", ui-sans-serif, sans-serif !important;
+}
+
 /* The instrument face is bundled, so controls and graph labels remain painted
    even when a platform has no monospace/UI font installed. */
 .wordmark,
