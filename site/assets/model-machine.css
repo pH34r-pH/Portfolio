@@ -1,7 +1,7 @@
 /* Model-only host contract. Global Portfolio materials/layout stay with site.css. */
 .model-machine-replay .machine-stage { min-height: 0; height: clamp(460px, 48vw, 650px); overflow: hidden; clip-path: none; }
 .model-machine-replay .machine-stage::after { display: none; }
-.model-machine-replay .machine-canvas { touch-action: pan-y; cursor: grab; }
+.model-machine-replay .machine-canvas { inset: 76px 0 58px; height: calc(100% - 134px); touch-action: pan-y; cursor: grab; }
 .model-machine-replay .machine-canvas:active { cursor: grabbing; }
 .model-machine-replay .machine-stage:focus-visible { outline: 3px solid var(--accent); outline-offset: -4px; }
 .model-machine-replay .machine-legend { position: absolute; z-index: 2; inset: 24px 24px auto; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; font: 600 11px/1.5 ui-monospace, monospace; color: var(--ink); }
@@ -36,12 +36,13 @@
 @media(max-width:720px) {
  .model-machine-replay .machine-stage { height: 640px; }
  .model-machine-replay .machine-legend { inset: 22px 16px auto; font-size: 10px; }
- .model-machine-replay .machine-axis-labels { inset: 13% auto 12% 16px; flex-direction: column; font-size: 10px; }
+ .model-machine-replay .machine-canvas { inset: 96px 0 32px; height: calc(100% - 128px); }
+ .model-machine-replay .machine-axis-labels { inset: 116px auto 66px 16px; flex-direction: column; font-size: 10px; }
  .model-machine-replay .machine-io { grid-template-columns: minmax(0,1fr); gap: 20px; }
  .model-machine-replay .machine-timeline { flex-basis: 100%; }
  .model-machine-replay .machine-inspection { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
  .model-machine-replay .machine-probe { grid-column: 1/-1; }
- .model-machine-replay .machine-fallback { inset: 80px 10% 48px 22%; }
+ .model-machine-replay .machine-fallback { inset: 106px 10% 48px 22%; }
  .model-machine-replay .machine-fallback svg { transform: none; }
 }
 @media(forced-colors:active) {
