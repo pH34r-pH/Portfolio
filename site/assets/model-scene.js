@@ -111,10 +111,7 @@ export class MachineScene {
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, ratio));
     this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
     this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
-    const tangent = Math.tan(14 * Math.PI / 180);
-    this.distance = mobile() ? Math.max(9.3 / tangent, 2.9 / (tangent * this.camera.aspect))
-      : Math.max(3.7 / tangent, 6.4 / (tangent * this.camera.aspect));
-    if (this.digital && mobile()) this.distance = Math.max(5.1 / tangent, 2.5 / (tangent * this.camera.aspect));
+    this.distance = this.fitDistance();
     this.camera.updateProjectionMatrix();
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
     const stage = this.canvas.parentElement;
@@ -124,6 +121,11 @@ export class MachineScene {
     this.machine.position.y = mobile() && !this.digital ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
     this.updateCamera();
     this.render();
+  }
+  fitDistance() {
+    const tangent = Math.tan(14 * Math.PI / 180), horizontal = tangent * this.camera.aspect;
+    if (this.digital && mobile()) return Math.max(5.1 / tangent, 2.5 / horizontal);
+    return mobile() ? Math.max(9.3 / tangent, 2.9 / horizontal) : Math.max(3.7 / tangent, 6.4 / horizontal);
   }
   poseCamera(yaw, pitch, zoom, pan) {
     const distance = this.distance / zoom;
@@ -141,6 +143,7 @@ export class MachineScene {
   }
   render() {
     if (this.disposed) return;
+    if (this.digital) { const rect = this.canvas.getBoundingClientRect(); if (rect.bottom < 0 || rect.top > innerHeight) return; }
     this.glass?.sync(this.camera); this.renderer.info.reset(); this.metrics.begin();
     this.renderer.render(this.scene, this.camera); this.metrics.end();
   }

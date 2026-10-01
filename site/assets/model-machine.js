@@ -148,10 +148,13 @@ class MachineController {
     else this.scene.zoomBy(action === "in" ? .15 : -.15);
   }
   observe() {
+    const visibility = new Map();
     this.observer = new IntersectionObserver(entries => {
-      this.visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= .15);
+      entries.forEach(entry => visibility.set(entry.target, entry.isIntersecting && entry.intersectionRatio >= .15));
+      this.visible = [...visibility.values()].some(Boolean);
       if (this.visible) this.boot(); this.syncClock(); this.publishLight(true);
     }, { threshold: [.15] }); this.observer.observe(this.stage);
+    if (this.root.hasAttribute('data-digital-home')) this.observer.observe(this.root.querySelector('#model-chapter'));
     document.addEventListener("visibilitychange", () => { this.syncClock(); this.publishLight(true); });
     window.addEventListener("pagehide", () => { this.visible = false; this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; this.publishLight(true); });
     window.addEventListener("pageshow", event => { if (event.persisted && this.visible) this.boot(); });
