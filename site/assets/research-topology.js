@@ -57,6 +57,20 @@ if (root) {
     button.querySelector("small").textContent = focus || "research milestone";
     button.setAttribute("aria-label", `${nodeLabel(article)}. ${focus || "Research milestone"}`);
     button.addEventListener("click", () => select(article.slug, true));
+    button.addEventListener("keydown", (event) => {
+      const ordered = [...buttons.values()];
+      const index = ordered.indexOf(button);
+      if (index < 0) return;
+      let nextIndex = index;
+      if (event.key === "ArrowRight" || event.key === "ArrowDown") nextIndex += 1;
+      if (event.key === "ArrowLeft" || event.key === "ArrowUp") nextIndex -= 1;
+      if (event.key === "Home") nextIndex = 0;
+      if (event.key === "End") nextIndex = ordered.length - 1;
+      if (nextIndex === index || nextIndex < 0 || nextIndex >= ordered.length) return;
+      event.preventDefault();
+      ordered[nextIndex].focus();
+      select(ordered[nextIndex].dataset.slug, false);
+    });
     buttons.set(article.slug, button);
     return button;
   }
@@ -153,10 +167,20 @@ if (root) {
     if (!nodesLayer || !edgesLayer || !articles.length) return;
     const width = nodesLayer.scrollWidth;
     const height = nodesLayer.scrollHeight;
+    const stacked = matchMedia("(max-width: 640px)").matches;
     edgesLayer.setAttribute("viewBox", `0 0 ${width} ${height}`);
     edgesLayer.style.width = `${width}px`;
     edgesLayer.style.height = `${height}px`;
     edgesLayer.replaceChildren();
+
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    gradient.id = "topology-edge-signal";
+    gradient.setAttribute("x1", "0");
+    gradient.setAttribute("x2", "1");
+    gradient.innerHTML = '<stop offset="0" stop-color="var(--muted)" stop-opacity=".42"/><stop offset="1" stop-color="var(--accent)" stop-opacity=".72"/>';
+    defs.append(gradient);
+    edgesLayer.append(defs);
 
     for (const article of articles) {
       const target = buttons.get(article.slug);
@@ -168,14 +192,33 @@ if (root) {
         const y1 = source.offsetTop + source.offsetHeight / 2;
         const x2 = target.offsetLeft;
         const y2 = target.offsetTop + target.offsetHeight / 2;
-        const delta = Math.max(36, (x2 - x1) * .48);
+        const pathStartX = stacked ? source.offsetLeft + source.offsetWidth / 2 : x1;
+        const pathStartY = stacked ? source.offsetTop + source.offsetHeight : y1;
+        const pathEndX = stacked ? target.offsetLeft + target.offsetWidth / 2 : x2;
+        const pathEndY = stacked ? target.offsetTop : y2;
+        const delta = stacked
+          ? Math.max(18, Math.min(48, Math.abs(pathEndY - pathStartY) * .34))
+          : Math.max(36, (x2 - x1) * .48);
         const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", `M ${x1} ${y1} C ${x1 + delta} ${y1}, ${x2 - delta} ${y2}, ${x2} ${y2}`);
+        path.setAttribute(
+          "d",
+          stacked
+            ? `M ${pathStartX} ${pathStartY} C ${pathStartX} ${pathStartY + delta}, ${pathEndX} ${pathEndY - delta}, ${pathEndX} ${pathEndY}`
+            : `M ${pathStartX} ${pathStartY} C ${pathStartX + delta} ${pathStartY}, ${pathEndX - delta} ${pathEndY}, ${pathEndX} ${pathEndY}`,
+        );
         path.dataset.source = dep;
         path.dataset.target = article.slug;
         const selected = root.dataset.selected;
         if (selected && (dep === selected || article.slug === selected)) path.classList.add("is-active");
         edgesLayer.append(path);
+
+        const endpoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        endpoint.classList.add("topology-edge-end");
+        if (selected && (dep === selected || article.slug === selected)) endpoint.classList.add("is-active");
+        endpoint.setAttribute("cx", String(pathEndX));
+        endpoint.setAttribute("cy", String(pathEndY));
+        endpoint.setAttribute("r", selected && (dep === selected || article.slug === selected) ? "3" : "2");
+        edgesLayer.append(endpoint);
       }
     }
   }
@@ -221,6 +264,7 @@ if (root) {
 
   const resize = new ResizeObserver(() => requestAnimationFrame(drawEdges));
   resize.observe(nodesLayer);
+  addEventListener("resize", () => requestAnimationFrame(drawEdges), { passive: true });
 
   if (window.PortfolioPublication) render(window.PortfolioPublication);
   else document.addEventListener("portfolio:publication", (event) => render(event.detail), { once: true });

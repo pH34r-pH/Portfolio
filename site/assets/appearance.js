@@ -109,6 +109,10 @@
     if (!menuButton || !menu || menu.dataset.ready === "true") return;
     menu.dataset.ready = "true";
 
+    const focusable = () => [...menu.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )].filter((element) => !element.hidden && element.getClientRects().length);
+
     const close = (focus = false) => {
       menu.hidden = true;
       menuButton.setAttribute("aria-expanded", "false");
@@ -117,12 +121,35 @@
 
     menuButton.addEventListener("click", () => {
       const open = menuButton.getAttribute("aria-expanded") === "true";
-      menuButton.setAttribute("aria-expanded", String(!open));
-      menu.hidden = open;
+      if (open) {
+        close();
+        return;
+      }
+
+      menuButton.setAttribute("aria-expanded", "true");
+      menu.hidden = false;
+      requestAnimationFrame(() => focusable()[0]?.focus());
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && !menu.hidden) close(true);
+      if (menu.hidden) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     });
 
     menu.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => close()));
