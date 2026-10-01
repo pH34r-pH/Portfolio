@@ -156,7 +156,7 @@ jobs:
       - name: Install document export image conversion
         run: |
           sudo apt-get update
-          sudo apt-get install -y imagemagick
+          sudo apt-get install -y inkscape
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
       - name: Prepare isolated article export sources
@@ -215,7 +215,7 @@ jobs:
           import shutil
           from pathlib import Path
           records = json.load(open('article-exports.json', encoding='utf-8'))
-          source = Path('research-notes-exports/_build/exports')
+          source = Path('research-notes-exports/articles/_build/exports')
           target = Path('bundle/article-exports')
           for item in records:
               for key in ('pdf', 'docx', 'latex', 'jats'):
