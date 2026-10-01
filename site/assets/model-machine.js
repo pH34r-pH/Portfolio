@@ -28,7 +28,7 @@ class MachineController {
     this.tokenReadout = root.querySelector("[data-machine-token-readout]");
     this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
     if (!this.stage || !this.input || !this.output || !this.status) return;
-    this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false;
+    this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false; this.clockTicks = 0;
     this.viewport = matchMedia("(max-width:720px)");
     this.selected = GRAPH.layers[6][0]; this.runData = createReplay(this.input.value);
     this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
@@ -39,6 +39,7 @@ class MachineController {
       inspect: id => { const index = GRAPH.nodes.findIndex(node => node.id === id); if (index >= 0) this.select(index); },
       snapshot: () => ({ ...sampleReplay(this.runData, this.frame), selected: GRAPH.nodes[this.selected].id, playing: this.playing, rendering: root.dataset.render }),
       light: () => window.PortfolioModelLight,
+      clock: () => ({ playing: this.playing, visible: this.visible, hidden: document.hidden, scheduled: Boolean(this.raf), ticks: this.clockTicks, lastTime: this.lastTime ?? null }),
       diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
     };
     root.machine = api; window.PortfolioModelMachine ??= api;
@@ -197,7 +198,7 @@ class MachineController {
     if (allowed && !this.raf) this.raf = requestAnimationFrame(time => this.tick(time));
   }
   tick(time) {
-    this.raf = 0;
+    this.raf = 0; this.clockTicks += 1;
     if (!this.playing || !this.visible || document.hidden) { this.lastTime = null; return; }
     if (this.lastTime === null) this.lastTime = time;
     const delta = time - this.lastTime;

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
 await mkdir(out, {recursive:true});
@@ -101,16 +102,9 @@ try {
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
     assert.ok(diagnostics.drawCalls<=44); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
-    await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
-    await seek(root,70); await root.evaluate(node=>node.machine.play()); await page.waitForTimeout(180);
-    assert.ok((await snapshot(root)).frame>70,`${name} replay advances`);
-    await page.evaluate(()=>scrollTo(0,0)); await page.waitForTimeout(120); const before=await snapshot(root);
-    await page.waitForTimeout(300); assert.equal((await snapshot(root)).frame,before.frame,`${name} offscreen pause`);
-    assert.equal(await root.evaluate(node=>node.machine.light().energy),0,`${name} offscreen light clears`);
-    await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded(); await page.waitForTimeout(180);
-    assert.ok((await snapshot(root)).frame>before.frame,`${name} replay resumes`);
-    await root.evaluate(node=>node.machine.pause());
-    assert.deepEqual(errors,[]); evidence.push({name,width,height,dpr,diagnostics,overflow,errors});
+    const playback=await auditPlayback(page,root,name);
+    console.log(`${name} playback: ${JSON.stringify(playback)}`);
+    assert.deepEqual(errors,[]); evidence.push({name,width,height,dpr,diagnostics,overflow,playback,errors});
     await context.close();
   }
   for (const mode of ['reduced-motion','webgl-unavailable','engine-unavailable','forced-colors']) {
@@ -132,20 +126,20 @@ try {
     assert.deepEqual(errors,[]); evidence.push({mode,engineRequests,errors}); await context.close();
   }
   // Context loss follows the same honest, inspectable fallback contract.
+  evidence.push(await auditDelayedClock(open));
   const {context,page,root}=await open({viewport:{width:1366,height:900}});
   await seek(root,145);
   await root.locator('canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
   await expect(root).toHaveAttribute('data-render','fallback'); assert.equal((await snapshot(root)).frame,145);
   // Headless tabs remain visible; exercise the document visibility signal explicitly.
   const visibilityCase=await open({viewport:{width:1366,height:900}});
-  await visibilityCase.root.locator('[data-machine-stage]').scrollIntoViewIfNeeded(); await visibilityCase.page.waitForTimeout(80);
-  await seek(visibilityCase.root,70); await visibilityCase.root.evaluate(node=>node.machine.play());
-  await visibilityCase.page.waitForTimeout(120);
+  await visibilityCase.root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();await eligible(visibilityCase.root);
+  await seek(visibilityCase.root,70);await advance(visibilityCase.root,70,true);
   await visibilityCase.page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
-  const hiddenFrame=(await snapshot(visibilityCase.root)).frame; await visibilityCase.page.waitForTimeout(350);
-  assert.equal((await snapshot(visibilityCase.root)).frame,hiddenFrame);
+  const hidden=await frozenAcrossFrames(visibilityCase.root),hiddenFrame=hidden.before;
+  assert.equal(hidden.after,hiddenFrame);assert.equal(hidden.clock.scheduled,false);
   const resumedAt=await visibilityCase.page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));return performance.now();});
-  await visibilityCase.page.waitForTimeout(120);
+  await advance(visibilityCase.root,hiddenFrame);
   const resumedState=await visibilityCase.root.evaluate(node=>({frame:node.machine.snapshot().frame,time:performance.now()}));
   const resumedFrame=resumedState.frame; assert.ok(resumedFrame>hiddenFrame && resumedFrame-hiddenFrame<=(resumedState.time-resumedAt)*60/1000+3,`Visibility resume: ${hiddenFrame} -> ${resumedFrame}`);
   evidence.push({mode:'document-visibility-signal',hiddenFrame,resumedFrame,note:'Injected visibility signal: headless Chromium keeps tabs visible.'});
