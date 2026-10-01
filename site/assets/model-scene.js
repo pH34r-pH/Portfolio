@@ -44,8 +44,9 @@ export class MachineScene {
   }
   buildGraph() {
     const T = this.T;
-    this.beads = new T.InstancedMesh(new T.SphereGeometry(.0595, 10, 8), this.materials.node, GRAPH.nodes.length);
-    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 8, 6), this.materials.core, GRAPH.nodes.length);
+    // Coordinates stay 1:1; small projected beads use a bounded geometry LOD.
+    this.beads = new T.InstancedMesh(new T.SphereGeometry(.0595, mobile() ? 6 : 8, mobile() ? 4 : 6), this.materials.node, GRAPH.nodes.length);
+    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 6, 4), this.materials.core, GRAPH.nodes.length);
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
@@ -115,6 +116,7 @@ export class MachineScene {
     const rim = new T.DirectionalLight(0x1789f5, 4.5); rim.position.set(3, -1, -5); this.scene.add(rim);
     const fill = new T.DirectionalLight(0x5ecfff, 1.8); fill.position.set(1, -4, 3); this.scene.add(fill);
     this.replayLight = new T.PointLight(0x39baff, 0, 7, 2); this.machine.add(this.replayLight);
+    this.replayLight.userData.replayPulse = true;
   }
   resize() {
     if (this.disposed) return;
@@ -128,7 +130,8 @@ export class MachineScene {
       : Math.max(3.7 / tangent, 6.4 / (tangent * this.camera.aspect));
     this.camera.updateProjectionMatrix();
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
-    this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${this.canvas.offsetTop}px`;
+    const stage = this.canvas.parentElement;
+    this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
     this.machine.rotation.set(0, 0, mobile() ? -Math.PI / 2 : 0);
     this.machine.position.y = mobile() ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
@@ -222,7 +225,7 @@ export class MachineScene {
   panBy(dx,dy) { this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
     if (this.depthView) { const {yaw, pitch} = this.depthView; this.depthView = null; this.yaw = yaw; this.pitch = pitch; this.updateCamera(); this.render(); }
-    else { this.depthView = {yaw:this.yaw, pitch:this.pitch}; this.orbit(-.10, .025); }
+    else { this.depthView = {yaw:this.yaw, pitch:this.pitch}; this.orbit(-.05, .01); }
   }
   edgePoints(edge) {
     const a=edge.sourcePosition,b=edge.targetPosition;
@@ -258,7 +261,11 @@ export class MachineScene {
     // No global touch listeners or gesture prevention: OS gestures remain OS-owned.
     // Native browser zoom is retained; camera zoom has pinch/buttons/keyboard alternatives.
   }
-  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
+  graphOrigin() {
+    const point = new this.T.Vector3().applyMatrix4(this.machine.matrixWorld).project(this.camera);
+    return [(point.x + 1) * this.glass.viewport.width * .5, (1 - point.y) * this.glass.viewport.height * .5];
+  }
+  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {
     if (this.disposed) return; this.disposed = true;
     this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();

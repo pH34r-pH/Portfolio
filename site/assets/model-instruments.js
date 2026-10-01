@@ -39,19 +39,20 @@ export class ModelInstruments {
   }
   update(node) {
     const changed = this.lastNode !== node.id; this.lastNode = node.id;
+    if (!changed) return false;
     this.selection.textContent = `${node.id} · ${node.label}`;
     return changed;
   }
   setMode(mode, phone) {
     this.mode = mode; this.host.dataset.instruments = mode;
-    this.nav.hidden = !phone || mode === 'flow'; this.viewButton.hidden = mode === 'flow';
+    this.nav.hidden = !phone || mode === 'flow'; this.viewButton.hidden = this.root.dataset.render !== 'webgl';
     for (const panel of this.layer.children) panel.hidden = mode === 'spatial' && phone && panel.dataset.glassPanel !== this.active;
     for (const button of this.nav.children) button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
   }
   dimensions(phone, width) {
     const sizes = {input: 256, inspect: 268, output: 310};
     return [...this.layer.children].map(node => {
-      const w = phone ? Math.min(320, width - 48) : sizes[node.dataset.glassPanel];
+      const w = phone ? Math.min(320, width - 64) : sizes[node.dataset.glassPanel];
       const hidden = node.hidden; node.hidden = false; node.style.width = `${w}px`;
       const height = Math.ceil(node.scrollHeight); node.hidden = hidden;
       return {id: node.dataset.glassPanel, node, width: w, height};

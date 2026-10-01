@@ -91,7 +91,7 @@ class MachineController {
     this.root.append(element("p", "machine-help", "Inside the viewer: one finger orbits; two pinch-zoom and pan; three scrub replay horizontally when the browser supplies those pointers. Scroll normally outside it. Settings exposes camera, frame-step and inspection alternatives. Focus the graph: Space/K plays or pauses, ←/→ steps (Shift: 10), Home/End seeks, W/A/S/D orbits, I/J/L/U pans, +/− zooms. OS accessibility gestures remain system-owned."));
     this.instruments = new ModelInstruments(this.root, this.stage, io,
       () => { const settings = this.root.querySelector('[data-machine-settings]'); settings.open = true; this.layerSelect.focus(); },
-      () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); });
+      () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); this.instruments.viewButton.textContent = this.scene?.depthView ? 'Return view' : 'View depth'; });
     this.instruments.changed = () => this.scene?.resize();
     this.root.dataset.topology = TOPOLOGY.id;
   }

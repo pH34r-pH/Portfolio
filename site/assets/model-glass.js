@@ -13,8 +13,8 @@ function glassGeometry(T, width, height) {
   shape.lineTo(width / 2, height / 2 - cut); shape.lineTo(width / 2 - cut, height / 2);
   shape.lineTo(-width / 2 + cut, height / 2); shape.lineTo(-width / 2, height / 2 - cut);
   shape.lineTo(-width / 2, -height / 2 + cut); shape.closePath();
-  const geometry = new T.ExtrudeGeometry(shape, {depth: .26, bevelEnabled: true, bevelSize: .035, bevelThickness: .035, bevelSegments: 2, steps: 1, curveSegments: 1});
-  geometry.translate(0, 0, -.13); return geometry;
+  const geometry = new T.ExtrudeGeometry(shape, {depth: .50, bevelEnabled: true, bevelSize: .04, bevelThickness: .04, bevelSegments: 2, steps: 1, curveSegments: 1});
+  geometry.translate(0, 0, -.25); return geometry;
 }
 
 function environment(T, renderer) {
@@ -33,7 +33,7 @@ function environment(T, renderer) {
 // the front glass face. No per-panel camera, screenshot texture or frame loop.
 function project(T, camera, mesh, size, viewport) {
   const local = new T.Matrix4().set(size.worldWidth / size.width, 0, 0, -size.worldWidth / 2,
-    0, -size.worldHeight / size.height, 0, size.worldHeight / 2, 0, 0, 1, .17, 0, 0, 0, 1);
+    0, -size.worldHeight / size.height, 0, size.worldHeight / 2, 0, 0, 1, .30, 0, 0, 0, 1);
   const matrix = new T.Matrix4().copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse).multiply(mesh.matrixWorld).multiply(local).elements;
   const h = [], w = viewport.width / 2, v = viewport.height / 2;
   for (const offset of [0, 4, 12]) h.push(w * (matrix[offset] + matrix[offset + 3]), v * (-matrix[offset + 1] + matrix[offset + 3]), matrix[offset + 3]);
@@ -48,11 +48,14 @@ export class SharedGlass {
   constructor(T, scene, renderer, instruments) {
     this.T = T; this.scene = scene; this.instruments = instruments; this.panels = [];
     this.environment = environment(T, renderer); scene.environment = this.environment.texture;
-    this.material = new T.MeshPhysicalMaterial({color: 0xb9dded, transmission: .86, opacity: 1, ior: 1.46, thickness: .34, roughness: .15, metalness: 0, attenuationColor: 0x8ed0e8, attenuationDistance: 3, envMapIntensity: .65, clearcoat: .3, clearcoatRoughness: .12});
+    this.material = new T.MeshPhysicalMaterial({color: 0xb9dded, transmission: .90, opacity: 1, ior: 1.46, thickness: .58, roughness: .12, metalness: 0, side: T.DoubleSide, attenuationColor: 0x8ed0e8, attenuationDistance: 3, envMapIntensity: .65, clearcoat: matchMedia('(max-width:720px)').matches ? 0 : .3, clearcoatRoughness: .12});
+    this.trimMaterial = new T.LineBasicMaterial({color: 0x71b9d8, transparent: true, opacity: .55});
     this.light = new T.PointLight(0x5bbfff, 0, 18, 2); scene.add(this.light);
+    this.light.userData.replayPulse = true;
   }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
+    this.poseKey = null;
     this.instruments.host.dataset.instruments = 'spatial';
     this.panels.forEach(panel => { this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose(); });
     this.panels = this.instruments.dimensions(phone, viewport.width).map(size => {
@@ -64,13 +67,15 @@ export class SharedGlass {
       size.worldWidth = size.width * unit; size.worldHeight = size.height * unit;
       const mesh = new this.T.Mesh(glassGeometry(this.T, size.worldWidth + unit * 24, size.worldHeight + unit * 24), this.material);
       mesh.position.copy(position); mesh.quaternion.copy(camera.quaternion); mesh.rotateY(anchor.tilt * (phone ? .4 : 1));
-      const trim = new this.T.LineSegments(new this.T.EdgesGeometry(mesh.geometry, 24), new this.T.LineBasicMaterial({color: 0x71b9d8, transparent: true, opacity: .55}));
+      const trim = new this.T.LineSegments(new this.T.EdgesGeometry(mesh.geometry, 24), this.trimMaterial);
       trim.position.copy(mesh.position); trim.quaternion.copy(mesh.quaternion); this.scene.add(mesh, trim);
       return {...size, mesh, trim, depth, projection: null};
     });
   }
   sync(camera) {
     if (!this.viewport) return;
+    const key = [...camera.position.toArray(), ...camera.quaternion.toArray(), this.instruments.active, visualViewport?.scale, this.instruments.root.dataset.render].join(':');
+    if (key === this.poseKey) return; this.poseKey = key;
     this.scene.updateMatrixWorld(); camera.updateMatrixWorld();
     const visible = this.panels.filter(panel => !this.phone || panel.id === this.instruments.active);
     for (const panel of visible) panel.projection = project(this.T, camera, panel.mesh, panel, this.viewport);
@@ -89,9 +94,10 @@ export class SharedGlass {
     if (output) this.light.position.copy(output.mesh.position).add(new this.T.Vector3(-1, 1.8, 2.4));
   }
   diagnostics() {
-    return {mode: this.mode, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: 128, lights: 2,
+    let lights = 0; this.scene.traverse(object => { if (object.isLight && object.userData.replayPulse) lights += 1; });
+    return {mode: this.mode, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: 128, lights,
       material: {transmission: this.material.transmission, ior: this.material.ior, thickness: this.material.thickness},
       panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
-  dispose() { this.instruments.setMode('flow', this.phone); this.environment.dispose(); this.material.dispose(); }
+  dispose() { this.instruments.setMode('flow', this.phone); this.environment.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

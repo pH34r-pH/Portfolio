@@ -101,7 +101,9 @@ try {
     await expect(root.locator('[data-machine-settings] summary')).toBeFocused();await expect(root.locator('[data-camera="reset"]')).toBeHidden();
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
-    assert.ok(diagnostics.drawCalls<=44); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
+    // Physical transmission adds one shared opaque capture plus panel faces.
+    const drawBudget=diagnostics.glass?.visible ? (width<600 ? 78 : 84) : 44;
+    assert.ok(diagnostics.drawCalls<=drawBudget,`shared transmission draw budget ${drawBudget}`); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
     const playback=await auditPlayback(page,root,name);
     console.log(`${name} playback: ${JSON.stringify(playback)}`);
     assert.deepEqual(errors,[]); evidence.push({name,width,height,dpr,diagnostics,overflow,playback,errors});

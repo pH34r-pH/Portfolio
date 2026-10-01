@@ -1,6 +1,7 @@
 /* Shared-scene prototype: scoped host layout; the glass itself is GPU geometry. */
 .model-machine-replay .machine-spatial-host { position: relative; }
 .model-machine-replay .machine-stage { height: 840px; }
+.model-machine-replay[data-render=fallback] .machine-stage { height: 720px; }
 .model-machine-replay .machine-instruments { position: absolute; left: 0; z-index: 4; pointer-events: none; margin: 0; }
 .model-machine-replay .machine-glass-panel { position: absolute; top: 0; left: 0; padding: 18px; transform-origin: 0 0; pointer-events: auto; color: var(--ink); box-sizing: border-box; }
 .model-machine-replay .machine-glass-panel[hidden],.model-machine-replay .machine-instrument-nav[hidden],.model-machine-replay .machine-depth-view[hidden] { display: none; }
