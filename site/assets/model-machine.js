@@ -46,6 +46,10 @@ class MachineController {
   }
   buildControls() {
     this.root.classList.add("model-machine-replay");
+    const heading=this.root.querySelector(".machine-heading h2"),intro=this.root.querySelector(".machine-heading > p");
+    if(heading)heading.textContent="A shared block. Three passes.";
+    if(intro)intro.textContent="Inspect the source-bound unit-hypersphere architecture used in the research. Replay a scripted signal, scrub any frame, and inspect its coordinates. The animation illustrates the structure; it does not run the trained model.";
+    const submit=this.form.querySelector("button[type=submit]");if(submit)submit.textContent="Replay";
     this.stage.tabIndex = 0; this.stage.setAttribute("role", "group");
     this.stage.setAttribute("aria-label", "Source-bound unit-hypersphere shared-block architecture. Space plays or pauses. Arrow keys inspect replay frames. W A S D orbit. Plus and minus zoom.");
     this.stage.append(element("div", "machine-legend"));

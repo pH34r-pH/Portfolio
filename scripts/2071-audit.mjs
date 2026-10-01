@@ -142,14 +142,25 @@ async function auditPagefindBoundaries(page, manifest) {
 }
 
 const browser = await chromium.launch({ headless: true });
+async function auditPaintedText(page,selectors) {
+  const metrics=await page.evaluate(selectors=>selectors.flatMap(selector=>[...document.querySelectorAll(selector)].map(node=>{
+    const range=document.createRange();range.selectNodeContents(node);const text=range.getBoundingClientRect();
+    return {selector,content:node.textContent.trim(),width:text.width,height:text.height,visible:node.checkVisibility()};
+  })),selectors);
+  assert.ok(metrics.length>0,'required text must exist');
+  assert.ok(metrics.every(item=>item.content&&item.width>0&&item.height>0&&item.visible),`Required text must paint: ${JSON.stringify(metrics)}`);
+}
 try {
   const context = await browser.newContext({ viewport: { width: 412, height: 915 } });
   const page = await context.newPage();
   const manifest = await optionalJson(context, "/publication.json");
   const hasPagefind = await pagefindAvailable(context);
   await page.goto(base + "/", { waitUntil: "networkidle" });
+  await page.evaluate(()=>document.fonts.ready);
+  await auditPaintedText(page,['.person-intro .lede','.proof-line','.actions a','.program-grid article p','.menu-toggle']);
   await auditSearchDialog(page, hasPagefind);
   await auditTopology(page, manifest);
+  if(manifest?.articles?.length)await auditPaintedText(page,['.topology-node strong','.topology-node small']);
   await auditArticleMachine(page, manifest);
   await auditPagefindBoundaries(page, manifest);
   await context.close();

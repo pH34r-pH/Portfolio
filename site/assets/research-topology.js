@@ -163,6 +163,31 @@ if (root) {
     }
   }
 
+  function edgeRoute(source,target,stacked) {
+    const x1=source.offsetLeft+source.offsetWidth,y1=source.offsetTop+source.offsetHeight/2;
+    const x2=target.offsetLeft,y2=target.offsetTop+target.offsetHeight/2;
+    if(stacked) {
+      const startX=source.offsetLeft+source.offsetWidth/2,startY=source.offsetTop+source.offsetHeight;
+      const endX=target.offsetLeft+target.offsetWidth/2,endY=target.offsetTop;
+      const delta=Math.max(18,Math.min(48,Math.abs(endY-startY)*.34));
+      return {endX,endY,path:`M ${startX} ${startY} C ${startX} ${startY+delta}, ${endX} ${endY-delta}, ${endX} ${endY}`};
+    }
+    const delta=Math.max(36,(x2-x1)*.48);
+    return {endX:x2,endY:y2,path:`M ${x1} ${y1} C ${x1+delta} ${y1}, ${x2-delta} ${y2}, ${x2} ${y2}`};
+  }
+
+  function appendEdge(dep,slug,source,target,stacked) {
+    const route=edgeRoute(source,target,stacked),selected=root.dataset.selected;
+    const active=Boolean(selected&&(dep===selected||slug===selected));
+    const path=document.createElementNS("http://www.w3.org/2000/svg","path");
+    path.setAttribute("d",route.path);path.dataset.source=dep;path.dataset.target=slug;
+    path.classList.toggle("is-active",active);edgesLayer.append(path);
+    const endpoint=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    endpoint.classList.add("topology-edge-end");endpoint.classList.toggle("is-active",active);
+    endpoint.setAttribute("cx",String(route.endX));endpoint.setAttribute("cy",String(route.endY));
+    endpoint.setAttribute("r",active?"3":"2");edgesLayer.append(endpoint);
+  }
+
   function drawEdges() {
     if (!nodesLayer || !edgesLayer || !articles.length) return;
     const width = nodesLayer.scrollWidth;
@@ -188,37 +213,7 @@ if (root) {
       for (const dep of dependencies.get(article.slug) || []) {
         const source = buttons.get(dep);
         if (!source) continue;
-        const x1 = source.offsetLeft + source.offsetWidth;
-        const y1 = source.offsetTop + source.offsetHeight / 2;
-        const x2 = target.offsetLeft;
-        const y2 = target.offsetTop + target.offsetHeight / 2;
-        const pathStartX = stacked ? source.offsetLeft + source.offsetWidth / 2 : x1;
-        const pathStartY = stacked ? source.offsetTop + source.offsetHeight : y1;
-        const pathEndX = stacked ? target.offsetLeft + target.offsetWidth / 2 : x2;
-        const pathEndY = stacked ? target.offsetTop : y2;
-        const delta = stacked
-          ? Math.max(18, Math.min(48, Math.abs(pathEndY - pathStartY) * .34))
-          : Math.max(36, (x2 - x1) * .48);
-        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute(
-          "d",
-          stacked
-            ? `M ${pathStartX} ${pathStartY} C ${pathStartX} ${pathStartY + delta}, ${pathEndX} ${pathEndY - delta}, ${pathEndX} ${pathEndY}`
-            : `M ${pathStartX} ${pathStartY} C ${pathStartX + delta} ${pathStartY}, ${pathEndX - delta} ${pathEndY}, ${pathEndX} ${pathEndY}`,
-        );
-        path.dataset.source = dep;
-        path.dataset.target = article.slug;
-        const selected = root.dataset.selected;
-        if (selected && (dep === selected || article.slug === selected)) path.classList.add("is-active");
-        edgesLayer.append(path);
-
-        const endpoint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-        endpoint.classList.add("topology-edge-end");
-        if (selected && (dep === selected || article.slug === selected)) endpoint.classList.add("is-active");
-        endpoint.setAttribute("cx", String(pathEndX));
-        endpoint.setAttribute("cy", String(pathEndY));
-        endpoint.setAttribute("r", selected && (dep === selected || article.slug === selected) ? "3" : "2");
-        edgesLayer.append(endpoint);
+        appendEdge(dep, article.slug, source, target, stacked);
       }
     }
   }

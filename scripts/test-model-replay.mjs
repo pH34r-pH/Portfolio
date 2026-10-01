@@ -21,6 +21,14 @@ for (const [index,edge] of GRAPH.edges.entries()) {
 }
 for(let head=0;head<4;head++)assert.equal(GRAPH.nodes[GRAPH.layers[2][head]].incoming.length,12);
 assert.equal(GRAPH.edges.filter(edge=>edge.kind.startsWith('shared block')).length,1);
+const architecture=JSON.parse(readFileSync(new URL('../site/assets/model-architecture.json',import.meta.url)));
+assert.equal(architecture.dslSourceCommit,TOPOLOGY.sourceCommit);
+assert.equal(architecture.sourceArchiveSha256,TOPOLOGY.sourceArchiveSha256);
+assert.equal(architecture.sourceMembers['retained_radius_topology.py'],TOPOLOGY.sourceModuleSha256);
+assert.equal(architecture.display.coordinateNodes+architecture.display.operatorNodes,GRAPH.nodes.length);
+assert.equal(architecture.display.displayRoutes,GRAPH.edges.length);
+const canonicalConfig=JSON.stringify(architecture.architecture,Object.keys(architecture.architecture).sort());
+assert.equal(createHash('sha256').update(canonicalConfig).digest('hex'),architecture.architectureIdentitySha256);
 const run = createReplay('Replay this exact frame.');
 const forward = Array.from({length: LAST_FRAME + 1}, (_, frame) => sampleReplay(run, frame));
 for (let frame = LAST_FRAME; frame >= 0; frame--) {

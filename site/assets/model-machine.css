@@ -1,7 +1,7 @@
 /* Model-only host contract. Global Portfolio materials/layout stay with site.css. */
 .model-machine-replay .machine-stage { min-height: 0; height: clamp(460px, 48vw, 650px); overflow: hidden; clip-path: none; }
 .model-machine-replay .machine-stage::after { display: none; }
-.model-machine-replay .machine-canvas { inset: 76px 0 58px; height: calc(100% - 134px); touch-action: none; cursor: grab; }
+.model-machine-replay .machine-canvas { inset: 88px 0 58px; height: calc(100% - 146px); touch-action: none; cursor: grab; }
 .model-machine-replay .machine-canvas:active { cursor: grabbing; }
 .model-machine-replay .machine-stage:focus-visible { outline: 3px solid var(--accent); outline-offset: -4px; }
 .model-machine-replay .machine-legend { position: absolute; z-index: 2; inset: 24px 24px auto; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; font: 600 11px/1.5 ui-monospace, monospace; color: var(--ink); }
