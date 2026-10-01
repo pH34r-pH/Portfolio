@@ -1,4 +1,5 @@
 import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, sampleReplay, joinTokens } from "./model-topology.js";
+import { ModelLightPublisher } from "./model-light.js";
 const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const forcedColors = matchMedia("(forced-colors: active)");
@@ -28,14 +29,16 @@ class MachineController {
     this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
     if (!this.stage || !this.input || !this.output || !this.status) return;
     this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false;
+    this.viewport = matchMedia("(max-width:720px)");
     this.selected = GRAPH.layers[3][0]; this.runData = createReplay(this.input.value);
-    this.focus = root.dataset.modelFocus || "all";
+    this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
     this.buildControls(); this.bindControls(); this.observe(); this.draw();
     const api = {
       run: text => this.run(text), focus: part => this.setFocus(part || "all"),
       seek: frame => this.seek(frame), pause: () => this.pause(), play: () => this.play(),
       inspect: id => { const index = GRAPH.nodes.findIndex(node => node.id === id); if (index >= 0) this.select(index); },
       snapshot: () => ({ ...sampleReplay(this.runData, this.frame), selected: GRAPH.nodes[this.selected].id, playing: this.playing, rendering: root.dataset.render }),
+      light: () => window.PortfolioModelLight,
       diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
     };
     root.machine = api; window.PortfolioModelMachine ??= api;
@@ -115,12 +118,13 @@ class MachineController {
   observe() {
     this.observer = new IntersectionObserver(entries => {
       this.visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= .15);
-      if (this.visible) this.boot(); this.syncClock();
+      if (this.visible) this.boot(); this.syncClock(); this.publishLight(true);
     }, { threshold: [.15] }); this.observer.observe(this.stage);
-    document.addEventListener("visibilitychange", () => this.syncClock());
-    window.addEventListener("pagehide", () => { this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; });
+    document.addEventListener("visibilitychange", () => { this.syncClock(); this.publishLight(true); });
+    window.addEventListener("pagehide", () => { this.visible = false; this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; this.publishLight(true); });
     window.addEventListener("pageshow", event => { if (event.persisted && this.visible) this.boot(); });
     reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion"); else { this.bootPromise = null; this.boot(); } });
+    this.viewport.addEventListener("change", () => { if (this.root.dataset.render === "fallback") { this.fallbackNodes = null; this.buildFallback(this.root.querySelector("[data-machine-fallback]")); this.draw(); } });
     forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors"); else { this.bootPromise = null; this.boot(); } });
   }
   async boot() {
@@ -162,10 +166,10 @@ class MachineController {
   }
   async run(text = this.input.value) {
     this.pause(); this.runData = createReplay(text); this.input.value = this.runData.text; this.frame = 0;
-    renderTokens(this.tokenReadout, this.runData.tokens); this.draw(); await this.boot();
+    renderTokens(this.tokenReadout, this.runData.tokens); this.draw(); this.publishLight(true); await this.boot();
     if (!reduceMotion.matches) this.play(); else this.status.textContent = "Paused / reduced motion. Scrub or step to inspect.";
   }
-  seek(frame) { this.pause(false); this.frame = clamp(Math.round(frame), 0, LAST_FRAME); this.draw(); }
+  seek(frame) { this.pause(false); this.frame = clamp(Math.round(frame), 0, LAST_FRAME); this.draw(); this.publishLight(true); }
   pause(update = true) { this.playing = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; this.lastTime = null; this.fraction = 0; if (update) this.draw(); }
   play() {
     if (this.frame === LAST_FRAME) this.frame = 0;
@@ -192,6 +196,9 @@ class MachineController {
     }
     this.syncClock();
   }
+  publishLight(immediate = false) {
+    this.light.publish(this.runData, this.frame, { active: this.visible && !document.hidden, reducedMotion: reduceMotion.matches, vertical: this.viewport.matches, immediate });
+  }
   draw() {
     const state = sampleReplay(this.runData, this.frame), node = GRAPH.nodes[this.selected];
     this.root.dataset.replayFrame = this.frame; this.timeline.value = this.frame;
@@ -203,7 +210,7 @@ class MachineController {
     this.output.textContent = state.emitted.length ? joinTokens(state.emitted) : "Waiting for reconstruction stage (frame 252).";
     this.probe.replaceChildren(document.createTextNode(`${node.id} · synthetic signal ${state.activations[this.selected].toFixed(3)}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing · frame ${this.frame}`));
     if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
-    this.scene?.applyFrame(this.runData, state);
+    this.scene?.applyFrame(this.runData, state); this.publishLight();
     this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 7 : 4); });
   }
 }

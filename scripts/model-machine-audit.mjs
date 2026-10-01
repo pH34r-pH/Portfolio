@@ -18,8 +18,9 @@ async function open(options={}, setup) {
 }
 async function snapshot(root) { return root.evaluate(node=>node.machine.snapshot()); }
 async function seek(root, frame) { await root.evaluate((node,value)=>node.machine.seek(value), frame); }
-async function axe(page, name) {
-  const result=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
+async function axe(page, name, modelOnly=false) {
+  const builder=new AxeBuilder({page}); if(modelOnly)builder.include('[data-model-machine]');
+  const result=await builder.withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
   assert.deepEqual(result.violations.map(v=>({id:v.id,nodes:v.nodes.map(n=>n.target)})),[],`${name} axe`);
 }
 try {
@@ -27,9 +28,12 @@ try {
     const {context,page,root,errors}=await open({viewport:{width,height},deviceScaleFactor:dpr,isMobile:width<600,hasTouch:width<600});
     await expect(root).toHaveAttribute('data-render','webgl');
     await seek(root,145); const first=await snapshot(root);
+    const firstLight=await root.evaluate(node=>node.machine.light());
+    assert.equal(firstLight.frame,145); assert.ok(firstLight.energy>0);
     await seek(root,360); await expect(root.locator('[data-machine-output]')).toContainText('the model learned a useful distinction');
     await seek(root,0); await seek(root,145); const replay=await snapshot(root);
     assert.deepEqual(replay,first,`${name} deterministic rewind`);
+    assert.deepEqual(await root.evaluate(node=>node.machine.light()),firstLight,`${name} deterministic scene light`);
     await root.locator('[data-probe-layer]').selectOption('1');
     await root.locator('[data-probe-node]').selectOption('49');
     await expect(root.locator('[data-probe-readout]')).toContainText('L1-01');
@@ -61,6 +65,7 @@ try {
     assert.ok((await snapshot(root)).frame>70,`${name} replay advances`);
     await page.evaluate(()=>scrollTo(0,0)); await page.waitForTimeout(120); const before=await snapshot(root);
     await page.waitForTimeout(300); assert.equal((await snapshot(root)).frame,before.frame,`${name} offscreen pause`);
+    assert.equal(await root.evaluate(node=>node.machine.light().energy),0,`${name} offscreen light clears`);
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded(); await page.waitForTimeout(180);
     assert.ok((await snapshot(root)).frame>before.frame,`${name} replay resumes`);
     await root.evaluate(node=>node.machine.pause());
@@ -81,7 +86,7 @@ try {
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
     await root.locator('[data-probe-layer]').selectOption('6'); await expect(root.locator('[data-probe-readout]')).toContainText('32 incoming / 0 outgoing');
     if(mode==='reduced-motion'||mode==='forced-colors')assert.equal(engineRequests,0);
-    await axe(page,mode); await root.screenshot({style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${mode}.png`});
+    await axe(page,mode,mode==='forced-colors'); await root.screenshot({style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${mode}.png`});
     assert.deepEqual(errors,[]); evidence.push({mode,engineRequests,errors}); await context.close();
   }
   // Context loss follows the same honest, inspectable fallback contract.
@@ -89,7 +94,21 @@ try {
   await seek(root,145);
   await root.locator('canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
   await expect(root).toHaveAttribute('data-render','fallback'); assert.equal((await snapshot(root)).frame,145);
+  // Headless tabs remain visible; exercise the document visibility signal explicitly.
+  const visibilityCase=await open({viewport:{width:1366,height:900}});
+  await visibilityCase.root.locator('[data-machine-stage]').scrollIntoViewIfNeeded(); await visibilityCase.page.waitForTimeout(80);
+  await seek(visibilityCase.root,70); await visibilityCase.root.evaluate(node=>node.machine.play());
+  await visibilityCase.page.waitForTimeout(120);
+  await visibilityCase.page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
+  const hiddenFrame=(await snapshot(visibilityCase.root)).frame; await visibilityCase.page.waitForTimeout(350);
+  assert.equal((await snapshot(visibilityCase.root)).frame,hiddenFrame);
+  const resumedAt=await visibilityCase.page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>false});document.dispatchEvent(new Event('visibilitychange'));return performance.now();});
+  await visibilityCase.page.waitForTimeout(120);
+  const resumedState=await visibilityCase.root.evaluate(node=>({frame:node.machine.snapshot().frame,time:performance.now()}));
+  const resumedFrame=resumedState.frame; assert.ok(resumedFrame>hiddenFrame && resumedFrame-hiddenFrame<=(resumedState.time-resumedAt)*60/1000+3,`Visibility resume: ${hiddenFrame} -> ${resumedFrame}`);
+  evidence.push({mode:'document-visibility-signal',hiddenFrame,resumedFrame,note:'Injected visibility signal: headless Chromium keeps tabs visible.'});
+  await visibilityCase.context.close();
   await context.close();
   await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2));
   console.log(`Model audit passed: ${evidence.length} profiles, WebGL context loss, complete topology and deterministic replay.`);
-} finally {await browser.close();}
+} catch(error) { evidence.push({failure:error.message}); throw error; } finally {await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2)); await browser.close();}

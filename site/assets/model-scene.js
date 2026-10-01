@@ -1,3 +1,4 @@
+import { sampleModelLight } from "./model-light.js";
 import { GRAPH, TOPOLOGY, clamp, hashText } from "./model-topology.js";
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
@@ -38,7 +39,7 @@ export class MachineScene {
   buildGraph() {
     const T = this.T;
     this.beads = new T.InstancedMesh(new T.SphereGeometry(.085, 16, 12), this.materials.node, GRAPH.nodes.length);
-    this.cores = new T.InstancedMesh(new T.SphereGeometry(.038, 10, 8), this.materials.core, GRAPH.nodes.length);
+    this.cores = new T.InstancedMesh(new T.SphereGeometry(.025, 10, 8), this.materials.core, GRAPH.nodes.length);
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
@@ -104,6 +105,7 @@ export class MachineScene {
     const key = new T.DirectionalLight(0xe9f5ff, 3.4); key.position.set(-3, 5, 6); this.scene.add(key);
     const rim = new T.DirectionalLight(0x1789f5, 4.5); rim.position.set(3, -1, -5); this.scene.add(rim);
     const fill = new T.DirectionalLight(0x5ecfff, 1.8); fill.position.set(1, -4, 3); this.scene.add(fill);
+    this.replayLight = new T.PointLight(0x39baff, 0, 7, 2); this.machine.add(this.replayLight);
   }
   resize() {
     if (this.disposed) return;
@@ -114,7 +116,7 @@ export class MachineScene {
     this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
     const tangent = Math.tan(14 * Math.PI / 180);
     const distance = mobile() ? Math.max(6.5 / tangent, 2.9 / (tangent * this.camera.aspect))
-      : Math.max(3.2 / tangent, 6.15 / (tangent * this.camera.aspect));
+      : Math.max(3.7 / tangent, 6.4 / (tangent * this.camera.aspect));
     this.camera.position.set(0, mobile() ? .35 : 1.7, distance / this.zoom);
     this.camera.lookAt(0, 0, 0); this.camera.updateProjectionMatrix();
     this.machine.rotation.set(this.pitch, this.yaw, mobile() ? -Math.PI / 2 : 0);
@@ -139,7 +141,8 @@ export class MachineScene {
       this.beads.setColorAt(index, this.color);
       this.cores.setColorAt(index, this.color.setRGB(.012 + value * .18, .04 + value * .7, .09 + value * 1.4));
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
-      this.beads.setMatrixAt(index, this.dummy.matrix); this.cores.setMatrixAt(index, this.dummy.matrix);
+      this.beads.setMatrixAt(index, this.dummy.matrix);
+      this.dummy.position.z += .098; this.dummy.updateMatrix(); this.cores.setMatrixAt(index, this.dummy.matrix);
     });
     this.dummy.scale.setScalar(1);
     this.beads.instanceColor.needsUpdate = true; this.cores.instanceColor.needsUpdate = true;
@@ -155,6 +158,9 @@ export class MachineScene {
       }
     });
     this.edgeGeometry.attributes.color.needsUpdate = true;
+    const light = sampleModelLight(run, state.frame);
+    this.replayLight.position.set((light.x - .5) * 8.88, 1.6, 3);
+    this.replayLight.intensity = light.energy * 14;
     this.updateCarriers(run, state.frame); this.render();
   }
   updateCarriers(run, frame) {
