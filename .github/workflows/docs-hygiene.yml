@@ -57,7 +57,7 @@ jobs:
         with:
           lycheeVersion: v0.20.1
           args: >-
-            --offline --no-progress --exclude-mail --include-fragments
+            --offline --no-progress --include-fragments
             ${{ steps.files.outputs.files }}
       - name: Hygiene fixtures
         run: python3 scripts/test_docs_hygiene.py
