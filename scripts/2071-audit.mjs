@@ -29,6 +29,25 @@ async function auditSearchDialog(page, hasPagefind) {
   await expect(dialog).toBeHidden();
 }
 
+async function auditRenderedCopy(page) {
+  const selectors = [
+    ".hero .lede",
+    ".hero .proof-line",
+    ".hero .actions a",
+    ".machine-heading > p",
+    ".machine-console label",
+    ".machine-status",
+    ".program-grid article p",
+  ];
+  const metrics = await page.evaluate((items) => items.map((selector) => {
+    const element = document.querySelector(selector);
+    const box = element?.getBoundingClientRect();
+    return { selector, text: element?.textContent?.trim(), height: box?.height || 0 };
+  }), selectors);
+  assert.ok(metrics.every(metric => metric.text && metric.height > 0),
+    `key copy must paint with non-zero line boxes: ${JSON.stringify(metrics)}`);
+}
+
 async function auditLazyMachine(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
@@ -78,6 +97,25 @@ async function auditTopology(page, manifest) {
   const nodes = page.locator(".topology-node");
   await expect(nodes).toHaveCount(manifest.articles.length);
   await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(manifest.articles));
+  const layout = await page.locator("[data-research-topology]").evaluate((root) => {
+    const viewport = root.getBoundingClientRect();
+    const boxes = [...root.querySelectorAll(".topology-node")].map((node) => {
+      const box = node.getBoundingClientRect();
+      return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+    });
+    const overlaps = boxes.reduce((count, box, index) => count + boxes.slice(index + 1).filter((other) =>
+      box.left < other.right && box.right > other.left && box.top < other.bottom && box.bottom > other.top,
+    ).length, 0);
+    return {
+      viewport: { left: viewport.left, right: viewport.right },
+      boxes,
+      overlaps,
+      background: getComputedStyle(document.body).backgroundImage,
+    };
+  });
+  assert.equal(layout.overlaps, 0, "topology nodes must not overlap");
+  assert.ok(layout.background.includes("radial-gradient"), "the page field should use dimensional gradients");
+  assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
   const frontier = [...manifest.articles].reverse()
     .find(article => article.frontierOpen?.length || article.frontierNext?.length);
   if (frontier) {
@@ -85,6 +123,13 @@ async function auditTopology(page, manifest) {
     await expect(page.locator("[data-topology-detail]")).toContainText(frontier.shortTitle || frontier.title);
   }
   await expect(page.locator("[data-topology-list] li")).toHaveCount(manifest.articles.length);
+  if (await page.evaluate(() => innerWidth <= 640)) {
+    assert.ok(layout.boxes.every((box) => box.left >= layout.viewport.left - 1 && box.right <= layout.viewport.right + 1),
+      `phone topology node escaped its viewport: ${JSON.stringify(layout)}`);
+    await nodes.first().focus();
+    await nodes.first().press("ArrowDown");
+    await expect(nodes.nth(1)).toBeFocused();
+  }
 }
 
 async function auditArticleMachine(page, manifest) {
@@ -123,6 +168,7 @@ try {
   const hasPagefind = await pagefindAvailable(context);
   await page.goto(base + "/", { waitUntil: "networkidle" });
   await auditSearchDialog(page, hasPagefind);
+  await auditRenderedCopy(page);
   await auditTopology(page, manifest);
   await auditArticleMachine(page, manifest);
   await auditPagefindBoundaries(page, manifest);

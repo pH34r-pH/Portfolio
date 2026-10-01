@@ -1,3 +1,27 @@
+function setupFontEnvironment() {
+  const probe = document.createElement("p");
+  probe.textContent = "Aa readable copy 012";
+  Object.assign(probe.style, {
+    position: "absolute",
+    left: "-10000px",
+    top: "0",
+    display: "block",
+    width: "420px",
+    margin: "0",
+    font: '20px/1.6 Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  });
+  document.body.append(probe);
+  const defaultHeight = probe.getBoundingClientRect().height;
+  probe.style.fontFamily = '"Portfolio Long Measure", sans-serif';
+  const bundledHeight = probe.getBoundingClientRect().height;
+  probe.remove();
+  if (defaultHeight === 0 && bundledHeight > 0) {
+    document.documentElement.dataset.fontFallback = "bundled";
+  }
+}
+
+setupFontEnvironment();
+
 function renderArticleList(container, articles) {
   if (!articles?.length) return;
   const cards = [...articles]
@@ -101,3 +125,41 @@ async function loadPublication() {
   }
 }
 loadPublication();
+
+/* Move the environmental field only when the reader moves through the page.
+   It remains a quiet, deterministic depth cue and disappears under reduced
+   motion rather than running as a permanent animation. */
+function setupFieldResponse() {
+  const root = document.documentElement;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  let frame = 0;
+
+  const writeField = () => {
+    frame = 0;
+    if (reduced.matches) {
+      root.style.setProperty("--field-shift-x", "0px");
+      root.style.setProperty("--field-shift-y", "0px");
+      root.style.setProperty("--glass-scroll-y", "0px");
+      return;
+    }
+
+    const range = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const progress = Math.min(1, Math.max(0, scrollY / range));
+    const shift = progress * 34 - 10;
+    const lateral = Math.sin(progress * Math.PI) * 12;
+    root.style.setProperty("--field-shift-x", `${lateral.toFixed(1)}px`);
+    root.style.setProperty("--field-shift-y", `${shift.toFixed(1)}px`);
+    root.style.setProperty("--glass-scroll-y", `${((progress * 2 - 1) * 16).toFixed(1)}px`);
+  };
+
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(writeField);
+  };
+
+  writeField();
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("resize", schedule, { passive: true });
+  reduced.addEventListener?.("change", schedule);
+}
+
+setupFieldResponse();
