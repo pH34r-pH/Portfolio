@@ -1,0 +1,63 @@
+name: Documentation and artifact hygiene
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  docs:
+    name: Changed documentation and artifact checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Select changed files
+        id: files
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$BASE_SHA"
+          if [[ -z "$base" || "$base" == "0000000000000000000000000000000000000000" ]]; then base="HEAD^"; fi
+          python3 scripts/docs_hygiene.py --changed-since "$base"
+          mapfile -t markdown < <(git diff --name-only --diff-filter=ACMRT "$base...HEAD" -- '*.md' '*.markdown')
+          {
+            echo 'files<<EOF'
+            printf '%s\n' "${markdown[@]}"
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+          printf 'changed_markdown=%s\n' "${#markdown[@]}" >> "$GITHUB_OUTPUT"
+      - name: Markdown style (pinned markdownlint-cli2)
+        if: steps.files.outputs.changed_markdown != '0'
+        env:
+          FILES: ${{ steps.files.outputs.files }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t files <<< "$FILES"
+          npx --yes markdownlint-cli2@0.18.1 --config .markdownlint-cli2.yaml "${files[@]}"
+      - name: Local links (pinned lychee)
+        if: steps.files.outputs.changed_markdown != '0'
+        uses: lycheeverse/lychee-action@v2.4.1
+        with:
+          lycheeVersion: v0.20.1
+          args: >-
+            --offline --no-progress --exclude-mail --include-fragments
+            ${{ steps.files.outputs.files }}
+      - name: Hygiene fixtures
+        run: python3 scripts/test_docs_hygiene.py
