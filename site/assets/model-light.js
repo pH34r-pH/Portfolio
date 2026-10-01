@@ -38,6 +38,5 @@ export class ModelLightPublisher {
     style.setProperty("--model-light-y", `${(detail.y * 100).toFixed(2)}%`);
     style.setProperty("--model-light-depth", detail.depth);
     window.PortfolioModelLight = detail;
-    this.root.dispatchEvent(new CustomEvent("portfolio:model-light", { bubbles: true, detail }));
   }
 }

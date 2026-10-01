@@ -30,16 +30,16 @@ hosts; the publication assembler and export contracts remain authoritative.
 
 ## Shared light values
 
-Listen on `document` for bubbling `portfolio:model-light`. Read
-`window.PortfolioModelLight` for the latest immutable snapshot if the consumer
-initializes later. Event detail:
+The UI consumes document-root CSS properties directly; no event bus or framework
+is needed. `window.PortfolioModelLight` retains the latest immutable snapshot for
+inspection and browser tests. Snapshot fields:
 
 ```js
 {
   sourceId: "model-machine-title", // host aria-labelledby, varies by article
   frame: 145,                    // integer 0..360, deterministic 60fps table
   energy: 0.0,                   // scalar 0..1, visual teaching signal
-  x: 0.5, y: 0.5, depth: 0.5,    // normalized visual scene coordinates 0..1
+  x: 0.5, y: 0.5, depth: 0.5,    // normalized viewport light-field coordinates 0..1
   active: true,                  // host visible and document foregrounded
   reducedMotion: false
 }
@@ -47,11 +47,14 @@ initializes later. Event detail:
 
 `sampleModelLight(run, frame, vertical)` is a pure function. Energy is the
 maximum mean signal across layers. Position is the signal-weighted graph
-position, normalized; mobile swaps flow into the vertical axis. At frames with
+position normalized into a viewport light field; mobile swaps flow into the
+vertical axis. These are an artistic field position, not a claim of measured
+DOM optical transport. No DOM bounds are measured per replay frame. At frames with
 no signal, position is centered and energy is zero. Seeking the same prompt,
 frame and composition yields identical values, including when rewinding.
 
-The publisher mirrors the four visual fields on the document root:
+The publisher mirrors the visual fields on the document root. Energy defaults
+to zero; X/Y are viewport percentage values for the UI light field:
 
 | Property | Value |
 | --- | --- |
@@ -62,7 +65,7 @@ The publisher mirrors the four visual fields on the document root:
 
 Playback publications are limited to 30Hz. Explicit seeks and lifecycle changes
 publish immediately, so an inspection does not wait for an animation clock.
-Identical snapshots are deduplicated. When offscreen/backgrounded, `active` is
+Identical snapshots are deduplicated. When offscreen/backgrounded or the WebGL scene is disposed, `active` is
 false and energy is zero; replay time freezes. Paused visible frames may retain
 their sampled light, without a running animation. The publisher adds no timer,
 scroll handler, device sensor or independent animation loop.
@@ -71,8 +74,8 @@ scroll handler, device sensor or independent animation loop.
 
 - Use values for restrained highlights/light fields behind accessible DOM.
   Keep text, focus rings and fixed controls stationary and crisp.
-- Reduced motion uses discrete sampled state; remove parallax and spatial
-  transitions. Forced colors must preserve controls and text independently.
+- Reduced motion preserves discrete replay inspection in the static graph and
+  clears shared light energy; remove parallax and spatial transitions. Forced colors must preserve controls and text independently.
 - Scroll depth/parallax belongs to the UI worker and needs no sensor permission.
   Avoid global blur/filter repaint loops or continuous idle GPU work.
 - CSS-layer glass lighting is an approximation. It is not physically correct

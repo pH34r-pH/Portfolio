@@ -197,7 +197,7 @@ class MachineController {
     this.syncClock();
   }
   publishLight(immediate = false) {
-    this.light.publish(this.runData, this.frame, { active: this.visible && !document.hidden, reducedMotion: reduceMotion.matches, vertical: this.viewport.matches, immediate });
+    this.light.publish(this.runData, this.frame, { active: this.visible && !document.hidden && Boolean(this.scene), reducedMotion: reduceMotion.matches, vertical: this.viewport.matches, immediate });
   }
   draw() {
     const state = sampleReplay(this.runData, this.frame), node = GRAPH.nodes[this.selected];
