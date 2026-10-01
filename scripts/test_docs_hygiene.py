@@ -8,14 +8,6 @@ from docs_hygiene import check_paths
 
 
 class DocumentationHygieneTests(unittest.TestCase):
-    def test_broken_local_reference_is_reported(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            doc = root / "guide.md"
-            doc.write_text("[missing](missing.md)\n", encoding="utf-8")
-            errors = check_paths(root, ["guide.md"], {"guide.md"})
-            self.assertTrue(any("broken local link" in error for error in errors))
-
     def test_unapproved_temp_and_build_artifacts_are_reported(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -23,6 +15,15 @@ class DocumentationHygieneTests(unittest.TestCase):
             artifact.parent.mkdir()
             artifact.write_text("preview\n", encoding="utf-8")
             errors = check_paths(root, ["dist/preview.txt"])
+            self.assertTrue(any("temporary/build artifact" in error for error in errors))
+
+    def test_cache_is_not_exempt_under_evidence_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            artifact = root / "site" / "data" / "cache" / "new.json"
+            artifact.parent.mkdir(parents=True)
+            artifact.write_text("{}\n", encoding="utf-8")
+            errors = check_paths(root, ["site/data/cache/new.json"])
             self.assertTrue(any("temporary/build artifact" in error for error in errors))
 
     def test_new_living_document_needs_descriptive_name(self):

@@ -4,7 +4,7 @@
 
 Portfolio is the public, source-owned presentation and candidate-builder repository for the research project. It owns the public site shell, article/notebook reader integration, design contracts, publication assembly code, and the evidence needed to hand a candidate to `long-haul-fleet`. It does not own private deployment promotion, experiment execution, scientific acceptance, or the source notebooks and articles in `research-notes`.
 
-This map is current for `main` as of 2026-10-01. The open redesign PRs (#82 and #78) are future architecture and are not deployed state; changes here must remain compatible with the existing publication and handoff path.
+This map is current for `main` as of 2026-10-01. Future redesign proposals are not deployed state; changes here must remain compatible with the existing publication and handoff path until a proposal is merged, qualified, and handed off.
 
 ## Directory map and change boundaries
 

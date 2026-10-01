@@ -11,7 +11,7 @@
 - `article-reference-v1.schema.json` defines the exact article-to-Compiler reference shape consumed by `scripts/compiled_experiment_reference.py` and the bundle builder.
 - `title-review.html` and `title-review.css` preserve the comparison exercise; `scripts/render-title-review.mjs` renders it for review. They are evidence of design exploration, not a second production shell.
 
-The hand-authored site runtime implements this documented system. `scripts/appearance-audit.mjs` and the broader UX workflow test actual assembled pages. Open redesign PRs #82 and #78 are explicitly future architecture until merged, qualified, and separately handed off; do not describe their assets or interactions as deployed here.
+The hand-authored site runtime implements this documented system. `scripts/appearance-audit.mjs` and the broader UX workflow test actual assembled pages. Future redesign proposals are architecture under review until merged, qualified, and separately handed off; do not describe proposal-only assets or interactions as deployed here.
 
 ## Invariants and change rules
 

@@ -7,7 +7,7 @@ supersedes: none
 
 # Portfolio architecture and handoff
 
-This is the current source-side process map for `main`. It documents what Portfolio can prove and where the next authority begins. It does not claim that the active redesign PRs are deployed, and it does not replace a protected Fleet release receipt.
+This is the current source-side process map for `main`. It documents what Portfolio can prove and where the next authority begins. Future redesign proposals are not deployed state, and this page does not replace a protected Fleet release receipt.
 
 ## Canonical inputs
 

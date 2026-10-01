@@ -10,7 +10,6 @@ import argparse
 import re
 import subprocess
 from pathlib import Path
-from urllib.parse import unquote, urlsplit
 
 LIVING_DOC_EXCEPTIONS = {"README.md", "AGENTS.md"}
 IMMUTABLE_OR_GENERATED_ALLOWED = {
@@ -18,15 +17,21 @@ IMMUTABLE_OR_GENERATED_ALLOWED = {
     "publication/lab-return.html",
 }
 FORBIDDEN_PARTS = {
+
+    ".cache",
     ".jupyterlite.doit.db",
+    ".pytest_cache",
     ".venv",
     "__pycache__",
     "build",
+    "cache",
     "dist",
     "node_modules",
+    "temp",
+    "tmp",
     "ux-screenshots",
 }
-FORBIDDEN_SUFFIXES = {".pyc", ".pyo"}
+FORBIDDEN_SUFFIXES = {".bak", ".log", ".pyc", ".pyo", ".tmp"}
 BAD_LIVING_STEMS = {"draft", "new", "notes", "tmp", "temp", "untitled"}
 
 
@@ -63,25 +68,15 @@ def _check_artifact(path: Path) -> list[str]:
     return []
 
 
-def _local_link_errors(path: Path, root: Path) -> list[str]:
+def is_living_doc(path: Path) -> bool:
+    """Return whether style/link tooling should inspect this Markdown file."""
     if path.suffix.lower() not in {".md", ".markdown"}:
-        return []
-    text = path.read_text(encoding="utf-8")
-    errors: list[str] = []
-    for match in re.finditer(r"!?\[[^\]]*\]\(([^)\s]+)(?:\s+[^)]*)?\)", text):
-        target = unquote(match.group(1)).strip("<>")
-        parsed = urlsplit(target)
-        if parsed.scheme or parsed.netloc or not parsed.path:
-            continue
-        candidate = (path.parent / parsed.path).resolve()
-        try:
-            candidate.relative_to(root.resolve())
-        except ValueError:
-            errors.append(f"local link escapes repository: {path} -> {target}")
-            continue
-        if not candidate.exists():
-            errors.append(f"broken local link: {path} -> {target}")
-    return errors
+        return False
+    if path.as_posix() in {"README.md", "AGENTS.md"}:
+        return True
+    if path.parts and path.parts[0] == "docs" and path.name.startswith("live-review-"):
+        return False
+    return bool(path.parts and path.parts[0] in {"docs", "design", "publication", "scripts", "site"})
 
 
 def check_paths(root: Path, paths: list[str | Path], new_paths: set[str] | None = None) -> list[str]:
@@ -91,20 +86,18 @@ def check_paths(root: Path, paths: list[str | Path], new_paths: set[str] | None 
         path = _relative(raw_path, root)
         errors.extend(_check_artifact(path))
         errors.extend(_check_doc_name(path, new_paths))
-        absolute = root / path
-        if absolute.is_file():
-            errors.extend(_local_link_errors(absolute, root))
     return errors
 
 
 def _git_paths(root: Path, since: str) -> tuple[list[str], set[str]]:
-    command = ["git", "diff", "--name-only", "--diff-filter=ACMRT", f"{since}...HEAD"]
-    changed = subprocess.check_output(command, cwd=root, text=True).splitlines()
+    command = ["git", "diff", "--name-only", "-z", "--diff-filter=ACMRT", f"{since}...HEAD"]
+    changed = subprocess.check_output(command, cwd=root).decode().split("\0")
+    changed = [path for path in changed if path]
     added = subprocess.check_output(
-        ["git", "diff", "--name-only", "--diff-filter=A", f"{since}...HEAD"],
+        ["git", "diff", "--name-only", "-z", "--diff-filter=A", f"{since}...HEAD"],
         cwd=root,
-        text=True,
-    ).splitlines()
+    ).decode().split("\0")
+    added = [path for path in added if path]
     return changed, set(added)
 
 
@@ -112,6 +105,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--paths", nargs="+", help="changed paths to check")
     parser.add_argument("--changed-since", help="git revision used for the changed-file ratchet")
+    parser.add_argument("--list-living-docs", action="store_true", help="print changed living docs")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     if args.changed_since:
@@ -120,6 +114,9 @@ def main() -> int:
         paths, new_paths = args.paths, set(args.paths)
     else:
         parser.error("provide --paths or --changed-since")
+    if args.list_living_docs:
+        print("\n".join(path for path in paths if is_living_doc(Path(path))))
+        return 0
     errors = check_paths(root, paths, new_paths)
     if errors:
         print("\n".join(errors))
