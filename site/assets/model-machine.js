@@ -1,551 +1,210 @@
+import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, sampleReplay, joinTokens } from "./model-topology.js";
 const THREE_URL = "https://unpkg.com/three@0.186.1/build/three.module.js";
-const [reduceMotion, smallViewport] = [matchMedia("(prefers-reduced-motion: reduce)"), matchMedia("(max-width: 720px)")];
-
-function tokenize(text) {
-  return text.match(/[\p{L}\p{N}]+(?:['’][\p{L}\p{N}]+)?|[^\s\p{L}\p{N}]/gu)?.slice(0, 12) || [];
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const forcedColors = matchMedia("(forced-colors: active)");
+if (!document.querySelector('link[data-machine-style]')) {
+  const style = document.createElement("link"); style.rel = "stylesheet"; style.href = "/assets/model-machine.css";
+  style.dataset.machineStyle = ""; document.head.append(style);
 }
-
-function hashText(text) {
-  let hash = 2166136261;
-  for (const char of text) {
-    hash ^= char.codePointAt(0);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
+function element(tag, className, text) {
+  const node = document.createElement(tag); node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
-
-function continuationFor(text) {
-  const choices = [
-    ["the", "signal", "survives", "but", "the", "consumer", "changes", "what", "gets", "used", "."],
-    ["a", "small", "intervention", "moves", "the", "same", "information", "through", "a", "different", "path", "."],
-    ["the", "representation", "keeps", "more", "than", "the", "prediction", "step", "can", "recover", "."],
-    ["the", "next", "test", "changes", "one", "mechanism", "and", "leaves", "the", "rest", "frozen", "."],
-  ];
-  return choices[hashText(text) % choices.length];
-}
-
-function cssColor(name, fallback) {
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
-}
-
-function themeColors(THREE) {
-  return {
-    ink: new THREE.Color(cssColor("--ink", "#f4fbff")),
-    line: new THREE.Color(cssColor("--accent", "#31a8ff")),
-    depth: new THREE.Color(cssColor("--depth", "#001827")),
-    signal: new THREE.Color(cssColor("--signal", "#29a7ff")),
-  };
-}
-
-function renderTokens(container, tokens) {
-  container.replaceChildren(...tokens.map((token) => {
-    const span = document.createElement("span");
-    span.textContent = token;
-    return span;
+function populate(select, entries) {
+  select.replaceChildren(...entries.map(([value, label]) => {
+    const option = document.createElement("option"); option.value = value; option.textContent = label; return option;
   }));
 }
-
-function initFallback(root, reason = "") {
-  root.dataset.render = "fallback";
-  root.querySelector("[data-machine-fallback]")?.setAttribute("aria-hidden", "false");
-  if (reason) root.dataset.fallbackReason = reason;
-}
-
-function createRenderer(THREE, canvas) {
-  const options = { alpha: true, antialias: !smallViewport.matches, powerPreference: "high-performance" };
-  const context = canvas.getContext("webgl2", options) || canvas.getContext("webgl", options);
-  if (!context) throw new Error("WebGL unavailable");
-  const renderer = new THREE.WebGLRenderer({ canvas, context, ...options });
-  renderer.setClearColor(0x000000, 0);
-  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, smallViewport.matches ? 1.35 : 1.8));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  return renderer;
-}
-
-function createMaterials(THREE, colors) {
-  return {
-    frame: new THREE.MeshStandardMaterial({
-      color: colors.depth, metalness: .78, roughness: .24,
-      emissive: colors.line, emissiveIntensity: .035,
-    }),
-    node: new THREE.MeshStandardMaterial({
-      color: colors.ink, metalness: .64, roughness: .22,
-      emissive: colors.signal, emissiveIntensity: .08,
-    }),
-    signal: new THREE.MeshStandardMaterial({
-      color: colors.signal, metalness: .05, roughness: .14,
-      emissive: colors.signal, emissiveIntensity: 2.4,
-    }),
-    token: new THREE.MeshStandardMaterial({
-      color: colors.ink, metalness: .68, roughness: .18,
-      emissive: colors.signal, emissiveIntensity: .14,
-    }),
-    edge: new THREE.LineBasicMaterial({ color: colors.line, transparent: true, opacity: .18 }),
-  };
-}
-
-function register(parts, object, part) {
-  object.userData.part = part;
-  if (!parts.has(part)) parts.set(part, []);
-  parts.get(part).push(object);
-  return object;
-}
-
-function addInputHardware(THREE, machine, materials, parts) {
-  const railGeometry = new THREE.BoxGeometry(1.8, .07, .12);
-  for (const y of [.55, -.55]) {
-    const rail = register(parts, new THREE.Mesh(railGeometry, materials.frame), "tokenizer");
-    rail.position.set(-4.35, y, 0);
-    machine.add(rail);
-  }
-  for (let index = 0; index < 4; index++) {
-    const gate = register(parts, new THREE.Mesh(new THREE.BoxGeometry(.14, 1.12, .34), materials.frame), "tokenizer");
-    gate.position.set(-4.95 + index * .4, 0, 0);
-    machine.add(gate);
-  }
-  const chute = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.34, .62, 1.05, 6), materials.frame), "input");
-  chute.rotation.z = Math.PI / 2;
-  chute.position.set(-3.25, 0, 0);
-  machine.add(chute);
-}
-
-function addNetworkHardware(THREE, machine, materials, parts) {
-  const nodes = [];
-  const layerNodes = [];
-  const xPositions = [-2.15, -1.1, 0, 1.1, 2.15];
-  const yPositions = [-.92, -.3, .3, .92];
-  const sphere = new THREE.SphereGeometry(.105, 14, 10);
-  xPositions.forEach((x, layer) => {
-    const current = yPositions.map((y, row) => {
-      const part = layer < 3 ? "representation" : "consumer";
-      const node = register(parts, new THREE.Mesh(sphere, materials.node), part);
-      node.position.set(x, y, ((layer + row) % 3 - 1) * .16);
-      machine.add(node);
-      nodes.push(node);
-      return node;
-    });
-    layerNodes.push(current);
-  });
-  addNetworkEdges(THREE, machine, materials, parts, layerNodes);
-  return nodes;
-}
-
-function addNetworkEdges(THREE, machine, materials, parts, layers) {
-  for (let layer = 0; layer < layers.length - 1; layer++) {
-    for (let row = 0; row < layers[layer].length; row++) {
-      for (const offset of [0, 1]) {
-        const geometry = new THREE.BufferGeometry().setFromPoints([
-          layers[layer][row].position,
-          layers[layer + 1][(row + offset) % layers[layer].length].position,
-        ]);
-        const part = layer < 2 ? "representation" : "consumer";
-        machine.add(register(parts, new THREE.Line(geometry, materials.edge), part));
-      }
-    }
-  }
-}
-
-function addOutputHardware(THREE, machine, materials, parts) {
-  const frame = register(parts, new THREE.Mesh(new THREE.BoxGeometry(.8, 1.7, .24), materials.frame), "consumer");
-  frame.position.set(2.75, 0, -.12);
-  machine.add(frame);
-  for (let index = 0; index < 3; index++) {
-    const dropper = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.13, .2, .55, 8), materials.frame), "output");
-    dropper.rotation.z = Math.PI / 2;
-    dropper.position.set(3.42, .42 - index * .42, 0);
-    machine.add(dropper);
-  }
-  const conveyor = register(parts, new THREE.Mesh(new THREE.BoxGeometry(2.1, .12, .58), materials.frame), "output");
-  conveyor.position.set(4.35, -.78, 0);
-  machine.add(conveyor);
-  for (let index = 0; index < 5; index++) {
-    const roller = register(parts, new THREE.Mesh(new THREE.CylinderGeometry(.12, .12, .58, 12), materials.frame), "output");
-    roller.rotation.x = Math.PI / 2;
-    roller.position.set(3.55 + index * .42, -.7, 0);
-    machine.add(roller);
-  }
-}
-
-function ease(t) {
-  return t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-class MachineScene {
-  constructor(THREE, root) {
-    this.THREE = THREE;
-    this.root = root;
-    this.canvas = root.querySelector("[data-machine-canvas]");
-    this.renderer = createRenderer(THREE, this.canvas);
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(38, 1, .1, 40);
-    this.camera.position.set(0, .15, smallViewport.matches ? 11.8 : 10.6);
-    this.machine = new THREE.Group();
-    this.scene.add(this.machine);
-    this.parts = new Map();
-    this.colors = themeColors(THREE); this.materials = createMaterials(THREE, this.colors);
-    this.nodes = this.buildHardware();
-    this.effectGroup = new THREE.Group();
-    this.machine.add(this.effectGroup);
-    this.addLights();
-    this.activeRun = null; this.frame = 0; this.visible = true;
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(this.canvas);
-    this.themeObserver = new MutationObserver(() => this.refreshTheme());
-    this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    this.resize();
-  }
-
-  buildHardware() {
-    addInputHardware(this.THREE, this.machine, this.materials, this.parts);
-    const nodes = addNetworkHardware(this.THREE, this.machine, this.materials, this.parts);
-    addOutputHardware(this.THREE, this.machine, this.materials, this.parts);
-    return nodes;
-  }
-
-  addLights() {
-    this.scene.add(new this.THREE.AmbientLight(0xffffff, 1.65));
-    this.key = new this.THREE.PointLight(0x55bbff, 7.5, 22, 2);
-    this.key.position.set(-2.5, 3.8, 5);
-    this.scene.add(this.key);
-    this.rim = new this.THREE.PointLight(0x1489ff, 5, 18, 2);
-    this.rim.position.set(4, -3, 3);
-    this.scene.add(this.rim);
-  }
-
-  resize() {
-    const rect = this.canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    this.renderer.setSize(rect.width, rect.height, false);
-    this.camera.aspect = rect.width / rect.height;
-    this.camera.fov = smallViewport.matches ? 44 : 38;
-    this.camera.updateProjectionMatrix();
-    this.machine.rotation.z = smallViewport.matches ? -Math.PI / 2 : 0;
-    this.render();
-  }
-
-  render() {
-    this.renderer.render(this.scene, this.camera);
-  }
-
-  clearEffects() {
-    while (this.effectGroup.children.length) {
-      const child = this.effectGroup.children.pop();
-      child.geometry?.dispose?.();
-    }
-  }
-
-  makeBlock() {
-    const block = new this.THREE.Mesh(new this.THREE.BoxGeometry(.34, .18, .22), this.materials.token);
-    this.effectGroup.add(block);
-    return block;
-  }
-
-  makePulse() {
-    const pulse = new this.THREE.Mesh(new this.THREE.SphereGeometry(.09, 12, 8), this.materials.signal);
-    this.effectGroup.add(pulse);
-    return pulse;
-  }
-
-  routeFor(index, count) {
-    const lane = count <= 1 ? 0 : (index / (count - 1) - .5) * 1.5;
-    const V = this.THREE.Vector3;
-    return new this.THREE.CatmullRomCurve3([
-      new V(-3.05, 0, 0), new V(-2.05, lane * .8, .08), new V(-1.05, -lane * .45, -.08),
-      new V(.05, lane * .3, .16), new V(1.1, -lane * .6, -.06), new V(2.65, lane * .28, 0),
-      new V(3.12, 0, 0),
-    ]);
-  }
-
-  createInput(tokens, now) {
-    return tokens.map((token, index) => {
-      const block = this.makeBlock();
-      const pulse = this.makePulse();
-      block.position.set(-5.25, (index - (tokens.length - 1) / 2) * .22, 0);
-      pulse.visible = false;
-      return { token, block, pulse, route: this.routeFor(index, tokens.length), start: now + index * 115 };
-    });
-  }
-
-  createOutputs(tokens, now) {
-    return tokens.map((token, index) => {
-      const block = this.makeBlock();
-      block.visible = false;
-      block.position.set(3.26, -.78, 0);
-      return { token, block, start: now + 1750 + index * 145, emitted: false };
-    });
-  }
-
-  animateRun(tokens, generated, callbacks) {
-    this.clearEffects();
-    this.resetNodes();
-    const now = performance.now();
-    this.activeRun = {
-      now,
-      input: this.createInput(tokens, now),
-      outputs: this.createOutputs(generated, now),
-      stage: "",
-      completed: false,
-      ...callbacks,
-    };
-    if (this.visible && !this.frame) this.frame = requestAnimationFrame((time) => this.tick(time));
-  }
-
-  updateInputItem(item, time) {
-    const p = Math.max(0, Math.min(1, (time - item.start) / 1500));
-    if (p < .22) {
-      item.block.visible = p >= 0;
-      item.pulse.visible = false;
-      const t = ease(p / .22);
-      item.block.position.x = this.THREE.MathUtils.lerp(-5.25, -3.08, t);
-      item.block.position.y *= .965;
-      item.block.rotation.z = t * 1.8;
-      return { done: false, x: null };
-    }
-    item.block.visible = false;
-    if (p < .84) {
-      item.pulse.visible = true;
-      const point = item.route.getPoint(ease((p - .22) / .62));
-      item.pulse.position.copy(point);
-      return { done: false, x: point.x };
-    }
-    item.pulse.visible = false;
-    return { done: p >= 1, x: null };
-  }
-
-  updateInput(time) {
-    let allDone = true;
-    let activityX = null;
-    for (const item of this.activeRun.input) {
-      const state = this.updateInputItem(item, time);
-      allDone = allDone && state.done;
-      if (state.x !== null) activityX = state.x;
-    }
-    if (activityX === null) this.resetNodes();
-    else this.setNodeActivity(activityX);
-    return allDone;
-  }
-
-  updateOutputItem(item, time) {
-    const p = Math.max(0, Math.min(1, (time - item.start) / 520));
-    if (p > 0) {
-      item.block.visible = true;
-      const t = ease(p);
-      item.block.position.x = this.THREE.MathUtils.lerp(3.26, 5.32, t);
-      item.block.position.y = -.78 + Math.sin(t * Math.PI) * .22;
-      item.block.rotation.z = t * .5;
-    }
-    if (p >= .92 && !item.emitted) {
-      item.emitted = true;
-      this.activeRun.onEmit(item.token);
-    }
-    if (p >= 1) item.block.visible = false;
-    return p >= 1;
-  }
-
-  updateOutputs(time) {
-    let allDone = true;
-    for (const item of this.activeRun.outputs) allDone = this.updateOutputItem(item, time) && allDone;
-    return allDone;
-  }
-
-  updateStage(time) {
-    const elapsed = time - this.activeRun.now;
-    const next = elapsed < 620 ? "tokenizing" : elapsed < 1750 ? "activating" : "decoding";
-    if (next === this.activeRun.stage) return;
-    this.activeRun.stage = next;
-    this.activeRun.onStage(next);
-  }
-
-  tick(time) {
-    this.frame = 0;
-    if (!this.activeRun || !this.visible) return;
-    const inputDone = this.updateInput(time);
-    this.updateStage(time);
-    const outputDone = this.updateOutputs(time);
-    this.render();
-    const timedOut = time - this.activeRun.now > 5200;
-    if (inputDone && outputDone || timedOut) {
-      this.finishRun();
-      return;
-    }
-    this.frame = requestAnimationFrame((next) => this.tick(next));
-  }
-
-  finishRun() {
-    if (!this.activeRun.completed) this.activeRun.onComplete();
-    this.activeRun = null;
-    this.resetNodes();
-    this.render();
-  }
-
-  setNodeActivity(x) {
-    for (const node of this.nodes) {
-      const amount = Math.max(0, 1 - Math.abs(node.position.x - x) / .72);
-      node.material.emissiveIntensity = .08 + amount * 2.4;
-      node.scale.setScalar(1 + amount * .28);
-    }
-  }
-
-  resetNodes() {
-    for (const node of this.nodes) {
-      node.material.emissiveIntensity = .08;
-      node.scale.setScalar(1);
-    }
-  }
-
-  setFocus(part = "all") {
-    for (const [name, objects] of this.parts) {
-      const selected = part === "all" || name === part;
-      for (const object of objects) {
-        const materials = Array.isArray(object.material) ? object.material : [object.material];
-        for (const material of materials) {
-          if (!material || !("opacity" in material)) continue;
-          material.transparent = !selected;
-          material.opacity = selected ? 1 : .16;
-        }
-      }
-    }
-    this.render();
-  }
-
-  refreshTheme() {
-    this.colors = themeColors(this.THREE);
-    this.materials.frame.color.copy(this.colors.depth);
-    this.materials.frame.emissive.copy(this.colors.line);
-    this.materials.node.color.copy(this.colors.ink);
-    this.materials.node.emissive.copy(this.colors.signal);
-    this.materials.signal.color.copy(this.colors.signal);
-    this.materials.signal.emissive.copy(this.colors.signal);
-    this.materials.token.color.copy(this.colors.ink);
-    this.materials.token.emissive.copy(this.colors.signal);
-    this.materials.edge.color.copy(this.colors.line);
-    this.key.color.copy(this.colors.signal);
-    this.rim.color.copy(this.colors.line);
-    this.render();
-  }
-
-  setVisible(next) {
-    this.visible = next;
-    if (next && this.activeRun && !this.frame) this.frame = requestAnimationFrame((time) => this.tick(time));
-    if (!next && this.frame) {
-      cancelAnimationFrame(this.frame);
-      this.frame = 0;
-    }
-  }
-
-  dispose() {
-    if (this.frame) cancelAnimationFrame(this.frame);
-    this.resizeObserver.disconnect();
-    this.themeObserver.disconnect();
-    this.clearEffects();
-    this.renderer.dispose();
-  }
-}
-
-function machineStatusLabel(name) {
-  if (name === "tokenizing") return "tokenizing input";
-  if (name === "activating") return "activation moving through model";
-  return "decoding output";
+function renderTokens(container, tokens) {
+  container.replaceChildren(...tokens.map(token => element("span", "", token)));
 }
 
 class MachineController {
   constructor(root) {
-    this.root = root;
-    this.stage = root.querySelector("[data-machine-stage]");
-    this.form = root.querySelector("[data-machine-form]");
-    this.input = this.form?.querySelector("input");
+    this.root = root; this.stage = root.querySelector("[data-machine-stage]");
+    this.form = root.querySelector("[data-machine-form]"); this.input = this.form?.querySelector("input");
     this.tokenReadout = root.querySelector("[data-machine-token-readout]");
-    this.output = root.querySelector("[data-machine-output]");
-    this.status = root.querySelector("[data-machine-status]");
-    this.scene = null;
-    this.bootPromise = null;
-    this.visible = false;
-    if (!this.stage || !this.form || !this.input || !this.tokenReadout || !this.output || !this.status) return;
-    this.form.addEventListener("submit", (event) => this.submit(event));
-    this.observe();
-    renderTokens(this.tokenReadout, tokenize(this.input.value));
-    root.addEventListener("portfolio:model-focus", (event) => this.scene?.setFocus(event.detail?.part || "all"));
-    this.publicApi = { run: (text) => this.run(text), focus: (part) => this.scene?.setFocus(part || "all") };
-    root.machine = this.publicApi;
-    window.PortfolioModelMachine ??= this.publicApi;
+    this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
+    if (!this.stage || !this.input || !this.output || !this.status) return;
+    this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false;
+    this.selected = GRAPH.layers[3][0]; this.runData = createReplay(this.input.value);
+    this.focus = root.dataset.modelFocus || "all";
+    this.buildControls(); this.bindControls(); this.observe(); this.draw();
+    const api = {
+      run: text => this.run(text), focus: part => this.setFocus(part || "all"),
+      seek: frame => this.seek(frame), pause: () => this.pause(), play: () => this.play(),
+      inspect: id => { const index = GRAPH.nodes.findIndex(node => node.id === id); if (index >= 0) this.select(index); },
+      snapshot: () => ({ ...sampleReplay(this.runData, this.frame), selected: GRAPH.nodes[this.selected].id, playing: this.playing, rendering: root.dataset.render }),
+      diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
+    };
+    root.machine = api; window.PortfolioModelMachine ??= api;
+    root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all"));
   }
-
+  buildControls() {
+    this.root.classList.add("model-machine-replay");
+    this.stage.tabIndex = 0; this.stage.setAttribute("role", "group");
+    this.stage.setAttribute("aria-label", "Autoencoder teaching graph. Space plays or pauses. Arrow keys inspect replay frames. W A S D orbit. Plus and minus zoom.");
+    this.stage.append(element("div", "machine-legend"));
+    this.stage.querySelector(".machine-legend").innerHTML = '<div>48 / 32 / 16 / 8 / 16 / 32 / 48<span>200 nodes · 4,352 edges · 1:1</span></div><div>TEACHING TOPOLOGY<span>Autoencoder / directed dense layers</span></div>';
+    const axes = element("div", "machine-axis-labels");
+    for (const label of ["ENCODER", "8-UNIT BOTTLENECK", "DECODER"]) axes.append(element("span", "", label));
+    axes.setAttribute("aria-hidden", "true"); this.stage.append(axes);
+    const io = element("div", "machine-io"); this.stage.after(io);
+    io.append(this.form, this.root.querySelector(".machine-output"));
+    this.root.querySelector(".machine-console-label").textContent = "Scripted reconstruction";
+    this.output.removeAttribute("aria-live");
+    const replay = element("div", "machine-replay"); io.before(replay);
+    replay.innerHTML = `<div class="machine-transport" role="group" aria-label="Replay controls">
+      <button type="button" data-replay-rewind>Rewind</button><button type="button" data-replay-play>Play</button>
+      <button type="button" data-replay-step="-1" aria-label="Previous frame">−1</button><button type="button" data-replay-step="1" aria-label="Next frame">+1</button>
+      <label class="machine-timeline">Frame<input data-replay-timeline type="range" min="0" max="${LAST_FRAME}" step="1" value="0" aria-label="Replay frame"><output data-replay-frame>000 / ${LAST_FRAME}</output></label>
+    </div><div class="machine-inspection"><label>Layer<select data-probe-layer aria-label="Inspect layer"></select></label>
+      <label>Node<select data-probe-node aria-label="Inspect node"></select></label><p class="machine-probe" data-probe-readout></p></div>
+    <div class="machine-transport" role="group" aria-label="Camera controls"><button type="button" data-camera="left" aria-label="Orbit left">Orbit ←</button><button type="button" data-camera="right" aria-label="Orbit right">Orbit →</button><button type="button" data-camera="in" aria-label="Zoom in">Zoom +</button><button type="button" data-camera="out" aria-label="Zoom out">Zoom −</button><button type="button" data-camera="reset">Reset view</button></div>`;
+    replay.append(this.status);
+    this.timeline = replay.querySelector("[data-replay-timeline]"); this.counter = replay.querySelector("[data-replay-frame]");
+    this.playButton = replay.querySelector("[data-replay-play]"); this.layerSelect = replay.querySelector("[data-probe-layer]");
+    this.nodeSelect = replay.querySelector("[data-probe-node]"); this.probe = replay.querySelector("[data-probe-readout]");
+    populate(this.layerSelect, TOPOLOGY.names.map((name, index) => [index, `${name} · ${TOPOLOGY.widths[index]}`]));
+    this.layerSelect.value = 3; this.populateNodes();
+    this.root.append(element("p", "machine-disclosure", "Authored autoencoder teaching topology: every node and directed edge is rendered individually. Replay signals and reconstruction are deterministic illustrations, not trained activations, learned weights, or experimental measurements. Input uses simple word/punctuation splitting, limited to 12 tokens."));
+    this.root.append(element("p", "machine-help", "Drag to orbit; use camera buttons to zoom. Focus the graph: Space or K plays/pauses, ←/→ steps a frame (Shift: 10), Home/End seeks, W/A/S/D orbits, +/− zooms. The layer and node selectors inspect any frame, including the static fallback."));
+    this.root.dataset.topology = TOPOLOGY.id;
+  }
+  bindControls() {
+    this.form.addEventListener("submit", event => { event.preventDefault(); this.run(this.input.value); });
+    this.playButton.addEventListener("click", () => this.playing ? this.pause() : this.play());
+    this.root.querySelector("[data-replay-rewind]").addEventListener("click", () => this.seek(0));
+    this.root.querySelectorAll("[data-replay-step]").forEach(button => button.addEventListener("click", () => this.seek(this.frame + Number(button.dataset.replayStep))));
+    this.timeline.addEventListener("input", () => this.seek(Number(this.timeline.value)));
+    this.layerSelect.addEventListener("change", () => { this.populateNodes(); this.select(GRAPH.layers[Number(this.layerSelect.value)][0]); });
+    this.nodeSelect.addEventListener("change", () => this.select(Number(this.nodeSelect.value)));
+    this.root.querySelectorAll("[data-camera]").forEach(button => button.addEventListener("click", () => this.cameraAction(button.dataset.camera)));
+    this.stage.addEventListener("keydown", event => this.keydown(event));
+  }
+  populateNodes() {
+    const layer = Number(this.layerSelect.value);
+    populate(this.nodeSelect, GRAPH.layers[layer].map(index => [index, GRAPH.nodes[index].id]));
+  }
+  select(index) {
+    this.selected = index; const node = GRAPH.nodes[index];
+    this.layerSelect.value = node.layer; this.populateNodes(); this.nodeSelect.value = index;
+    this.scene?.select(index); this.draw();
+  }
+  setFocus(part) {
+    this.focus = part; this.scene?.setFocus(part);
+    const layer = { tokenizer: 0, input: 0, representation: 3, consumer: 4, output: 6 }[part];
+    if (layer !== undefined) this.select(GRAPH.layers[layer][0]);
+  }
+  keydown(event) {
+    const step = event.shiftKey ? 10 : 1, key = event.key.toLowerCase();
+    const actions = { " ": () => this.playing ? this.pause() : this.play(), k: () => this.playing ? this.pause() : this.play(),
+      arrowleft: () => this.seek(this.frame - step), arrowright: () => this.seek(this.frame + step),
+      home: () => this.seek(0), end: () => this.seek(LAST_FRAME),
+      a: () => this.cameraAction("left"), d: () => this.cameraAction("right"), w: () => this.scene?.orbit(0, -.12), s: () => this.scene?.orbit(0, .12),
+      "+": () => this.cameraAction("in"), "=": () => this.cameraAction("in"), "-": () => this.cameraAction("out") };
+    if (actions[key]) { event.preventDefault(); actions[key](); }
+  }
+  cameraAction(action) {
+    if (!this.scene) return;
+    if (action === "left" || action === "right") this.scene.orbit(action === "left" ? -.15 : .15, 0);
+    else if (action === "reset") this.scene.resetView();
+    else this.scene.zoomBy(action === "in" ? .15 : -.15);
+  }
   observe() {
-    this.observer = new IntersectionObserver((entries) => {
-      this.visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= .15);
-      this.scene?.setVisible(this.visible && !document.hidden);
-      if (this.visible) this.boot();
-    }, { threshold: [.15] });
-    this.observer.observe(this.stage);
-    document.addEventListener("visibilitychange", () => {
-      this.scene?.setVisible(this.visible && !document.hidden);
-    });
+    this.observer = new IntersectionObserver(entries => {
+      this.visible = entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= .15);
+      if (this.visible) this.boot(); this.syncClock();
+    }, { threshold: [.15] }); this.observer.observe(this.stage);
+    document.addEventListener("visibilitychange", () => this.syncClock());
+    window.addEventListener("pagehide", () => { this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; });
+    window.addEventListener("pageshow", event => { if (event.persisted && this.visible) this.boot(); });
+    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion"); else { this.bootPromise = null; this.boot(); } });
+    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors"); else { this.bootPromise = null; this.boot(); } });
   }
-
   async boot() {
     if (this.scene) return this.scene;
+    if (reduceMotion.matches || forcedColors.matches) { this.fallback(reduceMotion.matches ? "reduced-motion" : "forced-colors"); return null; }
     if (this.bootPromise) return this.bootPromise;
-    if (reduceMotion.matches) {
-      initFallback(this.root, "reduced-motion");
-      this.setStatus("machine ready / reduced motion");
-      return null;
-    }
     this.root.dataset.render = "loading";
-    this.setStatus("initializing model space");
-    this.bootPromise = import(THREE_URL).then((THREE) => this.finishBoot(THREE)).catch((error) => this.failBoot(error));
+    this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(([T, { MachineScene }]) => {
+      if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
+      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason));
+      this.root.dataset.render = "webgl"; this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden", "true");
+      this.setCameraEnabled(true); this.setFocus(this.focus); this.draw(); return this.scene;
+    }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Teaching model uses static fallback:", error.message); return null; });
     return this.bootPromise;
   }
-
-  finishBoot(THREE) {
-    this.scene = new MachineScene(THREE, this.root);
-    this.scene.setVisible(this.visible && !document.hidden);
-    this.scene.setFocus(this.root.dataset.modelFocus || "all");
-    this.root.dataset.render = "webgl";
-    this.root.querySelector("[data-machine-fallback]")?.setAttribute("aria-hidden", "true");
-    this.setStatus("machine ready");
-    return this.scene;
+  setCameraEnabled(enabled) {
+    this.root.querySelectorAll("[data-camera]").forEach(button => { button.disabled = !enabled; });
   }
-
-  failBoot(error) {
-    initFallback(this.root, "webgl-load");
-    this.setStatus("machine ready / static view");
-    console.warn("Portfolio model machine fell back to static rendering.", error);
-    return null;
+  fallback(reason) {
+    this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
+    this.setCameraEnabled(false); const fallback = this.root.querySelector("[data-machine-fallback]");
+    fallback.setAttribute("aria-hidden", "false");
+    if (!this.fallbackNodes) this.buildFallback(fallback);
+    this.draw();
   }
-
-  submit(event) {
-    event.preventDefault();
-    this.run(this.input.value);
-  }
-
-  setStatus(text) {
-    this.status.textContent = text;
-  }
-
-  immediateRun(text) {
-    this.output.textContent = continuationFor(text).join(" ").replace(/\s+([.,!?;:])/g, "$1");
-    this.setStatus("complete");
-  }
-
-  async run(text = this.input.value) {
-    const cleaned = text.trim() || "the model learned a useful distinction";
-    this.input.value = cleaned;
-    const tokens = tokenize(cleaned);
-    renderTokens(this.tokenReadout, tokens);
-    this.output.textContent = "";
-    this.setStatus("tokenizing input");
-    const current = await this.boot();
-    if (!current || reduceMotion.matches) return this.immediateRun(cleaned);
-    const emitted = [];
-    current.animateRun(tokens, continuationFor(cleaned), {
-      onEmit: (token) => {
-        emitted.push(token);
-        this.output.textContent = emitted.join(" ").replace(/\s+([.,!?;:])/g, "$1");
-      },
-      onStage: (name) => this.setStatus(machineStatusLabel(name)),
-      onComplete: () => this.setStatus("complete"),
+  buildFallback(fallback) {
+    const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
+    const phone = matchMedia("(max-width:720px)").matches;
+    svg.setAttribute("viewBox", phone ? "0 0 550 1200" : "0 0 1200 550"); svg.setAttribute("aria-hidden", "true");
+    const position = node => { const x = 600 + node.position[0] * 112, y = 275 + (node.position[1] + node.position[2] * .28) * 90; return phone ? [y, x] : [x, y]; };
+    const paths = Array.from({ length: 6 }, () => "");
+    GRAPH.edges.forEach(edge => { paths[edge.layer] += `M${position(GRAPH.nodes[edge.source]).join(",")}L${position(GRAPH.nodes[edge.target]).join(",")}`; });
+    paths.forEach(data => { const path = document.createElementNS(ns, "path"); path.setAttribute("d", data); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", ".6"); path.setAttribute("opacity", ".13"); svg.append(path); });
+    this.fallbackNodes = GRAPH.nodes.map(node => {
+      const circle = document.createElementNS(ns, "circle"), [x, y] = position(node);
+      circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 4); svg.append(circle); return circle;
     });
+    fallback.replaceChildren(svg, element("p", "", "Static graph / same topology and replay frames"));
+  }
+  async run(text = this.input.value) {
+    this.pause(); this.runData = createReplay(text); this.input.value = this.runData.text; this.frame = 0;
+    renderTokens(this.tokenReadout, this.runData.tokens); this.draw(); await this.boot();
+    if (!reduceMotion.matches) this.play(); else this.status.textContent = "Paused / reduced motion. Scrub or step to inspect.";
+  }
+  seek(frame) { this.pause(false); this.frame = clamp(Math.round(frame), 0, LAST_FRAME); this.draw(); }
+  pause(update = true) { this.playing = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; this.lastTime = null; if (update) this.draw(); }
+  play() {
+    if (this.frame === LAST_FRAME) this.frame = 0;
+    this.playing = true; this.lastTime = null; this.draw(); this.syncClock();
+  }
+  syncClock() {
+    const allowed = this.playing && this.visible && !document.hidden;
+    if (!allowed && this.raf) { cancelAnimationFrame(this.raf); this.raf = 0; this.lastTime = null; }
+    if (allowed && !this.raf) this.raf = requestAnimationFrame(time => this.tick(time));
+  }
+  tick(time) {
+    this.raf = 0;
+    if (!this.playing || !this.visible || document.hidden) { this.lastTime = null; return; }
+    if (this.lastTime === null) this.lastTime = time;
+    const delta = time - this.lastTime;
+    // Mobile renders at <=30fps; each displayed state still comes from the 60fps replay table.
+    const interval = matchMedia("(max-width:720px)").matches ? 1000 / 30 : 1000 / FPS;
+    if (delta >= interval - .5) {
+      this.fraction = (this.fraction || 0) + delta * FPS / 1000;
+      const advance = Math.floor(this.fraction); this.fraction -= advance;
+      this.frame = Math.min(LAST_FRAME, this.frame + advance); this.lastTime = time;
+      if (this.frame === LAST_FRAME) this.playing = false;
+      this.draw();
+    }
+    this.syncClock();
+  }
+  draw() {
+    const state = sampleReplay(this.runData, this.frame), node = GRAPH.nodes[this.selected];
+    this.root.dataset.replayFrame = this.frame; this.timeline.value = this.frame;
+    this.timeline.setAttribute("aria-valuetext", `Frame ${this.frame} of ${LAST_FRAME}, ${state.stage}`);
+    this.counter.textContent = `${String(this.frame).padStart(3, "0")} / ${LAST_FRAME}`;
+    this.playButton.textContent = this.playing ? "Pause" : "Play";
+    const status = `${this.playing ? "Playing" : "Paused"} / ${state.stage}${this.root.dataset.render === "fallback" ? " / static graph" : ""}`;
+    if (this.status.textContent !== status) this.status.textContent = status;
+    this.output.textContent = state.emitted.length ? joinTokens(state.emitted) : "Waiting for reconstruction stage (frame 252).";
+    this.probe.replaceChildren(document.createTextNode(`${node.id} · synthetic signal ${state.activations[this.selected].toFixed(3)}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing · frame ${this.frame}`));
+    if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
+    this.scene?.applyFrame(this.runData, state);
+    this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 7 : 4); });
   }
 }
-
-document.querySelectorAll("[data-model-machine]").forEach((root) => new MachineController(root));
+document.querySelectorAll("[data-model-machine]").forEach(root => new MachineController(root));
