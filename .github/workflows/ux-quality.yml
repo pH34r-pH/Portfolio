@@ -49,6 +49,7 @@ jobs:
           node --check site/assets/model-scene.js
           node --check site/assets/model-topology.js
           node --check site/assets/model-light.js
+          node --check site/assets/model-gestures.js
           node scripts/test-model-replay.mjs
           node --check site/assets/research-topology.js
           node --check site/assets/search.js

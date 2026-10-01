@@ -30,7 +30,7 @@ class MachineController {
     if (!this.stage || !this.input || !this.output || !this.status) return;
     this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false;
     this.viewport = matchMedia("(max-width:720px)");
-    this.selected = GRAPH.layers[3][0]; this.runData = createReplay(this.input.value);
+    this.selected = GRAPH.layers[6][0]; this.runData = createReplay(this.input.value);
     this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
     this.buildControls(); this.bindControls(); this.observe(); this.draw();
     const api = {
@@ -47,32 +47,40 @@ class MachineController {
   buildControls() {
     this.root.classList.add("model-machine-replay");
     this.stage.tabIndex = 0; this.stage.setAttribute("role", "group");
-    this.stage.setAttribute("aria-label", "Autoencoder teaching graph. Space plays or pauses. Arrow keys inspect replay frames. W A S D orbit. Plus and minus zoom.");
+    this.stage.setAttribute("aria-label", "Source-bound unit-hypersphere shared-block architecture. Space plays or pauses. Arrow keys inspect replay frames. W A S D orbit. Plus and minus zoom.");
     this.stage.append(element("div", "machine-legend"));
-    this.stage.querySelector(".machine-legend").innerHTML = '<div>48 / 32 / 16 / 8 / 16 / 32 / 48<span>200 nodes · 4,352 edges · 1:1</span></div><div>TEACHING TOPOLOGY<span>Autoencoder / directed dense layers</span></div>';
+    this.stage.querySelector(".machine-legend").innerHTML = '<div>UNIT HYPERSPHERE / DEPTH 3<span>128 wide · 4 heads · one shared block ×3</span></div><div>SOURCE-BOUND ARCHITECTURE<span>1,664 coordinates + 4 operators<br>Dense edges bundled / illustrative signals</span></div>';
     const axes = element("div", "machine-axis-labels");
-    for (const label of ["ENCODER", "8-UNIT BOTTLENECK", "DECODER"]) axes.append(element("span", "", label));
+    for (const label of ["128 STATE", "SHARED BLOCK ×3", "256 BYTE HEAD"]) axes.append(element("span", "", label));
     axes.setAttribute("aria-hidden", "true"); this.stage.append(axes);
     const io = element("div", "machine-io"); this.stage.after(io);
     io.append(this.form, this.root.querySelector(".machine-output"));
-    this.root.querySelector(".machine-console-label").textContent = "Scripted reconstruction";
+    this.root.querySelector(".machine-console-label").textContent = "Scripted byte echo / first 12 bytes";
     this.output.removeAttribute("aria-live");
     const replay = element("div", "machine-replay"); io.before(replay);
     replay.innerHTML = `<div class="machine-transport" role="group" aria-label="Replay controls">
       <button type="button" data-replay-rewind>Rewind</button><button type="button" data-replay-play>Play</button>
-      <button type="button" data-replay-step="-1" aria-label="Previous frame">−1</button><button type="button" data-replay-step="1" aria-label="Next frame">+1</button>
       <label class="machine-timeline">Frame<input data-replay-timeline type="range" min="0" max="${LAST_FRAME}" step="1" value="0" aria-label="Replay frame"><output data-replay-frame>000 / ${LAST_FRAME}</output></label>
-    </div><div class="machine-inspection"><label>Layer<select data-probe-layer aria-label="Inspect layer"></select></label>
-      <label>Node<select data-probe-node aria-label="Inspect node"></select></label><p class="machine-probe" data-probe-readout></p></div>
-    <div class="machine-transport" role="group" aria-label="Camera controls"><button type="button" data-camera="left" aria-label="Orbit left">Orbit ←</button><button type="button" data-camera="right" aria-label="Orbit right">Orbit →</button><button type="button" data-camera="in" aria-label="Zoom in">Zoom +</button><button type="button" data-camera="out" aria-label="Zoom out">Zoom −</button><button type="button" data-camera="reset">Reset view</button></div>`;
+    </div><details class="machine-settings" data-machine-settings><summary><span aria-hidden="true">⚙</span> Settings</summary>
+    <div class="machine-settings-content"><div class="machine-transport" role="group" aria-label="Frame steps"><button type="button" data-replay-step="-1" aria-label="Previous frame">−1 frame</button><button type="button" data-replay-step="1" aria-label="Next frame">+1 frame</button></div>
+    <div class="machine-inspection"><label>Stage<select data-probe-layer aria-label="Inspect layer"></select></label>
+      <label>Coordinate / operator<select data-probe-node aria-label="Inspect node"></select></label><p class="machine-probe" data-probe-readout></p></div>
+    <div class="machine-transport" role="group" aria-label="Camera controls">
+      <button type="button" data-camera="left" aria-label="Orbit left">Orbit ←</button><button type="button" data-camera="right" aria-label="Orbit right">Orbit →</button><button type="button" data-camera="up" aria-label="Orbit up">Orbit ↑</button><button type="button" data-camera="down" aria-label="Orbit down">Orbit ↓</button>
+      <button type="button" data-camera="in" aria-label="Zoom in">Zoom +</button><button type="button" data-camera="out" aria-label="Zoom out">Zoom −</button>
+      <button type="button" data-camera="pan-left" aria-label="Pan left">Pan ←</button><button type="button" data-camera="pan-right" aria-label="Pan right">Pan →</button><button type="button" data-camera="pan-up" aria-label="Pan up">Pan ↑</button><button type="button" data-camera="pan-down" aria-label="Pan down">Pan ↓</button><button type="button" data-camera="reset">Reset view</button>
+    </div></div></details>`;
     replay.append(this.status);
     this.timeline = replay.querySelector("[data-replay-timeline]"); this.counter = replay.querySelector("[data-replay-frame]");
     this.playButton = replay.querySelector("[data-replay-play]"); this.layerSelect = replay.querySelector("[data-probe-layer]");
     this.nodeSelect = replay.querySelector("[data-probe-node]"); this.probe = replay.querySelector("[data-probe-readout]");
     populate(this.layerSelect, TOPOLOGY.names.map((name, index) => [index, `${name} · ${TOPOLOGY.widths[index]}`]));
-    this.layerSelect.value = 3; this.populateNodes();
-    this.root.append(element("p", "machine-disclosure", "Authored autoencoder teaching topology: every node and directed edge is rendered individually. Replay signals and reconstruction are deterministic illustrations, not trained activations, learned weights, or experimental measurements. Input uses simple word/punctuation splitting, limited to 12 tokens."));
-    this.root.append(element("p", "machine-help", "Drag to orbit; use camera buttons to zoom. Focus the graph: Space or K plays/pauses, ←/→ steps a frame (Shift: 10), Home/End seeks, W/A/S/D orbits, +/− zooms. The layer and node selectors inspect any frame, including the static fallback."));
+    this.layerSelect.value = 6; this.populateNodes();
+    const disclosure=element("p", "machine-disclosure", "TopologyTransformer · unit_hypersphere_depth3. One 128-wide phase-attention block (4 heads, 512-wide ReLU FFN) is reused three times, then a 256-byte head. Shown coordinate nodes are 1:1 for one time slice; four attention operators with folded 32-wide contexts, causal time matrices, residual/norm and sphere operations are folded. Dense links are 8×8 bundles (head output bundles: 32×8), not individual weights. ");
+    const source=element("a","","Public source closure / DSL 82a96cbc");source.href=TOPOLOGY.sourceUrl;disclosure.append(source);
+    const identity=element("a","","Architecture identity / aggregation map");identity.href="/assets/model-architecture.json";disclosure.append(document.createTextNode(" · "),identity);
+    disclosure.append(document.createTextNode(". Replay signals and byte echo are deterministic illustrations, not trained activations, predictions or experimental measurements. No optimizer run is performed."));this.root.append(disclosure);
+    this.root.append(element("p", "machine-help", "Inside the viewer: one finger orbits; two pinch-zoom and pan; three scrub replay horizontally when the browser supplies those pointers. Scroll normally outside it. Settings exposes camera, frame-step and inspection alternatives. Focus the graph: Space/K plays or pauses, ←/→ steps (Shift: 10), Home/End seeks, W/A/S/D orbits, I/J/L/U pans, +/− zooms. OS accessibility gestures remain system-owned."));
     this.root.dataset.topology = TOPOLOGY.id;
   }
   bindControls() {
@@ -85,6 +93,7 @@ class MachineController {
     this.nodeSelect.addEventListener("change", () => this.select(Number(this.nodeSelect.value)));
     this.root.querySelectorAll("[data-camera]").forEach(button => button.addEventListener("click", () => this.cameraAction(button.dataset.camera)));
     this.stage.addEventListener("keydown", event => this.keydown(event));
+    const settings=this.root.querySelector("[data-machine-settings]");settings.addEventListener("keydown",event=>{if(event.key==="Escape"){settings.open=false;settings.querySelector("summary").focus();}});
   }
   populateNodes() {
     const layer = Number(this.layerSelect.value);
@@ -97,7 +106,7 @@ class MachineController {
   }
   setFocus(part) {
     this.focus = part; this.scene?.setFocus(part);
-    const layer = { tokenizer: 0, input: 0, representation: 3, consumer: 4, output: 6 }[part];
+    const layer = { tokenizer: 0, input: 0, representation: 6, consumer: 7, output: 7 }[part];
     if (layer !== undefined) this.select(GRAPH.layers[layer][0]);
   }
   keydown(event) {
@@ -106,12 +115,15 @@ class MachineController {
       arrowleft: () => this.seek(this.frame - step), arrowright: () => this.seek(this.frame + step),
       home: () => this.seek(0), end: () => this.seek(LAST_FRAME),
       a: () => this.cameraAction("left"), d: () => this.cameraAction("right"), w: () => this.scene?.orbit(0, -.12), s: () => this.scene?.orbit(0, .12),
+      j: () => this.scene?.panBy(-.15,0), l: () => this.scene?.panBy(.15,0), i: () => this.scene?.panBy(0,.15), u: () => this.scene?.panBy(0,-.15),
       "+": () => this.cameraAction("in"), "=": () => this.cameraAction("in"), "-": () => this.cameraAction("out") };
     if (actions[key]) { event.preventDefault(); actions[key](); }
   }
   cameraAction(action) {
     if (!this.scene) return;
     if (action === "left" || action === "right") this.scene.orbit(action === "left" ? -.15 : .15, 0);
+    else if (action === "up" || action === "down") this.scene.orbit(0,action === "up" ? -.12 : .12);
+    else if (action.startsWith("pan-")) { const vectors={"pan-left":[-.15,0],"pan-right":[.15,0],"pan-up":[0,.15],"pan-down":[0,-.15]};this.scene.panBy(...vectors[action]); }
     else if (action === "reset") this.scene.resetView();
     else this.scene.zoomBy(action === "in" ? .15 : -.15);
   }
@@ -134,10 +146,10 @@ class MachineController {
     this.root.dataset.render = "loading";
     this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(([T, { MachineScene }]) => {
       if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
-      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason));
+      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta));
       this.root.dataset.render = "webgl"; this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden", "true");
       this.setCameraEnabled(true); this.setFocus(this.focus); this.draw(); return this.scene;
-    }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Teaching model uses static fallback:", error.message); return null; });
+    }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Architecture viewer uses static fallback:", error.message); return null; });
     return this.bootPromise;
   }
   setCameraEnabled(enabled) {
@@ -154,13 +166,13 @@ class MachineController {
     const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
     const phone = matchMedia("(max-width:720px)").matches;
     svg.setAttribute("viewBox", phone ? "0 0 550 1200" : "0 0 1200 550"); svg.setAttribute("aria-hidden", "true");
-    const position = node => { const x = 600 + node.position[0] * 112, y = 275 + (node.position[1] + node.position[2] * .28) * 90; return phone ? [y, x] : [x, y]; };
-    const paths = Array.from({ length: 6 }, () => "");
-    GRAPH.edges.forEach(edge => { paths[edge.layer] += `M${position(GRAPH.nodes[edge.source]).join(",")}L${position(GRAPH.nodes[edge.target]).join(",")}`; });
+    const position = node => { const x = 600 + node.position[0] * 112, y = 275 + (node.position[1] + node.position[2] * .28) * 80; return phone ? [y, x] : [x, y]; };
+    const paths = Array.from({ length: TOPOLOGY.widths.length }, () => "");
+    GRAPH.edges.forEach(edge => { paths[edge.layer] += `M${position({position:edge.sourcePosition}).join(",")}L${position({position:edge.targetPosition}).join(",")}`; });
     paths.forEach(data => { const path = document.createElementNS(ns, "path"); path.setAttribute("d", data); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", ".6"); path.setAttribute("opacity", ".13"); svg.append(path); });
     this.fallbackNodes = GRAPH.nodes.map(node => {
       const circle = document.createElementNS(ns, "circle"), [x, y] = position(node);
-      circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 4); svg.append(circle); return circle;
+      circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 2.8); svg.append(circle); return circle;
     });
     fallback.replaceChildren(svg, element("p", "", "Static graph / same topology and replay frames"));
   }
@@ -207,11 +219,11 @@ class MachineController {
     this.playButton.textContent = this.playing ? "Pause" : "Play";
     const status = `${this.playing ? "Playing" : "Paused"} / ${state.stage}${this.root.dataset.render === "fallback" ? " / static graph" : ""}`;
     if (this.status.textContent !== status) this.status.textContent = status;
-    this.output.textContent = state.emitted.length ? joinTokens(state.emitted) : "Waiting for reconstruction stage (frame 252).";
-    this.probe.replaceChildren(document.createTextNode(`${node.id} · synthetic signal ${state.activations[this.selected].toFixed(3)}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing · frame ${this.frame}`));
+    this.output.textContent = state.emitted.length ? joinTokens(state.emitted) : "Waiting for scripted echo (frame 252).";
+    this.probe.replaceChildren(document.createTextNode(`${node.id} · ${node.label} · synthetic signal ${state.activations[this.selected].toFixed(3)}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing display routes (bundled) · frame ${this.frame}`));
     if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
     this.scene?.applyFrame(this.runData, state); this.publishLight();
-    this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 7 : 4); });
+    this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 4.9 : 2.8); });
   }
 }
 document.querySelectorAll("[data-model-machine]").forEach(root => new MachineController(root));

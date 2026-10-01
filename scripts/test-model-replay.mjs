@@ -2,17 +2,25 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { sampleModelLight } from '../site/assets/model-light.js';
+import { ModelGestures } from '../site/assets/model-gestures.js';
 import { GRAPH, TOPOLOGY, LAST_FRAME, createReplay, sampleReplay } from '../site/assets/model-topology.js';
-assert.equal(GRAPH.nodes.length, 200);
-assert.equal(GRAPH.edges.length, 4352);
+assert.equal(GRAPH.nodes.length, 1668);
+assert.equal(GRAPH.edges.length, 3601);
+assert.equal(TOPOLOGY.sharedBlocks,1); assert.equal(TOPOLOGY.effectiveDepth,3);
+assert.equal(TOPOLOGY.width,128);assert.equal(TOPOLOGY.heads,4);assert.equal(TOPOLOGY.ffn,512);assert.equal(TOPOLOGY.vocabulary,256);
+assert.equal(GRAPH.nodes.filter(node=>node.operator).length,4);
+const dense=GRAPH.edges.filter(edge=>edge.kind.includes('dense')||edge.kind.includes('output projection'));
+assert.equal(dense.reduce((sum,edge)=>sum+edge.represented,0),229376);
 assert.deepEqual(GRAPH.layers.map(layer => layer.length), TOPOLOGY.widths);
-const unique = new Set(GRAPH.edges.map(edge => `${edge.source}:${edge.target}`));
+const unique = new Set(GRAPH.edges.map(edge => `${edge.source}:${edge.target}:${edge.kind}`));
 assert.equal(unique.size, GRAPH.edges.length);
-for (const edge of GRAPH.edges) assert.equal(GRAPH.nodes[edge.target].layer, GRAPH.nodes[edge.source].layer + 1);
-for (const node of GRAPH.nodes) {
-  assert.equal(node.incoming.length, TOPOLOGY.widths[node.layer - 1] || 0);
-  assert.equal(node.outgoing.length, TOPOLOGY.widths[node.layer + 1] || 0);
+for (const [index,edge] of GRAPH.edges.entries()) {
+  assert.ok(edge.sourceMembers.length && edge.targetMembers.length);
+  for(const member of edge.sourceMembers)assert.ok(GRAPH.nodes[member].outgoing.includes(index));
+  for(const member of edge.targetMembers)assert.ok(GRAPH.nodes[member].incoming.includes(index));
 }
+for(let head=0;head<4;head++)assert.equal(GRAPH.nodes[GRAPH.layers[2][head]].incoming.length,12);
+assert.equal(GRAPH.edges.filter(edge=>edge.kind.startsWith('shared block')).length,1);
 const run = createReplay('Replay this exact frame.');
 const forward = Array.from({length: LAST_FRAME + 1}, (_, frame) => sampleReplay(run, frame));
 for (let frame = LAST_FRAME; frame >= 0; frame--) {
@@ -33,6 +41,16 @@ for (const vertical of [false,true]) {
  }
 }
 console.log('Scene lighting passed all 361 frames in horizontal and vertical compositions.');
+
+const changes=[];const gestures=new ModelGestures(Object.fromEntries(['orbit','zoom','pan','scrub'].map(name=>[name,(...args)=>changes.push({name,args})])));
+gestures.down(1,10,20);gestures.move(1,20,30);assert.equal(changes.at(-1).name,'orbit');
+gestures.down(2,40,30);const count=changes.length;gestures.move(2,40,30);assert.equal(changes.length,count+2);assert.deepEqual(changes.at(-1).args,[0,0]);assert.equal(changes.at(-2).args[0],1);
+gestures.move(2,60,30);assert.ok(changes.at(-2).args[0]>1);
+gestures.down(3,70,30);gestures.move(3,100,30);assert.equal(changes.at(-1).name,'scrub');assert.equal(changes.at(-1).args[0],10);
+assert.equal(gestures.up(3),false);const after=changes.length;gestures.move(1,20,30);assert.deepEqual(changes.slice(after).map(change=>change.args),[[1],[0,0]]);
+gestures.up(2,true);gestures.up(1,true);gestures.down(4,5,5);assert.equal(gestures.up(4),true);
+gestures.down(5,5,5);gestures.clear();gestures.move(5,30,30);assert.equal(gestures.points.size,0);
+console.log('Pointer transitions, orbit, pinch/pan, replay scrub and cancellation passed.');
 
 const engineHashes={
  'three.module.js':'9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea',

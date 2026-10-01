@@ -1,21 +1,21 @@
 import { GRAPH, sampleReplay, clamp } from "./model-topology.js";
 
-// Visual coordinates of the authored teaching graph, not scientific telemetry.
+// Visual coordinates of the source-bound schematic, not scientific telemetry.
 export function sampleModelLight(run, frame, vertical = false) {
   const state = sampleReplay(run, frame);
   const layerTotals = Array.from({ length: GRAPH.layers.length }, () => 0);
   let total = 0, flow = 0, offset = 0, depth = 0;
   GRAPH.nodes.forEach((node, index) => {
     const signal = state.activations[index]; layerTotals[node.layer] += signal;
-    total += signal; flow += signal * node.layer / 6;
+    total += signal; flow += signal * node.layer / (GRAPH.layers.length-1);
     offset += signal * node.position[1]; depth += signal * node.position[2];
   });
   const energy = Math.max(...layerTotals.map((value, layer) => value / GRAPH.layers[layer].length));
   const axis = total > 0 ? flow / total : .5;
-  const cross = total > 0 ? clamp(.5 + offset / total / 4.24, 0, 1) : .5;
+  const cross = total > 0 ? clamp(.5 + offset / total / 5.2, 0, 1) : .5;
   return Object.freeze({ frame: state.frame, energy: +energy.toFixed(4),
     x: +(vertical ? cross : axis).toFixed(4), y: +(vertical ? axis : cross).toFixed(4),
-    depth: +(total > 0 ? clamp(.5 + depth / total / 4.24, 0, 1) : .5).toFixed(4) });
+    depth: +(total > 0 ? clamp(.5 + depth / total / 5.2, 0, 1) : .5).toFixed(4) });
 }
 
 export class ModelLightPublisher {

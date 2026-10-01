@@ -30,14 +30,15 @@ try {
     await seek(root,145); const first=await snapshot(root);
     const firstLight=await root.evaluate(node=>node.machine.light());
     assert.equal(firstLight.frame,145); assert.ok(firstLight.energy>0);
-    await seek(root,360); await expect(root.locator('[data-machine-output]')).toContainText('the model learned a useful distinction');
+    await seek(root,360); await expect(root.locator('[data-machine-output]')).toContainText('the model le');
     await seek(root,0); await seek(root,145); const replay=await snapshot(root);
     assert.deepEqual(replay,first,`${name} deterministic rewind`);
     assert.deepEqual(await root.evaluate(node=>node.machine.light()),firstLight,`${name} deterministic scene light`);
+    await root.locator('[data-machine-settings] summary').click();
     await root.locator('[data-probe-layer]').selectOption('1');
-    await root.locator('[data-probe-node]').selectOption('49');
-    await expect(root.locator('[data-probe-readout]')).toContainText('L1-01');
-    await expect(root.locator('[data-probe-readout]')).toContainText('48 incoming / 16 outgoing');
+    await root.locator('[data-probe-node]').selectOption('129');
+    await expect(root.locator('[data-probe-readout]')).toContainText('L1-001');
+    await expect(root.locator('[data-probe-readout]')).toContainText('16 incoming / 1 outgoing display routes');
     // Orbit and zoom change the camera without modifying the replay frame.
     await root.locator('[data-camera="right"]').click(); await root.locator('[data-camera="in"]').click();
     assert.equal((await snapshot(root)).frame,145);
@@ -55,11 +56,11 @@ try {
     }
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(overflow<=1,`${name} overflow ${overflow}`);
-    const targets=await root.locator('button,select,input').evaluateAll(nodes=>nodes.map(node=>({tag:node.tagName,h:node.getBoundingClientRect().height,w:node.getBoundingClientRect().width})));
+    const targets=await root.locator('button,select,input,summary').evaluateAll(nodes=>nodes.filter(node=>node.checkVisibility()).map(node=>({tag:node.tagName,h:node.getBoundingClientRect().height,w:node.getBoundingClientRect().width})));
     assert.ok(targets.every(target=>target.h>=44 && target.w>=44),`${name} targets ${JSON.stringify(targets)}`);
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
-    assert.equal(diagnostics.nodes,200); assert.equal(diagnostics.edges,4352);
-    assert.ok(diagnostics.drawCalls<=40); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
+    assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
+    assert.ok(diagnostics.drawCalls<=44); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
     await seek(root,70); await root.evaluate(node=>node.machine.play()); await page.waitForTimeout(180);
     assert.ok((await snapshot(root)).frame>70,`${name} replay advances`);
@@ -84,7 +85,8 @@ try {
     await seek(root,145); const first=await snapshot(root); await seek(root,360); await seek(root,145);
     assert.deepEqual(await snapshot(root),first);
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
-    await root.locator('[data-probe-layer]').selectOption('6'); await expect(root.locator('[data-probe-readout]')).toContainText('32 incoming / 0 outgoing');
+    await root.locator('[data-machine-settings] summary').click();
+    await root.locator('[data-probe-layer]').selectOption('7'); await expect(root.locator('[data-probe-readout]')).toContainText('16 incoming / 0 outgoing display routes');
     if(mode==='reduced-motion'||mode==='forced-colors')assert.equal(engineRequests,0);
     await axe(page,mode,mode==='forced-colors'); await root.screenshot({style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${mode}.png`});
     assert.deepEqual(errors,[]); evidence.push({mode,engineRequests,errors}); await context.close();

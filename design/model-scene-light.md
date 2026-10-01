@@ -6,27 +6,61 @@ worker owns glass depth, scroll parallax and consumption of the light contract.
 Model host enhancements apply equally to the homepage and generated article
 hosts; the publication assembler and export contracts remain authoritative.
 
-## Topology and the 1:1 boundary
+## Source-bound topology and aggregation
 
-`model-topology.js` authors an illustrative fully connected autoencoder:
-`48 → 32 → 16 → 8 → 16 → 32 → 48`.
+Default: `TopologyTransformer`, `condition="unit_hypersphere_depth3"`. The
+already-public Compiler source closure at `7bf2e42fe1882e3bed9828b43f4354523fd50bd5`
+binds DSL source `82a96cbc5d3da5bd5dfe76e3b1b877be996e5df6`. Its source archive
+SHA-256 is `eab904df49ef5f85ef11f12dac065dfa4cad52220d9d8257096513481d5c660f`.
+`site/assets/model-architecture.json` records member hashes, architecture identity
+and the display counting/aggregation map. No private source, tensors or result
+payloads are copied into Portfolio.
 
-- 200 nodes: the sum of those seven widths. Each has a unique `L{layer}-{index}`
-  identifier and a distinct 3D position. Layers are disks in the YZ plane,
-  separated by 1.48 visual scene units on X. Radii are
-  `[2.12, 1.64, 1.08, 0.49, 1.08, 1.64, 2.12]` visual units.
-- 4,352 directed edges: every source/target pair between each adjacent layer,
-  with no intra-layer edges or skip links.
-  `2 × (48×32 + 32×16 + 16×8) = 4,352`.
-- Each node is one rendered mesh instance; each graph edge is one line segment
-  in a batched buffer. Frames/chassis/pulse carriers are separate hardware and
-  replay illustrations, never counted as graph nodes or edges. The inspector
-  adds a highlight overlay of the selected node's existing incident edges.
-- There is no aggregation in this graph, including the static SVG fallback.
-  The 1:1 claim covers this explicit teaching graph only. The supplied public
-  metadata does not contain an exported trained autoencoder/activation graph.
-  The topology, signals and scripted reconstruction do not establish trained
-  behavior or research measurements.
+The retained implementation and current source were read without numerical
+imports, checkpoint loading or training. Both have a 128-wide state, four
+32-wide heads, a 512-wide ReLU FFN, one parameter block reused three times,
+phase-preserving Hermitian Q/K, causal/time masks, fixed sinusoidal position,
+sphere log/exp updates and a 128→256 affine byte head. The current class
+constructor and sharing method are AST-identical to the public retained closure;
+its recurrent step is now factored into a helper. The display is bound to the
+public retained architecture, not a claim that a fresh optimizer run completed.
+
+- 1,664 shown coordinate nodes plus four head operator nodes, for one time slice.
+  State 128 → Q/K/V 384 → four folded attention operators → projection/residual/
+  norm 128 → ReLU FFN 512 → return/residual/norm 128 → sphere state 128 → byte
+  logits 256. Q/K/V coordinates are grouped by their four actual heads.
+- 3,601 display routes. The learned dense matrices have 229,376 coordinate
+  connections: 384×128 + 128×128 + 512×128 + 128×512 + 256×128.
+  Dense links use 8×8 bundles (64 relations/segment). Attention context plus
+  output projection uses 32×8 bundles (256 relations/segment). Labels and the
+  inspector say **bundled display routes**, not individual learned weights.
+- Four attention contexts, their time-dependent causal matrices, arithmetic of
+  residuals/LayerNorm and sphere geometry, and frozen spectral/log-polar frontend
+  preparation are folded. The recurrence loop means one shared block applied
+  three times; three parameter copies are not invented. The decorative hardware
+  is excluded from all graph counts.
+- Node radii are 0.0595 scene units, 30% smaller than the previous 0.085. Dense
+  line thickness is unchanged. Low-poly instanced geometry and batched routes
+  keep the complete displayed coordinate graph available on phones.
+- Replay has a deterministic 361-frame table, hashed illustrative signals and a
+  scripted echo of the first 12 UTF-8 bytes. It does not call the frozen frontend,
+  Transformer, optimizer or a scientific inference service. It supplies no
+  trained activation, prediction, measurement or current AdamW/Muon evidence.
+
+## Input and accessible controls
+
+The replay timeline, Play/Pause and Rewind remain exposed. Native details/summary
+provides a Settings gear panel for frame steps, coordinate/operator inspection,
+orbit, zoom, pan and reset. Escape closes Settings and returns its summary focus.
+Graph keyboard controls remain available without opening the panel.
+
+Pointer capture is confined to the viewer: one pointer orbits, two pinch and pan,
+three horizontal pointers scrub. Every pointer-count change rebases centroid and
+pinch distance without applying a delta. Cancel, lost capture, blur and scene
+disposal clear/rebase state. Outside the canvas, document touch scrolling remains
+native. No OS/global gesture handlers or browser Ctrl-wheel interception are
+installed. OS accessibility gestures remain system-owned; pointer emulation does
+not establish physical three-finger compatibility on a Samsung device.
 
 ## Shared light values
 

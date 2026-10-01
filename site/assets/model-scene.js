@@ -1,9 +1,10 @@
 import { sampleModelLight } from "./model-light.js";
-import { GRAPH, TOPOLOGY, clamp, hashText } from "./model-topology.js";
+import { GRAPH, TOPOLOGY, clamp, hashText, layerX } from "./model-topology.js";
+import { ModelGestures } from "./model-gestures.js";
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
-  constructor(T, root, selectNode, fail) {
+  constructor(T, root, selectNode, fail, scrub) {
     this.T = T; this.root = root; this.canvas = root.querySelector("[data-machine-canvas]");
     const options = { alpha: true, antialias: !mobile(), powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
@@ -16,7 +17,7 @@ export class MachineScene {
     this.scene = new T.Scene();
     this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
     this.machine = new T.Group(); this.scene.add(this.machine);
-    this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.selected = GRAPH.layers[3][0]; this.focus = "all";
+    this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan = {x:0,y:0}; this.selected = GRAPH.layers[6][0]; this.focus = "all";
     this.materials = {
       shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
       ceramic: new T.MeshStandardMaterial({ color: 0x8faabd, metalness: .32, roughness: .23 }),
@@ -28,7 +29,7 @@ export class MachineScene {
     };
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
-    this.bindOrbit(selectNode);
+    this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
     this.canvas.addEventListener("webglcontextlost", this.contextLost);
     this.resizeObserver = new ResizeObserver(() => this.resize()); this.resizeObserver.observe(this.canvas);
@@ -38,8 +39,8 @@ export class MachineScene {
   }
   buildGraph() {
     const T = this.T;
-    this.beads = new T.InstancedMesh(new T.SphereGeometry(.085, 16, 12), this.materials.node, GRAPH.nodes.length);
-    this.cores = new T.InstancedMesh(new T.SphereGeometry(.025, 10, 8), this.materials.core, GRAPH.nodes.length);
+    this.beads = new T.InstancedMesh(new T.SphereGeometry(.0595, 10, 8), this.materials.node, GRAPH.nodes.length);
+    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 8, 6), this.materials.core, GRAPH.nodes.length);
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
@@ -47,20 +48,23 @@ export class MachineScene {
       this.beads.setColorAt(index, this.color.set(0xa5c2d8)); this.cores.setColorAt(index, this.color.set(0x062940));
     });
     this.machine.add(this.beads, this.cores);
-    const positions = new Float32Array(GRAPH.edges.length * 6);
-    GRAPH.edges.forEach((edge, index) => {
-      positions.set(GRAPH.nodes[edge.source].position, index * 6);
-      positions.set(GRAPH.nodes[edge.target].position, index * 6 + 3);
+    const segments=[];this.edgeOffsets=[];
+    GRAPH.edges.forEach(edge=>{
+      this.edgeOffsets.push(segments.length);
+      const points=this.edgePoints(edge);
+      for(let index=1;index<points.length;index++)segments.push(...points[index-1],...points[index]);
     });
+    this.edgeOffsets.push(segments.length);
+    const positions=new Float32Array(segments);
     this.edgeColors = new Float32Array(positions.length);
     this.edgeGeometry = new T.BufferGeometry();
     this.edgeGeometry.setAttribute("position", new T.BufferAttribute(positions, 3));
     this.edgeGeometry.setAttribute("color", new T.BufferAttribute(this.edgeColors, 3).setUsage(T.DynamicDrawUsage));
     this.edges = new T.LineSegments(this.edgeGeometry, this.materials.edge); this.machine.add(this.edges);
     this.probe = new T.LineSegments(new T.BufferGeometry(), this.materials.probe); this.machine.add(this.probe);
-    this.selection = new T.Mesh(new T.TorusGeometry(.145, .016, 6, 32), this.materials.signal);
+    this.selection = new T.Mesh(new T.TorusGeometry(.1015, .0112, 6, 32), this.materials.signal);
     this.machine.add(this.selection);
-    this.pulses = new T.InstancedMesh(new T.SphereGeometry(.065, 10, 8), this.materials.signal, 12);
+    this.pulses = new T.InstancedMesh(new T.SphereGeometry(.0455, 8, 6), this.materials.signal, 12);
     this.tokens = new T.InstancedMesh(new T.BoxGeometry(.21, .15, .22), this.materials.ceramic, 12);
     this.machine.add(this.pulses, this.tokens);
     this.select(this.selected);
@@ -69,9 +73,9 @@ export class MachineScene {
     const T = this.T;
     this.frames = [];
     const boltGeometry = new T.CylinderGeometry(.035, .035, .11, 6);
-    const bolts = new T.InstancedMesh(boltGeometry, this.materials.ceramic, 56);
+    const bolts = new T.InstancedMesh(boltGeometry, this.materials.ceramic, TOPOLOGY.widths.length*8);
     TOPOLOGY.radii.forEach((radius, layer) => {
-      const x = (layer - 3) * 1.48, outer = radius + .2;
+      const x = layerX(layer), outer = radius + .2;
       const rim = new T.Mesh(new T.TorusGeometry(outer, .038, 8, 72), this.materials.shell);
       rim.rotation.y = Math.PI / 2; rim.position.x = x; this.machine.add(rim); this.frames.push(rim);
       const trim = new T.Mesh(new T.TorusGeometry(outer + .065, .008, 4, 72), this.materials.ceramic);
@@ -117,8 +121,8 @@ export class MachineScene {
     const tangent = Math.tan(14 * Math.PI / 180);
     const distance = mobile() ? Math.max(6.5 / tangent, 2.9 / (tangent * this.camera.aspect))
       : Math.max(3.7 / tangent, 6.4 / (tangent * this.camera.aspect));
-    this.camera.position.set(0, mobile() ? .35 : 1.7, distance / this.zoom);
-    this.camera.lookAt(0, 0, 0); this.camera.updateProjectionMatrix();
+    this.camera.position.set(this.pan.x, (mobile() ? .35 : 1.7)+this.pan.y, distance / this.zoom);
+    this.camera.lookAt(this.pan.x, this.pan.y, 0); this.camera.updateProjectionMatrix();
     this.machine.rotation.set(this.pitch, this.yaw, mobile() ? -Math.PI / 2 : 0);
     this.render();
   }
@@ -142,19 +146,15 @@ export class MachineScene {
       this.cores.setColorAt(index, this.color.setRGB(.012 + value * .18, .04 + value * .7, .09 + value * 1.4));
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
       this.beads.setMatrixAt(index, this.dummy.matrix);
-      this.dummy.position.z += .098; this.dummy.updateMatrix(); this.cores.setMatrixAt(index, this.dummy.matrix);
+      this.dummy.position.z += .0686; this.dummy.updateMatrix(); this.cores.setMatrixAt(index, this.dummy.matrix);
     });
     this.dummy.scale.setScalar(1);
     this.beads.instanceColor.needsUpdate = true; this.cores.instanceColor.needsUpdate = true;
     this.beads.instanceMatrix.needsUpdate = true; this.cores.instanceMatrix.needsUpdate = true;
-    GRAPH.edges.forEach((edge, index) => {
-      const value = Math.min(state.activations[edge.source], state.activations[edge.target]);
-      const intensity = .15 + value * .85;
-      for (let end = 0; end < 2; end++) {
-        const offset = index * 6 + end * 3;
-        this.edgeColors[offset] = intensity * .12;
-        this.edgeColors[offset + 1] = intensity * .55;
-        this.edgeColors[offset + 2] = intensity;
+    GRAPH.edges.forEach((edge,index)=>{
+      const value=Math.min(state.activations[edge.source],state.activations[edge.target]),intensity=.15+value*.85;
+      for(let offset=this.edgeOffsets[index];offset<this.edgeOffsets[index+1];offset+=3) {
+        this.edgeColors[offset]=intensity*.12;this.edgeColors[offset+1]=intensity*.55;this.edgeColors[offset+2]=intensity;
       }
     });
     this.edgeGeometry.attributes.color.needsUpdate = true;
@@ -168,12 +168,12 @@ export class MachineScene {
     this.pulses.count = run.tokens.length; this.tokens.count = run.tokens.length;
     run.tokens.forEach((token, index) => {
       const delay = index * 2;
-      const progress = (frame - 54 - delay) / 29;
-      const layer = clamp(Math.floor(progress), 0, 5), amount = clamp(progress - layer, 0, 1);
+      const progress = (frame - 54 - delay) / 25;
+      const layer = clamp(Math.floor(progress), 0, GRAPH.layers.length-2), amount = clamp(progress - layer, 0, 1);
       const pathNode = depth => GRAPH.nodes[GRAPH.layers[depth][hashText(`${run.seed}:${index}:${depth}`) % TOPOLOGY.widths[depth]]];
       const a = pathNode(layer).position, b = pathNode(layer + 1).position;
       this.dummy.position.set(...a).lerp(new T.Vector3(...b), amount);
-      this.dummy.scale.setScalar(progress >= 0 && progress < 6 ? 1 : 0); this.dummy.updateMatrix();
+      this.dummy.scale.setScalar(progress >= 0 && progress < GRAPH.layers.length-1 ? 1 : 0); this.dummy.updateMatrix();
       this.pulses.setMatrixAt(index, this.dummy.matrix);
       const input = frame < 54, t = input ? clamp((frame - delay) / 46, 0, 1) : clamp((frame - 252 - index * 8) / 20, 0, 1);
       this.dummy.position.set(input ? -6 + t * 1.48 : 4.45 + t * 1.55, (index - (run.tokens.length - 1) / 2) * .13, .02);
@@ -187,7 +187,7 @@ export class MachineScene {
     const node = GRAPH.nodes[index]; this.selection.position.set(...node.position);
     const points = [];
     for (const edgeIndex of [...node.incoming, ...node.outgoing]) {
-      const edge = GRAPH.edges[edgeIndex]; points.push(new this.T.Vector3(...GRAPH.nodes[edge.source].position), new this.T.Vector3(...GRAPH.nodes[edge.target].position));
+      const edge = GRAPH.edges[edgeIndex]; const route=this.edgePoints(edge);for(let index=1;index<route.length;index++)points.push(new this.T.Vector3(...route[index-1]),new this.T.Vector3(...route[index]));
     }
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) this.applyFrame(this.run, this.snapshot); else this.render();
@@ -195,33 +195,45 @@ export class MachineScene {
   setFocus(part) { this.focus = part; if (this.snapshot) this.applyFrame(this.run, this.snapshot); }
   orbit(dx, dy) { this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.resize(); }
   zoomBy(amount) { this.zoom = clamp(this.zoom + amount, .75, 1.8); this.resize(); }
-  resetView() { this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.resize(); }
-  bindOrbit(selectNode) {
-    this.abort = new AbortController(); const options = { signal: this.abort.signal };
-    let drag;
-    this.canvas.addEventListener("pointerdown", event => { drag = { x: event.clientX, y: event.clientY, moved: 0 }; this.canvas.setPointerCapture(event.pointerId); }, options);
-    this.canvas.addEventListener("pointermove", event => {
-      if (!drag) return;
-      const dx = event.clientX - drag.x, dy = event.clientY - drag.y; drag.moved += Math.abs(dx) + Math.abs(dy);
-      // Touch leaves vertical document scrolling intact; horizontal drag orbits.
-      this.orbit(dx * .007, event.pointerType === "touch" ? 0 : dy * .005);
-      drag.x = event.clientX; drag.y = event.clientY;
-    }, options);
-    this.canvas.addEventListener("pointerup", event => {
-      if (drag && drag.moved < 8) {
-        const rect = this.canvas.getBoundingClientRect(), pointer = new this.T.Vector2((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
-        const ray = new this.T.Raycaster(); ray.setFromCamera(pointer, this.camera);
-        const hit = ray.intersectObject(this.beads)[0]; if (hit?.instanceId !== undefined) selectNode(hit.instanceId);
-      }
-      drag = null;
-    }, options);
-    this.canvas.addEventListener("pointercancel", () => { drag = null; }, options);
-    this.canvas.addEventListener("wheel", event => { if (event.ctrlKey) { event.preventDefault(); this.zoomBy(-event.deltaY * .002); } }, { ...options, passive: false });
+  resetView() { this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.resize(); }
+  panBy(dx,dy) { this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.resize(); }
+  edgePoints(edge) {
+    const a=edge.sourcePosition,b=edge.targetPosition;
+    if(edge.kind.startsWith("shared block"))return [a,[a[0],3.05,-.3],[b[0],3.05,-.3],b];
+    if(edge.kind.startsWith("residual"))return [a,[a[0],-2.85,-.2],[b[0],-2.85,-.2],b];
+    return [a,b];
   }
-  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), frame: this.snapshot?.frame }; }
+  bindOrbit(selectNode,scrub) {
+    this.abort=new AbortController();const options={signal:this.abort.signal};
+    this.gestures=new ModelGestures({
+      orbit:(dx,dy)=>this.orbit(dx*.007,dy*.005),
+      zoom:ratio=>{this.zoom=clamp(this.zoom*ratio,.75,1.8);this.resize();},
+      pan:(dx,dy)=>this.panBy(-dx*.012,dy*.012),
+      scrub:dx=>scrub(dx*360/Math.max(this.canvas.clientWidth,1)),
+    });
+    this.canvas.addEventListener("pointerdown",event=>{
+      if(event.button!==0)return;
+      this.gestures.down(event.pointerId,event.clientX,event.clientY);this.canvas.setPointerCapture(event.pointerId);
+    },options);
+    this.canvas.addEventListener("pointermove",event=>this.gestures.move(event.pointerId,event.clientX,event.clientY),options);
+    this.canvas.addEventListener("pointerup",event=>{
+      const select=this.gestures.up(event.pointerId);
+      if(this.canvas.hasPointerCapture(event.pointerId))this.canvas.releasePointerCapture(event.pointerId);
+      if(select) {
+        const rect=this.canvas.getBoundingClientRect(),pointer=new this.T.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+        const ray=new this.T.Raycaster();ray.setFromCamera(pointer,this.camera);
+        const hit=ray.intersectObject(this.beads)[0];if(hit?.instanceId!==undefined)selectNode(hit.instanceId);
+      }
+    },options);
+    for(const type of ["pointercancel","lostpointercapture"])this.canvas.addEventListener(type,event=>this.gestures.up(event.pointerId,true),options);
+    window.addEventListener("blur",()=>this.gestures.clear(),options);
+    // No global touch listeners or gesture prevention: OS gestures remain OS-owned.
+    // Native browser zoom is retained; camera zoom has pinch/buttons/keyboard alternatives.
+  }
+  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {
     if (this.disposed) return; this.disposed = true;
-    this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
+    this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
     this.canvas.removeEventListener("webglcontextlost", this.contextLost);
     const geometry = new Set(), materials = new Set();
     this.scene.traverse(object => { if (object.geometry) geometry.add(object.geometry); if (object.material) materials.add(object.material); });

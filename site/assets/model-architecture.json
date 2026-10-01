@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "architecture": {
+    "condition": "unit_hypersphere_depth3",
+    "canonical_width": 128,
+    "heads": 4,
+    "head_width": 32,
+    "shared_blocks": 1,
+    "effective_depth": 3,
+    "ffn_width": 512,
+    "activation": "relu",
+    "vocabulary": 256,
+    "causal_mask": true,
+    "position": "fixed sinusoid",
+    "sphere_update": "sphere_log_map then sphere_exp_map",
+    "frontend_dimension": 32,
+    "frontend_window": 4
+  },
+  "architectureIdentitySha256": "dbe7e68ef44d0fd7ba8409b8058e7b71a233fa8fc1b2ae707e56b7eaea9522ed",
+  "publicRepository": "pH34r-pH/experiment-compiler",
+  "publicCommit": "7bf2e42fe1882e3bed9828b43f4354523fd50bd5",
+  "publicPackage": "examples/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154",
+  "dslSourceCommit": "82a96cbc5d3da5bd5dfe76e3b1b877be996e5df6",
+  "sourceArchiveSha256": "eab904df49ef5f85ef11f12dac065dfa4cad52220d9d8257096513481d5c660f",
+  "sourceMembers": {
+    "retained_radius_topology.py": "77d3595b941db005946d8a09964c89ca9562db23ba64f065a675fb4aaa3718fc",
+    "log_polar_no_composition.py": "acb8078d43d56aae1b5136d48537cef0974251322d7dffbe330935777082345e",
+    "phase_operation_ablations.py": "afc9581847948e9f047a309ff8d1b3cb6ba6b3edf52019be49be3c4ca2ca7fab",
+    "oracle_no_composition.py": "d8bbc84fbb1844636384efb74fd9e6728a7ca20e309f7402f8f50524b30213cc",
+    "spectral.py": "da88c1a1145e545197ea7f3171cda5e9987912c9419d867149dac4ee120f4562"
+  },
+  "display": {
+    "coordinateNodes": 1664,
+    "operatorNodes": 4,
+    "displayRoutes": 3601,
+    "representedDenseConnections": 229376,
+    "denseBundle": "8 source \u00d7 8 target coordinates",
+    "headOutputBundle": "32 head context \u00d7 8 target coordinates",
+    "folded": [
+      "time-dependent causal attention matrices",
+      "residual and LayerNorm arithmetic",
+      "sphere geometry arithmetic",
+      "three executions of one shared parameter block",
+      "frozen frontend preparation"
+    ]
+  },
+  "replay": "Deterministic illustrative signal and UTF-8 byte echo; no model, trained tensors, optimizer execution or measurement."
+}
