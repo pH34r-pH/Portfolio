@@ -101,3 +101,41 @@ async function loadPublication() {
   }
 }
 loadPublication();
+
+/* Move the environmental field only when the reader moves through the page.
+   It remains a quiet, deterministic depth cue and disappears under reduced
+   motion rather than running as a permanent animation. */
+function setupFieldResponse() {
+  const root = document.documentElement;
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+  let frame = 0;
+
+  const writeField = () => {
+    frame = 0;
+    if (reduced.matches) {
+      root.style.setProperty("--field-shift-x", "0px");
+      root.style.setProperty("--field-shift-y", "0px");
+      root.style.setProperty("--glass-scroll-y", "0px");
+      return;
+    }
+
+    const range = Math.max(1, document.documentElement.scrollHeight - innerHeight);
+    const progress = Math.min(1, Math.max(0, scrollY / range));
+    const shift = progress * 34 - 10;
+    const lateral = Math.sin(progress * Math.PI) * 12;
+    root.style.setProperty("--field-shift-x", `${lateral.toFixed(1)}px`);
+    root.style.setProperty("--field-shift-y", `${shift.toFixed(1)}px`);
+    root.style.setProperty("--glass-scroll-y", `${((progress * 2 - 1) * 16).toFixed(1)}px`);
+  };
+
+  const schedule = () => {
+    if (!frame) frame = requestAnimationFrame(writeField);
+  };
+
+  writeField();
+  addEventListener("scroll", schedule, { passive: true });
+  addEventListener("resize", schedule, { passive: true });
+  reduced.addEventListener?.("change", schedule);
+}
+
+setupFieldResponse();

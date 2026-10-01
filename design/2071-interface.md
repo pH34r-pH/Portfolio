@@ -169,6 +169,15 @@ Every node can expose:
 
 A conventional accessible list remains available from the same data.
 
+The presentation keeps the graph relationship legible at every width. Desktop
+and tablet use dependency-depth columns with curved horizontal edges. At phone
+widths (up to 640px), the same publication-derived nodes become one full-width
+vertical sequence and each dependency edge turns into a vertical curve ending at
+the dependent node. The renderer changes geometry only; it does not rewrite
+`dependsOn`, frontier fields, article routes, or publication claims. Node
+buttons support pointer selection plus Arrow, Home, and End navigation, while
+the accessible list remains the semantic fallback.
+
 ## Article composition
 
 Each flagship article receives an article-specific transformation of the shared
@@ -198,6 +207,22 @@ Navigation should feel cyberpunk-technologist, not print-shop:
 
 Target transition duration is short enough to feel computational rather than
 cinematic. The destination must remain usable if animation fails.
+
+The shared shell uses a layered glass material for menus and information
+surfaces: tinted fill, background blur/saturation, a specular top edge, a dark
+low edge, and a restrained cast shadow. The body field is a static dimensional
+gradient whose coordinates shift only in response to scroll; reduced motion
+freezes the field and removes spatial transitions. This is optical depth for
+hierarchy, not an opacity treatment or permanent ambient animation.
+
+The model scene may publish a bounded lighting hint on the document root:
+`--model-light-x` and `--model-light-y` are viewport percentages, while
+`--model-light-energy` is a clamped `0`–`1` value. The shell uses these values
+only for restrained spatial glow and edge emphasis; they remain separate from
+the shell-owned scroll variables `--field-shift-x`, `--field-shift-y`, and
+`--glass-scroll-y`. The model clears energy to `0` when hidden or disposed and
+updates it immediately while scrubbing. No event bus or device-orientation
+input is required.
 
 ## Personal narrative
 
