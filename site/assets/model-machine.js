@@ -51,6 +51,7 @@ class MachineController {
     root.machine = api; window.PortfolioModelMachine ??= api;
     root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all"));
     root.addEventListener("portfolio:reading", event => this.scene?.reading(event.detail));
+    if(this.startup)this.boot();
   }
   buildControls() {
     this.root.classList.add("model-machine-replay");
@@ -172,6 +173,7 @@ class MachineController {
     if(this.startup&&!this.startup.canPrepare()){this.fallback(this.startup.failure||'startup-canceled');return null;}
     this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(async ([T, { MachineScene }]) => {
       if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
+      if(this.startup&&!this.startup.canPrepare())return null;
       this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta), this.instruments);
       const scene=this.scene;
       if(this.startup&&!(await this.startup.accept(scene))) {scene.dispose();return null;}

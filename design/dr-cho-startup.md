@@ -41,6 +41,12 @@ during loading. Hidden/offscreen ignition pauses without accumulating hidden tim
 AVIF assets use the installed Sharp encoder, with WebP compatibility assets and
 source/asset hashes in their capture manifest. No generated image model is used.
 
+The startup audit checks desktop, 360px and S23-sized DPR 3 compositions, both
+orientation changes during load, eight camera landmarks within 0.01 CSS pixels,
+hidden-state pause, one completed ignition, zero-engine quiet modes, accessible
+failure content, NoJS and context loss during ignition. A late engine response
+after the loading deadline cannot create or revive the interactive scene.
+
 Automatic loading still includes the locked engine's
 420,551 compressed bytes. The existing 50,000-byte initial script ceiling and
 150,000-byte page ceiling cannot be met by this engine loading policy without a

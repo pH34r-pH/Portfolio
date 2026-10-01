@@ -17,7 +17,7 @@ export class MachineScene {
     this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
     const options = { alpha: true, antialias: false, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
-    if (!context) throw new Error("WebGL2 unavailable");
+    if (!context) {throw new Error("WebGL2 unavailable");}
     this.quality = new ModelQuality(context);
     this.renderer = new T.WebGLRenderer({ canvas: this.canvas, context, ...options });
     this.renderer.setClearColor(0x000000, 0);
@@ -75,7 +75,7 @@ export class MachineScene {
     GRAPH.edges.forEach(edge=>{
       this.edgeOffsets.push(segments.length);
       const points=this.edgePoints(edge);
-      for(let index=1;index<points.length;index++)segments.push(...points[index-1],...points[index]);
+      for(let index=1;index<points.length;index++){segments.push(...points[index-1],...points[index]);}
     });
     this.edgeOffsets.push(segments.length);
     const positions=new Float32Array(segments);
@@ -106,16 +106,16 @@ export class MachineScene {
     this.replayLight.userData.replayPulse = true;
   }
   resize() {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     const { width, height } = this.canvas.getBoundingClientRect();
-    if (!width || !height) return;
+    if (!width || !height) {return;}
     // Physical phone caps, including S23 Ultra DPR 3+, preserve the full graph.
     this.renderer.setPixelRatio(this.pixelRatio());
     this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
     this.renderer.setSize(width, height, false);this.configureView(width,height);
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
     const stage = this.canvas.parentElement;
-    if (!this.digital) this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;
+    if (!this.digital) {this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;}
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
     this.machine.rotation.set(0, 0, mobile() ? -Math.PI / 2 : 0);
     this.machine.position.y = mobile() && !this.digital ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
@@ -135,7 +135,7 @@ export class MachineScene {
   }
   fitDistance() {
     const tangent = Math.tan(14 * Math.PI / 180), horizontal = tangent * this.camera.aspect;
-    if (this.digital && mobile()) return Math.max(5.1 / tangent, 2.5 / horizontal);
+    if (this.digital && mobile()) {return Math.max(5.1 / tangent, 2.5 / horizontal);}
     return mobile() ? Math.max(9.3 / tangent, 2.9 / horizontal) : Math.max(3.7 / tangent, 6.4 / horizontal);
   }
   poseCamera(yaw, pitch, zoom, pan) {
@@ -150,11 +150,11 @@ export class MachineScene {
     this.beads.geometry = this.digital ? new this.T.OctahedronGeometry(.0255) : low ? new this.T.OctahedronGeometry(.0595) : new this.T.SphereGeometry(.0595, 6, 4);
     this.cores.count = this.digital || low ? 0 : GRAPH.nodes.length;
     this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
-    this.resize(); if (this.snapshot) this.applyFrame(this.run, this.snapshot);
+    this.resize(); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);}
   }
   render(force=false) {
-    if (this.disposed||this.preparing) return;
-    if (this.digital&&!force) { const rect = this.canvas.getBoundingClientRect(); if (rect.bottom < 0 || rect.top > innerHeight) return; }
+    if (this.disposed||this.preparing) {return;}
+    if (this.digital&&!force) { const rect = this.canvas.getBoundingClientRect(); if (rect.bottom < 0 || rect.top > innerHeight) {return;} }
     this.glass?.sync(this.camera);this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();this.renderer.info.reset(); this.metrics.begin();
     this.renderer.render(this.scene, this.camera); this.metrics.end();
   }
@@ -165,10 +165,10 @@ export class MachineScene {
     this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
     this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
     this.materials.edge.opacity = this.dark ? .19 : .13;
-    if (this.snapshot) this.applyFrame(this.run, this.snapshot); else this.render();
+    if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
   applyFrame(run, state) {
-    if (this.disposed) return;
+    if (this.disposed) {return;}
     const began = performance.now();
     this.run = run; this.snapshot = state;
     if(this.powerProgress!==null){applyPower(this,this.powerProgress);this.render();return;}
@@ -176,7 +176,7 @@ export class MachineScene {
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
       const dim = this.focus === "consumer" && node.layer < 4 || this.focus === "representation" && node.layer > 3;
-      this.color.copy(base).lerp(active, value); if (dim) this.color.multiplyScalar(.38);
+      this.color.copy(base).lerp(active, value); if (dim) {this.color.multiplyScalar(.38);}
       this.beads.setColorAt(index, this.color);
       this.cores.setColorAt(index, this.color.setRGB(.012 + value * .18, .04 + value * .7, .09 + value * 1.4));
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
@@ -224,12 +224,12 @@ export class MachineScene {
     const node = GRAPH.nodes[index]; this.selection.position.set(...node.position);
     const points = [];
     for (const edgeIndex of [...node.incoming, ...node.outgoing]) {
-      const edge = GRAPH.edges[edgeIndex]; const route=this.edgePoints(edge);for(let index=1;index<route.length;index++)points.push(new this.T.Vector3(...route[index-1]),new this.T.Vector3(...route[index]));
+      const edge = GRAPH.edges[edgeIndex]; const route=this.edgePoints(edge);for(let index=1;index<route.length;index++){points.push(new this.T.Vector3(...route[index-1]),new this.T.Vector3(...route[index]));}
     }
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
-    if (this.snapshot) this.applyFrame(this.run, this.snapshot); else this.render();
+    if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) { this.focus = part; if (this.snapshot) this.applyFrame(this.run, this.snapshot); }
+  setFocus(part) { this.focus = part; if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
   orbit(dx, dy) { this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoom = clamp(this.zoom + amount, .75, 1.8); this.updateCamera(); this.render(); }
   resetView() { this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; this.resize(); }
@@ -240,8 +240,8 @@ export class MachineScene {
   }
   edgePoints(edge) {
     const a=edge.sourcePosition,b=edge.targetPosition;
-    if(edge.kind.startsWith("shared block"))return [a,[a[0],3.05,-.3],[b[0],3.05,-.3],b];
-    if(edge.kind.startsWith("residual"))return [a,[a[0],-2.85,-.2],[b[0],-2.85,-.2],b];
+    if(edge.kind.startsWith("shared block")){return [a,[a[0],3.05,-.3],[b[0],3.05,-.3],b];}
+    if(edge.kind.startsWith("residual")){return [a,[a[0],-2.85,-.2],[b[0],-2.85,-.2],b];}
     return [a,b];
   }
   bindOrbit(selectNode,scrub) {
@@ -257,20 +257,20 @@ export class MachineScene {
       return; // Homepage gestures belong to native scrolling and browser zoom.
     }
     this.canvas.addEventListener("pointerdown",event=>{
-      if(event.button!==0)return;
+      if(event.button!==0){return;}
       this.gestures.down(event.pointerId,event.clientX,event.clientY);this.canvas.setPointerCapture(event.pointerId);
     },options);
     this.canvas.addEventListener("pointermove",event=>this.gestures.move(event.pointerId,event.clientX,event.clientY),options);
     this.canvas.addEventListener("pointerup",event=>{
       const select=this.gestures.up(event.pointerId);
-      if(this.canvas.hasPointerCapture(event.pointerId))this.canvas.releasePointerCapture(event.pointerId);
+      if(this.canvas.hasPointerCapture(event.pointerId)){this.canvas.releasePointerCapture(event.pointerId);}
       if(select) {
         const rect=this.canvas.getBoundingClientRect(),pointer=new this.T.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
         const ray=new this.T.Raycaster();ray.setFromCamera(pointer,this.camera);
-        const hit=ray.intersectObject(this.beads)[0];if(hit?.instanceId!==undefined)selectNode(hit.instanceId);
+        const hit=ray.intersectObject(this.beads)[0];if(hit?.instanceId!==undefined){selectNode(hit.instanceId);}
       }
     },options);
-    for(const type of ["pointercancel","lostpointercapture"])this.canvas.addEventListener(type,event=>this.gestures.up(event.pointerId,true),options);
+    for(const type of ["pointercancel","lostpointercapture"]){this.canvas.addEventListener(type,event=>this.gestures.up(event.pointerId,true),options);}
     window.addEventListener("blur",()=>this.gestures.clear(),options);
     window.visualViewport?.addEventListener('resize', () => this.render(), options);
     // No global touch listeners or gesture prevention: OS gestures remain OS-owned.
@@ -281,17 +281,17 @@ export class MachineScene {
     return [(point.x + 1) * this.glass.viewport.width * .5, (1 - point.y) * this.glass.viewport.height * .5];
   }
   reading({quiet,progress}) {
-    if (!this.digital || this.disposed || document.hidden) return;
+    if (!this.digital || this.disposed || document.hidden) {return;}
     const bounds = this.canvas.getBoundingClientRect();
-    if (bounds.bottom < 0 || bounds.top > innerHeight) return;
-    this.readingState={quiet,progress};if(this.powerProgress!==null)return;
+    if (bounds.bottom < 0 || bounds.top > innerHeight) {return;}
+    this.readingState={quiet,progress};if(this.powerProgress!==null){return;}
     this.materials.edge.opacity = quiet ? .065 : (this.dark ? .23 : .18);
     this.materials.node.opacity = quiet ? .42 : .9;
     this.contours.material.opacity = quiet ? .1 : .24 + Math.sin(progress * Math.PI * 2) * .045;
     this.render();
   }
   async prepare() {
-    if(!this.preparing)return;
+    if(!this.preparing){return;}
     applyPower(this,0);this.glass.power=null;this.selection.visible=this.probe.visible=true;this.glass.sync(this.camera);
     await this.renderer.compileAsync(this.scene,this.camera);
     if(!this.disposed){applyPower(this,0);this.preparing=false;}
@@ -300,8 +300,8 @@ export class MachineScene {
   finishPower() {
     this.powerProgress=null;this.glass.power=null;this.scene.background=null;this.selection.visible=this.probe.visible=true;
     this.materials.node.blending=this.contours.material.blending=this.T.AdditiveBlending;
-    if(this.snapshot)this.applyFrame(this.run,this.snapshot);else this.render();
-    if(this.readingState)this.reading(this.readingState);
+    if(this.snapshot){this.applyFrame(this.run,this.snapshot);}else {this.render();}
+    if(this.readingState){this.reading(this.readingState);}
   }
   powerView() {
     this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();
@@ -310,12 +310,12 @@ export class MachineScene {
   }
   diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), quality:this.quality.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {
-    if (this.disposed) return; this.disposed = true;
+    if (this.disposed) {return;} this.disposed = true;
     this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
     this.canvas.removeEventListener("webglcontextlost", this.contextLost);
     this.glass.dispose(); this.metrics.dispose();
     const geometry = new Set(), materials = new Set();
-    this.scene.traverse(object => { if (object.geometry) geometry.add(object.geometry); if (object.material) materials.add(object.material); });
+    this.scene.traverse(object => { if (object.geometry) {geometry.add(object.geometry);} if (object.material) {materials.add(object.material);} });
     geometry.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); this.renderer.dispose();
   }
 }
