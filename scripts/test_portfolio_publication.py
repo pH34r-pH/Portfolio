@@ -321,6 +321,8 @@ class ReaderPublicationTest(unittest.TestCase):
                      research/'reference', research/'articles', research/'_build/html', theorem):
             path.mkdir(parents=True)
         (portfolio/'site/index.html').write_text('<!doctype html><h1>Portfolio</h1>')
+        for name in ('favicon.svg', 'favicon.ico'):
+            (portfolio/'site'/name).write_bytes((Path(__file__).parent.parent/'site'/name).read_bytes())
         (portfolio/'site/research/index.html').write_text('<header class="topbar"><nav>Research</nav></header>')
         (portfolio/'site/data/atlas-evidence.json').write_text('{}')
         (portfolio/'jupyter-lite.json').write_text('{}')
@@ -400,6 +402,21 @@ class ReaderPublicationTest(unittest.TestCase):
                 'latex': '/article-exports/sample-article-latex.zip',
                 'jats': '/article-exports/sample-article.xml',
             })
+
+    def test_brand_favicon_assets_and_generated_reader_links(self):
+        site = Path(__file__).parent.parent/'site'
+        for page in site.rglob('*.html'):
+            with self.subTest(page=page):
+                self.assertEqual(BeautifulSoup(page.read_text(), 'html.parser').select_one('link[rel="icon"]')['href'], '/favicon.svg')
+        self.assertEqual((site/'favicon.ico').read_bytes()[:4], b'\x00\x00\x01\x00')
+        with tempfile.TemporaryDirectory() as directory:
+            args, _, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            self._build_fixture_bundle(args)
+            for name in ('favicon.svg', 'favicon.ico'):
+                self.assertEqual((bundle/name).read_bytes(), (site/name).read_bytes())
+            for route in ('articles/sample-article', 'notebooks/001_reader'):
+                document = BeautifulSoup((bundle/route/'index.html').read_text(), 'html.parser')
+                self.assertEqual(document.select_one('link[rel="icon"]')['href'], '/favicon.svg')
 
     def test_article_routes_preserve_accessible_tables_sources_and_assets(self):
         with tempfile.TemporaryDirectory() as directory:
