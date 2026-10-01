@@ -1405,6 +1405,8 @@ html[data-theme="dark"] .primary,html[data-theme="dark"] .article-execution butt
   --glass-blur: 24px;
   --field-shift-x: 0px;
   --field-shift-y: 0px;
+  --glass-scroll-y: 0px;
+  --glass-perspective: 1200px;
 }
 
 html[data-theme="dark"] {
@@ -1477,6 +1479,43 @@ body::after {
     0 18px 48px var(--shadow);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
   backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+}
+
+/* A restrained depth scale makes content read as suspended glass without
+   moving the reading order. Only scroll supplies parallax; model illumination
+   remains an explicit future contract owned by the model runtime. */
+:is(.grid > .card, .program-grid article, .impact-rail article,
+    .case-study, .standard-card, .package-info, .evidence-detail) {
+  --glass-depth: .5;
+  --glass-parallax: .26;
+  --glass-hover-lift: 0px;
+  transform-style: preserve-3d;
+  transform: translate3d(
+    0,
+    calc(var(--glass-scroll-y) * var(--glass-parallax) + var(--glass-hover-lift)),
+    calc(var(--glass-depth) * 6px)
+  );
+  transition:
+    transform var(--2071-speed) var(--2071-ease-mechanical),
+    border-color var(--2071-speed-fast) linear,
+    box-shadow var(--2071-speed) var(--2071-ease-mechanical);
+}
+
+:is(.grid > .card, .program-grid article, .impact-rail article,
+    .case-study, .standard-card, .package-info, .evidence-detail):nth-child(3n + 2) {
+  --glass-depth: .9;
+  --glass-parallax: .38;
+}
+
+:is(.grid > .card, .program-grid article, .impact-rail article,
+    .case-study, .standard-card, .package-info, .evidence-detail):nth-child(3n) {
+  --glass-depth: .25;
+  --glass-parallax: .16;
+}
+
+:is(.grid > .card, .program-grid article, .impact-rail article,
+    .case-study, .standard-card, .package-info, .evidence-detail):hover {
+  --glass-hover-lift: -2px;
 }
 
 .topbar {
@@ -1657,6 +1696,12 @@ body::after {
   .topology-accessible {
     margin-top: 10px;
   }
+
+  :is(.grid > .card, .program-grid article, .impact-rail article,
+      .case-study, .standard-card, .package-info, .evidence-detail) {
+    --glass-parallax: .08;
+    transform: translate3d(0, calc(var(--glass-scroll-y) * var(--glass-parallax) + var(--glass-hover-lift)), 0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1670,8 +1715,45 @@ body::after {
     transform: none;
   }
 
+  :is(.grid > .card, .program-grid article, .impact-rail article,
+      .case-study, .standard-card, .package-info, .evidence-detail) {
+    transform: none;
+  }
+
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation: none !important;
+  }
+}
+
+/* The instrument face is bundled, so controls and graph labels remain painted
+   even when a platform has no monospace/UI font installed. */
+.wordmark,
+.primary-nav a,
+.menu-toggle,
+.site-menu nav a,
+.appearance-label,
+.appearance button,
+.eyebrow,
+.signal,
+.register,
+.card-meta,
+.case-kicker,
+.topology-node-sequence,
+.topology-node small {
+  font-family: "Portfolio Long Measure", ui-monospace, monospace !important;
+}
+
+.topology-node strong {
+  font-family: "Portfolio Long Measure", ui-sans-serif, sans-serif;
+  font-weight: 400;
+}
+
+@media (forced-colors: active) {
+  .skip-link {
+    background: CanvasText !important;
+    color: Canvas !important;
+    border: 1px solid CanvasText;
+    forced-color-adjust: auto;
   }
 }

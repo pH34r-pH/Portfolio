@@ -115,6 +115,7 @@ function setupFieldResponse() {
     if (reduced.matches) {
       root.style.setProperty("--field-shift-x", "0px");
       root.style.setProperty("--field-shift-y", "0px");
+      root.style.setProperty("--glass-scroll-y", "0px");
       return;
     }
 
@@ -124,6 +125,7 @@ function setupFieldResponse() {
     const lateral = Math.sin(progress * Math.PI) * 12;
     root.style.setProperty("--field-shift-x", `${lateral.toFixed(1)}px`);
     root.style.setProperty("--field-shift-y", `${shift.toFixed(1)}px`);
+    root.style.setProperty("--glass-scroll-y", `${((progress * 2 - 1) * 16).toFixed(1)}px`);
   };
 
   const schedule = () => {
