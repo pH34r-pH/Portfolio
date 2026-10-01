@@ -33,6 +33,8 @@ FORBIDDEN_PARTS = {
 }
 FORBIDDEN_SUFFIXES = {".bak", ".log", ".pyc", ".pyo", ".tmp"}
 BAD_LIVING_STEMS = {"draft", "new", "notes", "tmp", "temp", "untitled"}
+DESCRIPTIVE_SLUG = re.compile(r"^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$")
+CONVENTIONAL_NAME = re.compile(r"^(?:adr|spec)-?\d+$", re.IGNORECASE)
 
 
 def _relative(path: str | Path, root: Path) -> Path:
@@ -47,12 +49,14 @@ def _is_new_living_doc(path: Path, new_paths: set[str]) -> bool:
 
 
 def _check_doc_name(path: Path, new_paths: set[str]) -> list[str]:
-    if not _is_new_living_doc(path, new_paths):
+    if not _is_new_living_doc(path, new_paths) or not is_living_doc(path):
         return []
     if path.name in LIVING_DOC_EXCEPTIONS:
         return []
     stem = path.stem.lower()
-    if stem in BAD_LIVING_STEMS or len(re.findall(r"[a-z0-9]+", stem)) < 2:
+    if stem in BAD_LIVING_STEMS or re.fullmatch(r"(?:issue-)?\d+", stem):
+        return [f"new living document needs a descriptive name: {path}"]
+    if not DESCRIPTIVE_SLUG.fullmatch(stem) and not CONVENTIONAL_NAME.fullmatch(path.stem):
         return [f"new living document needs a descriptive name: {path}"]
     return []
 
@@ -94,7 +98,7 @@ def _git_paths(root: Path, since: str) -> tuple[list[str], set[str]]:
     changed = subprocess.check_output(command, cwd=root).decode().split("\0")
     changed = [path for path in changed if path]
     added = subprocess.check_output(
-        ["git", "diff", "--name-only", "-z", "--diff-filter=A", f"{since}...HEAD"],
+        ["git", "diff", "--name-only", "-z", "--diff-filter=AR", f"{since}...HEAD"],
         cwd=root,
     ).decode().split("\0")
     added = [path for path in added if path]

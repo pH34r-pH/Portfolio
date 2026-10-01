@@ -36,7 +36,7 @@ For a local publication environment, run `uv sync --locked --no-dev` and `uv run
 - `jupyter-lite.json` configures browser-side notebook execution.
 - `publication.schema.json` defines v1 legacy and v2 public candidate metadata.
 - `scripts/build_portfolio_bundle.py`, `scripts/finish_portfolio_lab.py` and `scripts/digest_bundle.py` assemble and hash a candidate from three pinned public source checkouts.
-- `publication/` contains the generated publication bundle, including notebooks selected for that release.
+- `publication/` contains committed publication-boundary inputs. Generated notebooks, `publication.json`, and candidate bundles are ignored outputs assembled from pinned source and projection inputs.
 
 ## Repository maps and documentation status
 

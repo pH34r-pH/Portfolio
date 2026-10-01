@@ -6,10 +6,10 @@
 
 ## Key files and relationships
 
-- `README.md` describes the implemented styles, palettes, controls, typography, and audit coverage.
-- `cross-site-contract.md` defines shared identity, canonical article URLs, source revisions, and cross-site handoff expectations.
-- `article-reference-v1.schema.json` defines the exact article-to-Compiler reference shape consumed by `scripts/compiled_experiment_reference.py` and the bundle builder.
-- `title-review.html` and `title-review.css` preserve the comparison exercise; `scripts/render-title-review.mjs` renders it for review. They are evidence of design exploration, not a second production shell.
+- [`README.md`](README.md) describes the implemented styles, palettes, controls, typography, and audit coverage.
+- [`cross-site-contract.md`](cross-site-contract.md) defines shared identity, canonical article URLs, source revisions, and cross-site handoff expectations.
+- [`article-reference-v1.schema.json`](article-reference-v1.schema.json) defines the exact article-to-Compiler reference shape consumed by `scripts/compiled_experiment_reference.py` and the bundle builder.
+- [`title-review.html`](title-review.html) and [`title-review.css`](title-review.css) preserve the comparison exercise; `scripts/render-title-review.mjs` renders it for review. They are evidence of design exploration, not a second production shell.
 
 The hand-authored site runtime implements this documented system. `scripts/appearance-audit.mjs` and the broader UX workflow test actual assembled pages. Future redesign proposals are architecture under review until merged, qualified, and separately handed off; do not describe proposal-only assets or interactions as deployed here.
 

@@ -40,6 +40,9 @@ jobs:
             echo 'files<<EOF'
             printf '%s\n' "${markdown[@]}"
             echo EOF
+            echo 'lychee_files<<EOF'
+            printf '%s\n' "${markdown[@]}" | python3 -c 'import shlex, sys; print(" ".join(shlex.quote(line.rstrip("\\n")) for line in sys.stdin if line.rstrip("\\n")))'
+            echo EOF
           } >> "$GITHUB_OUTPUT"
           printf 'changed_markdown=%s\n' "${#markdown[@]}" >> "$GITHUB_OUTPUT"
       - name: Markdown style (pinned markdownlint-cli2)
@@ -58,7 +61,7 @@ jobs:
           lycheeVersion: v0.20.1
           args: >-
             --offline --no-progress --include-fragments
-            ${{ steps.files.outputs.files }}
+            ${{ steps.files.outputs.lychee_files }}
       - name: Lychee negative fixture
         if: steps.files.outputs.changed_markdown != '0'
         shell: bash

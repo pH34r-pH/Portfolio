@@ -6,11 +6,11 @@
 
 ## Key files and relationships
 
-- `build_portfolio_bundle.py` copies canonical Research Notes inputs, adapts MyST HTML, creates readers, and writes `publication.json`.
-- `compiler_projection_input.py`, `compiled_experiment_reference.py`, and `compiled_experiment_worklog.py` validate the pinned public Compiler projection and expose declared evidence without synthesizing results.
-- `finish_portfolio_lab.py` attaches the committed `publication/lab-return.html` integration to generated JupyterLite output; `digest_bundle.py` hashes the finished tree.
-- `test_portfolio_publication.py` is focused regression coverage for generated readers, links, landmarks, source hashes, and Compiler handoff boundaries.
-- `preflight_env.py` checks Python/Node/browser prerequisites for `publication` and `ux` workloads.
+- [`build_portfolio_bundle.py`](build_portfolio_bundle.py) copies canonical Research Notes inputs, adapts MyST HTML, creates readers, and writes `publication.json`.
+- [`compiler_projection_input.py`](compiler_projection_input.py), [`compiled_experiment_reference.py`](compiled_experiment_reference.py), and [`compiled_experiment_worklog.py`](compiled_experiment_worklog.py) validate the pinned public Compiler projection and expose declared evidence without synthesizing results.
+- [`finish_portfolio_lab.py`](finish_portfolio_lab.py) attaches the committed `publication/lab-return.html` integration to generated JupyterLite output; [`digest_bundle.py`](digest_bundle.py) hashes the finished tree.
+- [`test_portfolio_publication.py`](test_portfolio_publication.py) is focused regression coverage for generated readers, links, landmarks, source hashes, and Compiler handoff boundaries.
+- [`preflight_env.py`](preflight_env.py) checks Python/Node/browser prerequisites for `publication` and `ux` workloads.
 - `ux-audit.mjs`, `interaction-audit.mjs`, `appearance-audit.mjs`, `capture-ux-screenshots.mjs`, and `test-article-runtime.mjs` audit the built public surface. They are presentation evidence, not scientific or deployment authority.
 - `docs_hygiene.py` and `test_docs_hygiene.py` implement the bounded changed-file documentation/artifact ratchet used by the separate docs workflow.
 
