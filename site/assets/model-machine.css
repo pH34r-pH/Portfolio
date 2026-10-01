@@ -52,3 +52,5 @@
  .model-machine-replay .machine-fallback svg circle.is-active { fill: Highlight; }
  .model-machine-replay .machine-transport button[data-replay-play] { color: ButtonText; }
 }
+
+html[data-theme=dark] .model-machine-replay .machine-input button,html[data-theme=dark] .model-machine-replay [data-replay-play] { color: var(--bg); }

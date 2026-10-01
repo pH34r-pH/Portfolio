@@ -11,6 +11,7 @@
     "mystmd": "1.11.0",
     "serve": "14.2.4",
     "thebe": "0.9.3",
-    "thebe-lite": "0.5.0"
+    "thebe-lite": "0.5.0",
+    "three": "0.186.1"
   }
 }

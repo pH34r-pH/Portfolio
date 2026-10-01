@@ -13,9 +13,9 @@ export class MachineScene {
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
     this.scene = new T.Scene();
-    this.camera = new T.PerspectiveCamera(40, 1, .1, 80);
+    this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
     this.machine = new T.Group(); this.scene.add(this.machine);
-    this.yaw = -.15; this.pitch = .1; this.zoom = 1; this.selected = GRAPH.layers[3][0]; this.focus = "all";
+    this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.selected = GRAPH.layers[3][0]; this.focus = "all";
     this.materials = {
       shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
       ceramic: new T.MeshStandardMaterial({ color: 0x8faabd, metalness: .32, roughness: .23 }),
@@ -112,7 +112,7 @@ export class MachineScene {
     // Physical phone caps, including S23 Ultra DPR 3+, preserve the full graph.
     this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, mobile() ? 1.25 : 1.65));
     this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
-    const tangent = Math.tan(20 * Math.PI / 180);
+    const tangent = Math.tan(14 * Math.PI / 180);
     const distance = mobile() ? Math.max(6.5 / tangent, 2.9 / (tangent * this.camera.aspect))
       : Math.max(3.2 / tangent, 6.15 / (tangent * this.camera.aspect));
     this.camera.position.set(0, mobile() ? .35 : 1.7, distance / this.zoom);
@@ -189,7 +189,7 @@ export class MachineScene {
   setFocus(part) { this.focus = part; if (this.snapshot) this.applyFrame(this.run, this.snapshot); }
   orbit(dx, dy) { this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.resize(); }
   zoomBy(amount) { this.zoom = clamp(this.zoom + amount, .75, 1.8); this.resize(); }
-  resetView() { this.yaw = -.15; this.pitch = .1; this.zoom = 1; this.resize(); }
+  resetView() { this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.resize(); }
   bindOrbit(selectNode) {
     this.abort = new AbortController(); const options = { signal: this.abort.signal };
     let drag;

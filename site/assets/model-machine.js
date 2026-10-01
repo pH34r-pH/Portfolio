@@ -1,5 +1,5 @@
 import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, sampleReplay, joinTokens } from "./model-topology.js";
-const THREE_URL = "https://unpkg.com/three@0.186.1/build/three.module.js";
+const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const forcedColors = matchMedia("(forced-colors: active)");
 if (!document.querySelector('link[data-machine-style]')) {
@@ -166,7 +166,7 @@ class MachineController {
     if (!reduceMotion.matches) this.play(); else this.status.textContent = "Paused / reduced motion. Scrub or step to inspect.";
   }
   seek(frame) { this.pause(false); this.frame = clamp(Math.round(frame), 0, LAST_FRAME); this.draw(); }
-  pause(update = true) { this.playing = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; this.lastTime = null; if (update) this.draw(); }
+  pause(update = true) { this.playing = false; if (this.raf) cancelAnimationFrame(this.raf); this.raf = 0; this.lastTime = null; this.fraction = 0; if (update) this.draw(); }
   play() {
     if (this.frame === LAST_FRAME) this.frame = 0;
     this.playing = true; this.lastTime = null; this.draw(); this.syncClock();
