@@ -67,6 +67,9 @@ and license remain intact. All 22 publication tests pass. ESLint/Lizard ratchets
 are clear; jscpd reports zero clones. The final removal of inherited project-card
 pseudo-surfaces is a CSS-only correction, captured in the full-page screenshots;
 the completed browser sweep was not repeated for that cosmetic change.
+The final static-stage specificity correction is separately checked on desktop
+reduced motion and phone WebGL fallback so the SVG overview fits its own field
+and cannot spill into the native introduction.
 
 The review site is a local overlay on the accepted finished export bundle, not
 a new qualified exact publication bundle. Byte comparison preserves all 1,379

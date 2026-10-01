@@ -7,7 +7,7 @@ html[data-theme=dark] .digital-home { --bg:#050712; --panel:rgba(8,13,29,.9); --
 .digital-journey { position:relative; display:grid; width:100vw; margin-left:calc((100% - 100vw)/2); isolation:isolate; }
 .digital-visual { grid-area:1/1; align-self:start; position:sticky; top:var(--2071-header); height:calc(100svh - var(--2071-header)); min-height:550px; pointer-events:none; z-index:0; background:radial-gradient(ellipse at 52% 46%,var(--signal-soft),transparent 57%),linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 96%,#8660bf)); }
 .digital-visual::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,transparent 49.95%,var(--line) 50%,transparent 50.05%),linear-gradient(180deg,transparent 49.95%,var(--line) 50%,transparent 50.05%); opacity:.12; }
-.digital-home .digital-visual .machine-stage { position:absolute; inset:0; width:100%; height:100%; min-height:0; margin:0; border:0; background:transparent; box-shadow:none; overflow:hidden; }
+.digital-home .digital-journey .digital-visual .machine-stage { position:absolute; inset:0; width:100%; height:100%; min-height:0; margin:0; border:0; background:transparent; box-shadow:none; overflow:hidden; }
 .digital-home .digital-visual .machine-canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:auto; pointer-events:none; cursor:auto; }
 .digital-home .digital-visual .machine-legend,.digital-home .digital-visual .machine-axis-labels { display:none; }
 .digital-home .digital-visual .machine-fallback { inset:8% 12%; opacity:.52; }
