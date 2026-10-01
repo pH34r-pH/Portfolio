@@ -1,0 +1,97 @@
+import { clamp } from './model-topology.js';
+
+const anchors = {
+  input: {x: .16, y: .60, depth: 2.4, tilt: .17},
+  inspect: {x: .83, y: .31, depth: 4.6, tilt: -.15},
+  output: {x: .70, y: .74, depth: 7.0, tilt: -.17},
+};
+
+function glassGeometry(T, width, height) {
+  const shape = new T.Shape(), cut = .06;
+  shape.moveTo(-width / 2 + cut, -height / 2);
+  shape.lineTo(width / 2 - cut, -height / 2); shape.lineTo(width / 2, -height / 2 + cut);
+  shape.lineTo(width / 2, height / 2 - cut); shape.lineTo(width / 2 - cut, height / 2);
+  shape.lineTo(-width / 2 + cut, height / 2); shape.lineTo(-width / 2, height / 2 - cut);
+  shape.lineTo(-width / 2, -height / 2 + cut); shape.closePath();
+  const geometry = new T.ExtrudeGeometry(shape, {depth: .26, bevelEnabled: true, bevelSize: .035, bevelThickness: .035, bevelSegments: 2, steps: 1, curveSegments: 1});
+  geometry.translate(0, 0, -.13); return geometry;
+}
+
+function environment(T, renderer) {
+  const scene = new T.Scene(); scene.background = new T.Color(.12, .17, .23);
+  const objects = [];
+  for (const [x, y, z, width, height, color] of [[-5, 5, 6, 2, 8, 0xffffff], [5, 3, 2, 1, 9, 0x91ceff], [0, -4, -4, 8, 1, 0x1e567f]]) {
+    const mesh = new T.Mesh(new T.PlaneGeometry(width, height), new T.MeshBasicMaterial({color, side: T.DoubleSide}));
+    mesh.position.set(x, y, z); mesh.lookAt(0, 0, 0); scene.add(mesh); objects.push(mesh);
+  }
+  const generator = new T.PMREMGenerator(renderer), target = generator.fromScene(scene, 0, .1, 50, {size: 128});
+  generator.dispose(); objects.forEach(object => { object.geometry.dispose(); object.material.dispose(); });
+  return target;
+}
+
+// A projective DOM transform uses precisely the same world plane and camera as
+// the front glass face. No per-panel camera, screenshot texture or frame loop.
+function project(T, camera, mesh, size, viewport) {
+  const local = new T.Matrix4().set(size.worldWidth / size.width, 0, 0, -size.worldWidth / 2,
+    0, -size.worldHeight / size.height, 0, size.worldHeight / 2, 0, 0, 1, .17, 0, 0, 0, 1);
+  const matrix = new T.Matrix4().copy(camera.projectionMatrix).multiply(camera.matrixWorldInverse).multiply(mesh.matrixWorld).multiply(local).elements;
+  const h = [], w = viewport.width / 2, v = viewport.height / 2;
+  for (const offset of [0, 4, 12]) h.push(w * (matrix[offset] + matrix[offset + 3]), v * (-matrix[offset + 1] + matrix[offset + 3]), matrix[offset + 3]);
+  const d = h[8];
+  const css = [h[0] / d, h[1] / d, 0, h[2] / d, h[3] / d, h[4] / d, 0, h[5] / d, 0, 0, 1, 0, h[6] / d, h[7] / d, 0, 1];
+  const point = (x, y) => { const d = h[2] * x + h[5] * y + h[8]; return [(h[0] * x + h[3] * y + h[6]) / d, (h[1] * x + h[4] * y + h[7]) / d]; };
+  const corners = [[0, 0], [size.width, 0], [size.width, size.height], [0, size.height]].map(([x, y]) => point(x, y));
+  return {css, corners, scale: Math.hypot(corners[1][0] - corners[0][0], corners[1][1] - corners[0][1]) / size.width};
+}
+
+export class SharedGlass {
+  constructor(T, scene, renderer, instruments) {
+    this.T = T; this.scene = scene; this.instruments = instruments; this.panels = [];
+    this.environment = environment(T, renderer); scene.environment = this.environment.texture;
+    this.material = new T.MeshPhysicalMaterial({color: 0xb9dded, transmission: .86, opacity: 1, ior: 1.46, thickness: .34, roughness: .15, metalness: 0, attenuationColor: 0x8ed0e8, attenuationDistance: 3, envMapIntensity: .65, clearcoat: .3, clearcoatRoughness: .12});
+    this.light = new T.PointLight(0x5bbfff, 0, 18, 2); scene.add(this.light);
+  }
+  layout(camera, viewport, distance, phone) {
+    this.viewport = viewport; this.phone = phone;
+    this.instruments.host.dataset.instruments = 'spatial';
+    this.panels.forEach(panel => { this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose(); });
+    this.panels = this.instruments.dimensions(phone, viewport.width).map(size => {
+      const anchor = anchors[size.id], depth = phone ? anchor.depth * .65 : anchor.depth;
+      const center = new this.T.Vector3(phone ? 0 : anchor.x * 2 - 1, phone ? -.62 : 1 - anchor.y * 2, 0).unproject(camera);
+      const direction = center.sub(camera.position).normalize();
+      const position = camera.position.clone().addScaledVector(direction, (distance - depth) / direction.dot(camera.getWorldDirection(new this.T.Vector3())));
+      const unit = 2 * (distance - depth) * Math.tan(camera.fov * Math.PI / 360) / viewport.height;
+      size.worldWidth = size.width * unit; size.worldHeight = size.height * unit;
+      const mesh = new this.T.Mesh(glassGeometry(this.T, size.worldWidth + unit * 24, size.worldHeight + unit * 24), this.material);
+      mesh.position.copy(position); mesh.quaternion.copy(camera.quaternion); mesh.rotateY(anchor.tilt * (phone ? .4 : 1));
+      const trim = new this.T.LineSegments(new this.T.EdgesGeometry(mesh.geometry, 24), new this.T.LineBasicMaterial({color: 0x71b9d8, transparent: true, opacity: .55}));
+      trim.position.copy(mesh.position); trim.quaternion.copy(mesh.quaternion); this.scene.add(mesh, trim);
+      return {...size, mesh, trim, depth, projection: null};
+    });
+  }
+  sync(camera) {
+    if (!this.viewport) return;
+    this.scene.updateMatrixWorld(); camera.updateMatrixWorld();
+    const visible = this.panels.filter(panel => !this.phone || panel.id === this.instruments.active);
+    for (const panel of visible) panel.projection = project(this.T, camera, panel.mesh, panel, this.viewport);
+    const zoomed = (visualViewport?.scale || 1) > 1.15;
+    const safe = !zoomed && visible.every(panel => panel.projection.scale >= .94 && panel.projection.corners.every(([x, y]) => x >= 12 && x <= this.viewport.width - 12 && y >= 12 && y <= this.viewport.height - 12));
+    this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
+    for (const panel of this.panels) {
+      panel.mesh.visible = panel.trim.visible = safe && visible.includes(panel);
+      if (panel.projection) panel.node.style.transform = `matrix3d(${panel.projection.css.join(',')})`;
+    }
+    this.mode = safe ? 'spatial' : 'flow';
+  }
+  pulse(value) {
+    const energy = clamp(value, 0, 1); this.light.intensity = energy * 16;
+    const output = this.panels.find(panel => panel.id === 'output');
+    if (output) this.light.position.copy(output.mesh.position).add(new this.T.Vector3(-1, 1.8, 2.4));
+  }
+  diagnostics() {
+    return {mode: this.mode, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: 128, lights: 2,
+      material: {transmission: this.material.transmission, ior: this.material.ior, thickness: this.material.thickness},
+      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+  }
+  dispose() { this.instruments.setMode('flow', this.phone); this.environment.dispose(); this.material.dispose(); }
+}

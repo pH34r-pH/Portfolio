@@ -1,11 +1,14 @@
 import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, sampleReplay, joinTokens } from "./model-topology.js";
 import { ModelLightPublisher } from "./model-light.js";
+import { ModelInstruments } from "./model-instruments.js";
 const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const forcedColors = matchMedia("(forced-colors: active)");
 if (!document.querySelector('link[data-machine-style]')) {
   const style = document.createElement("link"); style.rel = "stylesheet"; style.href = "/assets/model-machine.css";
   style.dataset.machineStyle = ""; document.head.append(style);
+  const glass = document.createElement('link'); glass.rel = 'stylesheet'; glass.href = '/assets/model-glass.css';
+  document.head.append(glass);
 }
 function element(tag, className, text) {
   const node = document.createElement(tag); node.className = className;
@@ -86,6 +89,10 @@ class MachineController {
     const identity=element("a","","Architecture identity / aggregation map");identity.href="/assets/model-architecture.json";disclosure.append(document.createTextNode(" · "),identity);
     disclosure.append(document.createTextNode(". Replay signals and byte echo are deterministic illustrations, not trained activations, predictions or experimental measurements. No optimizer run is performed."));this.root.append(disclosure);
     this.root.append(element("p", "machine-help", "Inside the viewer: one finger orbits; two pinch-zoom and pan; three scrub replay horizontally when the browser supplies those pointers. Scroll normally outside it. Settings exposes camera, frame-step and inspection alternatives. Focus the graph: Space/K plays or pauses, ←/→ steps (Shift: 10), Home/End seeks, W/A/S/D orbits, I/J/L/U pans, +/− zooms. OS accessibility gestures remain system-owned."));
+    this.instruments = new ModelInstruments(this.root, this.stage, io,
+      () => { const settings = this.root.querySelector('[data-machine-settings]'); settings.open = true; this.layerSelect.focus(); },
+      () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); });
+    this.instruments.changed = () => this.scene?.resize();
     this.root.dataset.topology = TOPOLOGY.id;
   }
   bindControls() {
@@ -151,7 +158,7 @@ class MachineController {
     this.root.dataset.render = "loading";
     this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(([T, { MachineScene }]) => {
       if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
-      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta));
+      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta), this.instruments);
       this.root.dataset.render = "webgl"; this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden", "true");
       this.setCameraEnabled(true); this.setFocus(this.focus); this.draw(); return this.scene;
     }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Architecture viewer uses static fallback:", error.message); return null; });
@@ -162,6 +169,7 @@ class MachineController {
   }
   fallback(reason) {
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
+    this.instruments.setMode('flow', this.viewport.matches);
     this.setCameraEnabled(false); const fallback = this.root.querySelector("[data-machine-fallback]");
     fallback.setAttribute("aria-hidden", "false");
     if (!this.fallbackNodes) this.buildFallback(fallback);
@@ -218,6 +226,7 @@ class MachineController {
   }
   draw() {
     const state = sampleReplay(this.runData, this.frame), node = GRAPH.nodes[this.selected];
+    if (this.instruments.update(node)) this.scene?.resize();
     this.root.dataset.replayFrame = this.frame; this.timeline.value = this.frame;
     this.timeline.setAttribute("aria-valuetext", `Frame ${this.frame} of ${LAST_FRAME}, ${state.stage}`);
     this.counter.textContent = `${String(this.frame).padStart(3, "0")} / ${LAST_FRAME}`;

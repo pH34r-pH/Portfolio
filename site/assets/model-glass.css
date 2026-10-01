@@ -1,0 +1,38 @@
+/* Shared-scene prototype: scoped host layout; the glass itself is GPU geometry. */
+.model-machine-replay .machine-spatial-host { position: relative; }
+.model-machine-replay .machine-stage { height: 840px; }
+.model-machine-replay .machine-instruments { position: absolute; left: 0; z-index: 4; pointer-events: none; margin: 0; }
+.model-machine-replay .machine-glass-panel { position: absolute; top: 0; left: 0; padding: 18px; transform-origin: 0 0; pointer-events: auto; color: var(--ink); box-sizing: border-box; }
+.model-machine-replay .machine-glass-panel[hidden],.model-machine-replay .machine-instrument-nav[hidden],.model-machine-replay .machine-depth-view[hidden] { display: none; }
+.model-machine-replay .machine-glass-label { font: 700 11px/1.5 ui-monospace,monospace; margin: 0 0 8px; letter-spacing: .08em; color: var(--ink); }
+.model-machine-replay .machine-glass-panel h3 { font: 600 18px/1.3 sans-serif; letter-spacing: -.02em; margin: 0 0 14px; color: var(--ink); }
+.model-machine-replay .machine-glass-panel .machine-console { position: static; background: none; }
+.model-machine-replay .machine-glass-panel .machine-input > div:first-of-type { grid-template-columns: minmax(0,1fr); }
+.model-machine-replay .machine-glass-panel .machine-input input { font-size: 16px; min-height: 50px; background: var(--bg); }
+.model-machine-replay .machine-glass-panel button { width: 100%; min-height: 50px; font: 600 12px/1.4 ui-monospace,monospace; color: var(--ink); background: var(--panel); border: 1px solid var(--line); padding: 10px; cursor: pointer; }
+.model-machine-replay .machine-glass-panel .machine-input button { color: white; background: var(--accent); border-color: var(--accent); }
+.model-machine-replay .machine-glass-panel .machine-token-readout { min-height: 0; }
+.model-machine-replay .machine-glass-panel .machine-token-readout span { font-size: 11px; background: var(--bg); }
+.model-machine-replay .machine-glass-panel .machine-output p,.model-machine-replay .machine-glass-selection { font: 600 16px/1.55 ui-monospace,monospace; margin: 0 0 14px; min-height: 3em; background: color-mix(in srgb,var(--bg) 92%,transparent); padding: 8px; }
+.model-machine-replay .machine-glass-note { font: 500 12px/1.5 sans-serif; margin: 12px 0 0; color: var(--ink); }
+.model-machine-replay .machine-instrument-nav { display: flex; gap: 8px; margin-top: 16px; }
+.model-machine-replay .machine-instrument-nav button,.model-machine-replay .machine-depth-view { min-height: 48px; padding: 10px 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 600 12px/1.4 ui-monospace,monospace; cursor: pointer; }
+.model-machine-replay .machine-instrument-nav button { flex: 1; }
+.model-machine-replay .machine-instrument-nav [aria-pressed=true],.model-machine-replay .machine-depth-view[aria-pressed=true] { border-color: var(--accent); box-shadow: inset 0 -2px var(--accent); }
+.model-machine-replay .machine-depth-view { margin-top: 16px; }
+.model-machine-replay .machine-glass-panel :focus-visible,.model-machine-replay .machine-instrument-nav :focus-visible,.model-machine-replay .machine-depth-view:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.model-machine-replay .machine-axis-labels { display: none; }
+.model-machine-replay [data-instruments=flow] .machine-instruments { position: static; width: auto!important; height: auto!important; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px; margin-top: 20px; pointer-events: auto; }
+.model-machine-replay [data-instruments=flow] .machine-glass-panel { position: static; width: 100%!important; transform: none!important; padding: 18px; border: 1px solid var(--line); background: var(--panel); }
+@media(max-width:1050px) and (min-width:721px) {
+ .model-machine-replay .machine-stage { height: 920px; }
+}
+@media(max-width:720px) {
+ .model-machine-replay .machine-stage { height: 1080px; }
+ .model-machine-replay [data-instruments=flow] .machine-instruments { grid-template-columns: minmax(0,1fr); }
+ .model-machine-replay .machine-glass-panel h3 { font-size: 18px; }
+}
+@media(prefers-reduced-motion:reduce), (forced-colors:active) {
+ .model-machine-replay .machine-stage { height: 720px; }
+ .model-machine-replay .machine-glass-panel { transform: none!important; }
+}
