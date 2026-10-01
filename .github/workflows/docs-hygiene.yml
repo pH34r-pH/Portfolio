@@ -40,10 +40,10 @@ jobs:
           test -f "$lychee_canary"
           {
             echo 'files<<EOF'
-            printf '%s\n' "${markdown[@]}"
+            if ((${#markdown[@]})); then printf '%s\n' "${markdown[@]}"; fi
             echo EOF
             echo 'lychee_files<<EOF'
-            { printf '%s\n' "${markdown[@]}"; printf '%s\n' "$lychee_canary"; } | python3 -c 'import shlex, sys; print(" ".join(shlex.quote(line.rstrip("\n")) for line in sys.stdin if line.rstrip("\n")))'
+            { if ((${#markdown[@]})); then printf '%s\n' "${markdown[@]}"; fi; printf '%s\n' "$lychee_canary"; } | python3 -c 'import shlex, sys; print(" ".join(shlex.quote(line.rstrip("\n")) for line in sys.stdin if line.rstrip("\n")))'
             echo EOF
           } >> "$GITHUB_OUTPUT"
           printf 'changed_markdown=%s\n' "${#markdown[@]}" >> "$GITHUB_OUTPUT"

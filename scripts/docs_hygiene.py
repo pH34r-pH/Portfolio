@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 LIVING_DOC_EXCEPTIONS = {"README.md", "AGENTS.md"}
@@ -119,7 +120,9 @@ def main() -> int:
     else:
         parser.error("provide --paths or --changed-since")
     if args.list_living_docs:
-        print("\n".join(path for path in paths if is_living_doc(Path(path))))
+        living_docs = [path for path in paths if is_living_doc(Path(path))]
+        if living_docs:
+            sys.stdout.write("\n".join(living_docs) + "\n")
         return 0
     errors = check_paths(root, paths, new_paths)
     if errors:

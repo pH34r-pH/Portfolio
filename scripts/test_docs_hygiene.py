@@ -4,6 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 import subprocess
+import sys
+import shutil
 
 from docs_hygiene import _git_paths, check_paths
 
@@ -75,6 +77,39 @@ class DocumentationHygieneTests(unittest.TestCase):
             path.parent.mkdir()
             path.write_text("{}\n", encoding="utf-8")
             self.assertEqual([], check_paths(root, [path.relative_to(root)]))
+
+    def test_code_only_change_emits_no_living_docs_but_still_checks_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.run(["git", *args], cwd=root, check=True, text=True,
+                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.strip()
+            git("init", "--quiet")
+            git("config", "user.email", "docs@example.invalid")
+            git("config", "user.name", "Docs Test")
+            (root / "site").mkdir()
+            (root / "site" / "app.js").write_text("console.log('ok');\n", encoding="utf-8")
+            git("add", "site/app.js")
+            git("commit", "--quiet", "-m", "initial")
+            base = git("rev-parse", "HEAD")
+            (root / "dist").mkdir()
+            (root / "dist" / "preview.txt").write_text("preview\n", encoding="utf-8")
+            git("add", "dist/preview.txt")
+            git("commit", "--quiet", "-m", "code-only artifact")
+            (root / "scripts").mkdir()
+            script = root / "scripts" / "docs_hygiene.py"
+            shutil.copy2(Path(__file__).resolve().with_name("docs_hygiene.py"), script)
+            listed = subprocess.run(
+                [sys.executable, str(script), "--changed-since", base, "--list-living-docs"],
+                cwd=root, check=True, capture_output=True,
+            )
+            self.assertEqual(b"", listed.stdout)
+            checked = subprocess.run(
+                [sys.executable, str(script), "--changed-since", base],
+                cwd=root, capture_output=True,
+            )
+            self.assertNotEqual(0, checked.returncode)
+            self.assertIn(b"temporary/build artifact", checked.stdout)
 
 
 if __name__ == "__main__":
