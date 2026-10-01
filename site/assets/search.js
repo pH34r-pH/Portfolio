@@ -24,6 +24,11 @@ if (triggers.length) {
     dialog.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
+    dialog.addEventListener("keydown", (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      dialog.close();
+    });
     return dialog;
   }
 
