@@ -28,6 +28,7 @@ function renderTokens(container, tokens) {
 class MachineController {
   constructor(root) {
     this.root = root; this.stage = root.querySelector("[data-machine-stage]");
+    this.startup=root.modelStartup;if(this.startup){this.startup.onFailure=reason=>this.fallback(reason);this.startup.onHandoff=()=>this.setCameraEnabled(true);}
     this.form = root.querySelector("[data-machine-form]"); this.input = this.form?.querySelector("input");
     this.tokenReadout = root.querySelector("[data-machine-token-readout]");
     this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
@@ -36,7 +37,7 @@ class MachineController {
     this.viewport = matchMedia("(max-width:720px)");
     this.selected = GRAPH.layers[6][0]; this.runData = createReplay(this.input.value);
     this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
-    this.buildControls(); this.bindControls(); this.observe(); this.draw();
+    this.buildControls(); this.bindControls();this.setCameraEnabled(false); this.observe(); this.draw();
     const api = {
       run: text => this.run(text), focus: part => this.setFocus(part || "all"),
       seek: frame => this.seek(frame), pause: () => this.pause(), play: () => this.play(),
@@ -45,6 +46,7 @@ class MachineController {
       light: () => window.PortfolioModelLight,
       clock: () => ({ playing: this.playing, visible: this.visible, hidden: document.hidden, scheduled: Boolean(this.raf), ticks: this.clockTicks, lastTime: this.lastTime ?? null }),
       diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
+      startup:()=>this.startup?.snapshot(),
     };
     root.machine = api; window.PortfolioModelMachine ??= api;
     root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all"));
@@ -156,22 +158,26 @@ class MachineController {
     }, { threshold: [.15] }); this.observer.observe(this.stage);
     if (this.root.hasAttribute('data-digital-home')) this.observer.observe(this.root.querySelector('#model-chapter'));
     document.addEventListener("visibilitychange", () => { this.syncClock(); this.publishLight(true); });
-    window.addEventListener("pagehide", () => { this.visible = false; this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; this.publishLight(true); });
-    window.addEventListener("pageshow", event => { if (event.persisted && this.visible) this.boot(); });
-    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion"); else { this.bootPromise = null; this.boot(); } });
+    window.addEventListener("pagehide", () => {this.startup?.stop(); this.visible = false; this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; this.publishLight(true); });
+    window.addEventListener("pageshow", event => { if(event.persisted){const box=this.stage.getBoundingClientRect();this.visible=box.bottom>0&&box.top<innerHeight;if(this.visible)this.boot();} });
+    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion"); else { this.startup?.resume();this.bootPromise = null; this.boot(); } });
     this.viewport.addEventListener("change", () => { if (this.root.dataset.render === "fallback") { this.fallbackNodes = null; this.buildFallback(this.root.querySelector("[data-machine-fallback]")); this.draw(); } });
-    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors"); else { this.bootPromise = null; this.boot(); } });
+    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors"); else {this.startup?.resume(); this.bootPromise = null; this.boot(); } });
   }
   async boot() {
     if (this.scene) return this.scene;
     if (reduceMotion.matches || forcedColors.matches) { this.fallback(reduceMotion.matches ? "reduced-motion" : "forced-colors"); return null; }
     if (this.bootPromise) return this.bootPromise;
     this.root.dataset.render = "loading";
-    this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(([T, { MachineScene }]) => {
+    if(this.startup&&!this.startup.canPrepare()){this.fallback(this.startup.failure||'startup-canceled');return null;}
+    this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(async ([T, { MachineScene }]) => {
       if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
       this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta), this.instruments);
+      const scene=this.scene;
+      if(this.startup&&!(await this.startup.accept(scene))) {scene.dispose();return null;}
+      if(this.scene!==scene||scene.disposed)return null;
       this.root.dataset.render = "webgl"; this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden", "true");
-      this.setCameraEnabled(true); this.setFocus(this.focus); this.draw(); return this.scene;
+      this.setCameraEnabled(!this.startup||this.startup.handoffs>0||this.startup.phase==='ready'); this.setFocus(this.focus); this.draw(); return this.scene;
     }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Architecture viewer uses static fallback:", error.message); return null; });
     return this.bootPromise;
   }
@@ -179,6 +185,7 @@ class MachineController {
     this.root.querySelectorAll("[data-camera],[data-glass-quality]").forEach(button => { button.disabled = !enabled; });
   }
   fallback(reason) {
+    if(this.startup){this.startup.stop();this.startup.failure=reason;this.startup.setPhase('fallback',reduceMotion.matches||forcedColors.matches?'Static architecture display':'Static architecture available');}
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
     this.instruments.setMode('flow', this.viewport.matches);
     this.instruments.quality('fallback');

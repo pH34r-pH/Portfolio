@@ -1,13 +1,14 @@
 const journey = document.querySelector('[data-digital-home]');
 const chapters = [...journey.querySelectorAll('[data-digital-chapter]')];
 const reduced = matchMedia('(prefers-reduced-motion:reduce)');
+const forced = matchMedia('(forced-colors:active)');
 const narrow = matchMedia('(max-width:720px)');
 let pending = 0;
 
 function update() {
   pending = 0;
   const height = innerHeight, scale = visualViewport?.scale || 1;
-  const staticReading = reduced.matches || narrow.matches || scale > 1.15 || innerWidth < 1000;
+  const staticReading = reduced.matches || forced.matches || narrow.matches || scale > 1.15 || innerWidth < 1000;
   journey.dataset.reading = staticReading ? 'native' : 'spatial';
   const positions = chapters.map(node => node.getBoundingClientRect());
   let active = 0;
@@ -28,7 +29,7 @@ function update() {
 function schedule() { if (!pending && !document.hidden) pending = requestAnimationFrame(update); }
 for (const type of ['scroll','resize','pageshow','hashchange','focusin','focusout']) addEventListener(type,schedule,{passive:true});
 visualViewport?.addEventListener('resize',schedule,{passive:true});
-reduced.addEventListener('change',schedule); narrow.addEventListener('change',schedule);
+reduced.addEventListener('change',schedule);forced.addEventListener('change',schedule); narrow.addEventListener('change',schedule);
 new ResizeObserver(schedule).observe(journey);
 document.addEventListener('visibilitychange',schedule);
 window.PortfolioHomepage = {snapshot:() => ({mode:journey.dataset.reading,chapter:journey.dataset.chapter,panes:chapters.map(node=>({id:node.id,state:node.dataset.paneState,transform:node.querySelector('[data-digital-pane]').style.transform})),model:journey.machine?.diagnostics()})};

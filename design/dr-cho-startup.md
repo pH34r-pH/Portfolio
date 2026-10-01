@@ -7,7 +7,7 @@ click gate, artificial readiness delay or Lighthouse exception.
 
 ## Implementation plan
 
-- Generate transparent desktop and phone assets from the maintained renderer,
+- Generate light/dark desktop and phone backplates from the maintained renderer,
   actual topology and the same powered-down material state used at handoff.
 - Share camera/fit configuration. Keep perspective distance fixed within each
   responsive orientation, fit through field of view, and contain the matching
@@ -33,7 +33,15 @@ startup audit and existing gate integration. Global `site.css` stays unchanged.
 
 ## Qualification
 
-Pending implementation. Automatic loading still includes the locked engine's
+Implemented on the successor branch, with 900ms active-time ignition. Off-state
+camera landmarks match the generated render across responsive sizes. Loading,
+module failure and context loss have static fallbacks; loading is bounded at
+15 seconds. Camera controls are enabled at handoff, preserving the original pose
+during loading. Hidden/offscreen ignition pauses without accumulating hidden time.
+AVIF assets use the installed Sharp encoder, with WebP compatibility assets and
+source/asset hashes in their capture manifest. No generated image model is used.
+
+Automatic loading still includes the locked engine's
 420,551 compressed bytes. The existing 50,000-byte initial script ceiling and
 150,000-byte page ceiling cannot be met by this engine loading policy without a
 separate contract decision. Real preparation/ignition timing will be measured;

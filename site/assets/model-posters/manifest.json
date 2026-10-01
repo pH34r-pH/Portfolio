@@ -1,0 +1,237 @@
+{
+  "schemaVersion": 1,
+  "renderer": "Three.js 0.186.1",
+  "encoder": {
+    "sharp": "0.35.4",
+    "avifQuality": 65
+  },
+  "sourceHashes": {
+    "model-view.js": "cdf2064a14b9d8af1cf0835a2d55e7acd31b5c2cf74abcadc998f553f7301454",
+    "model-power.js": "a9d0cd1403e393603249738d08c3440c164c2041b18fd6dc446719b9b75a2171",
+    "model-scene.js": "7a2335c09cffdf4e090085d2f231fd9d71f3a5edda56e1454f7aad321ca81814",
+    "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
+    "model-digital.js": "59dbd1bf3756267d27751f1df53ac3428fdaddb4f807ff0efc0c67592e9465aa",
+    "model-architecture.json": "21b52b2a78ed8ae4b632eb8e5d0be2b650e7539d37162cc5caef0283f0954307",
+    "vendor/three@0.186.1/three.module.js": "9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea",
+    "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
+  },
+  "assets": [
+    {
+      "name": "desktop",
+      "theme": "light",
+      "file": "powered-down-desktop-light.webp",
+      "bytes": 63336,
+      "sha256": "6650523674bf608580e5d76da31171eb84934fcd57cd1040a15c23800a327259",
+      "avifFile": "powered-down-desktop-light.avif",
+      "avifBytes": 42657,
+      "avifSha256": "11eed0fef14632269147981ceb9f5fddcf703247c50f7d68005a70594fe531fa",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 24.85260969998505,
+        "distance": 16.791802841736736,
+        "landmarks": [
+          [
+            344.3810751103962,
+            321.1841799102751
+          ],
+          [
+            367.2514246989282,
+            283.0599316906088
+          ],
+          [
+            505.8072350186013,
+            306.8076986424297
+          ],
+          [
+            593.9951800335424,
+            331.8766863013315
+          ],
+          [
+            687.4000192929758,
+            341.9292034689698
+          ],
+          [
+            786.7566847312941,
+            340.13384637473746
+          ],
+          [
+            892.5944982325201,
+            344.66753046933513
+          ],
+          [
+            1005.5314556283215,
+            352.17962242907265
+          ]
+        ]
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0
+    },
+    {
+      "name": "desktop",
+      "theme": "dark",
+      "file": "powered-down-desktop-dark.webp",
+      "bytes": 18986,
+      "sha256": "a5b34e566f0cea6160901223a7b2faf70583a68ed3f1dedc6a942f60c09ae856",
+      "avifFile": "powered-down-desktop-dark.avif",
+      "avifBytes": 13633,
+      "avifSha256": "3a9bac9735dd48c735de0846cb5f214b0574068eb216f3906ce983c9c0cdb325",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 24.85260969998505,
+        "distance": 16.791802841736736,
+        "landmarks": [
+          [
+            344.3810751103962,
+            321.1841799102751
+          ],
+          [
+            367.2514246989282,
+            283.0599316906088
+          ],
+          [
+            505.8072350186013,
+            306.8076986424297
+          ],
+          [
+            593.9951800335424,
+            331.8766863013315
+          ],
+          [
+            687.4000192929758,
+            341.9292034689698
+          ],
+          [
+            786.7566847312941,
+            340.13384637473746
+          ],
+          [
+            892.5944982325201,
+            344.66753046933513
+          ],
+          [
+            1005.5314556283215,
+            352.17962242907265
+          ]
+        ]
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0
+    },
+    {
+      "name": "phone",
+      "theme": "light",
+      "file": "powered-down-phone-light.webp",
+      "bytes": 54510,
+      "sha256": "53a7721085bfd3627d0c1d7409323ad5e6ea3ea90d8bb939a96e76f22ffc2306",
+      "avifFile": "powered-down-phone-light.avif",
+      "avifBytes": 37608,
+      "avifSha256": "71d0b78fbd39f68e4a885f68128e5d94beb92527e15e7e66c957f6f4a0a3809d",
+      "view": {
+        "width": 500,
+        "height": 1020,
+        "aspect": 0.49019607843137253,
+        "fov": 28.00000000000001,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            286.2488629352771,
+            162.99458693662714
+          ],
+          [
+            323.6778579791925,
+            275.2260834513331
+          ],
+          [
+            306.37906234731236,
+            368.9686465247557
+          ],
+          [
+            284.2481482425481,
+            464.8095267201686
+          ],
+          [
+            278.0847558994608,
+            557.8161668469182
+          ],
+          [
+            283.0326807871224,
+            648.1671229838164
+          ],
+          [
+            282.4567356927411,
+            735.0504925172397
+          ],
+          [
+            279.7903874530743,
+            818.7933817291434
+          ]
+        ]
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0
+    },
+    {
+      "name": "phone",
+      "theme": "dark",
+      "file": "powered-down-phone-dark.webp",
+      "bytes": 19104,
+      "sha256": "1d67b04f66bf9c7daf5e125fd6c4fc0cf8256b89e2f9f57971bc8b7dbada9c89",
+      "avifFile": "powered-down-phone-dark.avif",
+      "avifBytes": 14558,
+      "avifSha256": "ea3ab5c04f06b9a9a92bb920395523c2095f9c8dd04eb12b8d5ec3db16a136ff",
+      "view": {
+        "width": 500,
+        "height": 1020,
+        "aspect": 0.49019607843137253,
+        "fov": 28.00000000000001,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            286.2488629352771,
+            162.99458693662714
+          ],
+          [
+            323.6778579791925,
+            275.2260834513331
+          ],
+          [
+            306.37906234731236,
+            368.9686465247557
+          ],
+          [
+            284.2481482425481,
+            464.8095267201686
+          ],
+          [
+            278.0847558994608,
+            557.8161668469182
+          ],
+          [
+            283.0326807871224,
+            648.1671229838164
+          ],
+          [
+            282.4567356927411,
+            735.0504925172397
+          ],
+          [
+            279.7903874530743,
+            818.7933817291434
+          ]
+        ]
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0
+    }
+  ],
+  "description": "Actual renderer, full source topology, powered-down display state. Not trained activation evidence."
+}

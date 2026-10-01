@@ -23,7 +23,7 @@ export class HomepageScreens extends SharedGlass {
     const distance = this.distance - 5, unit = 2 * distance * Math.tan(camera.fov * Math.PI / 360) / this.viewport.height;
     const forward = camera.getWorldDirection(new T.Vector3());
     this.panels.forEach((panel, index) => {
-      const face = faces[index]; panel.mesh.visible = panel.trim.visible = Boolean(face);
+      const face = faces[index]; panel.mesh.visible = panel.trim.visible = Boolean(face)&&this.power!==0;
       if (!face) return;
       const r = face.rect, x = (r.left + r.width / 2 - canvas.left) / canvas.width * 2 - 1;
       const y = 1 - (r.top + r.height / 2 - canvas.top) / canvas.height * 2;
@@ -33,6 +33,7 @@ export class HomepageScreens extends SharedGlass {
       panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion); panel.trim.scale.copy(panel.mesh.scale);
       panel.id = face.node.closest('[data-digital-chapter]').id;
     });
+    this.trimMaterial.opacity=.32*(this.power??1);
     this.mode = 'native-scroll';
   }
   pulse(value) { this.light.intensity = value * 4; this.light.position.set(0, 2, 3); }

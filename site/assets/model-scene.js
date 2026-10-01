@@ -7,11 +7,14 @@ import { ModelQuality } from "./model-quality.js";
 import { buildMachineHardware } from "./model-hardware.js";
 import { digitalContours } from './model-digital.js';
 import { HomepageScreens } from './homepage-screens.js';
+import { digitalView } from './model-view.js';
+import { applyPower } from './model-power.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
   constructor(T, root, selectNode, fail, scrub, instruments) {
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
+    this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
     const options = { alpha: true, antialias: false, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
     if (!context) throw new Error("WebGL2 unavailable");
@@ -107,12 +110,9 @@ export class MachineScene {
     const { width, height } = this.canvas.getBoundingClientRect();
     if (!width || !height) return;
     // Physical phone caps, including S23 Ultra DPR 3+, preserve the full graph.
-    const ratio = this.quality.lightweight ? .8 : (mobile() ? 1.1 : 1.25);
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, ratio));
+    this.renderer.setPixelRatio(this.pixelRatio());
     this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
-    this.renderer.setSize(width, height, false); this.camera.aspect = width / height;
-    this.distance = this.fitDistance();
-    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height, false);this.configureView(width,height);
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
     const stage = this.canvas.parentElement;
     if (!this.digital) this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;
@@ -121,6 +121,17 @@ export class MachineScene {
     this.machine.position.y = mobile() && !this.digital ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
     this.updateCamera();
     this.render();
+  }
+  pixelRatio() {
+    const cap=this.quality.lightweight?.8:(mobile()?1.1:1.25);
+    return Math.min(devicePixelRatio||1,cap);
+  }
+  configureView(width,height) {
+    const phone=mobile();
+    if(this.phone!==phone){this.phone=phone;this.yaw=phone?-.15:-.5;this.pitch=phone?.38:.1;this.zoom=1;this.pan={x:0,y:0};this.depthView=null;}
+    this.camera.aspect=width/height;
+    const view=this.digital?digitalView(this.camera.aspect,phone):{distance:this.fitDistance(),fov:28};
+    this.distance=view.distance;this.camera.fov=view.fov;this.camera.updateProjectionMatrix();
   }
   fitDistance() {
     const tangent = Math.tan(14 * Math.PI / 180), horizontal = tangent * this.camera.aspect;
@@ -141,14 +152,15 @@ export class MachineScene {
     this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
     this.resize(); if (this.snapshot) this.applyFrame(this.run, this.snapshot);
   }
-  render() {
-    if (this.disposed) return;
-    if (this.digital) { const rect = this.canvas.getBoundingClientRect(); if (rect.bottom < 0 || rect.top > innerHeight) return; }
-    this.glass?.sync(this.camera); this.renderer.info.reset(); this.metrics.begin();
+  render(force=false) {
+    if (this.disposed||this.preparing) return;
+    if (this.digital&&!force) { const rect = this.canvas.getBoundingClientRect(); if (rect.bottom < 0 || rect.top > innerHeight) return; }
+    this.glass?.sync(this.camera);this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();this.renderer.info.reset(); this.metrics.begin();
     this.renderer.render(this.scene, this.camera); this.metrics.end();
   }
   refreshTheme() {
     this.dark = document.documentElement.dataset.theme === "dark";
+    this.powerBackground=new this.T.Color(getComputedStyle(this.root).getPropertyValue('--bg').trim()||(this.dark?'#050712':'#f4f9fd'));
     this.scene.background = this.digital ? null : new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
     this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
     this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
@@ -159,6 +171,7 @@ export class MachineScene {
     if (this.disposed) return;
     const began = performance.now();
     this.run = run; this.snapshot = state;
+    if(this.powerProgress!==null){applyPower(this,this.powerProgress);this.render();return;}
     const T = this.T, base = new T.Color(this.digital ? (this.dark ? 0x447abb : 0x165577) : this.dark ? 0x82a9c2 : 0x245679), active = new T.Color(this.digital ? 0xebb0ff : 0x39baff);
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
@@ -271,10 +284,29 @@ export class MachineScene {
     if (!this.digital || this.disposed || document.hidden) return;
     const bounds = this.canvas.getBoundingClientRect();
     if (bounds.bottom < 0 || bounds.top > innerHeight) return;
+    this.readingState={quiet,progress};if(this.powerProgress!==null)return;
     this.materials.edge.opacity = quiet ? .065 : (this.dark ? .23 : .18);
     this.materials.node.opacity = quiet ? .42 : .9;
     this.contours.material.opacity = quiet ? .1 : .24 + Math.sin(progress * Math.PI * 2) * .045;
     this.render();
+  }
+  async prepare() {
+    if(!this.preparing)return;
+    applyPower(this,0);this.glass.power=null;this.selection.visible=this.probe.visible=true;this.glass.sync(this.camera);
+    await this.renderer.compileAsync(this.scene,this.camera);
+    if(!this.disposed){applyPower(this,0);this.preparing=false;}
+  }
+  setPower(progress,force=false) {this.powerProgress=progress;applyPower(this,progress);this.render(force);}
+  finishPower() {
+    this.powerProgress=null;this.glass.power=null;this.scene.background=null;this.selection.visible=this.probe.visible=true;
+    this.materials.node.blending=this.contours.material.blending=this.T.AdditiveBlending;
+    if(this.snapshot)this.applyFrame(this.run,this.snapshot);else this.render();
+    if(this.readingState)this.reading(this.readingState);
+  }
+  powerView() {
+    this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();
+    return {width:this.glass.viewport.width,height:this.glass.viewport.height,aspect:this.camera.aspect,fov:this.camera.fov,distance:this.distance,
+      landmarks:GRAPH.layers.map(nodes=>{const p=new this.T.Vector3(...GRAPH.nodes[nodes[0]].position).applyMatrix4(this.machine.matrixWorld).project(this.camera);return [(p.x+1)*this.glass.viewport.width*.5,(1-p.y)*this.glass.viewport.height*.5];})};
   }
   diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), quality:this.quality.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {

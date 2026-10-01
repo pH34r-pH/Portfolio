@@ -9,6 +9,14 @@ html[data-theme=dark] .digital-home { --bg:#050712; --panel:rgba(8,13,29,.9); --
 .digital-visual::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(90deg,transparent 49.95%,var(--line) 50%,transparent 50.05%),linear-gradient(180deg,transparent 49.95%,var(--line) 50%,transparent 50.05%); opacity:.12; }
 .digital-home .digital-journey .digital-visual .machine-stage { position:absolute; inset:0; width:100%; height:100%; min-height:0; margin:0; border:0; background:transparent; box-shadow:none; overflow:hidden; }
 .digital-home .digital-visual .machine-canvas { position:absolute; inset:0; width:100%; height:100%; touch-action:auto; pointer-events:none; cursor:auto; }
+.machine-poster { position:absolute; inset:0; z-index:2; pointer-events:none; background:var(--bg) url('/assets/model-posters/powered-down-desktop-light.webp') center/contain no-repeat; }
+.machine-poster { background-image:image-set(url('/assets/model-posters/powered-down-desktop-light.avif') type('image/avif'),url('/assets/model-posters/powered-down-desktop-light.webp') type('image/webp')); }
+html[data-theme=dark] .machine-poster { background-image:url('/assets/model-posters/powered-down-desktop-dark.webp'); background-image:image-set(url('/assets/model-posters/powered-down-desktop-dark.avif') type('image/avif'),url('/assets/model-posters/powered-down-desktop-dark.webp') type('image/webp')); }
+[data-startup=booting] .machine-stage>:not(.machine-poster),[data-startup=prepared] .machine-stage>:not(.machine-poster) { visibility:hidden; }
+[data-startup=fallback]:not(.model-machine-replay) .machine-stage>:not(.machine-poster) { visibility:hidden; }
+[data-startup=handoff] .machine-poster,[data-startup=igniting] .machine-poster,[data-startup=ready] .machine-poster,.model-machine-replay[data-startup=fallback] .machine-poster { display:none; }
+.digital-boot-status { grid-area:1/1; align-self:start; justify-self:end; position:sticky; top:calc(var(--2071-header) + 18px); z-index:3; margin:18px 28px 0; width:fit-content; padding:10px 12px; color:var(--muted); background:var(--bg); border-left:2px solid var(--accent); font:500 11px/1.5 ui-monospace,monospace; pointer-events:none; }
+[data-startup=ready] .digital-boot-status { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 .digital-home .digital-visual .machine-legend,.digital-home .digital-visual .machine-axis-labels { display:none; }
 .digital-home .digital-visual .machine-fallback { inset:8% 12%; opacity:.52; }
 .digital-chapters { grid-area:1/1; position:relative; z-index:2; padding-inline:max(28px,calc((100vw - 1180px)/2)); }
@@ -64,6 +72,9 @@ html[data-theme=dark] .digital-home { --bg:#050712; --panel:rgba(8,13,29,.9); --
 @media(max-width:720px) {
  .digital-journey { display:block; }
  .digital-visual { min-height:0; height:280px; margin-bottom:0; position:relative; top:0; }
+ .machine-poster { background-image:url('/assets/model-posters/powered-down-phone-light.webp'); background-image:image-set(url('/assets/model-posters/powered-down-phone-light.avif') type('image/avif'),url('/assets/model-posters/powered-down-phone-light.webp') type('image/webp')); }
+ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-posters/powered-down-phone-dark.webp'); background-image:image-set(url('/assets/model-posters/powered-down-phone-dark.avif') type('image/avif'),url('/assets/model-posters/powered-down-phone-dark.webp') type('image/webp')); }
+ .digital-boot-status { position:absolute; top:8px; right:0; margin:0 14px; }
  .digital-chapters { padding-inline:14px; }
  .digital-chapter,.digital-deep-reading { min-height:0; padding:22px 0; display:block; }
  .digital-pane,.digital-deep-reading .digital-pane { width:100%; padding:22px 18px; transform:none!important; }
