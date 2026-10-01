@@ -41,7 +41,7 @@ jobs:
             printf '%s\n' "${markdown[@]}"
             echo EOF
             echo 'lychee_files<<EOF'
-            printf '%s\n' "${markdown[@]}" | python3 -c 'import shlex, sys; print(" ".join(shlex.quote(line.rstrip("\\n")) for line in sys.stdin if line.rstrip("\\n")))'
+            printf '%s\n' "${markdown[@]}" | python3 -c 'import shlex, sys; print(" ".join(shlex.quote(line.rstrip("\n")) for line in sys.stdin if line.rstrip("\n")))'
             echo EOF
           } >> "$GITHUB_OUTPUT"
           printf 'changed_markdown=%s\n' "${#markdown[@]}" >> "$GITHUB_OUTPUT"
