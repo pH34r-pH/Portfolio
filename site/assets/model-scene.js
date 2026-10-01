@@ -5,11 +5,13 @@ import { SharedGlass } from "./model-glass.js";
 import { RenderMetrics } from "./model-render-metrics.js";
 import { ModelQuality } from "./model-quality.js";
 import { buildMachineHardware } from "./model-hardware.js";
+import { digitalContours } from './model-digital.js';
+import { HomepageScreens } from './homepage-screens.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
   constructor(T, root, selectNode, fail, scrub, instruments) {
-    this.T = T; this.root = root; this.canvas = root.querySelector("[data-machine-canvas]");
+    this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
     const options = { alpha: true, antialias: false, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
     if (!context) throw new Error("WebGL2 unavailable");
@@ -34,9 +36,16 @@ export class MachineScene {
       probe: new T.LineBasicMaterial({ color: 0x168cdd, transparent: true, opacity: .85, depthWrite: false }),
       signal: new T.MeshStandardMaterial({ color: 0x60ccff, emissive: 0x16a6ff, emissiveIntensity: 2, roughness: .25 }),
     };
+    if (this.digital) {
+      this.materials.node.dispose(); this.materials.ceramic.dispose();
+      this.materials.node = new T.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.9, depthWrite:false, blending:T.AdditiveBlending});
+      this.materials.ceramic = new T.MeshBasicMaterial({color:0x72edff, transparent:true, opacity:.6});
+      this.materials.probe.color.set(0xdd86ff); this.materials.signal.color.set(0xba87ff);
+    }
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
-    this.glass = new SharedGlass(T, this.scene, this.renderer, instruments);
+    const Screens = this.digital ? HomepageScreens : SharedGlass;
+    this.glass = new Screens(T, this.scene, this.renderer, instruments);
     this.glass.setQuality(this.quality.effective); instruments.quality(this.quality.effective);
     this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
@@ -49,9 +58,9 @@ export class MachineScene {
   buildGraph() {
     const T = this.T;
     // Coordinates stay 1:1; small projected beads use a bounded geometry LOD.
-    this.beads = new T.InstancedMesh(this.quality.lightweight ? new T.OctahedronGeometry(.0595) : new T.SphereGeometry(.0595, 6, 4), this.materials.node, GRAPH.nodes.length);
+    this.beads = new T.InstancedMesh(this.digital ? new T.OctahedronGeometry(.0255) : this.quality.lightweight ? new T.OctahedronGeometry(.0595) : new T.SphereGeometry(.0595, 6, 4), this.materials.node, GRAPH.nodes.length);
     this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 4, 3), this.materials.core, GRAPH.nodes.length);
-    this.cores.count = this.quality.lightweight ? 0 : GRAPH.nodes.length;
+    this.cores.count = this.digital || this.quality.lightweight ? 0 : GRAPH.nodes.length;
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
@@ -81,6 +90,7 @@ export class MachineScene {
     this.select(this.selected);
   }
   buildHardware() {
+    if (this.digital) { this.contours = digitalContours(this.T); this.machine.add(this.contours); return; }
     this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
   }
   addLights() {
@@ -104,13 +114,14 @@ export class MachineScene {
     const tangent = Math.tan(14 * Math.PI / 180);
     this.distance = mobile() ? Math.max(9.3 / tangent, 2.9 / (tangent * this.camera.aspect))
       : Math.max(3.7 / tangent, 6.4 / (tangent * this.camera.aspect));
+    if (this.digital && mobile()) this.distance = Math.max(5.1 / tangent, 2.5 / (tangent * this.camera.aspect));
     this.camera.updateProjectionMatrix();
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
     const stage = this.canvas.parentElement;
-    this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;
+    if (!this.digital) this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
     this.machine.rotation.set(0, 0, mobile() ? -Math.PI / 2 : 0);
-    this.machine.position.y = mobile() ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
+    this.machine.position.y = mobile() && !this.digital ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
     this.updateCamera();
     this.render();
   }
@@ -123,8 +134,8 @@ export class MachineScene {
   setQuality(mode) {
     this.quality.set(mode); const low = this.quality.lightweight;
     this.beads.geometry.dispose();
-    this.beads.geometry = low ? new this.T.OctahedronGeometry(.0595) : new this.T.SphereGeometry(.0595, 6, 4);
-    this.cores.count = low ? 0 : GRAPH.nodes.length;
+    this.beads.geometry = this.digital ? new this.T.OctahedronGeometry(.0255) : low ? new this.T.OctahedronGeometry(.0595) : new this.T.SphereGeometry(.0595, 6, 4);
+    this.cores.count = this.digital || low ? 0 : GRAPH.nodes.length;
     this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
     this.resize(); if (this.snapshot) this.applyFrame(this.run, this.snapshot);
   }
@@ -135,7 +146,7 @@ export class MachineScene {
   }
   refreshTheme() {
     this.dark = document.documentElement.dataset.theme === "dark";
-    this.scene.background = new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
+    this.scene.background = this.digital ? null : new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
     this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
     this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
     this.materials.edge.opacity = this.dark ? .19 : .13;
@@ -145,7 +156,7 @@ export class MachineScene {
     if (this.disposed) return;
     const began = performance.now();
     this.run = run; this.snapshot = state;
-    const T = this.T, base = new T.Color(this.dark ? 0x82a9c2 : 0x245679), active = new T.Color(0x39baff);
+    const T = this.T, base = new T.Color(this.digital ? (this.dark ? 0x447abb : 0x165577) : this.dark ? 0x82a9c2 : 0x245679), active = new T.Color(this.digital ? 0xebb0ff : 0x39baff);
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
       const dim = this.focus === "consumer" && node.layer < 4 || this.focus === "representation" && node.layer > 3;
@@ -162,7 +173,7 @@ export class MachineScene {
     GRAPH.edges.forEach((edge,index)=>{
       const value=Math.min(state.activations[edge.source],state.activations[edge.target]),intensity=.15+value*.85;
       for(let offset=this.edgeOffsets[index];offset<this.edgeOffsets[index+1];offset+=3) {
-        this.edgeColors[offset]=intensity*.12;this.edgeColors[offset+1]=intensity*.55;this.edgeColors[offset+2]=intensity;
+        this.edgeColors[offset]=intensity*(this.digital&&edge.layer%2?.65:.12);this.edgeColors[offset+1]=intensity*.55;this.edgeColors[offset+2]=intensity;
       }
     });
     this.edgeGeometry.attributes.color.needsUpdate = true;
@@ -225,6 +236,10 @@ export class MachineScene {
       pan:(dx,dy)=>this.panBy(-dx*.012,dy*.012),
       scrub:dx=>scrub(dx*360/Math.max(this.canvas.clientWidth,1)),
     });
+    if (this.digital) {
+      window.visualViewport?.addEventListener('resize', () => this.render(), options);
+      return; // Homepage gestures belong to native scrolling and browser zoom.
+    }
     this.canvas.addEventListener("pointerdown",event=>{
       if(event.button!==0)return;
       this.gestures.down(event.pointerId,event.clientX,event.clientY);this.canvas.setPointerCapture(event.pointerId);
@@ -248,6 +263,15 @@ export class MachineScene {
   graphOrigin() {
     const point = new this.T.Vector3().applyMatrix4(this.machine.matrixWorld).project(this.camera);
     return [(point.x + 1) * this.glass.viewport.width * .5, (1 - point.y) * this.glass.viewport.height * .5];
+  }
+  reading({quiet,progress}) {
+    if (!this.digital || this.disposed || document.hidden) return;
+    const bounds = this.canvas.getBoundingClientRect();
+    if (bounds.bottom < 0 || bounds.top > innerHeight) return;
+    this.materials.edge.opacity = quiet ? .065 : (this.dark ? .23 : .18);
+    this.materials.node.opacity = quiet ? .42 : .9;
+    this.contours.material.opacity = quiet ? .1 : .24 + Math.sin(progress * Math.PI * 2) * .045;
+    this.render();
   }
   diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), quality:this.quality.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
   dispose() {

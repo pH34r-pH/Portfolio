@@ -1,6 +1,7 @@
 import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, sampleReplay, joinTokens } from "./model-topology.js";
 import { ModelLightPublisher } from "./model-light.js";
 import { ModelInstruments } from "./model-instruments.js";
+import { HomepageInstruments } from "./homepage-instruments.js";
 const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const forcedColors = matchMedia("(forced-colors: active)");
@@ -47,6 +48,7 @@ class MachineController {
     };
     root.machine = api; window.PortfolioModelMachine ??= api;
     root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all"));
+    root.addEventListener("portfolio:reading", event => this.scene?.reading(event.detail));
   }
   buildControls() {
     this.root.classList.add("model-machine-replay");
@@ -89,7 +91,8 @@ class MachineController {
     const identity=element("a","","Architecture identity / aggregation map");identity.href="/assets/model-architecture.json";disclosure.append(document.createTextNode(" · "),identity);
     disclosure.append(document.createTextNode(". Replay signals and byte echo are deterministic illustrations, not trained activations, predictions or experimental measurements. No optimizer run is performed."));this.root.append(disclosure);
     this.root.append(element("p", "machine-help", "Inside the viewer: one finger orbits; two pinch-zoom and pan; three scrub replay horizontally when the browser supplies those pointers. Scroll normally outside it. Settings exposes camera, frame-step and inspection alternatives. Focus the graph: Space/K plays or pauses, ←/→ steps (Shift: 10), Home/End seeks, W/A/S/D orbits, I/J/L/U pans, +/− zooms. OS accessibility gestures remain system-owned."));
-    this.instruments = new ModelInstruments(this.root, this.stage, io,
+    const Instruments = this.root.hasAttribute('data-digital-home') ? HomepageInstruments : ModelInstruments;
+    this.instruments = new Instruments(this.root, this.stage, io,
       () => { const settings = this.root.querySelector('[data-machine-settings]'); settings.open = true; this.layerSelect.focus(); },
       () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); this.instruments.viewButton.textContent = this.scene?.depthView ? 'Return view' : 'View depth'; });
     this.instruments.changed = () => this.scene?.resize();
