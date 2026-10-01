@@ -3,16 +3,21 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
+import {articleHost} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
+const host=await articleHost(base);
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
 await mkdir(out, {recursive:true});
 const browser = await chromium.launch({headless:true});
 const evidence = [];
 async function open(options={}, setup) {
   const context = await browser.newContext(options); const page = await context.newPage();
+  if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
   if (setup) await setup(page);
   const errors=[]; page.on('pageerror', error => errors.push(error.message));
-  await page.goto(base, {waitUntil:'networkidle'});
+  const initialEngine=[];page.on('request',request=>{if(request.url().includes('three@0.186.1'))initialEngine.push(request.url());});
+  await page.goto(host.url, {waitUntil:'networkidle'});
+  if(host.html)assert.equal(initialEngine.length,0,'Below-fold embedded viewer defers its engine');
   const root=page.locator('[data-model-machine]').first(); await root.scrollIntoViewIfNeeded();
   await expect(root).toHaveAttribute('data-render', /webgl|fallback/, {timeout:20000});
   return {context,page,root,errors};
@@ -148,5 +153,5 @@ try {
   await visibilityCase.context.close();
   await context.close();
   await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2));
-  console.log(`Model audit passed: ${evidence.length} profiles, WebGL context loss, complete topology and deterministic replay.`);
+  console.log(`Embedded model audit passed (${host.kind}): ${evidence.length} profiles, WebGL context loss, complete topology and deterministic replay.`);
 } catch(error) { evidence.push({failure:error.message}); throw error; } finally {await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2)); await browser.close();}

@@ -102,3 +102,37 @@ Current screenshots and machine-readable evidence are in
 `/workspace/scratch/dr-cho-homepage/`. A final recovery bundle and checkpoint
 manifest accompany the final local commit. All remain local for private recovery
 arrangements by the parent.
+
+## Homepage and embedded-viewer gates
+
+The homepage gate now runs in both source UX and finished-bundle CI. It covers
+1440×1000, 360×800, 412×915 (S23 viewport) and 320×780, with touch/DPR 3 on phones.
+Native wheel/finger scroll and browser zoom must preserve the graph camera;
+keyboard disclosures, replay range, rewind, pause/play, coordinate inspection and
+explicit camera controls remain usable. Graph centering/release, light/dark axe,
+44px targets, draw/triangle caps, native delayed clocks, offscreen/hidden-tab
+suspension, context loss and four static fallback modes remain enforced.
+Reduced-motion and forced-color contexts must issue zero Three.js requests.
+
+The embedded-viewer gate retains its orbit/pinch/pan/three-pointer scrub and graph
+keyboard contracts. Source UX uses a canonical article-host fixture generated
+from `render_article_model_machine`; finished-bundle CI requires a real model
+article from its publication manifest. Scroll=0 can expose a short article's
+viewer, so clock suspension is checked by actually leaving the host. Source UX
+checks canonical article links; finished-bundle UX also follows them and Back.
+
+Pagefind ignores only the visual field and replay disclosure. Native introduction,
+research claims and project prose remain searchable, including an actual query
+against the built homepage index. Generated article HTML and exports are unchanged.
+The source and preserved publication overlay pass these gates. Real article
+testing exposed a wrapped legend at 320px; article-only model spacing now reserves
+its heading band. Homepage styling and the global stylesheet remain unchanged.
+
+Lighthouse budgets are unchanged. A local run using the CI server's gzip and font
+setup records 460,425 script transfer bytes (50,000 limit), 576,545 total bytes
+(150,000 limit), performance 0.75 (0.95 limit), and 1,286ms total blocking time
+(200ms limit). Locked Three.js alone transfers 420,551 bytes. Accessibility is 1,
+LCP 1,964ms and CLS 0. These local software-renderer results identify a loading
+and payload blocker; they do not qualify the exact hosted bundle or physical S23
+performance. An immediately loaded engine conflicts with the existing payload
+budget. No budget exception or production deployment is authorized by this repair.

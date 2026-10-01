@@ -59,6 +59,7 @@ jobs:
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/2071-audit.mjs
+          node scripts/homepage-digital-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
           node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
@@ -340,7 +341,8 @@ jobs:
           cd Portfolio
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/2071-audit.mjs
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 PORTFOLIO_PUBLICATION_BUNDLE=1 node scripts/homepage-digital-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 PORTFOLIO_PUBLICATION_BUNDLE=1 node scripts/model-machine-audit.mjs
       - name: Hash exact upload bytes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         id: digest

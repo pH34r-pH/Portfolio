@@ -53,6 +53,13 @@
  .model-machine-replay .machine-fallback svg circle.is-active { fill: Highlight; }
  .model-machine-replay .machine-transport button[data-replay-play] { color: ButtonText; }
 }
+/* Article columns are narrower than the standalone source fixture. Reserve the
+   wrapped legend and quality hint before the embedded graph at phone widths. */
+@media(max-width:360px) {
+ .article-model-machine .machine-canvas { inset:172px 0 32px; height:calc(100% - 204px); }
+ .article-model-machine .machine-fallback { inset:172px 10% 48px 22%; }
+ .model-machine-replay.article-model-machine .machine-render-hint { top:148px; }
+}
 
 html[data-theme=dark] .model-machine-replay .machine-input button,html[data-theme=dark] .model-machine-replay [data-replay-play] { color: var(--bg); }
 

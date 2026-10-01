@@ -29,7 +29,7 @@ async function auditSearchDialog(page, hasPagefind) {
   await expect(dialog).toBeHidden();
 }
 
-async function auditLazyMachine(browser) {
+async function auditVisibleMachine(browser) {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   const engineRequests = [];
@@ -37,11 +37,23 @@ async function auditLazyMachine(browser) {
     if (request.url().includes("three@0.186.1")) engineRequests.push(request.url());
   });
   await page.goto(base + "/", { waitUntil: "networkidle" });
-  assert.equal(engineRequests.length, 0, "Three.js must not enter the initial homepage load");
   const machine = page.locator("[data-model-machine]").first();
   await expect(machine).toBeVisible();
-  await machine.scrollIntoViewIfNeeded();
+  if (await machine.getAttribute('data-digital-home') === null) {
+    assert.equal(engineRequests.length, 0, 'Below-fold viewer defers the engine');
+    await machine.scrollIntoViewIfNeeded();
+  } else {
+    await expect(machine.locator('.digital-visual')).toBeInViewport();
+  }
   await expect(machine).toHaveAttribute("data-render", /webgl|fallback/, { timeout: 10000 });
+  const loaded = [...engineRequests];
+  assert.deepEqual(loaded.map(url=>new URL(url).pathname).sort(), [
+    '/assets/vendor/three@0.186.1/three.core.js',
+    '/assets/vendor/three@0.186.1/three.module.js',
+  ], 'One locked, locally served engine and its core module');
+  await page.locator('#projects').scrollIntoViewIfNeeded();
+  await page.evaluate(()=>scrollTo(0,0));
+  assert.deepEqual(engineRequests, loaded, 'Native chapter navigation reuses the engine');
   await context.close();
 }
 
@@ -155,7 +167,18 @@ async function auditPagefindBoundaries(page, manifest) {
   if (!manifest) return;
   await page.goto(base + "/", { waitUntil: "domcontentloaded" });
   await expect(page.locator("main[data-pagefind-body]")).toHaveCount(1);
-  await expect(page.locator("[data-model-machine][data-pagefind-ignore]")).toHaveCount(1);
+  if (await page.locator('[data-digital-home]').count()) {
+    await expect(page.locator('.digital-visual[data-pagefind-ignore]')).toHaveCount(1);
+    await expect(page.locator('.digital-replay-disclosure[data-pagefind-ignore]')).toHaveCount(1);
+    assert.equal(await page.locator('#introduction .lede').evaluate(node=>Boolean(node.closest('[data-pagefind-ignore]'))), false, 'Real homepage prose remains searchable');
+    assert.equal(await page.locator('#research-chapter .proof-line').evaluate(node=>Boolean(node.closest('[data-pagefind-ignore]'))), false, 'Research claims remain searchable');
+    const homeResults=await page.evaluate(async()=>{
+      const {search}=await import('/pagefind/pagefind.js');
+      const {results}=await search('strange');
+      return Promise.all(results.map(async result=>(await result.data()).url));
+    });
+    assert.ok(homeResults.some(url=>new URL(url,base).pathname==='/'),'Built index contains the real homepage title');
+  } else await expect(page.locator('[data-model-machine][data-pagefind-ignore]')).toHaveCount(1);
   await page.goto(base + "/research/", { waitUntil: "domcontentloaded" });
   await expect(page.locator(".research-topology[data-pagefind-ignore]")).toHaveCount(1);
 }
@@ -176,7 +199,7 @@ try {
   await auditArticleMachine(page, manifest);
   await auditPagefindBoundaries(page, manifest);
   await context.close();
-  await auditLazyMachine(browser);
+  await auditVisibleMachine(browser);
   await auditReducedMotionMachine(browser);
   console.log(`2071 audit passed${manifest ? " for exact publication bundle" : " for source surface"}.`);
 } finally {

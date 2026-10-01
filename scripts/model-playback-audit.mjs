@@ -36,13 +36,16 @@ export async function auditPlayback(page,root,name) {
   const advanced=await advance(root,70,true);
   assert.ok(advanced.frame>70&&advanced.clock.ticks>0,`${name} real animation clock advances`);
   assert.ok(advanced.frame-70<=advanced.elapsed*.06+3,`${name} replay clock bound`);
-  await page.evaluate(()=>scrollTo(0,0));
+  // A short article can expose its viewer even at scroll=0; a homepage can have
+  // a sticky stage there. Move beyond the actual host in either context.
+  await page.evaluate(()=>{const spacer=document.createElement('div');spacer.dataset.auditSpacer='';spacer.style.height='2000px';document.body.append(spacer);scrollTo(0,document.body.scrollHeight);});
   await expect.poll(()=>root.evaluate(node=>node.machine.clock()),{timeout:5000}).toMatchObject({visible:false,scheduled:false});
   const paused=await frozenAcrossFrames(root);assert.equal(paused.after,paused.before,`${name} offscreen freeze`);
   assert.equal(await root.evaluate(node=>node.machine.light().energy),0,`${name} offscreen light clears`);
   await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();await eligible(root);
   const resumed=await advance(root,paused.after);assert.ok(resumed.frame>paused.after,`${name} replay resumes`);
   await root.evaluate(node=>node.machine.pause());
+  await page.locator('[data-audit-spacer]').evaluate(node=>node.remove());
   return {advanced,paused,resumed};
 }
 export async function auditDelayedClock(open) {
