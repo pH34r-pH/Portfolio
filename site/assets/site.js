@@ -41,11 +41,13 @@ function notebookCard(notebook, index) {
   const links = document.createElement("div");
   links.className = "links";
   const read = document.createElement("a");
-  const slug = notebook.slug || notebook.path.split("/").pop().replace(/\.ipynb$/, "");
+  const filename = notebook.path.split("/").pop();
+  const slug = notebook.slug || (filename.endsWith(".ipynb") ? filename.slice(0, -6) : filename);
   read.href = "/notebooks/" + encodeURIComponent(slug) + "/";
   read.textContent = "Read notebook";
   const lab = document.createElement("a");
-  const jupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\/notebooks\//, "");
+  const prefix = "publication/notebooks/";
+  const jupyterPath = notebook.jupyterPath || (notebook.path.startsWith(prefix) ? notebook.path.slice(prefix.length) : notebook.path);
   lab.href = "/lab/lab/index.html?path=" + encodeURIComponent(jupyterPath);
   lab.textContent = "Open in JupyterLite ↗";
   links.append(read, lab);
@@ -102,6 +104,7 @@ async function loadPublication() {
 }
 loadPublication();
 
+
 /* Move the environmental field only when the reader moves through the page.
    It remains a quiet, deterministic depth cue and disappears under reduced
    motion rather than running as a permanent animation. */
@@ -137,5 +140,7 @@ function setupFieldResponse() {
   addEventListener("resize", schedule, { passive: true });
   reduced.addEventListener?.("change", schedule);
 }
+
+
 
 setupFieldResponse();

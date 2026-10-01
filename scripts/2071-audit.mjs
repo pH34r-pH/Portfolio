@@ -72,13 +72,7 @@ function expectedEdges(articles) {
   );
 }
 
-async function auditTopology(page, manifest) {
-  if (!manifest?.articles?.length) return;
-  await page.goto(base + "/research/", { waitUntil: "networkidle" });
-  const nodes = page.locator(".topology-node");
-  await expect(nodes).toHaveCount(manifest.articles.length);
-  await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(manifest.articles));
-  const layout = await page.locator("[data-research-topology]").evaluate((root) => {
+function topologyLayout(root) {
     const viewport = root.getBoundingClientRect();
     const boxes = [...root.querySelectorAll(".topology-node")].map((node) => {
       const box = node.getBoundingClientRect();
@@ -93,17 +87,28 @@ async function auditTopology(page, manifest) {
       overlaps,
       background: getComputedStyle(document.body).backgroundImage,
     };
-  });
-  assert.equal(layout.overlaps, 0, "topology nodes must not overlap");
-  assert.ok(layout.background.includes("radial-gradient"), "the page field should use dimensional gradients");
-  assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
-  const frontier = [...manifest.articles].reverse()
+}
+
+async function auditPaintedText(page,selectors) {
+  const metrics=await page.evaluate(selectors=>selectors.flatMap(selector=>[...document.querySelectorAll(selector)].map(node=>{
+    const range=document.createRange();range.selectNodeContents(node);const text=range.getBoundingClientRect();
+    return {selector,content:node.textContent.trim(),width:text.width,height:text.height,visible:node.checkVisibility()};
+  })),selectors);
+  assert.ok(metrics.length>0,'required text must exist');
+  assert.ok(metrics.every(item=>item.content&&item.width>0&&item.height>0&&item.visible),`Required text must paint: ${JSON.stringify(metrics)}`);
+}
+
+async function auditFrontierSelection(page,articles) {
+  const frontier = [...articles].reverse()
     .find(article => article.frontierOpen?.length || article.frontierNext?.length);
   if (frontier) {
-    await expect(page.locator(`.topology-node[data-slug="${frontier.slug}"]`)).toHaveClass(/is-selected/);
+    await expect(page.locator(`.topology-node.is-selected[data-slug="${frontier.slug}"]`)).toHaveCount(1);
     await expect(page.locator("[data-topology-detail]")).toContainText(frontier.shortTitle || frontier.title);
   }
-  await expect(page.locator("[data-topology-list] li")).toHaveCount(manifest.articles.length);
+  await expect(page.locator("[data-topology-list] li")).toHaveCount(articles.length);
+}
+
+async function auditPhoneTopology(page,nodes,layout) {
   if (await page.evaluate(() => innerWidth <= 640)) {
     assert.ok(layout.boxes.every((box) => box.left >= layout.viewport.left - 1 && box.right <= layout.viewport.right + 1),
       `phone topology node escaped its viewport: ${JSON.stringify(layout)}`);
@@ -111,6 +116,20 @@ async function auditTopology(page, manifest) {
     await nodes.first().press("ArrowDown");
     await expect(nodes.nth(1)).toBeFocused();
   }
+}
+
+async function auditTopology(page, manifest) {
+  if (!manifest?.articles?.length) return;
+  await page.goto(base + "/research/", { waitUntil: "networkidle" });
+  const nodes = page.locator(".topology-node");
+  await expect(nodes).toHaveCount(manifest.articles.length);
+  await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(manifest.articles));
+  const layout = await page.locator("[data-research-topology]").evaluate(topologyLayout);
+  assert.equal(layout.overlaps, 0, "topology nodes must not overlap");
+  assert.ok(layout.background.includes("radial-gradient"), "the page field should use dimensional gradients");
+  assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
+  await auditFrontierSelection(page,manifest.articles);
+  await auditPhoneTopology(page,nodes,layout);
 }
 
 async function auditArticleMachine(page, manifest) {
@@ -142,14 +161,7 @@ async function auditPagefindBoundaries(page, manifest) {
 }
 
 const browser = await chromium.launch({ headless: true });
-async function auditPaintedText(page,selectors) {
-  const metrics=await page.evaluate(selectors=>selectors.flatMap(selector=>[...document.querySelectorAll(selector)].map(node=>{
-    const range=document.createRange();range.selectNodeContents(node);const text=range.getBoundingClientRect();
-    return {selector,content:node.textContent.trim(),width:text.width,height:text.height,visible:node.checkVisibility()};
-  })),selectors);
-  assert.ok(metrics.length>0,'required text must exist');
-  assert.ok(metrics.every(item=>item.content&&item.width>0&&item.height>0&&item.visible),`Required text must paint: ${JSON.stringify(metrics)}`);
-}
+
 try {
   const context = await browser.newContext({ viewport: { width: 412, height: 915 } });
   const page = await context.newPage();
