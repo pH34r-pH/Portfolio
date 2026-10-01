@@ -215,6 +215,15 @@ gradient whose coordinates shift only in response to scroll; reduced motion
 freezes the field and removes spatial transitions. This is optical depth for
 hierarchy, not an opacity treatment or permanent ambient animation.
 
+The model scene may publish a bounded lighting hint on the document root:
+`--model-light-x` and `--model-light-y` are viewport percentages, while
+`--model-light-energy` is a clamped `0`–`1` value. The shell uses these values
+only for restrained spatial glow and edge emphasis; they remain separate from
+the shell-owned scroll variables `--field-shift-x`, `--field-shift-y`, and
+`--glass-scroll-y`. The model clears energy to `0` when hidden or disposed and
+updates it immediately while scrubbing. No event bus or device-orientation
+input is required.
+
 ## Personal narrative
 
 About is a causal career story rather than prose résumé:
