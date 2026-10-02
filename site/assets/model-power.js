@@ -6,13 +6,13 @@ export function ignitionLevel(layer,progress) {
   return value*value*(3-2*value);
 }
 export function applyPower(scene,progress) {
-  const p=clamp(progress,0,1),base=new scene.T.Color(0x3a5362);
+  const p=clamp(progress,0,1),base=new scene.T.Color(scene.dark?0x447abb:0x165577);
   scene.scene.background=scene.powerBackground;
   scene.materials.node.blending=scene.T.NormalBlending;scene.contours.material.blending=scene.T.NormalBlending;
-  const on=new scene.T.Color(scene.dark?0x447abb:0x165577),crest=new scene.T.Color(0xebb0ff);
+  const on=new scene.T.Color(scene.dark?0x447abb:0x165577),activity=new scene.T.Color(0x39baff);
   GRAPH.nodes.forEach((node,index)=>{
     const level=ignitionLevel(node.layer,p),spark=Math.sin(Math.PI*level)*.6;
-    scene.color.copy(base).lerp(on,level).lerp(crest,spark);
+    scene.color.copy(base).lerp(on,level).lerp(activity,spark*.35);
     scene.beads.setColorAt(index,scene.color);
   });
   GRAPH.edges.forEach((edge,index)=>{

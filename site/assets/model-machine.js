@@ -198,15 +198,16 @@ class MachineController {
   }
   buildFallback(fallback) {
     const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
-    const phone = matchMedia("(max-width:720px)").matches;
-    svg.setAttribute("viewBox", phone ? "0 0 550 1200" : "0 0 1200 550"); svg.setAttribute("aria-hidden", "true");
-    const position = node => { const x = 600 + node.position[0] * 112, y = 275 + (node.position[1] + node.position[2] * .28) * 80; return phone ? [y, x] : [x, y]; };
+    svg.setAttribute("viewBox", "0 0 1200 550"); svg.setAttribute("aria-hidden", "true");
+    svg.dataset.orientation = "input-to-output";
+    const position = node => [600 + node.position[0] * 112, 275 + (node.position[1] + node.position[2] * .28) * 80];
     const paths = Array.from({ length: TOPOLOGY.widths.length }, () => "");
     GRAPH.edges.forEach(edge => { paths[edge.layer] += `M${position({position:edge.sourcePosition}).join(",")}L${position({position:edge.targetPosition}).join(",")}`; });
     paths.forEach(data => { const path = document.createElementNS(ns, "path"); path.setAttribute("d", data); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", ".6"); path.setAttribute("opacity", ".13"); svg.append(path); });
     this.fallbackNodes = GRAPH.nodes.map(node => {
       const circle = document.createElementNS(ns, "circle"), [x, y] = position(node);
-      circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 2.8); svg.append(circle); return circle;
+      circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 2.8);
+      circle.dataset.layer = node.layer; svg.append(circle); return circle;
     });
     fallback.replaceChildren(svg, element("p", "", "Static graph / same topology and replay frames"));
   }
@@ -243,7 +244,7 @@ class MachineController {
     this.syncClock();
   }
   publishLight(immediate = false) {
-    this.light.publish(this.runData, this.frame, { active: this.visible && !document.hidden && Boolean(this.scene), reducedMotion: reduceMotion.matches, vertical: this.viewport.matches, immediate });
+    this.light.publish(this.runData, this.frame, { active: this.visible && !document.hidden && Boolean(this.scene), reducedMotion: reduceMotion.matches, vertical: false, immediate });
   }
   draw() {
     const state = sampleReplay(this.runData, this.frame), node = GRAPH.nodes[this.selected];

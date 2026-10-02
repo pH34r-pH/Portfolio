@@ -1,0 +1,152 @@
+import assert from 'node:assert/strict';
+import {mkdir,writeFile} from 'node:fs/promises';
+import {chromium,expect} from '@playwright/test';
+import {articleHost} from './model-audit-host.mjs';
+
+const sourceBase=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:45937';
+const publishedBase=process.env.PORTFOLIO_PUBLISHED_AUDIT_URL;
+const out=process.env.MODEL_VISUAL_EVIDENCE_DIR||'ux-screenshots/visual-v2';
+await mkdir(out,{recursive:true});
+const browser=await chromium.launch({headless:true}),evidence=[];
+const viewports=[['phone-360-dpr1',360,800,1],['phone-412-dpr3',412,915,3],['desktop-dpr2',1440,1000,2]];
+
+function assertHorizontal(xs,label) {
+  assert.equal(xs.length,8,`${label}: eight graph layer landmarks`);
+  assert.ok(xs.every((x,index)=>index===0||x>xs[index-1]),`${label}: input-to-output landmark order ${xs}`);
+}
+
+async function installFixture(page,host) {
+  if(!host.html)return;
+  await page.route(`${host.base}/__audit/article-model/`,route=>route.fulfill({
+    status:200,contentType:'text/html; charset=utf-8',body:host.html
+  }));
+}
+
+async function inspectHost(host,viewport) {
+  const {kind,base,url}=host;
+  const [name,width,height,dpr]=viewport;
+  const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr,colorScheme:'light'});
+  const page=await context.newPage(),errors=[];
+  page.on('pageerror',error=>errors.push(error.message));
+  await installFixture(page,host);
+  await page.goto(base+url,{waitUntil:'networkidle'});
+  const root=page.locator('[data-model-machine]').first();
+  await root.scrollIntoViewIfNeeded();
+  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  await expect(root).toHaveAttribute('data-render','webgl');
+  await root.evaluate(node=>node.machine.seek(145));
+  const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
+  assert.equal(diagnostics.nodes,1668);assert.equal(diagnostics.edges,3601);
+  assert.equal(diagnostics.quality.requested,'auto');assert.equal(diagnostics.quality.effective,'refraction');
+  assert.equal(diagnostics.quality.contextAttributes.antialias,true);
+  assert.ok(diagnostics.quality.sampleSupport.defaultFramebufferSamples>0);
+  assert.equal(diagnostics.transmissionScale,1);
+  const canvas=await root.locator('canvas').evaluate(node=>({rect:(()=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})(),width:node.width,height:node.height}));
+  const resolution=diagnostics.resolution,limits=diagnostics.quality.limits;
+  assert.ok(Math.abs(resolution.effectiveDPR-dpr)<.01,`${kind}/${name}: effective DPR ${resolution.effectiveDPR} != ${dpr}`);
+  assert.equal(canvas.width,resolution.drawingBufferWidth);assert.equal(canvas.height,resolution.drawingBufferHeight);
+  assert.equal(canvas.width,Math.round(canvas.rect.width*dpr));assert.equal(canvas.height,Math.round(canvas.rect.height*dpr));
+  assert.ok(canvas.width<=limits.maxTargetDimension&&canvas.height<=limits.maxTargetDimension);
+  const transmissivePanels=diagnostics.glass.visible>0&&diagnostics.glass.material.transmission>0;
+  if(transmissivePanels) {
+    assert.ok(resolution.transmissionTarget?.samples>0,`${kind}/${name}: visible transmissive panels need a real multisample target`);
+    assert.ok(Math.abs(resolution.transmissionTarget.width-canvas.width)<=1);
+    assert.ok(Math.abs(resolution.transmissionTarget.height-canvas.height)<=1);
+  }
+  assertHorizontal(diagnostics.landmarks.map(([x])=>x),`${kind}/${name}`);
+  assert.ok(diagnostics.graphBounds.left>=-1&&diagnostics.graphBounds.right<=canvas.rect.width+1,`${kind}/${name}: graph fits horizontally ${JSON.stringify(diagnostics.graphBounds)}`);
+  assert.ok(diagnostics.graphBounds.top>=-1&&diagnostics.graphBounds.bottom<=canvas.rect.height+1,`${kind}/${name}: graph fits vertically ${JSON.stringify(diagnostics.graphBounds)}`);
+  assert.equal(diagnostics.appearance.lightBlue,'165577');assert.equal(diagnostics.appearance.darkBlue,'447abb');assert.equal(diagnostics.appearance.activityBlue,'39baff');
+  assert.deepEqual(errors,[]);
+  const path=`${out}/${kind}-${name}.png`;
+  await root.screenshot({path});
+  const themes=[];
+  for(const theme of ['light','dark']) {
+    await page.evaluate(value=>{document.documentElement.dataset.themeMode=value;document.documentElement.dataset.theme=value;},theme);
+    await page.waitForTimeout(60);
+    const themed=await root.evaluate(node=>node.machine.diagnostics());
+    assert.equal(themed.appearance.contourColor,theme==='dark'?'447abb':'165577');
+    const themePath=`${out}/${kind}-${name}-${theme}.png`;
+    await root.screenshot({path:themePath});themes.push({theme,path:themePath,contourColor:themed.appearance.contourColor});
+  }
+  await context.close();
+  return {kind,viewport:{name,width,height,dpr},diagnostics,canvas,transmissivePanels,screenshot:path,themes,errors};
+}
+
+async function quietModes(host) {
+  const {base,url,kind}=host;
+  for(const mode of ['reduced-motion','forced-colors']) {
+    const context=await browser.newContext({viewport:{width:360,height:800},deviceScaleFactor:1,
+      ...(mode==='reduced-motion'?{reducedMotion:'reduce'}:{forcedColors:'active'})});
+    const page=await context.newPage();let engineRequests=0;
+    page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
+    await installFixture(page,host);
+    await page.goto(base+url,{waitUntil:'networkidle'});
+    const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
+    await expect(root).toHaveAttribute('data-render','fallback');
+    await expect(root.locator('[data-machine-fallback]')).toBeVisible();
+    assert.equal(engineRequests,0,`${kind}/${mode} must perform zero Three.js loads`);
+    const svg=await root.locator('[data-machine-fallback] svg').count();
+    if(svg) {
+      assert.equal(await root.locator('[data-machine-fallback] svg').getAttribute('data-orientation'),'input-to-output');
+      const layers=await root.locator('[data-machine-fallback] [data-layer]').evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.layer)));
+      assert.equal(layers.length,1668);
+    }
+    const path=`${out}/${kind}-${mode}.png`;await root.screenshot({path});
+    evidence.push({kind,mode,engineRequests,svgFallback:svg===1,screenshot:path});await context.close();
+  }
+}
+
+try {
+  const hosts=[{kind:'home',base:sourceBase,url:'/'}];
+  const sourceArticle=await articleHost(sourceBase);
+  hosts.push({kind:'article-fixture',base:sourceBase,url:sourceArticle.url.replace(sourceBase,''),html:sourceArticle.html});
+  if(publishedBase) {
+    const article=await articleHost(publishedBase);
+    assert.equal(article.kind,'published-article','A fixture is not a finished MyST publication');
+    hosts.push({kind:'published-myst-article',base:publishedBase,url:article.url.replace(publishedBase,'')});
+  }
+  for(const host of hosts)for(const viewport of viewports)evidence.push(await inspectHost(host,viewport));
+  for(const host of hosts)await quietModes(host);
+
+  // A genuine responsive boundary crossing keeps graph landmarks horizontal.
+  const context=await browser.newContext({viewport:{width:721,height:900},deviceScaleFactor:2});
+  const page=await context.newPage();await page.goto(sourceBase+'/',{waitUntil:'networkidle'});
+  const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();await expect(root).toHaveAttribute('data-render','webgl');
+  const resize=[];
+  for(const width of [721,720,412,721]) {
+    await page.setViewportSize({width,height:900});
+    await page.waitForTimeout(120);
+    const d=await root.evaluate(node=>node.machine.diagnostics());
+    assertHorizontal(d.landmarks.map(([x])=>x),`resize-${width}`);
+    assert.deepEqual(d.camera.pan,{x:0,y:0});
+    resize.push({width,rotation:'0,0,0',landmarks:d.landmarks});
+  }
+  await root.screenshot({path:`${out}/home-resize-boundary.png`});
+  evidence.push({kind:'responsive-boundary',widths:resize,screenshot:`${out}/home-resize-boundary.png`});
+  await context.close();
+
+  // No-JavaScript Home still selects a horizontal native poster, by CSS viewport.
+  for(const [name,width,height,dpr] of [['phone',360,800,1],['desktop',1440,1000,2]]) {
+    const context=await browser.newContext({viewport:{width,height},deviceScaleFactor:dpr});
+    await context.addInitScript(()=>{});await context.route('**/*',async(route)=>{
+      if(route.request().resourceType()==='script')return route.abort();
+      return route.continue();
+    });
+    const page=await context.newPage();await page.goto(sourceBase+'/',{waitUntil:'networkidle'});
+    const poster=page.locator('.machine-poster');await expect(poster).toBeVisible();
+    const style=await poster.evaluate(node=>getComputedStyle(node).backgroundImage);
+    assert.match(style,/powered-down-(phone|desktop)/);
+    assert.match(style,new RegExp(width<=720?'powered-down-phone':'powered-down-desktop'));
+    const path=`${out}/home-nojs-${name}.png`;await page.screenshot({path,fullPage:false});
+    evidence.push({kind:'nojs-home-poster',viewport:{name,width,height,dpr},backgroundImage:style,screenshot:path});await context.close();
+  }
+  const result={schemaVersion:1,environment:{browser:'headless Chromium with SwiftShader software rendering',sourceBase,
+    publishedBase:publishedBase||null,publishedArticleObserved:hosts.some(host=>host.kind==='published-myst-article'),
+    note:'Software-WebGL is a software observation, not physical Android or deployed GPU evidence.'},evidence};
+  await writeFile(`${out}/audit.json`,JSON.stringify(result,null,2)+'\n');
+  console.log(JSON.stringify({hosts:hosts.map(({kind,url})=>({kind,url})),profiles:evidence.length,
+    publishedArticleObserved:result.environment.publishedArticleObserved,evidence:`${out}/audit.json`},null,2));
+} catch(error) {
+  await writeFile(`${out}/audit.json`,JSON.stringify({failure:error.message,evidence},null,2)+'\n');throw error;
+} finally {await browser.close();}

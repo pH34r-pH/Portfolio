@@ -1,16 +1,43 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "renderer": "Three.js 0.186.1",
-  "encoder": {
-    "sharp": "0.35.4",
-    "avifQuality": 65
+  "capture": {
+    "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
+    "browser": "Headless Chromium / local software-WebGL observation",
+    "densityVariants": [
+      1,
+      2,
+      3
+    ],
+    "quality": "Explicit refraction; capture is independent of automatic driver policy"
+  },
+  "encoders": {
+    "webp": {
+      "quality": 98,
+      "effort": 6,
+      "smartSubsample": false
+    },
+    "avif": {
+      "quality": 90,
+      "effort": 6,
+      "chromaSubsampling": "4:4:4"
+    },
+    "sharp": "0.35.4"
+  },
+  "cssFormatPolicy": "AVIF passed native-pixel threshold for every variant; WebP retained as compatible alternate.",
+  "nativePixelThreshold": {
+    "avifMeanAbsoluteErrorAtMost": 2,
+    "avifP99AbsoluteErrorAtMost": 12
   },
   "sourceHashes": {
-    "model-view.js": "cdf2064a14b9d8af1cf0835a2d55e7acd31b5c2cf74abcadc998f553f7301454",
-    "model-power.js": "a9d0cd1403e393603249738d08c3440c164c2041b18fd6dc446719b9b75a2171",
-    "model-scene.js": "afdc5bda99fa40d75f535f3d7a6a1294ba5b42c317d3facbbc8d51bc49ab1200",
+    "model-view.js": "67941ca91972e37ce736bc6e8a8cf24f1b71dc495754a5f9583ba532dc7bcb33",
+    "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
+    "model-scene.js": "0b3b8031203e9f60d98ead300d933d72b295b383d226ae7015617441692d4f17",
+    "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
     "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
-    "model-digital.js": "59dbd1bf3756267d27751f1df53ac3428fdaddb4f807ff0efc0c67592e9465aa",
+    "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
+    "model-glass.js": "90a6d9adff2af735675cd3d58c47794dfccfd3221edecd71b620b82b154b51d3",
+    "model-hardware.js": "4bc54771d746bad6fca332703e17e8140af5249744497c38f29506154f2b13b6",
     "model-architecture.json": "21b52b2a78ed8ae4b632eb8e5d0be2b650e7539d37162cc5caef0283f0954307",
     "vendor/three@0.186.1/three.module.js": "9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea",
     "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
@@ -19,219 +46,2019 @@
     {
       "name": "desktop",
       "theme": "light",
-      "file": "powered-down-desktop-light.webp",
-      "bytes": 63336,
-      "sha256": "6650523674bf608580e5d76da31171eb84934fcd57cd1040a15c23800a327259",
-      "avifFile": "powered-down-desktop-light.avif",
-      "avifBytes": 42657,
-      "avifSha256": "11eed0fef14632269147981ceb9f5fddcf703247c50f7d68005a70594fe531fa",
+      "density": 1,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 1,
+      "captureDPR": 1,
+      "decodedPixels": {
+        "width": 1280,
+        "height": 740
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-1x.png",
+        "sha256": "3e972c1276f246bc354fe2c4d79c95ece126778419b55a9cfe87b32c2ccc4077"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-1x.png",
+        "runningDetailSha256": "de5c52e2d331358321fe06171f1bcf9bfb74c2de040dd27b0423516f48af281f",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 1,
+          "effectiveDPR": 1,
+          "canvasWidth": 1280,
+          "canvasHeight": 740,
+          "drawingBufferWidth": 1280,
+          "drawingBufferHeight": 740,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-1x.webp",
+      "bytes": 230794,
+      "sha256": "145ca67330bc4140d1702934e73fa36aeac2409f874787492f96e9cc7cc14782",
+      "avifFile": "powered-down-desktop-1x.avif",
+      "avifBytes": 175932,
+      "avifSha256": "dbde0f0de68dad1fab94041889ee908a0951deec29f7bf487b5a40a3e6ddf011",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.2554,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 17,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.216,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 15,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
       "view": {
         "width": 1280,
         "height": 740,
         "aspect": 1.7297297297297298,
-        "fov": 24.85260969998505,
-        "distance": 16.791802841736736,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
         "landmarks": [
           [
-            344.3810751103962,
-            321.1841799102751
+            252.7328590396201,
+            306.0502272077341
           ],
           [
-            367.2514246989282,
-            283.0599316906088
+            288.72185048382653,
+            258.0282095669202
           ],
           [
-            505.8072350186013,
-            306.8076986424297
+            466.8571932827938,
+            288.465854537792
           ],
           [
-            593.9951800335424,
-            331.8766863013315
+            581.0950506289462,
+            321.18659599332864
           ],
           [
-            687.4000192929758,
-            341.9292034689698
+            700.1883290023801,
+            334.35583018383096
           ],
           [
-            786.7566847312941,
-            340.13384637473746
+            824.6845055936445,
+            332.4152328981491
           ],
           [
-            892.5944982325201,
-            344.66753046933513
+            954.9085344604923,
+            338.41811318145443
           ],
           [
-            1005.5314556283215,
-            352.17962242907265
+            1091.232650785503,
+            348.0015205654299
           ]
         ]
       },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1280,
+          "height": 740
+        }
+      },
       "nodes": 1668,
       "displayRoutes": 3601,
-      "power": 0
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "desktop",
+      "theme": "light",
+      "density": 2,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 2,
+      "captureDPR": 2,
+      "decodedPixels": {
+        "width": 2560,
+        "height": 1480
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-2x.png",
+        "sha256": "16945506c8531f90ceadbbd2cf110dc1e672c2d097cc60f9c9741f06dc1c62be"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-2x.png",
+        "runningDetailSha256": "73e921c6dac2b95fab8ef62730551a946b9774e308e72bdf836637d9bc918141",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 2,
+          "effectiveDPR": 2,
+          "canvasWidth": 2560,
+          "canvasHeight": 1480,
+          "drawingBufferWidth": 2560,
+          "drawingBufferHeight": 1480,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-2x.webp",
+      "bytes": 732044,
+      "sha256": "0e367f0d89a0d9540939b91ec79e2df1d5fe227a4f2acad2338b20d327198508",
+      "avifFile": "powered-down-desktop-2x.avif",
+      "avifBytes": 543477,
+      "avifSha256": "790d054ac3bc2e61543a744c0af39bebdaf740e5c0f2a0d13aa2ef0f81a1df12",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.177,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 19,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.1423,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 15,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
+        "landmarks": [
+          [
+            252.7328590396201,
+            306.0502272077341
+          ],
+          [
+            288.72185048382653,
+            258.0282095669202
+          ],
+          [
+            466.8571932827938,
+            288.465854537792
+          ],
+          [
+            581.0950506289462,
+            321.18659599332864
+          ],
+          [
+            700.1883290023801,
+            334.35583018383096
+          ],
+          [
+            824.6845055936445,
+            332.4152328981491
+          ],
+          [
+            954.9085344604923,
+            338.41811318145443
+          ],
+          [
+            1091.232650785503,
+            348.0015205654299
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 2560,
+          "height": 1480
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "desktop",
+      "theme": "light",
+      "density": 3,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 3,
+      "captureDPR": 3,
+      "decodedPixels": {
+        "width": 3840,
+        "height": 2220
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-3x.png",
+        "sha256": "bf72a57b83755e765d10083fbe515f3bed06ac12c07566c398425346fa85a356"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-3x.png",
+        "runningDetailSha256": "7d7bca16bcc93636160f8ecb4b7da5c041d7541a2b10c8613ec9bb8a01205a90",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 3,
+          "effectiveDPR": 3,
+          "canvasWidth": 3840,
+          "canvasHeight": 2220,
+          "drawingBufferWidth": 3840,
+          "drawingBufferHeight": 2220,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-3x.webp",
+      "bytes": 1405810,
+      "sha256": "33c7c18e9d50d4bfd293f7eb8b973d1e3cfdfcd3c2a0536681369454447c6b52",
+      "avifFile": "powered-down-desktop-3x.avif",
+      "avifBytes": 1032582,
+      "avifSha256": "d927f17bcb77efdceb5e9b299bd0b192524575e6a4bc833878146d5a94798cf5",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.1393,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 17,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.0999,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 16,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
+        "landmarks": [
+          [
+            252.7328590396201,
+            306.0502272077341
+          ],
+          [
+            288.72185048382653,
+            258.0282095669202
+          ],
+          [
+            466.8571932827938,
+            288.465854537792
+          ],
+          [
+            581.0950506289462,
+            321.18659599332864
+          ],
+          [
+            700.1883290023801,
+            334.35583018383096
+          ],
+          [
+            824.6845055936445,
+            332.4152328981491
+          ],
+          [
+            954.9085344604923,
+            338.41811318145443
+          ],
+          [
+            1091.232650785503,
+            348.0015205654299
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 3840,
+          "height": 2220
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
     },
     {
       "name": "desktop",
       "theme": "dark",
-      "file": "powered-down-desktop-dark.webp",
-      "bytes": 18986,
-      "sha256": "a5b34e566f0cea6160901223a7b2faf70583a68ed3f1dedc6a942f60c09ae856",
-      "avifFile": "powered-down-desktop-dark.avif",
-      "avifBytes": 13633,
-      "avifSha256": "3a9bac9735dd48c735de0846cb5f214b0574068eb216f3906ce983c9c0cdb325",
+      "density": 1,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 1,
+      "captureDPR": 1,
+      "decodedPixels": {
+        "width": 1280,
+        "height": 740
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-1x.png",
+        "sha256": "ab93fb0356b95e89403e76dee4e36e512eeaf5f39896840f50ad54903d4eb4c3"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-1x.png",
+        "runningDetailSha256": "ea3979e350a2c4f0d38c4a30a3837bbfd10a1ccafd9d9f7343f4a59594317288",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 1,
+          "effectiveDPR": 1,
+          "canvasWidth": 1280,
+          "canvasHeight": 740,
+          "drawingBufferWidth": 1280,
+          "drawingBufferHeight": 740,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-dark-1x.webp",
+      "bytes": 86982,
+      "sha256": "f42009b26cf9939039a83d25073391e27ff10a4d7232d8637ef8acbb84273ca8",
+      "avifFile": "powered-down-desktop-dark-1x.avif",
+      "avifBytes": 48227,
+      "avifSha256": "bb23b708dd16077290cc05fe6f60bc73b6f2be272af70b2b078f1e45e1bdfcb0",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.4527,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 18,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.096,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 12,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
       "view": {
         "width": 1280,
         "height": 740,
         "aspect": 1.7297297297297298,
-        "fov": 24.85260969998505,
-        "distance": 16.791802841736736,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
         "landmarks": [
           [
-            344.3810751103962,
-            321.1841799102751
+            252.7328590396201,
+            306.0502272077341
           ],
           [
-            367.2514246989282,
-            283.0599316906088
+            288.72185048382653,
+            258.0282095669202
           ],
           [
-            505.8072350186013,
-            306.8076986424297
+            466.8571932827938,
+            288.465854537792
           ],
           [
-            593.9951800335424,
-            331.8766863013315
+            581.0950506289462,
+            321.18659599332864
           ],
           [
-            687.4000192929758,
-            341.9292034689698
+            700.1883290023801,
+            334.35583018383096
           ],
           [
-            786.7566847312941,
-            340.13384637473746
+            824.6845055936445,
+            332.4152328981491
           ],
           [
-            892.5944982325201,
-            344.66753046933513
+            954.9085344604923,
+            338.41811318145443
           ],
           [
-            1005.5314556283215,
-            352.17962242907265
+            1091.232650785503,
+            348.0015205654299
           ]
         ]
       },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1280,
+          "height": 740
+        }
+      },
       "nodes": 1668,
       "displayRoutes": 3601,
-      "power": 0
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "desktop",
+      "theme": "dark",
+      "density": 2,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 2,
+      "captureDPR": 2,
+      "decodedPixels": {
+        "width": 2560,
+        "height": 1480
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-2x.png",
+        "sha256": "a1a183812ea70bc6c8044eca1617338d737fae24ba847d9beb04288278cb0ceb"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-2x.png",
+        "runningDetailSha256": "3e01cf4cfa302356d538b65699ddbb3ce369a9de9464dacc3ec7324f79402977",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 2,
+          "effectiveDPR": 2,
+          "canvasWidth": 2560,
+          "canvasHeight": 1480,
+          "drawingBufferWidth": 2560,
+          "drawingBufferHeight": 1480,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-dark-2x.webp",
+      "bytes": 225802,
+      "sha256": "30ce70cbbe0358b7d99b5a7c1e23f3516d09efe43dc8671a4926c7af7bf395b8",
+      "avifFile": "powered-down-desktop-dark-2x.avif",
+      "avifBytes": 121960,
+      "avifSha256": "6a150e71504a247eebac9e9c741dcfb6205458489cae196b0ae2f39ea22657b6",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.391,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 18,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.0737,
+          "p99AbsoluteError": 1,
+          "maxAbsoluteError": 12,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
+        "landmarks": [
+          [
+            252.7328590396201,
+            306.0502272077341
+          ],
+          [
+            288.72185048382653,
+            258.0282095669202
+          ],
+          [
+            466.8571932827938,
+            288.465854537792
+          ],
+          [
+            581.0950506289462,
+            321.18659599332864
+          ],
+          [
+            700.1883290023801,
+            334.35583018383096
+          ],
+          [
+            824.6845055936445,
+            332.4152328981491
+          ],
+          [
+            954.9085344604923,
+            338.41811318145443
+          ],
+          [
+            1091.232650785503,
+            348.0015205654299
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 2560,
+          "height": 1480
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "desktop",
+      "theme": "dark",
+      "density": 3,
+      "cssViewport": {
+        "width": 1280,
+        "height": 740
+      },
+      "requestedCaptureDPR": 3,
+      "captureDPR": 3,
+      "decodedPixels": {
+        "width": 3840,
+        "height": 2220
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-3x.png",
+        "sha256": "1f9610470a7270f030e4222771c388137aabaea2d81e23a89bcc9b9f29d76461"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-3x.png",
+        "runningDetailSha256": "b033d4d4f7f4e6f7d2ec4c14e35a7879faefd1b88ab97bfa1f40ede6cc12309e",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 1280,
+          "cssHeight": 740,
+          "nativeDPR": 3,
+          "effectiveDPR": 3,
+          "canvasWidth": 3840,
+          "canvasHeight": 2220,
+          "drawingBufferWidth": 3840,
+          "drawingBufferHeight": 2220,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-desktop-dark-3x.webp",
+      "bytes": 373962,
+      "sha256": "bf477cdf7370bf94dd80837e2bdbb19a84fd050c78b44b17a77826e455566332",
+      "avifFile": "powered-down-desktop-dark-3x.avif",
+      "avifBytes": 202133,
+      "avifSha256": "313dfccfd4f8d10ff626ffb3ff1c60b5e1e1135a93dbd1e87b33900db32b1c27",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.3674,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 22,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.0631,
+          "p99AbsoluteError": 1,
+          "maxAbsoluteError": 12,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 1280,
+        "height": 740,
+        "aspect": 1.7297297297297298,
+        "fov": 14.21212087816994,
+        "distance": 23.2625294145079,
+        "landmarks": [
+          [
+            252.7328590396201,
+            306.0502272077341
+          ],
+          [
+            288.72185048382653,
+            258.0282095669202
+          ],
+          [
+            466.8571932827938,
+            288.465854537792
+          ],
+          [
+            581.0950506289462,
+            321.18659599332864
+          ],
+          [
+            700.1883290023801,
+            334.35583018383096
+          ],
+          [
+            824.6845055936445,
+            332.4152328981491
+          ],
+          [
+            954.9085344604923,
+            338.41811318145443
+          ],
+          [
+            1091.232650785503,
+            348.0015205654299
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.5,
+        "pitch": 0.1,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 3840,
+          "height": 2220
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
     },
     {
       "name": "phone",
       "theme": "light",
-      "file": "powered-down-phone-light.webp",
-      "bytes": 54510,
-      "sha256": "53a7721085bfd3627d0c1d7409323ad5e6ea3ea90d8bb939a96e76f22ffc2306",
-      "avifFile": "powered-down-phone-light.avif",
-      "avifBytes": 37608,
-      "avifSha256": "71d0b78fbd39f68e4a885f68128e5d94beb92527e15e7e66c957f6f4a0a3809d",
+      "density": 1,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 1,
+      "captureDPR": 1,
+      "decodedPixels": {
+        "width": 500,
+        "height": 280
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-1x.png",
+        "sha256": "f3a2452ffdcc47b06c653c6a8864b2cfa4f9ec9eddc6943a2dbb851338877c84"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-1x.png",
+        "runningDetailSha256": "1b075100bef1c3ff674e1a6ed9f7af57f02e9d829823129bcc02c8f9629823a2",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 1,
+          "effectiveDPR": 1,
+          "canvasWidth": 500,
+          "canvasHeight": 280,
+          "drawingBufferWidth": 500,
+          "drawingBufferHeight": 280,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-1x.webp",
+      "bytes": 38452,
+      "sha256": "4e5d9a77481e18e98a95d40254d7d040c780740deef7c85a9c9b3f8305149458",
+      "avifFile": "powered-down-phone-1x.avif",
+      "avifBytes": 30172,
+      "avifSha256": "179db88829466ac5e1d4df3061c75e041bb71cde8d04f82d78f6c90d5a6ac428",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.3255,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 29,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.2744,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 18,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
       "view": {
         "width": 500,
-        "height": 1020,
-        "aspect": 0.49019607843137253,
-        "fov": 28.00000000000001,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
         "distance": 20.454982761032806,
         "landmarks": [
           [
-            286.2488629352771,
-            162.99458693662714
+            69.60021964662799,
+            113.36030045577017
           ],
           [
-            323.6778579791925,
-            275.2260834513331
+            101.38775458384522,
+            106.36670677112421
           ],
           [
-            306.37906234731236,
-            368.9686465247557
+            171.26010751431937,
+            108.42789156729191
           ],
           [
-            284.2481482425481,
-            464.8095267201686
+            223.66987853283774,
+            121.63901611950662
           ],
           [
-            278.0847558994608,
-            557.8161668469182
+            276.49282885511366,
+            127.29161825476625
           ],
           [
-            283.0326807871224,
-            648.1671229838164
+            330.1487822611721,
+            127.3605097252288
           ],
           [
-            282.4567356927411,
-            735.0504925172397
+            384.56804453959086,
+            130.28465197549542
           ],
           [
-            279.7903874530743,
-            818.7933817291434
+            439.7122220200899,
+            134.40262350534903
           ]
         ]
       },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 500,
+          "height": 280
+        }
+      },
       "nodes": 1668,
       "displayRoutes": 3601,
-      "power": 0
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "phone",
+      "theme": "light",
+      "density": 2,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 2,
+      "captureDPR": 2,
+      "decodedPixels": {
+        "width": 1000,
+        "height": 560
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-2x.png",
+        "sha256": "5c59f94ab769a4d151a776694ec2e5d093f2a5f9fe229f7f29c5fa2527a7a36f"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-2x.png",
+        "runningDetailSha256": "511cd6a217bf5d5373cbce1c9dd558672dda632588eec74d1dc88cfd6e16a954",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 2,
+          "effectiveDPR": 2,
+          "canvasWidth": 1000,
+          "canvasHeight": 560,
+          "drawingBufferWidth": 1000,
+          "drawingBufferHeight": 560,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-2x.webp",
+      "bytes": 130818,
+      "sha256": "c6e025e0bc3a91c785b484d58e488b0aeca29617e77c62fbcf690e8960b5a4d6",
+      "avifFile": "powered-down-phone-2x.avif",
+      "avifBytes": 98048,
+      "avifSha256": "db98b76478d59826c20be2c3279dec59b4b3b01b9846f342620854e4a9660d8e",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.2592,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 26,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.219,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 20,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 500,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            69.60021964662799,
+            113.36030045577017
+          ],
+          [
+            101.38775458384522,
+            106.36670677112421
+          ],
+          [
+            171.26010751431937,
+            108.42789156729191
+          ],
+          [
+            223.66987853283774,
+            121.63901611950662
+          ],
+          [
+            276.49282885511366,
+            127.29161825476625
+          ],
+          [
+            330.1487822611721,
+            127.3605097252288
+          ],
+          [
+            384.56804453959086,
+            130.28465197549542
+          ],
+          [
+            439.7122220200899,
+            134.40262350534903
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1000,
+          "height": 560
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "phone",
+      "theme": "light",
+      "density": 3,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 3,
+      "captureDPR": 3,
+      "decodedPixels": {
+        "width": 1500,
+        "height": 840
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-3x.png",
+        "sha256": "3a6e2c736aae8b5175126af78915b0230bd9936f3d107eae2a538c152aaefb0a"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-3x.png",
+        "runningDetailSha256": "d96e505ef309d471af612634d48d939277cef4c3352677a38f16b39cd288a031",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 3,
+          "effectiveDPR": 3,
+          "canvasWidth": 1500,
+          "canvasHeight": 840,
+          "drawingBufferWidth": 1500,
+          "drawingBufferHeight": 840,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-3x.webp",
+      "bytes": 261826,
+      "sha256": "55fb0e80b058db52de46f77e1b10978686641b8ea896afc72ebb5a89adf5fb54",
+      "avifFile": "powered-down-phone-3x.avif",
+      "avifBytes": 192067,
+      "avifSha256": "2f7f5cdfe543e135e16a6902f96c4eb171f6424ac2110fb3fffb177de23f6f52",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.2117,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 20,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.1885,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 16,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 500,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            69.60021964662799,
+            113.36030045577017
+          ],
+          [
+            101.38775458384522,
+            106.36670677112421
+          ],
+          [
+            171.26010751431937,
+            108.42789156729191
+          ],
+          [
+            223.66987853283774,
+            121.63901611950662
+          ],
+          [
+            276.49282885511366,
+            127.29161825476625
+          ],
+          [
+            330.1487822611721,
+            127.3605097252288
+          ],
+          [
+            384.56804453959086,
+            130.28465197549542
+          ],
+          [
+            439.7122220200899,
+            134.40262350534903
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1500,
+          "height": 840
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
     },
     {
       "name": "phone",
       "theme": "dark",
-      "file": "powered-down-phone-dark.webp",
-      "bytes": 19104,
-      "sha256": "1d67b04f66bf9c7daf5e125fd6c4fc0cf8256b89e2f9f57971bc8b7dbada9c89",
-      "avifFile": "powered-down-phone-dark.avif",
-      "avifBytes": 14558,
-      "avifSha256": "ea3ab5c04f06b9a9a92bb920395523c2095f9c8dd04eb12b8d5ec3db16a136ff",
+      "density": 1,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 1,
+      "captureDPR": 1,
+      "decodedPixels": {
+        "width": 500,
+        "height": 280
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-1x.png",
+        "sha256": "2a20ec065195126ddf2593de46d3cad03f6ecd48439f69c923050b93528e794b"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-1x.png",
+        "runningDetailSha256": "7b56394b1baa30780b4ffdb288b1e33778d0e0ecbf6529142370433677b9a38d",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 1,
+          "effectiveDPR": 1,
+          "canvasWidth": 500,
+          "canvasHeight": 280,
+          "drawingBufferWidth": 500,
+          "drawingBufferHeight": 280,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-dark-1x.webp",
+      "bytes": 14830,
+      "sha256": "5fa353fcc48c2d66d7a3a05364ff11a4cd667314425728d99b094ab1ba2525b5",
+      "avifFile": "powered-down-phone-dark-1x.avif",
+      "avifBytes": 9974,
+      "avifSha256": "41d81a0be97ccc07431d4aedd1431537e93d3455578882f59b6c29ff344b671a",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.4896,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 29,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.1054,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 8,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
       "view": {
         "width": 500,
-        "height": 1020,
-        "aspect": 0.49019607843137253,
-        "fov": 28.00000000000001,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
         "distance": 20.454982761032806,
         "landmarks": [
           [
-            286.2488629352771,
-            162.99458693662714
+            69.60021964662799,
+            113.36030045577017
           ],
           [
-            323.6778579791925,
-            275.2260834513331
+            101.38775458384522,
+            106.36670677112421
           ],
           [
-            306.37906234731236,
-            368.9686465247557
+            171.26010751431937,
+            108.42789156729191
           ],
           [
-            284.2481482425481,
-            464.8095267201686
+            223.66987853283774,
+            121.63901611950662
           ],
           [
-            278.0847558994608,
-            557.8161668469182
+            276.49282885511366,
+            127.29161825476625
           ],
           [
-            283.0326807871224,
-            648.1671229838164
+            330.1487822611721,
+            127.3605097252288
           ],
           [
-            282.4567356927411,
-            735.0504925172397
+            384.56804453959086,
+            130.28465197549542
           ],
           [
-            279.7903874530743,
-            818.7933817291434
+            439.7122220200899,
+            134.40262350534903
           ]
         ]
       },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 500,
+          "height": 280
+        }
+      },
       "nodes": 1668,
       "displayRoutes": 3601,
-      "power": 0
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "phone",
+      "theme": "dark",
+      "density": 2,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 2,
+      "captureDPR": 2,
+      "decodedPixels": {
+        "width": 1000,
+        "height": 560
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-2x.png",
+        "sha256": "0872d049892442a75c39e2372ca2979f76b08d8493f772e2194e6b782d4708c8"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-2x.png",
+        "runningDetailSha256": "353e80d17e163207933a06f9181d5b1be0e78213dc4f441cd041f473e8d74b56",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 2,
+          "effectiveDPR": 2,
+          "canvasWidth": 1000,
+          "canvasHeight": 560,
+          "drawingBufferWidth": 1000,
+          "drawingBufferHeight": 560,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-dark-2x.webp",
+      "bytes": 44806,
+      "sha256": "b17a66708c113ec4810107f63ac282f5d61d50caabb014f6e8b96b193ba2576c",
+      "avifFile": "powered-down-phone-dark-2x.avif",
+      "avifBytes": 27092,
+      "avifSha256": "69ca70c173b790d8332880061ef4091805c3ca50cb23fbf8a2b393394f8e0f8d",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.4446,
+          "p99AbsoluteError": 3,
+          "maxAbsoluteError": 26,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.0878,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 10,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 500,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            69.60021964662799,
+            113.36030045577017
+          ],
+          [
+            101.38775458384522,
+            106.36670677112421
+          ],
+          [
+            171.26010751431937,
+            108.42789156729191
+          ],
+          [
+            223.66987853283774,
+            121.63901611950662
+          ],
+          [
+            276.49282885511366,
+            127.29161825476625
+          ],
+          [
+            330.1487822611721,
+            127.3605097252288
+          ],
+          [
+            384.56804453959086,
+            130.28465197549542
+          ],
+          [
+            439.7122220200899,
+            134.40262350534903
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1000,
+          "height": 560
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
+    },
+    {
+      "name": "phone",
+      "theme": "dark",
+      "density": 3,
+      "cssViewport": {
+        "width": 500,
+        "height": 280
+      },
+      "requestedCaptureDPR": 3,
+      "captureDPR": 3,
+      "decodedPixels": {
+        "width": 1500,
+        "height": 840
+      },
+      "capturePNG": {
+        "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-3x.png",
+        "sha256": "52bb6d3f51d0b6eb6b482c99a89ab0496ab130298435dca0c3bdec4a4660064e"
+      },
+      "visualEvidence": {
+        "poweredDownAndPosterShareExactSource": true,
+        "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-3x.png",
+        "runningDetailSha256": "216234b35903dea7e3da44852cde134b1804a5406786ae5f242a632c85c138eb",
+        "runningDetailFrame": 145,
+        "runningDetailResolution": {
+          "cssWidth": 500,
+          "cssHeight": 280,
+          "nativeDPR": 3,
+          "effectiveDPR": 3,
+          "canvasWidth": 1500,
+          "canvasHeight": 840,
+          "drawingBufferWidth": 1500,
+          "drawingBufferHeight": 840,
+          "limits": {
+            "maxTextureSize": 8192,
+            "maxRenderbufferSize": 8192,
+            "maxViewport": [
+              8192,
+              8192
+            ],
+            "maxTargetDimension": 8192
+          },
+          "transmissionTarget": null
+        }
+      },
+      "file": "powered-down-phone-dark-3x.webp",
+      "bytes": 83680,
+      "sha256": "d4d68d8ebf1cf19c29615d751ab7317e2686dc692428ab3c38927b85805793de",
+      "avifFile": "powered-down-phone-dark-3x.avif",
+      "avifBytes": 49190,
+      "avifSha256": "9be4d215255702ec371d69a65fb6ca686c841c73a7b72f9f325fb8cdd69d171a",
+      "compressionComparison": {
+        "webp": {
+          "meanAbsoluteError": 0.4137,
+          "p99AbsoluteError": 2,
+          "maxAbsoluteError": 21,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        },
+        "avif": {
+          "meanAbsoluteError": 0.0801,
+          "p99AbsoluteError": 1,
+          "maxAbsoluteError": 11,
+          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+        }
+      },
+      "selectedFormat": "avif",
+      "view": {
+        "width": 500,
+        "height": 280,
+        "aspect": 1.7857142857142858,
+        "fov": 15.589089399506651,
+        "distance": 20.454982761032806,
+        "landmarks": [
+          [
+            69.60021964662799,
+            113.36030045577017
+          ],
+          [
+            101.38775458384522,
+            106.36670677112421
+          ],
+          [
+            171.26010751431937,
+            108.42789156729191
+          ],
+          [
+            223.66987853283774,
+            121.63901611950662
+          ],
+          [
+            276.49282885511366,
+            127.29161825476625
+          ],
+          [
+            330.1487822611721,
+            127.3605097252288
+          ],
+          [
+            384.56804453959086,
+            130.28465197549542
+          ],
+          [
+            439.7122220200899,
+            134.40262350534903
+          ]
+        ]
+      },
+      "pose": {
+        "yaw": -0.15,
+        "pitch": 0.38,
+        "zoom": 1,
+        "rotation": [
+          0,
+          0,
+          0
+        ],
+        "scale": 0.9
+      },
+      "renderer": {
+        "version": "Three.js 0.186.1",
+        "requestQuality": "refraction",
+        "effectiveQuality": "refraction",
+        "materials": {
+          "transmission": 0.99,
+          "opacity": 1,
+          "ior": 1.46,
+          "thickness": 0.025,
+          "roughness": 0.025,
+          "tint": "ffffff"
+        },
+        "transmissionScale": 1,
+        "visibleTransmissivePanels": 0,
+        "transmissionTarget": null,
+        "contextAttributes": {
+          "alpha": true,
+          "antialias": true,
+          "depth": true,
+          "desynchronized": false,
+          "failIfMajorPerformanceCaveat": false,
+          "powerPreference": "low-power",
+          "premultipliedAlpha": true,
+          "preserveDrawingBuffer": false,
+          "stencil": false,
+          "xrCompatible": false
+        },
+        "sampleSupport": {
+          "defaultFramebufferSamples": 4,
+          "maxSamples": 4,
+          "antialias": true
+        },
+        "limits": {
+          "maxTextureSize": 8192,
+          "maxRenderbufferSize": 8192,
+          "maxViewport": [
+            8192,
+            8192
+          ],
+          "maxTargetDimension": 8192
+        },
+        "drawingBuffer": {
+          "width": 1500,
+          "height": 840
+        }
+      },
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "power": 0,
+      "orientation": "input-to-output"
     }
   ],
-  "description": "Actual renderer, full source topology, powered-down display state. Not trained activation evidence."
+  "description": "Actual Three.js renderer, complete source topology, horizontal powered-down state and independently encoded native pixels. Not trained activation evidence."
 }

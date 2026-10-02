@@ -15,16 +15,26 @@ export class MachineScene {
   constructor(T, root, selectNode, fail, scrub, instruments) {
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
     this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
-    const options = { alpha: true, antialias: false, powerPreference: "low-power" };
+    const options = { alpha: true, antialias: true, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
     if (!context) {throw new Error("WebGL2 unavailable");}
     this.quality = new ModelQuality(context);
     this.renderer = new T.WebGLRenderer({ canvas: this.canvas, context, ...options });
+    this.transmissionTarget = null;
+    const setRenderTarget = this.renderer.setRenderTarget.bind(this.renderer);
+    this.renderer.setRenderTarget = (target, ...args) => {
+      const result = setRenderTarget(target, ...args);
+      if (target && target.samples && Math.abs(target.width-this.canvas.width)<=1 && Math.abs(target.height-this.canvas.height)<=1) {
+        this.transmissionTarget = {width:target.width, height:target.height, samples:target.samples,
+          activeSamples:context.getParameter(context.SAMPLES),viewport:Array.from(context.getParameter(context.VIEWPORT))};
+      }
+      return result;
+    };
     this.renderer.setClearColor(0x000000, 0);
     this.renderer.outputColorSpace = T.SRGBColorSpace;
     this.renderer.toneMapping = T.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.15;
-    this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
+    this.renderer.transmissionResolutionScale = 1;
     this.renderer.info.autoReset = false; this.metrics = new RenderMetrics(this.renderer);
     this.scene = new T.Scene();
     this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
@@ -33,18 +43,12 @@ export class MachineScene {
     this.materials = {
       shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
       ceramic: new T.MeshStandardMaterial({ color: 0x8faabd, metalness: .32, roughness: .23 }),
-      node: new T.MeshStandardMaterial({ color: 0xffffff, metalness: .45, roughness: .2 }),
-      core: new T.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .9 }),
+      node: new T.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.9, depthWrite:false, blending:T.AdditiveBlending}),
       edge: new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .18, depthWrite: false }),
       probe: new T.LineBasicMaterial({ color: 0x168cdd, transparent: true, opacity: .85, depthWrite: false }),
       signal: new T.MeshStandardMaterial({ color: 0x60ccff, emissive: 0x16a6ff, emissiveIntensity: 2, roughness: .25 }),
     };
-    if (this.digital) {
-      this.materials.node.dispose(); this.materials.ceramic.dispose();
-      this.materials.node = new T.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.9, depthWrite:false, blending:T.AdditiveBlending});
-      this.materials.ceramic = new T.MeshBasicMaterial({color:0x72edff, transparent:true, opacity:.6});
-      this.materials.probe.color.set(0xdd86ff); this.materials.signal.color.set(0xba87ff);
-    }
+    this.materials.probe.color.set(0x9b78cf); this.materials.signal.color.set(0x9b78cf);
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
     const Screens = this.digital ? HomepageScreens : SharedGlass;
@@ -60,17 +64,15 @@ export class MachineScene {
   }
   buildGraph() {
     const T = this.T;
-    // Coordinates stay 1:1; small projected beads use a bounded geometry LOD.
-    this.beads = new T.InstancedMesh(this.digital ? new T.OctahedronGeometry(.0255) : this.quality.lightweight ? new T.OctahedronGeometry(.0595) : new T.SphereGeometry(.0595, 6, 4), this.materials.node, GRAPH.nodes.length);
-    this.cores = new T.InstancedMesh(new T.SphereGeometry(.0175, 4, 3), this.materials.core, GRAPH.nodes.length);
-    this.cores.count = this.digital || this.quality.lightweight ? 0 : GRAPH.nodes.length;
-    this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage); this.cores.instanceMatrix.setUsage(T.DynamicDrawUsage);
+    // Home and article nodes use the same fine point geometry and contour field.
+    this.beads = new T.InstancedMesh(new T.OctahedronGeometry(.0255), this.materials.node, GRAPH.nodes.length);
+    this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
       this.dummy.position.set(...node.position); this.dummy.updateMatrix();
-      this.beads.setMatrixAt(index, this.dummy.matrix); this.cores.setMatrixAt(index, this.dummy.matrix);
-      this.beads.setColorAt(index, this.color.set(0xa5c2d8)); this.cores.setColorAt(index, this.color.set(0x062940));
+      this.beads.setMatrixAt(index, this.dummy.matrix);
+      this.beads.setColorAt(index, this.color.set(0x165577));
     });
-    this.machine.add(this.beads, this.cores);
+    this.machine.add(this.beads);
     const segments=[];this.edgeOffsets=[];
     GRAPH.edges.forEach(edge=>{
       this.edgeOffsets.push(segments.length);
@@ -93,8 +95,8 @@ export class MachineScene {
     this.select(this.selected);
   }
   buildHardware() {
-    if (this.digital) { this.contours = digitalContours(this.T); this.machine.add(this.contours); return; }
-    this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
+    if (!this.digital) this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
+    this.contours = digitalContours(this.T); this.machine.add(this.contours);
   }
   addLights() {
     const T = this.T;
@@ -109,34 +111,32 @@ export class MachineScene {
     if (this.disposed) {return;}
     const { width, height } = this.canvas.getBoundingClientRect();
     if (!width || !height) {return;}
-    // Physical phone caps, including S23 Ultra DPR 3+, preserve the full graph.
-    this.renderer.setPixelRatio(this.pixelRatio());
-    this.renderer.transmissionResolutionScale = mobile() ? .4 : .5;
+    // Native DPR is retained unless it exceeds the actual GL target/viewport limit.
+    this.renderer.setPixelRatio(this.pixelRatio(width,height));
+    this.renderer.transmissionResolutionScale = 1;
     this.renderer.setSize(width, height, false);this.configureView(width,height);
     this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
     const stage = this.canvas.parentElement;
     if (!this.digital) {this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;}
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
-    this.machine.rotation.set(0, 0, mobile() ? -Math.PI / 2 : 0);
-    this.machine.position.y = mobile() && !this.digital ? 2.5 : 0; this.machine.scale.setScalar(mobile() ? .85 : .9);
+    this.machine.rotation.set(0, 0, 0);
+    this.machine.position.y = 0; this.machine.scale.setScalar(.9);
     this.updateCamera();
     this.render();
   }
-  pixelRatio() {
-    const cap=this.quality.lightweight?.8:(mobile()?1.1:1.25);
-    return Math.min(devicePixelRatio||1,cap);
+  pixelRatio(width,height) {
+    const native=Number(window.devicePixelRatio)||1;
+    // WebGL drawing buffers, renderbuffers, textures and viewports share the
+    // strictest active GL dimension limit; only that hardware limit may reduce DPR.
+    const dimensionLimit=this.quality.limits.maxTargetDimension;
+    return Math.min(native,dimensionLimit/Math.max(width,height));
   }
   configureView(width,height) {
     const phone=mobile();
     if(this.phone!==phone){this.phone=phone;this.yaw=phone?-.15:-.5;this.pitch=phone?.38:.1;this.zoom=1;this.pan={x:0,y:0};this.depthView=null;}
     this.camera.aspect=width/height;
-    const view=this.digital?digitalView(this.camera.aspect,phone):{distance:this.fitDistance(),fov:28};
+    const view=digitalView(this.camera.aspect,phone);
     this.distance=view.distance;this.camera.fov=view.fov;this.camera.updateProjectionMatrix();
-  }
-  fitDistance() {
-    const tangent = Math.tan(14 * Math.PI / 180), horizontal = tangent * this.camera.aspect;
-    if (this.digital && mobile()) {return Math.max(5.1 / tangent, 2.5 / horizontal);}
-    return mobile() ? Math.max(9.3 / tangent, 2.9 / horizontal) : Math.max(3.7 / tangent, 6.4 / horizontal);
   }
   poseCamera(yaw, pitch, zoom, pan) {
     const distance = this.distance / zoom;
@@ -145,10 +145,9 @@ export class MachineScene {
   }
   updateCamera() { this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
   setQuality(mode) {
-    this.quality.set(mode); const low = this.quality.lightweight;
+    this.quality.set(mode);
     this.beads.geometry.dispose();
-    this.beads.geometry = this.digital ? new this.T.OctahedronGeometry(.0255) : low ? new this.T.OctahedronGeometry(.0595) : new this.T.SphereGeometry(.0595, 6, 4);
-    this.cores.count = this.digital || low ? 0 : GRAPH.nodes.length;
+    this.beads.geometry = new this.T.OctahedronGeometry(.0255);
     this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
     this.resize(); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);}
   }
@@ -164,7 +163,9 @@ export class MachineScene {
     this.scene.background = this.digital ? null : new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
     this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
     this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
-    this.materials.edge.opacity = this.dark ? .19 : .13;
+    this.materials.edge.opacity = this.dark ? .23 : .17;
+    this.contours.material.color.set(this.dark ? 0x447abb : 0x165577);
+    this.contours.material.opacity = this.dark ? .28 : .2;
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
   applyFrame(run, state) {
@@ -172,28 +173,26 @@ export class MachineScene {
     const began = performance.now();
     this.run = run; this.snapshot = state;
     if(this.powerProgress!==null){applyPower(this,this.powerProgress);this.render();return;}
-    const T = this.T, base = new T.Color(this.digital ? (this.dark ? 0x447abb : 0x165577) : this.dark ? 0x82a9c2 : 0x245679), active = new T.Color(this.digital ? 0xebb0ff : 0x39baff);
+    const T = this.T, base = new T.Color(this.dark ? 0x447abb : 0x165577), active = new T.Color(0x39baff);
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
       const dim = this.focus === "consumer" && node.layer < 4 || this.focus === "representation" && node.layer > 3;
       this.color.copy(base).lerp(active, value); if (dim) {this.color.multiplyScalar(.38);}
       this.beads.setColorAt(index, this.color);
-      this.cores.setColorAt(index, this.color.setRGB(.012 + value * .18, .04 + value * .7, .09 + value * 1.4));
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
       this.beads.setMatrixAt(index, this.dummy.matrix);
-      this.dummy.position.z += .0686; this.dummy.updateMatrix(); this.cores.setMatrixAt(index, this.dummy.matrix);
     });
     this.dummy.scale.setScalar(1);
-    this.beads.instanceColor.needsUpdate = true; this.cores.instanceColor.needsUpdate = true;
-    this.beads.instanceMatrix.needsUpdate = true; this.cores.instanceMatrix.needsUpdate = true;
+    this.beads.instanceColor.needsUpdate = true;
+    this.beads.instanceMatrix.needsUpdate = true;
     GRAPH.edges.forEach((edge,index)=>{
       const value=Math.min(state.activations[edge.source],state.activations[edge.target]),intensity=.15+value*.85;
       for(let offset=this.edgeOffsets[index];offset<this.edgeOffsets[index+1];offset+=3) {
-        this.edgeColors[offset]=intensity*(this.digital&&edge.layer%2?.65:.12);this.edgeColors[offset+1]=intensity*.55;this.edgeColors[offset+2]=intensity;
+        this.edgeColors[offset]=intensity*.04;this.edgeColors[offset+1]=intensity*.42;this.edgeColors[offset+2]=intensity;
       }
     });
     this.edgeGeometry.attributes.color.needsUpdate = true;
-    const light = sampleModelLight(run, state.frame);
+    const light = sampleModelLight(run, state.frame, false);
     this.replayLight.position.set((light.x - .5) * 8.88, 1.6, 3);
     this.replayLight.intensity = light.energy * 14;
     this.glass.pulse(light.energy);
@@ -308,7 +307,24 @@ export class MachineScene {
     return {width:this.glass.viewport.width,height:this.glass.viewport.height,aspect:this.camera.aspect,fov:this.camera.fov,distance:this.distance,
       landmarks:GRAPH.layers.map(nodes=>{const p=new this.T.Vector3(...GRAPH.nodes[nodes[0]].position).applyMatrix4(this.machine.matrixWorld).project(this.camera);return [(p.x+1)*this.glass.viewport.width*.5,(1-p.y)*this.glass.viewport.height*.5];})};
   }
-  diagnostics() { return { nodes: this.beads.count, edges: GRAPH.edges.length, graphOrigin: this.graphOrigin(), quality:this.quality.snapshot(), drawCalls: this.renderer.info.render.calls, triangles: this.renderer.info.render.triangles, pixelRatio: this.renderer.getPixelRatio(), transmissionScale: this.renderer.transmissionResolutionScale, resources: {...this.renderer.info.memory}, glass: this.glass.diagnostics(), performance: this.metrics.snapshot(), frame: this.snapshot?.frame, camera: {yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}}, pointers:this.gestures.points.size }; }
+  diagnostics() {
+    const bounds=this.canvas.getBoundingClientRect(),context=this.renderer.getContext(),view=this.powerView();
+    const projected=GRAPH.nodes.map(node=>new this.T.Vector3(...node.position).applyMatrix4(this.machine.matrixWorld).project(this.camera));
+    const graphBounds={left:Math.min(...projected.map(point=>(point.x+1)*bounds.width*.5)),
+      right:Math.max(...projected.map(point=>(point.x+1)*bounds.width*.5)),
+      top:Math.min(...projected.map(point=>(1-point.y)*bounds.height*.5)),
+      bottom:Math.max(...projected.map(point=>(1-point.y)*bounds.height*.5))};
+    return {nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
+      drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
+      transmissionScale:this.renderer.transmissionResolutionScale,resolution:{cssWidth:bounds.width,cssHeight:bounds.height,
+        nativeDPR:window.devicePixelRatio||1,effectiveDPR:this.renderer.getPixelRatio(),canvasWidth:this.canvas.width,canvasHeight:this.canvas.height,
+        drawingBufferWidth:context.drawingBufferWidth,drawingBufferHeight:context.drawingBufferHeight,
+        limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
+      landmarks:view.landmarks,graphBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
+        lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},
+      resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
+      camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}},pointers:this.gestures.points.size};
+  }
   dispose() {
     if (this.disposed) {return;} this.disposed = true;
     this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();

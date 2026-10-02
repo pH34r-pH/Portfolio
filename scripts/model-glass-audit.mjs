@@ -2,20 +2,35 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {articleHost} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
+const host=await articleHost(base);
 const out=process.env.GLASS_EVIDENCE_DIR||'ux-screenshots/glass';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
 async function open(options={},setup) {
   const context=await browser.newContext(options),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));if(setup)await setup(page);
-  await page.goto(base,{waitUntil:'networkidle'});const root=page.locator('[data-model-machine]').first();
+  if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
+  await page.goto(host.url,{waitUntil:'networkidle'});const root=page.locator('[data-model-machine]').first();
   await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
   await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
   return {context,page,root,errors};
 }
 const diagnostics=root=>root.evaluate(node=>node.machine.diagnostics());
+function assertNativeRender(diagnostics) {
+  const resolution=diagnostics.resolution,limits=diagnostics.quality.limits;
+  assert.equal(diagnostics.quality.contextAttributes.antialias,true);assert.ok(diagnostics.quality.sampleSupport.defaultFramebufferSamples>0);
+  assert.equal(diagnostics.transmissionScale,1);assert.equal(resolution.canvasWidth,resolution.drawingBufferWidth);
+  assert.equal(resolution.canvasHeight,resolution.drawingBufferHeight);assert.ok(resolution.effectiveDPR<=resolution.nativeDPR);
+  assert.ok(resolution.canvasWidth<=limits.maxTargetDimension&&resolution.canvasHeight<=limits.maxTargetDimension);
+  if(diagnostics.glass.visible>0&&diagnostics.glass.material.transmission>0) {
+    assert.ok(resolution.transmissionTarget?.samples>0);
+    assert.ok(Math.abs(resolution.transmissionTarget.width-resolution.canvasWidth)<=1);
+    assert.ok(Math.abs(resolution.transmissionTarget.height-resolution.canvasHeight)<=1);
+  }
+}
 const center=panel=>[0,1].map(axis=>panel.corners.reduce((sum,point)=>sum+point[axis],0)*.25);
 async function align(root) {
   const result=await root.evaluate(node=>{
@@ -95,15 +110,17 @@ async function profile(root) {
 }
 async function qualityChecks(page,root,name) {
   const automatic=await diagnostics(root);
-  if(automatic.quality.detectedSoftware)assert.equal(automatic.quality.effective,'lightweight');
+  assert.equal(automatic.quality.effective,'refraction');assertNativeRender(automatic);
   await root.locator('[data-machine-settings] summary').click();
   await root.locator('[data-glass-quality]').selectOption('refraction');
   const full=await diagnostics(root);
+  assertNativeRender(full);
   assert.equal(full.glass.material.transmission,.99);assert.equal(full.glass.material.tint,'ffffff');
   assert.equal(full.glass.material.opacity,1);assert.ok(full.drawCalls<=32);assert.ok(full.triangles<=180000);
   await root.locator('[data-glass-quality]').selectOption('lightweight');
   const low=await diagnostics(root);assert.equal(low.glass.material.transmission,0);
-  assert.ok(low.drawCalls<=24);assert.ok(low.triangles<=30000);assert.ok(low.pixelRatio<=.8);
+  assert.ok(low.drawCalls<=24);assert.ok(low.triangles<=30000);assert.equal(low.pixelRatio,full.pixelRatio);
+  assert.equal(low.transmissionScale,1);assertNativeRender(low);
   assert.equal(low.nodes,1668);assert.equal(low.edges,3601);
   await expect(root.locator('.machine-render-hint')).toContainText('refraction off');
   await accessibility(page,root);await renderShot(page,root,`${out}/${name}-lightweight.png`);
@@ -126,7 +143,7 @@ try {
     const performance=await profile(root);assert.equal(performance.diagnostics.glass.pmremSize,128);
     assert.equal(performance.diagnostics.glass.lights,2);assert.ok(performance.diagnostics.drawCalls<=32);
     assert.ok(performance.diagnostics.triangles<=180000);
-    if(phone){assert.ok(performance.diagnostics.pixelRatio<=1.1);assert.equal(performance.diagnostics.transmissionScale,.4);}
+    assertNativeRender(performance.diagnostics);
     assert.deepEqual(errors,[]);evidence.push({name,width,height,qualities,movement,performance,errors});await context.close();
   }
   for(const mode of ['reduced-motion','webgl-unavailable','forced-colors']) {

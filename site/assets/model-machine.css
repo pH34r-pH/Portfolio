@@ -34,15 +34,16 @@
 .model-machine-replay .machine-fallback svg circle.is-active { fill: var(--accent); }
 .model-machine-replay .machine-fallback p { font: 600 11px/1.4 ui-monospace,monospace; text-transform: none; letter-spacing: 0; margin: 0; color: var(--ink); }
 @media(max-width:720px) {
- .model-machine-replay .machine-stage { height: 720px; }
+ .model-machine-replay .machine-stage { height: 570px; }
+ .model-machine-replay.article-model-machine .machine-stage { min-height: 0; }
  .model-machine-replay .machine-legend { inset: 22px 16px auto; font-size: 10px; }
- .model-machine-replay .machine-canvas { inset: 128px 0 32px; height: calc(100% - 160px); }
- .model-machine-replay .machine-axis-labels { inset: 148px auto 66px 16px; flex-direction: column; font-size: 10px; }
+ .model-machine-replay .machine-canvas { inset: 128px 0 82px; height: calc(100% - 210px); }
+ .model-machine-replay .machine-axis-labels { inset: auto 12px 52px; justify-content: space-between; flex-direction: row; font-size: 9px; }
  .model-machine-replay .machine-io { grid-template-columns: minmax(0,1fr); gap: 20px; }
  .model-machine-replay .machine-timeline { flex-basis: 100%; }
  .model-machine-replay .machine-inspection { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
  .model-machine-replay .machine-probe { grid-column: 1/-1; }
- .model-machine-replay .machine-fallback { inset: 138px 10% 48px 22%; }
+ .model-machine-replay .machine-fallback { inset: 128px 8% 78px; }
  .model-machine-replay .machine-fallback svg { transform: none; }
 }
 @media(forced-colors:active) {
@@ -56,8 +57,8 @@
 /* Article columns are narrower than the standalone source fixture. Reserve the
    wrapped legend and quality hint before the embedded graph at phone widths. */
 @media(max-width:360px) {
- .article-model-machine .machine-canvas { inset:172px 0 32px; height:calc(100% - 204px); }
- .article-model-machine .machine-fallback { inset:172px 10% 48px 22%; }
+ .article-model-machine .machine-canvas { inset:128px 0 82px; height:calc(100% - 210px); }
+ .article-model-machine .machine-fallback { inset:128px 8% 78px; }
  .model-machine-replay.article-model-machine .machine-render-hint { top:148px; }
 }
 

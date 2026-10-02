@@ -45,9 +45,18 @@ async function auditTouch(page,root) {
   await root.locator('[data-camera="reset"]').click();await seek(root,145);
   // A swipe in document content outside the viewer retains native page scrolling.
   await page.evaluate(()=>scrollTo(0,0));const before=await page.evaluate(()=>scrollY);
-  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:6,x:300,y:650}]});
+  const outside=await root.evaluate(node=>{
+    const y=650;
+    for(let x=innerWidth-10;x>=0;x--) {
+      const target=document.elementFromPoint(x,y);
+      if(target===document.body&&!node.contains(target))return {x,y,tag:target.tagName,inside:false};
+    }
+    return {x:null,y,tag:null,inside:true};
+  });
+  assert.ok(outside.x!==null&&!outside.inside,`Touch-scroll point must be outside viewer ${JSON.stringify(outside)}`);
+  await client.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{id:6,x:outside.x,y:outside.y}]});
   for(let y=600;y>=350;y-=50) {
-    await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:6,x:300,y}]});
+    await client.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{id:6,x:outside.x,y}]});
     await page.waitForTimeout(25);
   }
   await client.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(100);
@@ -106,9 +115,21 @@ try {
     await expect(root.locator('[data-machine-settings] summary')).toBeFocused();await expect(root.locator('[data-camera="reset"]')).toBeHidden();
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
-    // Batched hardware bounds both shared-capture and software-fallback draws.
+    // Preserve native DPR and observe the actual MSAA buffer and target resolution.
     const drawBudget=diagnostics.quality?.effective==='lightweight' ? 24 : 32;
-    assert.ok(diagnostics.drawCalls<=drawBudget,`shared transmission draw budget ${drawBudget}`); if(width<600)assert.ok(diagnostics.pixelRatio<=1.25);
+    assert.ok(diagnostics.drawCalls<=drawBudget,`shared transmission draw budget ${drawBudget}`);
+    const resolution=diagnostics.resolution,limits=diagnostics.quality.limits;
+    assert.equal(diagnostics.quality.effective,'refraction','Auto retains full refraction regardless of renderer name');
+    assert.equal(diagnostics.quality.contextAttributes.antialias,true);assert.ok(diagnostics.quality.sampleSupport.defaultFramebufferSamples>0);
+    assert.equal(diagnostics.transmissionScale,1);assert.equal(resolution.canvasWidth,resolution.drawingBufferWidth);
+    assert.equal(resolution.canvasHeight,resolution.drawingBufferHeight);assert.ok(resolution.effectiveDPR<=resolution.nativeDPR);
+    assert.ok(resolution.canvasWidth<=limits.maxTargetDimension&&resolution.canvasHeight<=limits.maxTargetDimension);
+    const visibleTransmission=diagnostics.glass.visible>0&&diagnostics.glass.material.transmission>0;
+    if(visibleTransmission) {
+      assert.ok(resolution.transmissionTarget?.samples>0);
+      assert.ok(Math.abs(resolution.transmissionTarget.width-resolution.canvasWidth)<=1);
+      assert.ok(Math.abs(resolution.transmissionTarget.height-resolution.canvasHeight)<=1);
+    } else assert.equal(diagnostics.glass.visible,0,'Flow layouts do not require an unused GPU glass target');
     const playback=await auditPlayback(page,root,name);
     console.log(`${name} playback: ${JSON.stringify(playback)}`);
     assert.deepEqual(errors,[]); evidence.push({name,width,height,dpr,diagnostics,overflow,playback,errors});

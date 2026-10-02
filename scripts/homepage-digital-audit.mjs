@@ -115,6 +115,8 @@ async function quality(page,name) {
   await page.locator('[data-machine-settings]>summary').click();await disclosure.locator(':scope>summary').click();
   await page.evaluate(()=>scrollTo(0,0));await settle(page);
   const full=await snapshot(page);assert.equal(full.model.quality.effective,'refraction');
+  assert.equal(full.model.quality.contextAttributes.antialias,true);assert.ok(full.model.quality.sampleSupport.defaultFramebufferSamples>0);
+  assert.equal(full.model.transmissionScale,1);
   assert.ok(full.model.drawCalls<=20&&full.model.triangles<=20000);
   assert.equal(full.model.nodes,1668);assert.equal(full.model.edges,3601);
   await page.screenshot({path:`${out}/${name}-clear-refraction-top.png`});return full;
@@ -141,7 +143,7 @@ async function normal(name,width,height) {
   const {context,page,root,errors}=await open({viewport:{width,height},...(width<=720?{isMobile:true,hasTouch:true,deviceScaleFactor:3}:{})});
   await expect(root).toHaveAttribute('data-render','webgl');
   await readChecks(page);const auto=await snapshot(page);
-  if(auto.model.quality.detectedSoftware)assert.equal(auto.model.quality.effective,'lightweight');
+  assert.equal(auto.model.quality.effective,'refraction','Auto stays full quality on software-observed hosts');
   assert.equal(auto.model.nodes,1668);assert.equal(auto.model.edges,3601);
   const shots=await sequence(page,name,width<=720);
   const replay=await controls(page);const navigation=await nativeNavigation(page);
