@@ -25,6 +25,8 @@ export class ModelInstruments {
       const button = make('button', '', label); button.type = 'button'; button.dataset.instrument = id;
       button.addEventListener('click', () => { this.active = id; this.changed?.(); }); this.nav.append(button);
     }
+    this.context = root.dataset.modelFocus || 'all';
+    this.setContext(this.context, true);
     stage.after(this.nav);
     this.viewButton = make('button', 'machine-depth-view', 'View depth'); this.viewButton.type = 'button';
     this.viewButton.setAttribute('aria-pressed', 'false'); this.viewButton.addEventListener('click', view);
@@ -49,10 +51,33 @@ export class ModelInstruments {
     this.qualityHint.textContent = mode === 'lightweight' ? 'Lightweight glass / refraction off' : '';
   }
   setMode(mode, phone) {
-    this.mode = mode; this.host.dataset.instruments = mode;
+    this.mode = mode; this.phone = phone; this.host.dataset.instruments = mode;
     this.nav.hidden = !phone || mode === 'flow'; this.viewButton.hidden = this.root.dataset.render !== 'webgl';
     for (const panel of this.layer.children) panel.hidden = mode === 'spatial' && phone && panel.dataset.glassPanel !== this.active;
     for (const button of this.nav.children) button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
+  }
+  setContext(part, initial = false) {
+    this.context = part || 'all';
+    const relevant = {
+      tokenizer: 'input', input: 'input',
+      representation: 'inspect',
+      consumer: 'output', output: 'output',
+    }[this.context];
+    const selection = relevant || this.active;
+    const changedSelection = this.phone && selection !== this.active;
+    if (this.phone) this.active = selection;
+    for (const panel of this.layer.children) {
+      const enters = !relevant || panel.dataset.glassPanel === relevant;
+      panel.dataset.contextActive = String(enters);
+      panel.inert = !enters;
+      if (this.mode === 'spatial' && this.phone) panel.hidden = panel.dataset.glassPanel !== this.active;
+      if (initial) panel.dataset.contextInitial = 'true';
+      else delete panel.dataset.contextInitial;
+    }
+    if (changedSelection) {
+      for (const button of this.nav.children) button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
+      this.changed?.();
+    }
   }
   dimensions(phone, width) {
     const sizes = {input: 256, inspect: 268, output: 310};

@@ -79,20 +79,30 @@ export class SharedGlass {
       trim.position.copy(mesh.position); trim.quaternion.copy(mesh.quaternion); this.scene.add(mesh, trim);
       return {...size, mesh, trim, depth, projection: null};
     });
+    // DOM panes are article context, not camera controls. Pin their screen
+    // transforms to the layout pose; orbit, pan, and zoom remain independent.
+    this.layoutCamera = camera;
+    this.layoutGeneration = (this.layoutGeneration || 0) + 1;
+    this.projectLayout();
   }
-  sync(camera) {
+  projectLayout() {
+    if (!this.viewport || !this.layoutCamera) return;
+    this.scene.updateMatrixWorld(); this.layoutCamera.updateMatrixWorld();
+    for (const panel of this.panels) {
+      panel.projection = project(this.T, this.layoutCamera, panel.mesh, panel, this.viewport);
+      panel.node.style.transform = `matrix3d(${panel.projection.css.join(',')})`;
+    }
+  }
+  sync() {
     if (!this.viewport) return;
-    const key = [...camera.position.toArray(), ...camera.quaternion.toArray(), this.instruments.active, visualViewport?.scale, this.instruments.root.dataset.render].join(':');
+    const key = `${this.layoutGeneration}:${this.instruments.active}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
     if (key === this.poseKey) return; this.poseKey = key;
-    this.scene.updateMatrixWorld(); camera.updateMatrixWorld();
     const visible = this.panels.filter(panel => !this.phone || panel.id === this.instruments.active);
-    for (const panel of visible) panel.projection = project(this.T, camera, panel.mesh, panel, this.viewport);
     const zoomed = (visualViewport?.scale || 1) > 1.15;
-    const safe = !zoomed && visible.every(panel => panel.projection.scale >= .94 && panel.projection.corners.every(([x, y]) => x >= 12 && x <= this.viewport.width - 12 && y >= 12 && y <= this.viewport.height - 12));
+    const safe = !zoomed;
     this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
     for (const panel of this.panels) {
       panel.mesh.visible = panel.trim.visible = safe && visible.includes(panel);
-      if (panel.projection) panel.node.style.transform = `matrix3d(${panel.projection.css.join(',')})`;
     }
     this.mode = safe ? 'spatial' : 'flow';
   }
@@ -105,7 +115,8 @@ export class SharedGlass {
     let lights = 0; this.scene.traverse(object => { if (object.isLight && object.userData.replayPulse) lights += 1; });
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
-      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+      pinnedToArticleContext: true, layoutGeneration: this.layoutGeneration,
+      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node.dataset.contextActive !== 'false', corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
   dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

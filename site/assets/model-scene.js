@@ -217,8 +217,14 @@ export class MachineScene {
   }
   poseCamera(yaw, pitch, zoom, pan, distance=this.distance) {
     const viewDistance = distance / zoom;
+    const near = Math.max(Number.MIN_VALUE, Math.min(.1, viewDistance / 1000));
+    const far = Math.max(80, viewDistance * 1.25 + distance);
+    if (!Number.isFinite(viewDistance) || viewDistance <= 0 || !Number.isFinite(near) || !Number.isFinite(far) || far <= near) return false;
+    if (this.camera.near !== near || this.camera.far !== far) {
+      this.camera.near = near; this.camera.far = far; this.camera.updateProjectionMatrix();
+    }
     this.camera.position.set(pan.x - Math.sin(yaw) * Math.cos(pitch) * viewDistance, pan.y + Math.sin(pitch) * viewDistance, Math.cos(yaw) * Math.cos(pitch) * viewDistance);
-    this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld();
+    this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld(); return true;
   }
   updateCamera() { this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
   setQuality(mode) {
@@ -305,9 +311,21 @@ export class MachineScene {
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) { this.focus = part; if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
+  setFocus(part) { this.focus = part; this.glass.instruments.setContext(part); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
   orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
-  zoomBy(amount) { this.poseTouched=true;this.zoom = clamp(this.zoom + amount, .75, 1.8); this.updateCamera(); this.render(); }
+  zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }
+  zoomByRatio(ratio) {
+    if (!Number.isFinite(ratio) || ratio <= 0) return;
+    const next = this.zoom * ratio, viewDistance = this.distance / next;
+    if (!Number.isFinite(next) || next <= 0 || !Number.isFinite(viewDistance) || viewDistance <= 0) return;
+    // Recompute clipping planes from the finite camera distance. Zoom itself
+    // has no fixed range; only IEEE-754 representability bounds the pose.
+    const near = Math.max(Number.MIN_VALUE, Math.min(.1, viewDistance / 1000));
+    const far = Math.max(80, viewDistance * 1.25 + this.distance);
+    if (!Number.isFinite(near) || !Number.isFinite(far) || far <= near) return;
+    this.poseTouched = true; this.zoom = next;
+    this.updateCamera(); this.render();
+  }
   resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
   panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
@@ -324,7 +342,7 @@ export class MachineScene {
     this.abort=new AbortController();const options={signal:this.abort.signal};
     this.gestures=new ModelGestures({
       orbit:(dx,dy)=>this.orbit(dx*.007,dy*.005),
-      zoom:ratio=>{this.poseTouched=true;this.zoom=clamp(this.zoom*ratio,.75,1.8);this.updateCamera();this.render();},
+      zoom:ratio=>this.zoomByRatio(ratio),
       pan:(dx,dy)=>this.panBy(-dx*.012,dy*.012),
       scrub:dx=>scrub(dx*360/Math.max(this.canvas.clientWidth,1)),
     });
