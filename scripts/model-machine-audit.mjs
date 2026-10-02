@@ -35,6 +35,52 @@ function assertInspectionPose(actual,expected,label,{layoutUnchanged=true}={}) {
     assert.deepEqual(actual.position,expected.position,`${label}: same-size rendered camera position`);
   }
 }
+function assertFullGraphFit(diagnostics,label) {
+  const {all,components,viewport,marginPx}=diagnostics.graphGeometryBounds;
+  assert.equal(viewport.width,diagnostics.resolution.cssWidth,`${label}: viewport width`);
+  assert.equal(viewport.height,diagnostics.resolution.cssHeight,`${label}: viewport height`);
+  for(const [part,bounds] of Object.entries({all,...components})) {
+    assert.ok(bounds.left>=marginPx-.25,`${label}/${part}: left ${bounds.left} misses ${marginPx}px margin`);
+    assert.ok(bounds.right<=viewport.width-marginPx+.25,`${label}/${part}: right ${bounds.right} exceeds ${viewport.width-marginPx}px`);
+    assert.ok(bounds.top>=marginPx-.25,`${label}/${part}: top ${bounds.top} misses ${marginPx}px margin`);
+    assert.ok(bounds.bottom<=viewport.height-marginPx+.25,`${label}/${part}: bottom ${bounds.bottom} exceeds ${viewport.height-marginPx}px`);
+  }
+}
+async function auditResetFitAfterResize(page,root) {
+  await root.locator('[data-camera="reset"]').click();
+  const canvas=root.locator('canvas'),camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
+  await canvas.scrollIntoViewIfNeeded();
+  const initial=await canvas.boundingBox();
+  assert.equal(Math.round(initial.width),338,'Reset regression starts at the reported 338px phone canvas');
+  assert.equal(Math.round(initial.height),358,'Reset regression starts at the reported 358px phone canvas');
+  const pointer={x:initial.x+70,y:initial.y+160};
+  await page.mouse.move(pointer.x,pointer.y);await page.mouse.down();
+  await page.mouse.move(pointer.x+1.2/.007,pointer.y-.38/.005,{steps:1});await page.mouse.up();
+  const orbited=await camera();
+  assert.ok(Math.abs(orbited.yaw-1.05)<1e-5,`Orbit reaches reproduction yaw 1.05 (${orbited.yaw})`);
+  assert.ok(Math.abs(orbited.pitch)<1e-5,`Orbit reaches reproduction pitch 0 (${orbited.pitch})`);
+  await page.setViewportSize({width:359,height:800});
+  await page.waitForFunction(()=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===337);
+  const resized=await canvas.boundingBox();
+  assert.equal(Math.round(resized.width),337,'Viewport resize changes the reported canvas width');
+  assert.equal(Math.round(resized.height),358,'Viewport resize preserves the reported canvas height');
+  const preReset=await root.evaluate(node=>node.machine.diagnostics());
+  assert.ok(Math.abs(preReset.camera.distance-17.270241)<1e-5,`Orbit-angle fit reproduces the pre-reset distance (${preReset.camera.distance})`);
+  assertFullGraphFit(preReset,'orbit after genuine 338×358 → 337×358 resize');
+  await root.locator('[data-camera="reset"]').click();
+  const reset=await root.evaluate(node=>node.machine.diagnostics());
+  assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);
+  assertFullGraphFit(reset,'reset after genuine resize');
+  const fresh=await open({viewport:{width:359,height:800},deviceScaleFactor:3,isMobile:true,hasTouch:true});
+  const baseline=await fresh.root.evaluate(node=>node.machine.diagnostics());
+  assert.ok(Math.abs(baseline.camera.distance-25.164833)<1e-5,`Fresh default distance matches reported fit (${baseline.camera.distance})`);
+  assert.equal(reset.camera.distance,baseline.camera.distance,'Reset fit distance equals a fresh default article view');
+  assert.deepEqual(reset.graphGeometryBounds,baseline.graphGeometryBounds,'Reset full-geometry framing equals fresh default article framing');
+  await fresh.context.close();
+  await page.setViewportSize({width:360,height:800});
+  await page.waitForFunction(()=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===338);
+  return {initialCanvas:{width:Math.round(initial.width),height:Math.round(initial.height)},orbited:{yaw:orbited.yaw,pitch:orbited.pitch},resizedCanvas:{width:Math.round(resized.width),height:Math.round(resized.height)},preReset:{distance:preReset.camera.distance,bounds:preReset.graphGeometryBounds},reset:{distance:reset.camera.distance,bounds:reset.graphGeometryBounds},freshDefault:{distance:baseline.camera.distance,bounds:baseline.graphGeometryBounds}};
+}
 async function auditTouch(page,root) {
   const canvas=root.locator('canvas');await canvas.scrollIntoViewIfNeeded();
   const box=await canvas.boundingBox(),client=await page.context().newCDPSession(page);
@@ -121,6 +167,7 @@ try {
       }
       await page.setViewportSize({width,height});await page.waitForTimeout(120);
     }
+    if(name==='phone360')evidence.push({name:'reset-fit-after-orbit-resize',...(await auditResetFitAfterResize(page,root))});
     await root.locator('[data-camera="reset"]').click();
     if(name==='phone360')await auditTouch(page,root);
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();

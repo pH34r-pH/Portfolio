@@ -308,7 +308,7 @@ export class MachineScene {
   setFocus(part) { this.focus = part; if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
   orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.poseTouched=true;this.zoom = clamp(this.zoom + amount, .75, 1.8); this.updateCamera(); this.render(); }
-  resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; this.resize(); }
+  resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
   panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
     if (this.depthView) { const {yaw, pitch} = this.depthView; this.depthView = null; this.yaw = yaw; this.pitch = pitch; this.updateCamera(); this.render(); }

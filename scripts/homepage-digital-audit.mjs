@@ -87,8 +87,14 @@ async function controls(page) {
   await page.locator('[data-replay-play]').click();
   await page.waitForFunction(()=>PortfolioModelMachine.snapshot().frame>0);
   await page.locator('[data-replay-play]').click();
-  const frame=await page.evaluate(()=>PortfolioModelMachine.snapshot().frame);await settle(page);
-  assert.equal(await page.evaluate(()=>PortfolioModelMachine.snapshot().frame),frame);
+  const paused=await page.evaluate(()=>({state:PortfolioModelMachine.snapshot(),clock:PortfolioModelMachine.clock()}));
+  assert.equal(paused.state.playing,false,'Pause control clears playback state');
+  assert.equal(paused.clock.scheduled,false,'Pause control cancels the pending animation frame');
+  const frame=paused.state.frame;await settle(page);
+  const settled=await page.evaluate(()=>({state:PortfolioModelMachine.snapshot(),clock:PortfolioModelMachine.clock()}));
+  assert.equal(settled.state.playing,false,'Replay stays paused after two animation frames');
+  assert.equal(settled.clock.scheduled,false,'Paused replay does not reschedule animation work');
+  assert.equal(settled.state.frame,frame);
   await page.locator('[data-machine-settings]>summary').focus();await page.keyboard.press('Enter');
   await page.locator('[data-probe-layer]').focus();await expect(page.locator('[data-probe-layer]')).toBeFocused();
   await page.locator('[data-probe-layer]').selectOption('1');await page.locator('[data-probe-node]').selectOption('129');
