@@ -3,7 +3,7 @@
   "scope": "Browser-visible Portfolio interactions on the exact publication bundle; this is a test inventory, not a claim of physical-device qualification.",
   "reviewedSource": {
     "pullRequest": 91,
-    "commit": "5aef5648005f60094eabc8847baef5f09dc93723"
+    "commit": "528555e81d573f264de0d63850b1a05a0690db84"
   },
   "testRunners": [
     "scripts/interaction-audit.mjs",
