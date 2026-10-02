@@ -17,6 +17,29 @@ export async function auditArticleProjection(page, path) {
   await expect(page.locator("#projection-value")).toContainText("Angle 0°. Synthetic projection: 1.00.");
 }
 
+async function auditAttachedBrowserKernel(page) {
+  const state = await page.evaluate(() => ({
+    label: document.querySelector("[data-load-browser-runtime]")?.textContent,
+    status: document.querySelector("[data-runtime-status]")?.textContent,
+    hasKernel: Boolean(window.thebe?.notebook?.session?.kernel),
+    codeCells: window.thebe?.notebook?.code?.length || 0,
+  }));
+  if (state.label !== "Browser Python ready") {
+    return { outcome: "blocked-runtime", status: state.status };
+  }
+  assert.ok(state.hasKernel, "published article runtime reports ready only with an attached browser kernel");
+  assert.ok(state.codeCells > 0, "published article attached executable MyST cells to the kernel");
+  const marker = "portfolio-browser-kernel-smoke-7d51";
+  const result = await page.evaluate(async markerValue => {
+    const cell = window.thebe.notebook.code[0];
+    cell.source = `print('${markerValue}')`;
+    return cell.execute(cell.source);
+  }, marker);
+  assert.ok(result && !result.error, `real browser kernel execution completes: ${JSON.stringify(result)}`);
+  await expect(page.locator("[data-output]")).toContainText(marker, { timeout: 15000 });
+  return { outcome: "executed", marker };
+}
+
 export async function auditPublishedBrowserPython(page) {
   const button = page.getByRole("button", { name: "Load browser Python", exact: true });
   const status = page.locator("[data-runtime-status]");
@@ -69,28 +92,10 @@ export async function auditPublishedBrowserPython(page) {
     const button = document.querySelector("[data-load-browser-runtime]");
     return button?.textContent === "Browser Python ready" || button?.textContent === "Try browser Python again";
   }, undefined, { timeout: 90000 });
-  const state = await page.evaluate(() => ({
-    label: document.querySelector("[data-load-browser-runtime]")?.textContent,
-    status: document.querySelector("[data-runtime-status]")?.textContent,
-    hasKernel: Boolean(window.thebe?.notebook?.session?.kernel),
-    codeCells: window.thebe?.notebook?.code?.length || 0,
-  }));
-  if (state.label === "Browser Python ready") {
-    assert.ok(state.hasKernel, "published article runtime reports ready only with an attached browser kernel");
-    assert.ok(state.codeCells > 0, "published article attached executable MyST cells to the kernel");
-    const marker = "portfolio-browser-kernel-smoke-7d51";
-    const result = await page.evaluate(async marker => {
-      const cell = window.thebe.notebook.code[0];
-      cell.source = `print('${marker}')`;
-      return cell.execute(cell.source);
-    }, marker);
-    assert.ok(result && !result.error, `real browser kernel execution completes: ${JSON.stringify(result)}`);
-    await expect(page.locator("[data-output]")).toContainText(marker, { timeout: 15000 });
-    return { outcome: "executed", marker };
-  } else {
-    assert.match(state.status || "", /could not start/i, "blocked runtime is reported to the actual article user");
-    assert.ok(externalFailures.length > 0,
-      `article runtime failed only with a captured Pyodide/network block; status was ${state.status}; requests: ${JSON.stringify(externalFailures)}`);
-    return { outcome: "blocked-runtime", status: state.status, networkFailures: externalFailures };
-  }
+  const outcome = await auditAttachedBrowserKernel(page);
+  if (outcome.outcome === "executed") return outcome;
+  assert.match(outcome.status || "", /could not start/i, "blocked runtime is reported to the actual article user");
+  assert.ok(externalFailures.length > 0,
+    `article runtime failed only with a captured Pyodide/network block; status was ${outcome.status}; requests: ${JSON.stringify(externalFailures)}`);
+  return { ...outcome, networkFailures: externalFailures };
 }

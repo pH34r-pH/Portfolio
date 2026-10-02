@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
+import { auditPhoneTopologySelection } from "./topology-browser-audit.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 
@@ -165,49 +166,26 @@ async function auditFrontierSelection(page,articles) {
   await expect(page.locator("[data-topology-list] li")).toHaveCount(articles.length);
 }
 
-async function auditPhoneTopology(page,nodes,layout,articles) {
-  if (await page.evaluate(() => innerWidth <= 640)) {
-    assert.ok(layout.boxes.every((box) => box.left >= layout.viewport.left - 1 && box.right <= layout.viewport.right + 1),
-      `phone topology node escaped its viewport: ${JSON.stringify(layout)}`);
-    await nodes.first().focus();
-    await nodes.first().press("ArrowDown");
-    await expect(nodes.nth(1)).toBeFocused();
-    await expect(nodes.nth(1)).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator("[data-topology-detail] h3")).toBeVisible();
-    await nodes.nth(1).press("Home");
-    await expect(nodes.first()).toBeFocused();
-    await expect(nodes.first()).toHaveAttribute("aria-pressed", "true");
-    await nodes.first().press("End");
-    await expect(nodes.last()).toBeFocused();
-    await expect(nodes.last()).toHaveAttribute("aria-pressed", "true");
+async function auditPhoneTopologyKeyboard(page,nodes,layout) {
+  assert.ok(layout.boxes.every((box) => box.left >= layout.viewport.left - 1 && box.right <= layout.viewport.right + 1),
+    `phone topology node escaped its viewport: ${JSON.stringify(layout)}`);
+  await nodes.first().focus();
+  await nodes.first().press("ArrowDown");
+  await expect(nodes.nth(1)).toBeFocused();
+  await expect(nodes.nth(1)).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("[data-topology-detail] h3")).toBeVisible();
+  await nodes.nth(1).press("Home");
+  await expect(nodes.first()).toBeFocused();
+  await expect(nodes.first()).toHaveAttribute("aria-pressed", "true");
+  await nodes.first().press("End");
+  await expect(nodes.last()).toBeFocused();
+  await expect(nodes.last()).toHaveAttribute("aria-pressed", "true");
+}
 
-    const selectedArticle = articles.find(article => article.dependsOn?.length
-      || articles.some(candidate => candidate.dependsOn?.includes(article.slug))) || articles[0];
-    const node = page.locator(`.topology-node[data-slug="${selectedArticle.slug}"]`);
-    await node.tap();
-    await expect(node).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator("[data-research-topology]")).toHaveAttribute("data-selected", selectedArticle.slug);
-    assert.ok(await page.locator(".topology-edges path.is-active").count() > 0,
-      "touch-selected connected milestone activates its dependency edge");
-    const heading = selectedArticle.shortTitle || selectedArticle.title?.replace(/^Milestone\s+\d+\s+[—-]\s+/i, "") || selectedArticle.slug;
-    await expect(page.locator("[data-topology-detail] h3")).toHaveText(heading);
-    const readArticle = page.locator(".topology-detail-actions a");
-    await expect(readArticle).toHaveAttribute("href", selectedArticle.url);
-    await readArticle.tap();
-    await expect(page).toHaveURL(base + selectedArticle.url);
-    await expect(page.locator("article.myst-reader h1")).toBeVisible();
-    await page.goBack();
-    await expect(page).toHaveURL(base + "/research/");
-    await expect(page.locator(".topology-node")).toHaveCount(articles.length);
-    await expect(node).toHaveAttribute("aria-pressed", "true");
-    await expect(node).toHaveClass(/is-selected/);
-    await expect(page.locator("[data-research-topology]")).toHaveAttribute("data-selected", selectedArticle.slug);
-    await expect(page.locator("[data-topology-detail] h3")).toHaveText(heading);
-    assert.equal(await page.evaluate(() => history.state?.topologySelection), selectedArticle.slug,
-      "Back restores the selected research milestone in its history entry");
-    assert.ok(await page.locator(".topology-edges path.is-active").count() > 0,
-      "Back restores active dependency edges for the selected milestone");
-  }
+async function auditPhoneTopology(page,nodes,layout,articles) {
+  if (!(await page.evaluate(() => innerWidth <= 640))) return;
+  await auditPhoneTopologyKeyboard(page,nodes,layout);
+  await auditPhoneTopologySelection(page,articles,base);
 }
 
 async function auditTopology(page, manifest) {
