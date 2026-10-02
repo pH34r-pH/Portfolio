@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { classifyTransferBytes, totalTransferBytes, validateLighthouseValidity, WARNING_BYTES, ERROR_BYTES } from './lighthouse-transfer-budget.mjs';
+import { classifyTransferBytes, totalTransferBytes, validateLighthouseValidity, validateFindingMatrix, EXPECTED_ROUTES, RUNS_PER_ROUTE_PROFILE, WARNING_BYTES, ERROR_BYTES } from './lighthouse-transfer-budget.mjs';
 
 assert.equal(WARNING_BYTES, 500_000);
 assert.equal(ERROR_BYTES, 750_000);
@@ -29,4 +29,26 @@ assert.match(validateLighthouseValidity({ categories: { performance: { score: nu
 assert.match(validateLighthouseValidity({ ...validLhr, audits: { 'largest-contentful-paint': { numericValue: null } } }), /NO_LCP/);
 assert.match(validateLighthouseValidity({ ...validLhr, runtimeError: { code: 'NO_LCP' } }), /runtime error/);
 
-process.stdout.write('Lighthouse transfer-budget boundary tests passed.\n');
+const mobileDir = '/reports/mobile';
+const desktopDir = '/reports/desktop';
+const profiles = new Map([[mobileDir, 'mobile'], [desktopDir, 'desktop']]);
+const matrix = [...profiles].flatMap(([reportDir, profile]) => EXPECTED_ROUTES.flatMap((route) =>
+  Array.from({ length: RUNS_PER_ROUTE_PROFILE }, () => ({
+    reportDir,
+    profile,
+    formFactor: profile,
+    url: `http://127.0.0.1:40000${route}`,
+    observedUrl: `http://127.0.0.1:40000${route}`,
+  })),
+));
+assert.doesNotThrow(() => validateFindingMatrix(matrix, profiles));
+assert.throws(() => validateFindingMatrix(matrix.slice(1), profiles), /Expected 30 Lighthouse reports/);
+const oneMissingAbout = matrix.filter((finding) => !finding.url.endsWith('/about/') || finding.profile !== 'mobile' || finding !== matrix.find((item) => item.url.endsWith('/about/') && item.profile === 'mobile'));
+oneMissingAbout.push({ ...matrix.find((item) => item.url.endsWith('/research/') && item.profile === 'mobile') });
+assert.throws(() => validateFindingMatrix(oneMissingAbout, profiles), /Expected 3 Lighthouse reports for mobile \/about\//);
+assert.throws(() => validateFindingMatrix([...matrix.slice(0, -1), { ...matrix.at(-1), url: 'http://127.0.0.1:40000/not-audited/', observedUrl: 'http://127.0.0.1:40000/not-audited/' }], profiles), /Unexpected Lighthouse route/);
+assert.throws(() => validateFindingMatrix([{ ...matrix[0], profile: 'desktop' }, ...matrix.slice(1)], profiles), /profile mismatch/);
+assert.throws(() => validateFindingMatrix([{ ...matrix[0], formFactor: 'desktop' }, ...matrix.slice(1)], profiles), /form factor mismatch/);
+assert.throws(() => validateFindingMatrix([{ ...matrix[0], observedUrl: 'http://127.0.0.1:40000/research/' }, ...matrix.slice(1)], profiles), /final URL route mismatch/);
+
+process.stdout.write('Lighthouse transfer-budget boundary and report-matrix tests passed.\n');

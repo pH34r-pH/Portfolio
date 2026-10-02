@@ -6,6 +6,9 @@ import process from 'node:process';
 
 export const WARNING_BYTES = 500_000;
 export const ERROR_BYTES = 750_000;
+export const EXPECTED_ROUTES = ['/', '/about/', '/atlas/', '/reproduce/', '/research/'];
+export const EXPECTED_PROFILES = ['mobile', 'desktop'];
+export const RUNS_PER_ROUTE_PROFILE = 3;
 
 export function classifyTransferBytes(bytes) {
   if (!Number.isSafeInteger(bytes) || bytes < 0) {
@@ -42,7 +45,9 @@ function escapeAnnotation(value) {
 
 async function main() {
   const dirs = reportDirectories(process.argv);
+  const expected = validateReportMatrix(dirs);
   const findings = await readAllFindings(dirs);
+  validateFindingMatrix(findings, expected);
   findings.forEach(printFinding);
   const blocked = findings.some((finding) => finding.severity === 'error');
   const invalid = findings.some((finding) => finding.invalidReason);
@@ -54,7 +59,53 @@ function reportDirectories(args) {
   const dirs = args.flatMap((value, index) => value === '--dir' && args[index + 1] ? [path.resolve(args[index + 1])] : []);
   const requested = args.filter((value) => value === '--dir').length;
   if (dirs.length !== requested) throw new Error('--dir requires a directory');
-  return dirs.length ? dirs : [path.resolve('lighthouse-results')];
+  const resolved = dirs.length ? dirs : [path.resolve('lighthouse-results')];
+  if (resolved.length !== EXPECTED_PROFILES.length) {
+    throw new Error(`Expected exactly ${EXPECTED_PROFILES.length} Lighthouse report directories (mobile and desktop), got ${resolved.length}`);
+  }
+  return resolved;
+}
+
+function validateReportMatrix(dirs) {
+  const profiles = dirs.map((dir) => dir.endsWith('-desktop') ? 'desktop' : 'mobile');
+  if (new Set(profiles).size !== EXPECTED_PROFILES.length || EXPECTED_PROFILES.some((profile) => !profiles.includes(profile))) {
+    throw new Error('Expected one mobile report directory and one directory ending in -desktop');
+  }
+  return new Map(dirs.map((dir, index) => [dir, profiles[index]]));
+}
+
+export function validateFindingMatrix(findings, expectedProfiles) {
+  const expectedCount = EXPECTED_ROUTES.length * RUNS_PER_ROUTE_PROFILE * expectedProfiles.size;
+  if (findings.length !== expectedCount) {
+    throw new Error(`Expected ${expectedCount} Lighthouse reports (${EXPECTED_ROUTES.length} routes × ${RUNS_PER_ROUTE_PROFILE} runs × ${expectedProfiles.size} profiles), got ${findings.length}`);
+  }
+  const counts = new Map();
+  for (const finding of findings) {
+    const route = routePath(finding.url);
+    if (!EXPECTED_ROUTES.includes(route)) throw new Error(`Unexpected Lighthouse route: ${finding.url}`);
+    if (!expectedProfiles.has(finding.reportDir)) throw new Error(`Unexpected Lighthouse report directory: ${finding.reportDir}`);
+    const profile = expectedProfiles.get(finding.reportDir);
+    if (finding.profile !== profile) throw new Error(`Lighthouse profile mismatch for ${finding.url}: expected ${profile}, got ${finding.profile}`);
+    if (finding.formFactor !== profile) throw new Error(`Lighthouse report form factor mismatch for ${finding.url}: expected ${profile}, got ${finding.formFactor ?? 'missing'}`);
+    if (routePath(finding.observedUrl) !== route) {
+      throw new Error(`Lighthouse final URL route mismatch: manifest ${route}, report ${finding.observedUrl}`);
+    }
+    const key = `${profile} ${route}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  for (const profile of EXPECTED_PROFILES) {
+    for (const route of EXPECTED_ROUTES) {
+      const count = counts.get(`${profile} ${route}`) ?? 0;
+      if (count !== RUNS_PER_ROUTE_PROFILE) {
+        throw new Error(`Expected ${RUNS_PER_ROUTE_PROFILE} Lighthouse reports for ${profile} ${route}, got ${count}`);
+      }
+    }
+  }
+}
+
+function routePath(url) {
+  try { return new URL(url).pathname; }
+  catch { throw new Error(`Lighthouse report has an invalid URL: ${url}`); }
 }
 
 async function readAllFindings(dirs) {
@@ -68,16 +119,26 @@ async function readDirectoryFindings(reportDir) {
   const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
   if (!Array.isArray(manifest) || manifest.length === 0) throw new Error(`No Lighthouse reports in ${manifestPath}`);
   const findings = [];
-  for (const entry of manifest) findings.push(await readFinding(entry, reportDir));
+  const profile = reportDir.endsWith('-desktop') ? 'desktop' : 'mobile';
+  for (const entry of manifest) findings.push(await readFinding(entry, reportDir, profile));
   return findings;
 }
 
-async function readFinding(entry, reportDir) {
+async function readFinding(entry, reportDir, profile) {
   if (typeof entry.jsonPath !== 'string') throw new Error('Lighthouse manifest entry has no jsonPath');
   const reportPath = path.resolve(entry.jsonPath);
   const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
   const bytes = totalTransferBytes(lhr);
-  return { url: entry.url ?? lhr.finalDisplayedUrl ?? lhr.finalUrl, profile: reportDir.endsWith('-desktop') ? 'desktop' : 'mobile', bytes, invalidReason: validateLighthouseValidity(lhr), ...classifyTransferBytes(bytes) };
+  return {
+    url: entry.url ?? lhr.finalDisplayedUrl ?? lhr.finalUrl,
+    observedUrl: lhr.finalDisplayedUrl ?? lhr.finalUrl ?? lhr.requestedUrl,
+    formFactor: lhr.configSettings?.formFactor,
+    reportDir,
+    profile,
+    bytes,
+    invalidReason: validateLighthouseValidity(lhr),
+    ...classifyTransferBytes(bytes),
+  };
 }
 
 function printFinding(finding) {

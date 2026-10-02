@@ -47,6 +47,7 @@ jobs:
           node --check site/assets/article-runtime.js
           node scripts/test-article-runtime.mjs
           node scripts/test-lighthouse-transfer-budget.mjs
+          node scripts/test-serve-lhci.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/appearance-audit.mjs

@@ -54,11 +54,20 @@ observations.
 
 ## Configuration behavior
 
-The postprocessor evaluates every report from mobile and desktop LHCI
-manifests. CI currently audits `/`, `/about/`, `/atlas/`, `/reproduce/`, and
-`/research/`, three cold Lighthouse runs per route and profile. The manifests
-and full JSON reports are retained as a 30-day workflow artifact, including on
-failed audits. The checker emits at most one policy annotation per report.
+The postprocessor requires both mobile and desktop LHCI manifests and validates
+exactly three reports for each of `/`, `/about/`, `/atlas/`, `/reproduce/`, and
+`/research/` in each profile. CI retains the manifests and full JSON reports as
+a 30-day workflow artifact, including on failed audits. The checker emits at
+most one policy annotation per report.
 Script and stylesheet sizes remain available as resource-summary diagnostics
 in raw reports and are not hard byte gates. Boundary behavior is covered by
 `scripts/test-lighthouse-transfer-budget.mjs`.
+
+The owned CI server negotiates Brotli (quality 5) or gzip for textual resources,
+sets `Content-Encoding` and `Vary: Accept-Encoding`, and uses the observed
+`public, must-revalidate, max-age=30` cache policy. This makes Lighthouse's
+`transferSize` reflect encoded payload delivery instead of raw file bytes.
+It remains a local approximation: it does not reproduce Azure/CDN edge
+negotiation, generated validators, or every deployment-specific header. The
+separate production-like bundle study describes its matching compression and
+the remaining deployment differences.

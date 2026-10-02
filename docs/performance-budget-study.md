@@ -412,6 +412,14 @@ by the user based on the supplied award references:
 No phase-two sample has been run. The policy remains provisional, supported by
 one measured portfolio peer plus the explicit 8 Mbit/s design rationale.
 
+The first 30-report GitHub audit passed its report-count and budget checks
+before `serve-lhci.mjs` negotiated compression. Those reports used raw static
+file responses and are not treated as validation of the compressed CI delivery
+path. The owned server and checker now test encoded delivery and require the
+full five-route × three-run × two-profile matrix; the next exact-head CI run is
+the verification for this corrected method. Earlier source-fixture and bundle
+measurements remain separately documented with their compression headers.
+
 ## Raw artifact index
 
 - Peer raw LHR JSON, stderr, screenshots and summaries:
