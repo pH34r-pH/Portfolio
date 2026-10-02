@@ -305,7 +305,8 @@ async function offscreenContextPause(page,root) {
     await expect.poll(()=>root.evaluate(node=>node.machineController.visible),{timeout:5000}).toBe(true);
     await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
     await root.evaluate(node=>node.machine.focus('all'));
-    await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+    try {await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);}
+    catch(error) {console.log(`Glass context state after offscreen reversal timeout: ${JSON.stringify(await glassContextStatus(root))}`);throw error;}
   } finally {await page.locator('[data-glass-audit-spacer]').evaluate(node=>node.remove());}
 }
 async function nativeInputSelection(page,root,cdp) {
