@@ -133,26 +133,37 @@ async function contextExitWaitsForTransition(page,root,phone) {
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible,{timeout:12000}).toBe(false);
   await input.evaluate(panel=>panel.style.transitionDuration='');
 }
-async function contextReversalKeepsTabsValid(page,root,phone) {
-  await page.waitForTimeout(120);
+async function runContextReversal(root) {
   await root.evaluate(node=>node.machine.focus('consumer'));
   await expect(root.locator('[data-glass-panel="output"]')).toHaveAttribute('data-context-active','true');
   await root.evaluate(node=>node.machine.focus('representation'));
   await root.evaluate(node=>node.machine.focus('all'));
-  await expect.poll(async()=>root.locator('[data-glass-panel="input"]').evaluate(panel=>getComputedStyle(panel).opacity),
+}
+function computedOpacity(node) { return getComputedStyle(node).opacity; }
+async function inputPaneOpacity(input) { return input.evaluate(computedOpacity); }
+async function waitForInputReentry(root) {
+  const input=root.locator('[data-glass-panel="input"]');
+  await expect.poll(inputPaneOpacity.bind(null,input),
     {timeout:12000}).toBe('1');
+}
+async function reverseContextToAll(root) {
+  await runContextReversal(root);await waitForInputReentry(root);
+}
+async function selectOutputOnPhone(root) {
+  await root.evaluate(()=>document.querySelector('[data-instrument="output"]').click());
+  assert.equal(await root.evaluate(node=>node.machineController.instruments.active),'output','an enabled mobile tab selects its context-visible instrument');
+  await expect(root.locator('[data-glass-panel="output"]')).toBeVisible();
+  const selected=await diagnostics(root);
+  assert.equal(selected.glass.panels.filter(panel=>panel.visible).length,selected.glass.mode==='spatial'?1:0,
+    'choosing Output never reveals an inactive-context panel');
+}
+async function contextReversalKeepsTabsValid(page,root,phone) {
+  await page.waitForTimeout(120);await reverseContextToAll(root);
   const input=root.locator('[data-glass-panel="input"]');await expect(input).not.toHaveAttribute('inert','');
   const state=await diagnostics(root);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.visible).length)
     .toBe(phone&&state.glass.mode==='spatial'?1:phone?0:3);
-  if(phone) {
-    await root.evaluate(()=>document.querySelector('[data-instrument="output"]').click());
-    assert.equal(await root.evaluate(node=>node.machineController.instruments.active),'output','an enabled mobile tab selects its context-visible instrument');
-    await expect(root.locator('[data-glass-panel="output"]')).toBeVisible();
-    const selected=await diagnostics(root);
-    assert.equal(selected.glass.panels.filter(panel=>panel.visible).length,selected.glass.mode==='spatial'?1:0,
-      'choosing Output never reveals an inactive-context panel');
-  }
+  if(phone)await selectOutputOnPhone(root);
   await expect.poll(()=>input.evaluate(panel=>panel.inert)).toBe(false);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.contextVisible!==false).length).toBe(3);
 }
@@ -173,19 +184,29 @@ async function nativeInputSelection(page,root,cdp) {
   assert.equal(after.camera.pitch,before.camera.pitch,'text selection does not orbit the camera');
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});
 }
-async function realPointerTextSelection(page,root,phone) {
-  if(phone)return;
-  const before=await diagnostics(root);
-  const input=root.locator('[data-glass-panel="input"] input');
-  await input.scrollIntoViewIfNeeded();await input.fill('mouse drag remains native');
-  const box=await input.evaluate(node=>{const rect=node.getBoundingClientRect();return {x:rect.left,y:rect.top,width:rect.width,height:rect.height};});
+function readClientBox(node) {
+  const rect=node.getBoundingClientRect();
+  return {x:rect.left,y:rect.top,width:rect.width,height:rect.height};
+}
+function elementTagAtPoint({x,y}) { return document.elementFromPoint(x,y)?.tagName; }
+async function assertInputPointerTarget(page,box) {
   assert.ok(box.width>80&&box.height>20,'visible native input has a pointer selection target');
-  assert.equal(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.tagName,{x:box.x+12,y:box.y+box.height/2}),'INPUT',
+  assert.equal(await page.evaluate(elementTagAtPoint,{x:box.x+12,y:box.y+box.height/2}),'INPUT',
     'real pointer coordinates land on the native input');
-  await input.evaluate(node=>node.addEventListener('pointerdown',()=>node.dataset.pointerDown='true',{once:true}));
+}
+async function dispatchPointerDrag(page,box) {
   await page.mouse.move(box.x+12,box.y+box.height/2);await page.mouse.down();
   await page.mouse.move(box.x+box.width-12,box.y+box.height/2,{steps:12});await page.mouse.up();
-  assert.equal(await input.getAttribute('data-pointer-down'),'true','real pointer drag reaches the native pane input');
+}
+async function dragNativeInputText(page,input) {
+  await input.scrollIntoViewIfNeeded();await input.fill('mouse drag remains native');
+  const box=await input.evaluate(readClientBox);
+  await assertInputPointerTarget(page,box);await dispatchPointerDrag(page,box);
+}
+async function realPointerTextSelection(page,root,phone) {
+  if(phone)return;
+  const before=await diagnostics(root),input=root.locator('[data-glass-panel="input"] input');
+  await dragNativeInputText(page,input);
   const after=await diagnostics(root);
   assert.equal(after.camera.yaw,before.camera.yaw,'text drag cannot orbit the camera');
   assert.equal(after.camera.pitch,before.camera.pitch,'text drag cannot orbit the camera');
