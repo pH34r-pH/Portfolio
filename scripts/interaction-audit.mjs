@@ -399,6 +399,10 @@ async function auditNotebook(page, manifest, path, width) {
     await expect(page.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
     await auditJupyterLabCells(page, expectedCells, expectedJupyterPath, path);
     await page.goBack();
+    if (new URL(page.url()).pathname === "/lab/lab/") {
+      // JupyterLite replaces its query-route with the canonical app URL; Back must unwind both entries.
+      await page.goBack();
+    }
     await expect(page).toHaveURL(base + path);
     await expect(page.locator("main h1")).toHaveText(notebook.title);
   }
