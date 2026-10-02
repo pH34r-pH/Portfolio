@@ -19,22 +19,33 @@ await mkdir(reviewDir,{recursive:true});
 await writeFile(resolve(reviewDir,'evidence-status.json'),JSON.stringify({status:'incomplete',reason:'Evidence preparation has not completed.',sourceCommit},null,2)+'\n');
 const manifestPath=resolve(root,'site/assets/model-posters/manifest.json');
 const auditPath=resolve(visualDir,'audit.json');
+const startupAuditPath=resolve(root,process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup','audit.json');
+const cleanAudit=value=>{
+  if(Array.isArray(value))return value.map(cleanAudit);
+  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!['path','screenshot'].includes(key)).map(([key,item])=>[key,cleanAudit(item)]));
+  return value;
+};
+const startupAudit=await exists(startupAuditPath)?JSON.parse(await readFile(startupAuditPath,'utf8')):null;
+const lifecycleStatus=!startupAudit?'missing':startupAudit.some(item=>item.failure)?'failed':'captured';
+const lifecycleReceipt={schemaVersion:1,status:lifecycleStatus,sourceCommit,
+  articleEvidence:[...new Set((startupAudit||[]).map(item=>item.articleEvidence).filter(Boolean))],
+  cases:cleanAudit(startupAudit||[]),
+  note:'Bounded lifecycle/browser receipt. Screenshot paths and local filesystem paths are omitted; fixture versus published article evidence is retained.'};
+const lifecycleBytes=Buffer.from(JSON.stringify(lifecycleReceipt,null,2)+'\n');
+assert.ok(lifecycleBytes.length<=128*1024,'Startup lifecycle audit receipt must stay within 128 KiB');
+await writeFile(resolve(reviewDir,'startup-lifecycle-audit.json'),lifecycleBytes);
+const lifecycleFile={path:'startup-lifecycle-audit.json',bytes:lifecycleBytes.length,sha256:hash(lifecycleBytes)};
 if(!(await exists(manifestPath))) {
-  await writeFile(resolve(reviewDir,'evidence-status.json'),JSON.stringify({status:'incomplete',reason:'Poster capture did not produce a manifest.',sourceCommit:process.env.GITHUB_SHA||null},null,2)+'\n');
+  await writeFile(resolve(reviewDir,'evidence-status.json'),JSON.stringify({status:'incomplete',reason:'Poster capture did not produce a manifest.',sourceCommit,startupLifecycle:{status:lifecycleStatus,...lifecycleFile}},null,2)+'\n');
   process.exitCode=1;
 } else {
   const manifest=JSON.parse(await readFile(manifestPath,'utf8'));
   assert.equal(manifest.capture.sourceCommit,sourceCommit,'Poster manifest must come from this exact checked-out source commit');
   assert.equal(manifest.capture.sourceWorkingTreeClean,true,'Poster capture source inputs must come from a clean source tree');
   const audit=await exists(auditPath)?JSON.parse(await readFile(auditPath,'utf8')):null;
-  const cleanAudit=value=>{
-    if(Array.isArray(value))return value.map(cleanAudit);
-    if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([key])=>!['path','screenshot'].includes(key)).map(([key,item])=>[key,cleanAudit(item)]));
-    return value;
-  };
   if(audit)await writeFile(resolve(reviewDir,'visual-audit.json'),JSON.stringify(cleanAudit(audit),null,2)+'\n');
   await copyFile(manifestPath,resolve(reviewDir,'poster-manifest.json'));
-  const selections=[['phone','light',3],['desktop','light',2]],files=[];
+  const selections=[['phone','light',3],['desktop','light',2]],files=[lifecycleFile];
   for(const [name,theme,density] of selections) {
     const asset=manifest.assets.find(item=>item.name===name&&item.theme===theme&&item.density===density);
     assert.ok(asset,`Missing representative poster ${name}/${theme}/${density}x`);
@@ -87,7 +98,8 @@ if(!(await exists(manifestPath))) {
   const evidence={schemaVersion:1,status:audit?.failure?'visual-audit-failed':audit?'captured':'incomplete',sourceCommit:manifest.capture.sourceCommit,
     sourceBase:manifest.capture.sourceBase,provenanceVerified:manifest.capture.provenanceVerified,servedSourceHashes:manifest.capture.servedSourceHashes,
     selectedRepresentatives:selections.map(([name,theme,density])=>({name,theme,density})),auditSummary:audit?.failure||
-      (audit?'Model visual audit measurements preserved in visual-audit.json.':'Native poster comparisons were captured; the visual audit did not produce a receipt.'),files,
+      (audit?'Model visual audit measurements preserved in visual-audit.json.':'Native poster comparisons were captured; the visual audit did not produce a receipt.'),
+    startupLifecycle:{status:lifecycleStatus,file:lifecycleFile.path,bytes:lifecycleFile.bytes,sha256:lifecycleFile.sha256},files,
     totalBytes:files.reduce((sum,file)=>sum+(file.bytes||0),0),retentionDays:3,
     note:'Crops are native decoded pixels. The three-panel comparison is unscaled and uses the same crop rectangle for lossless capture, selected encoded poster and frame-145 live detail.'};
   await writeFile(resolve(reviewDir,'evidence-status.json'),JSON.stringify(evidence,null,2)+'\n');

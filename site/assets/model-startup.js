@@ -161,9 +161,19 @@ export class ModelStartup {
     this.deadline = setTimeout(() => this.fail("startup-timeout"), remaining);
   }
 
+  clearDeadline() {
+    clearTimeout(this.deadline);
+    this.deadline = 0;
+    this.deadlineAt = 0;
+  }
+
   fail(reason) {
     if (this.terminal || this.quiet) return;
     this.stop();
+    this.deadlineAt = 0;
+    // Let a retry claim a fresh start promise while the failed loader settles.
+    // Its finally handler is identity-guarded and cannot clear a newer attempt.
+    this.startPromise = null;
     this.failure = reason;
     this.persist();
     this.setPhase("fallback", "Interactive model unavailable · Static architecture remains available");
@@ -249,8 +259,7 @@ export class ModelStartup {
     scene.setPower(0, true);
     this.firstFrame = scene.powerView();
     this.preparedAt = clock();
-    clearTimeout(this.deadline);
-    this.deadline = 0;
+    this.clearDeadline();
     this.setPhase("prepared", "Architecture display ready");
     this.schedule();
     return true;

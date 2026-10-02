@@ -11,6 +11,11 @@ const browser=await chromium.launch({headless:true}),evidence=[];
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
 const snapshot=page=>page.evaluate(()=>PortfolioModelStartup.snapshot());
 const settle=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+async function scrollAwayAndBack(page) {
+  const top=await page.locator('#model-chapter').evaluate(node=>node.getBoundingClientRect().top+scrollY);
+  await page.evaluate(()=>scrollTo(0,document.body.scrollHeight));await settle(page);
+  await page.evaluate(y=>scrollTo(0,y),top);await settle(page);
+}
 const startupState=state=>({schemaVersion:STARTUP_SCHEMA_VERSION,started:state.started,
   ignitionComplete:state.ignitionComplete,elapsedActiveMs:state.elapsedActiveMs,
   topologyVersion:'unit_hypersphere_depth3',styleVersion:'leaf01-blue-horizontal-native-resolution'});
@@ -150,7 +155,16 @@ async function quietFallback(mode,options) {
     await expect(page.getByRole('button',{name:/interactive model/})).toBeHidden();
     assert.equal(engines,0);assert.deepEqual(errors,[]);
     const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa','wcag22aa']).analyze();
-    assert.deepEqual(axe.violations,[]);evidence.push({mode,phase:'quiet',engines,errors});
+    assert.deepEqual(axe.violations,[]);
+    await page.emulateMedia(mode==='reduced-motion'?{reducedMotion:'no-preference'}:{forcedColors:'none'});
+    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','idle');
+    await expect(page.getByRole('button',{name:'Start interactive model'})).toBeVisible();
+    assert.equal(engines,0,'Clearing quiet mode does not bypass Home startup intent');
+    await page.getByRole('button',{name:'Start interactive model'}).click();
+    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:15000});
+    await expect.poll(async()=>(await snapshot(page)).phase).toBe('ready');
+    assert.ok(engines>0);assert.deepEqual(errors,[]);
+    evidence.push({mode,phase:'quiet then explicit Home startup',engines,errors});
   } finally {await context.close();}
 }
 
@@ -171,7 +185,7 @@ async function noScript() {
   } finally {await context.close();}
 }
 
-async function lateLoadTimeout() {
+async function lateLoadTimeout(retryBeforeSettle=false) {
   let release;const held=new Promise(resolve=>{release=resolve;});let requests=0;
   const {context,page,errors}=await open({},async page=>{
     await page.route('**/vendor/three@0.186.1/three.module.js',async route=>{
@@ -182,20 +196,41 @@ async function lateLoadTimeout() {
     await assertFreshHome(page,()=>requests);
     assert.equal(await page.evaluate(()=>portfolioStartupDeadlines.length),0,'No timeout runs before user intent');
     await page.getByRole('button',{name:'Start interactive model'}).click();
+    if(retryBeforeSettle)await page.evaluate(()=>{window.firstStartupAttempt=PortfolioModelStartup.start();});
     await expect.poll(()=>requests).toBe(1);
     await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length)).toBe(1);
     await page.evaluate(()=>portfolioStartupDeadlines[0]());
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
     const timedOut=await snapshot(page);assert.equal(timedOut.started,true);assert.equal(timedOut.handoffs,0);
-    release();await page.waitForTimeout(150);
-    assert.equal((await snapshot(page)).phase,'fallback','Late module completion cannot revive a failed startup');
+    assert.equal((await snapshot(page)).phase,'fallback','Timed-out startup retains its static fallback');
     assert.equal(await page.locator('[data-model-machine]').getAttribute('data-render'),'fallback');
-    await page.getByRole('button',{name:'Retry interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:12000}).toBe('ready');
-    assert.equal((await snapshot(page)).ignitionComplete,true);
-    assert.deepEqual(errors,[]);
-    evidence.push({mode:'timeout-and-retry',requests,deadlinesBeforeStart:0,deadlinesAfterStart:1,timedOut,lateCompletionIgnored:true,
-      retryPhase:(await snapshot(page)).phase,errors});
+    if(retryBeforeSettle) {
+      await scrollAwayAndBack(page);
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','fallback');
+      await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+      await page.getByRole('button',{name:'Retry interactive model'}).click();
+      const reusedFailedPromise=await page.evaluate(()=>PortfolioModelStartup.start()===window.firstStartupAttempt);
+      assert.equal(reusedFailedPromise,false,'Retry during an unsettled import owns a fresh startup promise');
+      release();
+      await expect.poll(async()=>(await snapshot(page)).phase,{timeout:12000}).toBe('ready');
+      const retried=await snapshot(page);
+      assert.equal(retried.ignitionComplete,true);assert.equal(retried.handoffs,1);assert.equal(retried.completions,1);
+      assert.deepEqual(errors,[]);
+      assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1',
+        'The held import completes only the valid retry generation');
+      evidence.push({mode:'timeout-and-retry-before-import-settles',requests,deadlinesBeforeStart:0,deadlinesAfterStart:1,timedOut,
+        retryPhase:retried.phase,retried,errors});
+    } else {
+      release();await page.waitForTimeout(150);
+      assert.equal((await snapshot(page)).phase,'fallback','Late module completion cannot revive a failed startup');
+      await scrollAwayAndBack(page);
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','fallback');
+      await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+      assert.deepEqual(errors,[]);
+      evidence.push({mode:'late-import-after-timeout',requests,deadlinesBeforeStart:0,deadlinesAfterStart:1,timedOut,lateCompletionIgnored:true,errors});
+    }
   } finally {release();await context.close();}
 }
 
@@ -233,17 +268,23 @@ async function bfcache() {
   const {context,page,errors}=await open({},undefined,'',cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
+    await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
     const before=await snapshot(page);
+    assert.equal(before.ignitionComplete,false,'BFCache case captures partial ignition');
     await page.getByRole('link',{name:'About',exact:true}).first().click();
     await expect(page).toHaveURL(/\/about\/$/);
+    await page.waitForTimeout(16000);
     await page.goBack({waitUntil:'commit'});await expect(page).toHaveURL(base+'/');
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
     const persisted=await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditPageShowPersisted'));
     assert.equal(persisted,'true','Browser restores the healthy homepage from BFCache');
     const after=await snapshot(page);
-    assert.equal(after.ignitionComplete,true);assert.equal(after.completions,before.completions);
-    assert.equal(after.elapsedActiveMs,before.elapsedActiveMs);
+    assert.equal(after.ignitionComplete,true);assert.equal(after.completions,before.completions+1);
+    assert.ok(after.elapsedActiveMs>=before.elapsedActiveMs,'BFCache resumes the retained partial ignition progress');
+    assert.equal(after.handoffs,before.handoffs,'BFCache does not hand off the scene a second time');
+    assert.equal(await page.evaluate(()=>portfolioStartupPhases.filter(phase=>phase==='igniting').length),1,
+      'BFCache does not restart the ignition phase');
     assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1',
       'BFCache resumes the existing WebGL context without creating another one');
     assert.deepEqual(errors,[]);evidence.push({mode:'bfcache',before,after,persisted:true,webglContexts:1,noReignition:true,errors});
@@ -272,6 +313,36 @@ async function contextLossRetry() {
   } finally {await context.close();}
 }
 
+async function directStartupFailure(mode) {
+  let failedResourceRequests=0,engineRequests=0;
+  const {context,page,errors}=await open({},async page=>{
+    page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
+    if(mode==='engine-failure')await page.route('**/vendor/three@0.186.1/**',async route=>{failedResourceRequests++;await route.abort();});
+    if(mode==='module-failure')await page.route('**/assets/model-machine.js',async route=>{failedResourceRequests++;await route.abort();});
+  });
+  try {
+    await assertFreshHome(page,()=>engineRequests);
+    await page.getByRole('button',{name:'Start interactive model'}).click();
+    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback',{timeout:15000});
+    await expect(page.getByRole('button',{name:'Retry interactive model'})).toBeVisible();
+    await expect(page.locator('[data-model-boot]')).toContainText('Interactive model unavailable');
+    assert.equal(failedResourceRequests,1,`${mode} exercises the requested failed resource`);
+    if(mode==='engine-failure') {
+      assert.ok(engineRequests>0);await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','fallback');
+      await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+      await scrollAwayAndBack(page);
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
+      await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','fallback');
+      await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+    } else {
+      assert.equal(engineRequests,0,'A failed machine-controller module never requests the 3D engine');
+      await expect(page.locator('.machine-poster')).toBeVisible();
+    }
+    assert.deepEqual(errors,[]);
+    evidence.push({mode,failedResourceRequests,engineRequests,staticFallbackRetained:true,errors});
+  } finally {await context.close();}
+}
+
 async function articleIsolation() {
   const host=await articleHost(base),context=await browser.newContext({viewport:{width:1366,height:900}}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
@@ -289,6 +360,26 @@ async function articleIsolation() {
   } finally {await context.close();}
 }
 
+async function articleQuietModeRestore(mode,initial,cleared) {
+  const host=await articleHost(base),context=await browser.newContext({viewport:{width:1366,height:900},...initial}),page=await context.newPage(),errors=[];
+  let engines=0;page.on('pageerror',error=>errors.push(error.message));
+  page.on('request',request=>{if(request.url().includes('three@0.186.1'))engines++;});
+  if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
+  try {
+    await page.goto(host.url,{waitUntil:'networkidle'});
+    const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
+    await expect(root).toHaveAttribute('data-render','fallback');
+    assert.equal(await root.getAttribute('data-model-startup'),null,'Article retains independent startup ownership');
+    assert.equal(engines,0,`${mode} article remains static before the preference clears`);
+    await page.emulateMedia(cleared);
+    await expect(root).toHaveAttribute('data-render','webgl',{timeout:15000});
+    assert.equal(await root.getAttribute('data-model-startup'),null,'Preference restoration does not attach Home startup state');
+    assert.ok(engines>0,`${mode} article boots again when its visible quiet preference clears`);
+    assert.deepEqual(errors,[]);
+    evidence.push({mode:`article-${mode}-restoration`,articleEvidence:host.kind,engines,visibleRestore:true,errors});
+  } finally {await context.close();}
+}
+
 try {
   await startup('desktop',1440,1000);
   await startup('phone360',360,800);
@@ -296,14 +387,49 @@ try {
   await quietFallback('reduced-motion',{reducedMotion:'reduce'});
   await quietFallback('forced-colors',{forcedColors:'active'});
   await noScript();
+  await directStartupFailure('engine-failure');
+  await directStartupFailure('module-failure');
   await lateLoadTimeout();
+  await lateLoadTimeout(true);
   await restoredVisit();
   await bfcache();
+  await contextLossDuringIgnition();
   await contextLossRetry();
   await articleIsolation();
+  await articleQuietModeRestore('reduced-motion',{reducedMotion:'reduce'},{reducedMotion:'no-preference'});
+  await articleQuietModeRestore('forced-colors',{forcedColors:'active'},{forcedColors:'none'});
   console.log('Manual startup passed: no pre-intent engine request, deduplicated Start, 1.8s active-visible ignition, session restore, BFCache, retry, quiet/static fallback, NoJS and article isolation.');
 } catch(error) {
   evidence.push({failure:error.message});throw error;
 } finally {
   await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2));await browser.close();
+}
+
+async function failContextDuringIgnition(page) {
+  await page.getByRole('button',{name:'Start interactive model'}).click();
+  await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
+  await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
+  await page.evaluate(()=>document.querySelector('[data-machine-canvas]').dispatchEvent(new Event('webglcontextlost',{cancelable:true})));
+  const failed=await snapshot(page);
+  assert.equal(failed.ignitionComplete,false);assert.ok(failed.elapsedActiveMs>0&&failed.elapsedActiveMs<IGNITION_DURATION_MS);
+  assert.equal(failed.scheduled,false);assert.equal(failed.completions,0);
+  return failed;
+}
+
+async function assertStaticHomeFallback(page) {
+  await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
+  await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','fallback');
+  await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+}
+
+async function contextLossDuringIgnition() {
+  const {context,page,errors}=await open();
+  try {
+    const failed=await failContextDuringIgnition(page);
+    await assertStaticHomeFallback(page);
+    await scrollAwayAndBack(page);
+    await assertStaticHomeFallback(page);
+    assert.deepEqual(errors,[]);
+    evidence.push({mode:'context-loss-during-ignition-and-scrollback',failed,fallbackRetained:true,errors});
+  } finally {await context.close();}
 }

@@ -175,18 +175,24 @@ class MachineController {
       if(this.scene&&!this.scene.disposed&&this.wasPlayingBeforePagehide&&this.visible)this.play();
       this.wasPlayingBeforePagehide=false;this.syncClock();this.publishLight(true);
     });
-    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion",true); else if(this.startup?.started)this.startup.start({retained:true}); });
+    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion",true); else this.resumeAfterQuietPreference(); });
     this.viewport.addEventListener("change", () => { if (this.root.dataset.render === "fallback") { this.fallbackNodes = null; this.buildFallback(this.root.querySelector("[data-machine-fallback]")); this.draw(); } });
-    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors",true); else if(this.startup?.started)this.startup.start({retained:true}); });
+    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors",true); else this.resumeAfterQuietPreference(); });
+  }
+  resumeAfterQuietPreference() {
+    if (reduceMotion.matches || forcedColors.matches) return;
+    if (this.startup) {
+      if (this.startup.started) this.startup.start({retained:true});
+    } else if (this.visible) this.boot();
   }
   async boot() {
     if(this.terminalDisposed||!this.root.isConnected)return null;
     if(this.startup&&(!this.startup.started||this.startup.quiet))return null;
-    if (this.scene) return this.scene;
     if (reduceMotion.matches || forcedColors.matches) { this.fallback(reduceMotion.matches ? "reduced-motion" : "forced-colors",true); return null; }
+    if(this.startup&&!this.startup.canPrepare())return null;
+    if (this.scene) return this.scene;
     if (this.bootPromise) return this.bootPromise;
     this.root.dataset.render = "loading";
-    if(this.startup&&!this.startup.canPrepare())return null;
     const generation=++this.bootGeneration;
     const current=()=>generation===this.bootGeneration&&!this.terminalDisposed&&this.root.isConnected&&!this.startup?.terminal;
     const task=(async()=>{
@@ -220,6 +226,7 @@ class MachineController {
     if(this.startup&&!startupHandled&&!this.startup.quiet){this.startup.fail(reason);return;}
     if(reason==="webgl-context-lost")this.canvasNeedsReplacement=true;
     this.bootGeneration++;
+    this.bootPromise=null;
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
     if(this.startup&&!this.startup.quiet&&this.startup.phase!=="fallback")this.startup.setPhase("fallback","Interactive model unavailable · Static architecture remains available");
     this.instruments.setMode('flow', this.viewport.matches);
