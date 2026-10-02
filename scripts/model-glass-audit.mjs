@@ -190,14 +190,16 @@ async function glassContextSettled(root,checkGpu=true) {
   return (await glassContextStatus(root,checkGpu)).settled;
 }
 async function entryWithoutTransitionEvent(root) {
-  const input=root.locator('[data-glass-panel="input"]');
-  await root.evaluate(node=>node.machine.focus('representation'));
-  try {await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);}
-  catch(error) {console.log(`Glass context state at entry setup timeout: ${JSON.stringify(await glassContextStatus(root))}`);throw error;}
-  await input.evaluate(panel=>panel.style.transitionDuration='0ms');
-  await root.evaluate(node=>node.machine.focus('all'));
-  await expect.poll(()=>glassContextSettled(root),{timeout:3000}).toBe(true);
-  await input.evaluate(panel=>panel.style.transitionDuration='');
+  const panels=root.locator('[data-glass-panel]');
+  const previous=await panels.evaluateAll(nodes=>nodes.map(panel=>panel.style.transitionDuration));
+  await panels.evaluateAll(nodes=>nodes.forEach(panel=>panel.style.transitionDuration='0ms'));
+  try {
+    await root.evaluate(node=>node.machine.focus('representation'));
+    try {await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);}
+    catch(error) {console.log(`Glass context state at exit setup timeout: ${JSON.stringify(await glassContextStatus(root))}`);throw error;}
+    await root.evaluate(node=>node.machine.focus('all'));
+    await expect.poll(()=>glassContextSettled(root),{timeout:3000}).toBe(true);
+  } finally {await panels.evaluateAll((nodes,durations)=>nodes.forEach((panel,index)=>panel.style.transitionDuration=durations[index]),previous);}
 }
 async function offscreenContextPause(page,root) {
   const initial=await root.evaluate(node=>node.machineController.visible);
