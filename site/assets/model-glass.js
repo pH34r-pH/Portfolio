@@ -63,6 +63,7 @@ export class SharedGlass {
   }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
+    this.pinnedToArticleContext = true;
     this.poseKey = null;
     this.instruments.host.dataset.instruments = 'spatial';
     this.panels.forEach(panel => { this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose(); });
@@ -115,8 +116,8 @@ export class SharedGlass {
     let lights = 0; this.scene.traverse(object => { if (object.isLight && object.userData.replayPulse) lights += 1; });
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
-      pinnedToArticleContext: true, layoutGeneration: this.layoutGeneration,
-      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node.dataset.contextActive !== 'false', corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+      pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
+      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node?.dataset.contextActive !== 'false', corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
   dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

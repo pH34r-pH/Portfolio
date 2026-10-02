@@ -311,7 +311,7 @@ export class MachineScene {
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) { this.focus = part; this.glass.instruments.setContext(part); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
+  setFocus(part) { this.focus = part; this.glass.instruments.setContext?.(part); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
   orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }
   zoomByRatio(ratio) {
