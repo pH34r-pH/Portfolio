@@ -34,15 +34,15 @@
       "status": "automated-with-fixture-limit",
       "tests": ["homepage-digital-audit.mjs", "interaction-audit.mjs", "2071-audit.mjs"],
       "assertions": ["Chapter hash updates and browser Back restore route", "Finished-bundle article links and figure anchors check sticky-header clearance, Back/Forward route, hash and scroll restoration", "Search dialog Escape and touch Close are each exercised from a freshly opened dialog and restore focus", "Menu Escape closes and returns focus", "Skip link focuses main"],
-      "limits": ["Search result, no-result and clear states run only when Pagefind is present. The current merged-main workflow does not build a Pagefind index, so those result states are reported as uncovered for this candidate."]
+      "limits": ["The source-only run has no generated Pagefind index; the exact finished-bundle job builds the pinned production index and exercises these result states there."]
     },
     {
       "id": "pagefind-search-results",
       "surfaces": ["Pagefind query results", "no-result and clear states", "result navigation history"],
-      "status": "uncovered",
+      "status": "automated",
       "tests": ["2071-audit.mjs"],
-      "assertions": [],
-      "limits": ["The merged-main candidate no longer generates /pagefind/pagefind.js; result states cannot be qualified against a finished bundle until a production index is restored."]
+      "assertions": ["The finished bundle builds Pagefind 1.5.2, then checks no-result, empty-query clear, a matching article result, navigation, Back and Forward against the real index."],
+      "limits": ["Source-served audit runs report this as unexercised when the generated Pagefind index is absent."]
     },
     {
       "id": "appearance-accessibility-responsive",
@@ -108,7 +108,7 @@
       "surfaces": ["published notebook reader", "preserved .ipynb download", "Open in JupyterLite"],
       "status": "automated-sampled-downloads",
       "tests": ["test_portfolio_publication.py", "interaction-audit.mjs", ".github/workflows/ux-quality.yml"],
-      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser follows the real Open in JupyterLite link, checks the selected notebook path and compares rendered code cell count/source to its preserved .ipynb", "Browser triggers a preserved .ipynb download and compares its SHA-256 to the publication manifest"],
+      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser follows the real Open in JupyterLite link and checks active tabs and the exact selected path", "When JupyterLite exposes its contents model, the browser compares every cell id, type, and full source to the selected preserved .ipynb; otherwise it scrolls all detected notebook containers and verifies rendered cell sources", "Browser triggers a preserved .ipynb download and compares its SHA-256 to the publication manifest"],
       "limits": ["JupyterLite bootstrap and cell loading are exercised; this route does not edit or execute a JupyterLite cell or validate workspace persistence."]
     },
     {

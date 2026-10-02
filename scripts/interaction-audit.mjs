@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { auditArticleProjection, auditPublishedBrowserPython } from "./article-browser-audit.mjs";
+import { collectNotebookCellCoverage } from "./jupyterlite-notebook-audit.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 const views = [[360, 780], [412, 915], [768, 1016], [1366, 768]];
@@ -319,54 +320,41 @@ async function auditArticle(page, context, manifest, path, width) {
   }
 }
 
-async function collectNotebookCellCoverage(panel, expected) {
-  const notebookNode = panel.querySelector(".jp-Notebook");
-  if (!notebookNode) return { expected: expected.length, matched: [], scrollStates: 0, scroller: "missing .jp-Notebook" };
-  let scroller = notebookNode;
-  while (scroller && scroller !== panel.parentElement) {
-    const style = getComputedStyle(scroller);
-    if (scroller.scrollHeight > scroller.clientHeight + 1 && /auto|scroll/.test(style.overflowY)) break;
-    scroller = scroller.parentElement;
-  }
-  if (!scroller || scroller === panel.parentElement) scroller = document.scrollingElement;
-  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-  const step = Math.max(160, Math.floor(scroller.clientHeight * 0.7));
-  const positions = [];
-  for (let top = 0; top < maxScroll; top += step) positions.push(top);
-  positions.push(maxScroll);
-  const snapshots = [];
-  for (const top of [...new Set(positions)]) {
-    scroller.scrollTop = top;
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    snapshots.push([...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
-      type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
-      text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
-    })));
-  }
-  const normalize = value => value.replace(/\s+/g, " ").trim();
-  const matched = expected.map(cell => {
-    const source = normalize(cell.source);
-    if (cell.type === "code") {
-      return snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "code" && normalize(rendered.text).includes(source)));
-    }
-    const firstHeading = cell.source.split(/\r?\n/).find(line => line.trim())
-      ?.replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
-    return Boolean(firstHeading) && snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "markdown" && normalize(rendered.text).includes(normalize(firstHeading))));
-  });
-  return {
-    expected: expected.length,
-    matched,
-    scrollStates: snapshots.length,
-    renderedPerState: snapshots.map(snapshot => snapshot.length),
-    scroller: { tag: scroller.tagName, className: String(scroller.className || ""), clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight },
-  };
-}
-
-async function auditJupyterLabCells(page, expectedCells, path) {
+async function auditJupyterLabCells(page, expectedCells, expectedJupyterPath, path) {
   const cellCoverage = await page.locator(".jp-NotebookPanel").evaluate(collectNotebookCellCoverage, expectedCells);
-  console.log(`${path}: JupyterLite selected-notebook cell coverage ${cellCoverage.matched.filter(Boolean).length}/${cellCoverage.expected}; ${cellCoverage.scrollStates} scroll states; rendered ${JSON.stringify(cellCoverage.renderedPerState)}; scroller ${JSON.stringify(cellCoverage.scroller)}`);
-  assert.equal(cellCoverage.matched.filter(Boolean).length, expectedCells.length, `${path}: exact selected notebook model cell count`);
-  assert.ok(cellCoverage.matched.every(Boolean), `${path}: JupyterLite exposes every selected notebook cell source across the scrollable notebook`);
+  const identity = await page.evaluate(async selectedPath => {
+    const tabs = [...document.querySelectorAll(".jp-TabBar-tab")].map(tab => ({
+      text: tab.innerText,
+      title: tab.getAttribute("title"),
+      selected: tab.getAttribute("aria-selected"),
+    }));
+    const config = JSON.parse(document.querySelector("#jupyter-config-data")?.textContent || "{}");
+    const baseUrl = config.baseUrl || "/lab/";
+    const apiUrl = new URL(`api/contents/${selectedPath}`, new URL(baseUrl, location.origin));
+    try {
+      const response = await fetch(apiUrl, { headers: { Accept: "application/json" } });
+      const data = response.ok ? await response.json() : undefined;
+      return { documentTitle: document.title, tabs, api: { url: apiUrl.pathname, status: response.status,
+        cells: data?.content?.cells?.map(cell => ({ id: cell.id || "", type: cell.cell_type,
+          source: Array.isArray(cell.source) ? cell.source.join("") : cell.source })) } };
+    } catch (error) {
+      return { documentTitle: document.title, tabs, api: { url: apiUrl.pathname, error: String(error) } };
+    }
+  }, expectedJupyterPath);
+  const identitySummary = {
+    documentTitle: identity.documentTitle,
+    tabs: identity.tabs,
+    api: { url: identity.api.url, status: identity.api.status,
+      cells: identity.api.cells?.map(cell => ({ id: cell.id, type: cell.type, sourceLength: cell.source?.length })) },
+  };
+  console.log(`${path}: JupyterLite selected-notebook cell coverage ${cellCoverage.matched.filter(Boolean).length}/${cellCoverage.expected}; ${cellCoverage.scrollStates} scroll states; rendered ${JSON.stringify(cellCoverage.renderedPerState)}; scroller ${JSON.stringify(cellCoverage.scroller)}; identity ${JSON.stringify(identitySummary)}`);
+  const renderedCount = cellCoverage.matched.filter(Boolean).length;
+  if (identity.api.cells) {
+    assert.deepEqual(identity.api.cells, expectedCells, `${path}: JupyterLite opened the exact selected notebook cell source`);
+  } else {
+    assert.equal(renderedCount, expectedCells.length, `${path}: rendered notebook exposes every selected cell`);
+    assert.ok(cellCoverage.matched.every(Boolean), `${path}: JupyterLite exposes every selected notebook cell source across the scrollable notebook`);
+  }
 }
 
 async function auditNotebook(page, manifest, path, width) {
@@ -392,6 +380,7 @@ async function auditNotebook(page, manifest, path, width) {
     assert.ok(sourceResponse.ok(), `${path}: preserved notebook source resolves (${sourceResponse.status()})`);
     const sourceNotebook = await sourceResponse.json();
     const expectedCells = sourceNotebook.cells.map(cell => ({
+      id: cell.id || "",
       type: cell.cell_type,
       source: Array.isArray(cell.source) ? cell.source.join("") : cell.source,
     }));
@@ -408,7 +397,7 @@ async function auditNotebook(page, manifest, path, width) {
     await page.waitForURL(url => url.pathname === "/lab/lab/");
     await expect(page.locator("#jupyter-config-data")).toHaveCount(1);
     await expect(page.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
-    await auditJupyterLabCells(page, expectedCells, path);
+    await auditJupyterLabCells(page, expectedCells, expectedJupyterPath, path);
     await page.goBack();
     await expect(page).toHaveURL(base + path);
     await expect(page.locator("main h1")).toHaveText(notebook.title);
