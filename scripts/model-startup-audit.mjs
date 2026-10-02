@@ -168,6 +168,54 @@ async function quietFallback(mode,options) {
   } finally {await context.close();}
 }
 
+async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
+  let release;const held=new Promise(resolve=>{release=resolve;});let requests=0;
+  const {context,page,errors}=await open({},async page=>{
+    page.on('request',request=>{if(request.url().includes('three@0.186.1'))requests++;});
+    await page.route('**/vendor/three@0.186.1/three.module.js',async route=>{await held;await route.continue();});
+  });
+  try {
+    await assertFreshHome(page,()=>requests);
+    await page.getByRole('button',{name:'Start interactive model'}).click();
+    await expect.poll(()=>requests).toBe(1);
+    await page.evaluate(()=>{window.pendingStartup=PortfolioModelStartup.start();});
+    assert.equal(await page.evaluate(()=>PortfolioModelStartup.start()===window.pendingStartup),true,
+      'The initial pending start remains deduplicated');
+
+    await page.emulateMedia(quietOptions);
+    const root=page.locator('[data-model-machine]');
+    await expect(root).toHaveAttribute('data-startup','quiet');
+    await expect(root).toHaveAttribute('data-render','fallback');
+    await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
+    await expect(page.getByRole('button',{name:/interactive model/})).toBeHidden();
+    const quiet=await snapshot(page);
+    assert.equal(quiet.started,true);assert.equal(quiet.phase,'quiet');assert.equal(quiet.scheduled,false);
+    assert.equal(quiet.handoffs,0);assert.equal(quiet.ignitionComplete,false);assert.equal(requests,1);
+
+    await page.emulateMedia(clearOptions);
+    const freshAttempt=await page.evaluate(()=>{
+      window.resumedStartup=PortfolioModelStartup.start({retained:true});
+      return window.resumedStartup!==window.pendingStartup;
+    });
+    assert.equal(freshAttempt,true,`${mode} restoration owns a fresh startup promise`);
+    await expect(root).toHaveAttribute('data-render','loading');
+    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length)).toBe(2);
+    assert.equal(requests,1,'Resumed attempt shares the still-pending native module fetch');
+
+    release();
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:15000}).toBe('ready');
+    const staleIsNull=await page.evaluate(()=>window.pendingStartup.then(value=>value===null));
+    const ready=await snapshot(page);
+    assert.equal(staleIsNull,true,'The interrupted loader settles without taking ownership of the resumed scene');
+    assert.equal(ready.handoffs,1);assert.equal(ready.completions,1);assert.equal(ready.ignitionComplete,true);
+    assert.equal(ready.elapsedActiveMs,IGNITION_DURATION_MS);
+    assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1');
+    assert.equal(await root.getAttribute('data-render'),'webgl');assert.deepEqual(errors,[]);
+    evidence.push({mode:`${mode}-interrupted-pending-import`,quiet,ready,staleIsNull,requests,
+      freshAttempt:true,staticFallbackRetained:true,errors});
+  } finally {release();await context.close();}
+}
+
 async function noScript() {
   let engines=0;
   const {context,page,errors}=await open({viewport:{width:360,height:800},javaScriptEnabled:false},async page=>{
@@ -403,6 +451,8 @@ try {
   await startup('resize-to-phone',1366,768,{width:412,height:915});
   await quietFallback('reduced-motion',{reducedMotion:'reduce'});
   await quietFallback('forced-colors',{forcedColors:'active'});
+  await quietInterruptedPendingImport('reduced-motion',{reducedMotion:'reduce'},{reducedMotion:'no-preference'});
+  await quietInterruptedPendingImport('forced-colors',{forcedColors:'active'},{forcedColors:'none'});
   await noScript();
   await directStartupFailure('engine-failure');
   await directStartupFailure('module-failure');

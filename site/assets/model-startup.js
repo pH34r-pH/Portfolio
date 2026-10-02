@@ -188,10 +188,13 @@ export class ModelStartup {
     this.lastTime = null;
   }
 
-  suspend() {
+  suspend({ invalidatePendingStart = false } = {}) {
     if (this.terminal) return;
     this.persist();
     this.stop();
+    // Quiet-mode fallback invalidates the controller generation. Let its stale
+    // loader settle without retaining ownership of a later resumed attempt.
+    if (invalidatePendingStart) this.startPromise = null;
   }
 
   resumeFromBFCache() {
@@ -223,7 +226,7 @@ export class ModelStartup {
     if (quiet === this.quiet || this.terminal) return;
     this.quiet = quiet;
     if (quiet) {
-      this.suspend();
+      this.suspend({ invalidatePendingStart: true });
       this.setPhase("quiet", "Static architecture display");
       this.onQuietChange?.(true);
       return;
