@@ -89,11 +89,15 @@ async function touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone) {
   return after;
 }
 async function contextExitWaitsForTransition(root,phone) {
+  const input=root.locator('[data-glass-panel="input"]');
+  await input.locator('input').focus();
   await root.evaluate(node=>node.machine.focus('representation'));
   await expect(root.locator('[data-glass-panel="inspect"]')).toHaveAttribute('data-context-active','true');
-  const input=root.locator('[data-glass-panel="input"]');
   await expect(input).toHaveAttribute('data-context-active','false');await expect(input).toHaveAttribute('aria-hidden','true');
-  assert.equal(await input.evaluate(panel=>panel.inert),false,'the exiting pane remains available until its visual transition completes');
+  assert.equal(await input.evaluate(panel=>panel.inert),true,'assistive technology and keyboard focus leave the exiting pane immediately');
+  await expect(root.locator('[data-machine-stage]')).toBeFocused();
+  const focusLeak=await input.evaluate(panel=>{panel.querySelector('input')?.focus();return panel.contains(document.activeElement);});
+  assert.equal(focusLeak,false,'focus cannot re-enter a pane during its visible exit transition');
   if(phone) {
     await expect(root.locator('[data-instrument="input"]')).toBeDisabled();
     await expect(root.locator('[data-instrument="output"]')).toBeDisabled();

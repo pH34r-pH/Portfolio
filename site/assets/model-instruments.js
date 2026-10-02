@@ -88,8 +88,8 @@ export class ModelInstruments {
   }
   startContextExit(panel) {
     panel.contextVisible = true;
-    panel.setAttribute('aria-hidden', 'true'); panel.style.pointerEvents = 'none';
     if (panel.contains(document.activeElement)) this.host.querySelector('[data-machine-stage]')?.focus({preventScroll:true});
+    panel.setAttribute('aria-hidden', 'true'); panel.inert = true; panel.style.pointerEvents = 'none';
     const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
       const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
     });
