@@ -1,8 +1,9 @@
-# Homepage transfer budget policy (draft)
+# Initial-page transfer budget policy (draft)
 
-This policy defines a homepage-only initial-navigation transfer warning and
-blocking threshold. Transfer size is Lighthouse's `resource-summary` total
-`transferSize` in decimal bytes for the initial navigation.
+This policy defines an initial-navigation transfer warning and blocking
+threshold for every Lighthouse-audited route and profile. Transfer size is
+Lighthouse's `resource-summary` total `transferSize` in decimal bytes for that
+page load.
 
 | Observed bytes | Result |
 |---:|---|
@@ -11,8 +12,9 @@ blocking threshold. Transfer size is Lighthouse's `resource-summary` total
 | 750,001 and above | Blocking error |
 
 Boundaries are strict: exactly 500,000 bytes passes, and exactly 750,000 bytes
-warns without blocking. The policy is limited to `/`. It does not set an article
-or research-page total cap.
+warns without blocking. It applies equally to homepage, research, about, atlas,
+reproduce, article, and other routes whenever included in an audit manifest.
+No page class receives a separate total cap.
 
 ## Rationale and limits
 
@@ -22,20 +24,21 @@ bytes/second. That calculation covers payload serialization only. It excludes
 round-trip time, server response time, dependency scheduling, and device work;
 8 Mbit/s is not asserted to be an average or minimum connection speed.
 
-The comparison point is Dennis Snellenberg's portfolio, with three Lighthouse
+The comparison point is Dennis Snellenberg's portfolio homepage, with three Lighthouse
 cold runs per profile: mobile median 493,673 bytes (487,840–493,673), desktop
 670,488 bytes in each run. This is one peer and therefore limited evidence.
 The exact PR91 homepage bundle measured 196,215 bytes on mobile and 271,111
-bytes on desktop in the existing Lighthouse profiles. In a separate bounded
-mobile 8 Mbit/s profile, three runs each measured 196,215 bytes; performance
-scores were 0.98–0.99, accessibility 1.00, LCP 2,107–2,151 ms, TBT 61–93 ms,
-and CLS 0.00155. The study records the setup, raw reports, and caveats in
+bytes on desktop in the Lighthouse profiles. Other audited routes retain their
+own observations in the study, with no substitution of homepage measurements.
+In a separate bounded mobile 8 Mbit/s profile, three runs each measured
+196,215 bytes; performance scores were 0.98–0.99, accessibility 1.00, LCP
+2,107–2,151 ms, TBT 61–93 ms, and CLS 0.00155. The study records setup, raw
+reports, and caveats in
 [`performance-budget-study.md`](performance-budget-study.md).
 
 The 750,000-byte blocking boundary leaves 250,000 bytes of warning headroom
-above the design target. It is a policy choice for review, not a peer-derived
-performance claim. The separate 50,000-byte script and stylesheet limits stay
-in force.
+above the design target. It is a policy choice, not a peer-derived performance
+claim.
 
 ## Independent quality gates
 
@@ -48,8 +51,11 @@ performance observations.
 
 ## Configuration behavior
 
-`lighthouserc.cjs` has one `resource-summary:total:size` assertion with a
-750,000-byte maximum. A separate postprocessor emits at most one warning or
-blocking annotation per Lighthouse report, avoiding duplicate Lighthouse
-assertion keys. Boundary behavior is covered by
+The postprocessor evaluates every report from mobile and desktop LHCI
+manifests. CI currently audits `/`, `/about/`, `/atlas/`, `/reproduce/`, and
+`/research/`, three cold Lighthouse runs per route and profile. The manifests
+and full JSON reports are retained as a 30-day workflow artifact, including on
+failed audits. The checker emits at most one policy annotation per report.
+Script and stylesheet sizes remain available as resource-summary diagnostics
+in raw reports and are not hard byte gates. Boundary behavior is covered by
 `scripts/test-lighthouse-transfer-budget.mjs`.

@@ -26,37 +26,54 @@ export function totalTransferBytes(lhr) {
   return total.transferSize;
 }
 
+export function validateLighthouseValidity(lhr) {
+  if (lhr?.runtimeError) return `Lighthouse runtime error: ${lhr.runtimeError.message ?? lhr.runtimeError.code ?? 'unknown error'}`;
+  if (typeof lhr?.categories?.performance?.score !== 'number' || !Number.isFinite(lhr.categories.performance.score)) {
+    return 'Lighthouse performance score is unavailable';
+  }
+  const lcp = lhr?.audits?.['largest-contentful-paint']?.numericValue;
+  if (typeof lcp !== 'number' || !Number.isFinite(lcp)) return 'Largest Contentful Paint is unavailable (NO_LCP or invalid navigation)';
+  return null;
+}
+
 function escapeAnnotation(value) {
   return String(value).replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A');
 }
 
 async function main() {
-  const index = process.argv.indexOf('--dir');
-  const reportDir = path.resolve(index >= 0 ? process.argv[index + 1] : 'lighthouse-results');
-  if (index >= 0 && !process.argv[index + 1]) throw new Error('--dir requires a directory');
-  const manifestPath = path.join(reportDir, 'manifest.json');
-  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
-  if (!Array.isArray(manifest) || manifest.length === 0) throw new Error(`No Lighthouse reports in ${manifestPath}`);
-
+  const dirs = process.argv.flatMap((value, index) => value === '--dir' && process.argv[index + 1] ? [path.resolve(process.argv[index + 1])] : []);
+  if (process.argv.includes('--dir') && dirs.length !== process.argv.filter((value) => value === '--dir').length) throw new Error('--dir requires a directory');
+  if (dirs.length === 0) dirs.push(path.resolve('lighthouse-results'));
   const findings = [];
-  for (const entry of manifest) {
-    if (typeof entry.jsonPath !== 'string') throw new Error('Lighthouse manifest entry has no jsonPath');
-    const reportPath = path.resolve(entry.jsonPath);
-    const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
-    const bytes = totalTransferBytes(lhr);
-    findings.push({ url: entry.url ?? lhr.finalDisplayedUrl ?? lhr.finalUrl, bytes, ...classifyTransferBytes(bytes) });
+  for (const reportDir of dirs) {
+    const manifestPath = path.join(reportDir, 'manifest.json');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    if (!Array.isArray(manifest) || manifest.length === 0) throw new Error(`No Lighthouse reports in ${manifestPath}`);
+    for (const entry of manifest) {
+      if (typeof entry.jsonPath !== 'string') throw new Error('Lighthouse manifest entry has no jsonPath');
+      const reportPath = path.resolve(entry.jsonPath);
+      const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
+      const bytes = totalTransferBytes(lhr);
+      findings.push({ url: entry.url ?? lhr.finalDisplayedUrl ?? lhr.finalUrl, profile: reportDir.endsWith('-desktop') ? 'desktop' : 'mobile', bytes, invalidReason: validateLighthouseValidity(lhr), ...classifyTransferBytes(bytes) });
+    }
   }
 
   for (const finding of findings) {
+    if (finding.invalidReason) {
+      const message = `Invalid Lighthouse ${finding.profile} observation for ${finding.url}: ${finding.invalidReason}.`;
+      process.stderr.write(`::error::${escapeAnnotation(message)}\n`);
+      process.stderr.write(`ERROR: ${message}\n`);
+    }
     if (finding.severity === 'pass') continue;
-    const message = `Lighthouse total initial-navigation transfer ${finding.bytes} bytes for ${finding.url}; ${finding.severity === 'warning' ? 'warn above' : 'block above'} ${finding.severity === 'warning' ? WARNING_BYTES : ERROR_BYTES} bytes (decimal kB).`;
+    const message = `Lighthouse ${finding.profile} initial-navigation transfer ${finding.bytes} bytes for ${finding.url}; ${finding.severity === 'warning' ? 'warn above' : 'block above'} ${finding.severity === 'warning' ? WARNING_BYTES : ERROR_BYTES} bytes (decimal bytes).`;
     process.stderr.write(`::${finding.severity}::${escapeAnnotation(message)}\n`);
     process.stderr.write(`${finding.severity.toUpperCase()}: ${message}\n`);
   }
 
   const blocked = findings.filter((finding) => finding.severity === 'error');
-  process.stdout.write(`Checked ${findings.length} Lighthouse report(s); ${findings.filter((x) => x.severity === 'warning').length} warning(s), ${blocked.length} blocking result(s).\n`);
-  if (blocked.length) process.exitCode = 1;
+  const invalid = findings.filter((finding) => finding.invalidReason);
+  process.stdout.write(`Checked ${findings.length} Lighthouse report(s); ${findings.filter((x) => x.severity === 'warning').length} warning(s), ${blocked.length} transfer-blocking result(s), ${invalid.length} invalid result(s).\n`);
+  if (blocked.length || invalid.length) process.exitCode = 1;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {

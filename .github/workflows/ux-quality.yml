@@ -46,6 +46,7 @@ jobs:
           node --check site/assets/appearance.js
           node --check site/assets/article-runtime.js
           node scripts/test-article-runtime.mjs
+          node scripts/test-lighthouse-transfer-budget.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/appearance-audit.mjs
@@ -58,8 +59,57 @@ jobs:
           path: ux-screenshots/
           if-no-files-found: error
           retention-days: 3
-      - name: Enforce Lighthouse budgets
-        run: npx lhci autorun --config=./lighthouserc.cjs
+      - name: Enforce Lighthouse budgets (mobile and desktop)
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -f lhci-server.log
+          node scripts/serve-lhci.mjs site > lhci-server.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
+          port=''
+          ready=false
+          for _ in {1..30}; do
+            port="$(sed -n 's/^PORT=//p' lhci-server.log | tail -n 1)"
+            if [[ "$port" =~ ^[0-9]+$ ]] && \
+              curl -fsS "http://127.0.0.1:$port/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/about/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/atlas/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/reproduce/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/research/" >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat lhci-server.log
+            echo 'Owned Lighthouse server did not become ready for every audited route.' >&2
+            exit 1
+          fi
+          export PORTFOLIO_LHCI_BASE_URL="http://127.0.0.1:$port"
+          status=0
+          npx lhci autorun --config=./lighthouserc.cjs || status=$?
+          desktop_status=0
+          npx lhci autorun --config=./lighthouserc.desktop.cjs || desktop_status=$?
+          if [ "$status" -ne 0 ] || [ "$desktop_status" -ne 0 ]; then
+            echo "LHCI failures: mobile=$status desktop=$desktop_status" >&2
+            exit 1
+          fi
+      - name: Check initial-page transfer policy
+        if: always()
+        run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
+      - name: Retain raw Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports-${{ github.sha }}
+          path: |
+            lighthouse-results/
+            lighthouse-results-desktop/
+            lhci-server.log
+          if-no-files-found: warn
+          retention-days: 30
       - name: Summarize public source qualification
         shell: bash
         run: |

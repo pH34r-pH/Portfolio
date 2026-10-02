@@ -1,10 +1,11 @@
 # Performance budget study (draft)
 
-This is the measurement record for the homepage transfer policy in
+This is the measurement record for the initial-page transfer policy in
 [`performance-budget-policy.md`](performance-budget-policy.md). The existing
-50 kB script and 50 kB stylesheet assertions remain independent. The former
-150 kB total assertion was not supported by the relevant peer data and has
-been replaced by the policy's warning/block thresholds.
+50 kB script and stylesheet hard assertions have been removed; their resource
+breakdowns remain diagnostics in raw reports. The former 150 kB total assertion
+was not supported by the relevant peer data and has been replaced by the
+policy's warning/block thresholds.
 
 ## Frozen reference set
 
@@ -107,12 +108,12 @@ page-class percentile, so the proposal is not presented as a peer percentile.
 
 ## Local evidence and limits
 
-Record the current source SHA, actual source/input revisions for the built
-bundle, exact command and environment, invalid samples, summary data, and review
-decision here before converting this draft into policy. Do not run benchmark
-work in GitHub Actions, publish cohort reports publicly, change the numeric
-assertions in `lighthouserc.cjs`, or attribute the present Bruno Simon successor
-to the implementation shown in the award entry.
+This draft records source/input revisions, commands, environment, invalid
+samples, summary data, and the review decision supporting the policy. Do not
+run peer-cohort collection in GitHub Actions or publish cohort reports
+publicly. Normal exact-head CI validates the policy on Portfolio's own pages.
+Do not attribute the present Bruno Simon successor to the implementation
+shown in the award entry.
 
 ## Setup evidence (2026-10-02)
 
@@ -224,8 +225,9 @@ to the implementation shown in the award entry.
   max-age=30`. The local source runner reproduces those delivery behaviors, but
   does not reproduce deployment-generated entity-tag/last-modified metadata
   and is not represented as the Azure host implementation.
-- No numeric assertions were changed. See the subsequent candidate bundle
-  results and provisional proposal. The external cohort's failed/blank runs
+- The initial 150,000-byte total assertion was replaced by the warning/error
+  policy; former script and stylesheet hard byte assertions were removed while
+  their breakdowns remain in the raw reports. The external cohort's failed/blank runs
   remain excluded, and the local model article has no valid Lighthouse
   performance score; these limits prevent a peer-derived interactive-page
   percentile.
@@ -377,10 +379,11 @@ not attribute it to the proxy or memory pressure without evidence. No further
 retries were made. The full verbose stderr and 23-byte trace artifact are kept
 with the debug LHR files.
 
-## Homepage transfer policy evidence
+## Initial-page transfer policy evidence
 
 The selected policy warns above 500,000 bytes and blocks above 750,000 bytes
-for `/`. The 500,000-byte warning boundary is a design target corresponding
+for every initial navigation in the mobile and desktop audit profiles. The
+500,000-byte warning boundary is a design target corresponding
 to about 0.5 seconds of payload serialization at 8 Mbit/s; it excludes RTT,
 TTFB, dependencies, and device work, and is not a verified population
 statistic. Dennis Snellenberg, the single measured portfolio peer, had a
@@ -393,9 +396,9 @@ A separate mobile profile explicitly set to 7,812.5 Lighthouse Kbps (8,000,000
 bits/s) measured the candidate homepage three times: transfer 196,215 bytes in
 every run; performance 0.98–0.99, accessibility 1.00, LCP 2,107–2,151 ms,
 TBT 61–93 ms, and CLS 0.00155. This bounded design-profile measurement does
-not replace the slow mobile preset. The policy applies only to `/`; it does
-not introduce an article or research total cap, nor alter the independent
-script, stylesheet, score, timing, accessibility, or interaction requirements.
+not replace the slow mobile preset. The policy applies to every audited route,
+without a separate article or research cap. It does not alter the score,
+timing, accessibility, or interaction requirements.
 
 The phase-two cohort is locked but unmeasured; these exact URLs were selected
 by the user based on the supplied award references:

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { classifyTransferBytes, totalTransferBytes, WARNING_BYTES, ERROR_BYTES } from './lighthouse-transfer-budget.mjs';
+import { classifyTransferBytes, totalTransferBytes, validateLighthouseValidity, WARNING_BYTES, ERROR_BYTES } from './lighthouse-transfer-budget.mjs';
 
 assert.equal(WARNING_BYTES, 500_000);
 assert.equal(ERROR_BYTES, 750_000);
@@ -22,5 +22,11 @@ assert.throws(() => totalTransferBytes({ audits: {} }), /missing resource-summar
 assert.throws(() => totalTransferBytes({ audits: { 'resource-summary': { details: { items: [] } } } }), /missing a valid total transferSize/);
 assert.throws(() => classifyTransferBytes(-1), /non-negative integer/);
 assert.throws(() => classifyTransferBytes(1.5), /non-negative integer/);
+
+const validLhr = { categories: { performance: { score: 0.99 } }, audits: { 'largest-contentful-paint': { numericValue: 1_500 } } };
+assert.equal(validateLighthouseValidity(validLhr), null);
+assert.match(validateLighthouseValidity({ categories: { performance: { score: null } }, audits: { 'largest-contentful-paint': { numericValue: null } } }), /performance score is unavailable/);
+assert.match(validateLighthouseValidity({ ...validLhr, audits: { 'largest-contentful-paint': { numericValue: null } } }), /NO_LCP/);
+assert.match(validateLighthouseValidity({ ...validLhr, runtimeError: { code: 'NO_LCP' } }), /runtime error/);
 
 process.stdout.write('Lighthouse transfer-budget boundary tests passed.\n');
