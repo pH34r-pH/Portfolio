@@ -160,12 +160,52 @@ async function selectOutputOnPhone(root) {
 async function contextReversalKeepsTabsValid(page,root,phone) {
   await page.waitForTimeout(120);await reverseContextToAll(root);
   const input=root.locator('[data-glass-panel="input"]');await expect(input).not.toHaveAttribute('inert','');
+  await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
   const state=await diagnostics(root);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.visible).length)
     .toBe(phone&&state.glass.mode==='spatial'?1:phone?0:3);
   if(phone)await selectOutputOnPhone(root);
   await expect.poll(()=>input.evaluate(panel=>panel.inert)).toBe(false);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.contextVisible!==false).length).toBe(3);
+}
+async function glassContextSettled(root,checkGpu=true) {
+  return root.evaluate((node,checkGpu)=>{
+    const scene=node.machineController.scene,glass=scene?.glass;if(!scene||!glass)return false;
+    return scene.glassAnimationRaf===0&&!glass.hasContextAnimation()&&glass.panels.every(panel=>{
+      const active=panel.node.dataset.contextActive==='true',expected=active?glass.material.opacity:0;
+      return panel.node.contextAnimating===false&&panel.node.contextVisible===active
+        &&(!checkGpu||(Math.abs(panel.mesh.material.opacity-expected)<1e-6
+        &&Math.abs(panel.trim.material.opacity-glass.trimMaterial.opacity*(active?1:0))<1e-6))
+        &&panel.node.inert===!active;
+    });
+  },checkGpu);
+}
+async function entryWithoutTransitionEvent(root) {
+  const input=root.locator('[data-glass-panel="input"]');
+  await root.evaluate(node=>node.machine.focus('representation'));
+  await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+  await input.evaluate(panel=>panel.style.transitionDuration='0ms');
+  await root.evaluate(node=>node.machine.focus('all'));
+  await expect.poll(()=>glassContextSettled(root),{timeout:3000}).toBe(true);
+  await input.evaluate(panel=>panel.style.transitionDuration='');
+}
+async function offscreenContextPause(page,root) {
+  const initial=await root.evaluate(node=>node.machineController.visible);
+  assert.equal(initial,true,'model starts visible for offscreen context regression');
+  const spacer=await page.evaluate(()=>{const node=document.createElement('div');node.dataset.glassAuditSpacer='';node.style.height='150vh';document.body.append(node);return true;});
+  assert.equal(spacer,true);
+  try {
+    await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+    await expect.poll(()=>root.evaluate(node=>node.machineController.visible),{timeout:5000}).toBe(false);
+    await root.evaluate(node=>node.machine.focus('consumer'));
+    const pending=await root.evaluate(node=>node.machineController.scene.glassAnimationRaf);
+    assert.equal(pending,0,'context transition does not schedule renderer work while the model is offscreen');
+    await expect.poll(()=>glassContextSettled(root,false),{timeout:3000}).toBe(true);
+    await root.locator('[data-machine-stage]').evaluate(node=>node.scrollIntoView({block:'center'}));
+    await expect.poll(()=>root.evaluate(node=>node.machineController.visible),{timeout:5000}).toBe(true);
+    await root.evaluate(node=>node.machine.focus('all'));
+    await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+  } finally {await page.locator('[data-glass-audit-spacer]').evaluate(node=>node.remove());}
 }
 async function nativeInputSelection(page,root,cdp) {
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});
@@ -243,6 +283,8 @@ async function independentPaneState(page,root,phone) {
     await touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone);
     await contextExitWaitsForTransition(page,root,phone);
     await contextReversalKeepsTabsValid(page,root,phone);
+    await entryWithoutTransitionEvent(root);
+    await offscreenContextPause(page,root);
     await realPointerTextSelection(page,root,phone);
     await nativeInputSelection(page,root,cdp);
     if(!phone)await deepZoomIsFinite(root);
