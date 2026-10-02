@@ -54,6 +54,7 @@ export class MachineScene {
     const Screens = this.digital ? HomepageScreens : SharedGlass;
     this.glass = new Screens(T, this.scene, this.renderer, instruments);
     this.glass.setQuality(this.quality.effective); instruments.quality(this.quality.effective);
+    this.fitGeometry = this.collectFitGeometry();
     this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
     this.canvas.addEventListener("webglcontextlost", this.contextLost);
@@ -114,14 +115,14 @@ export class MachineScene {
     // Native DPR is retained unless it exceeds the actual GL target/viewport limit.
     this.renderer.setPixelRatio(this.pixelRatio(width,height));
     this.renderer.transmissionResolutionScale = 1;
-    this.renderer.setSize(width, height, false);this.configureView(width,height);
-    this.poseCamera(mobile() ? -.15 : -.5, mobile() ? .38 : .1, 1, {x:0,y:0});
+    this.renderer.setSize(width, height, false);
+    const view=this.configureView(width,height),phone=mobile(),yaw=phone?-.15:-.5,pitch=phone?.38:.1;
+    this.machine.rotation.set(0,0,0);this.machine.position.y=0;this.machine.scale.setScalar(.9);this.machine.updateMatrixWorld(true);
+    this.distance=this.fitGraphDistance(width,height,yaw,pitch,view.fov);
+    this.poseCamera(yaw,pitch,1,{x:0,y:0});
     const stage = this.canvas.parentElement;
     if (!this.digital) {this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;}
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
-    this.machine.rotation.set(0, 0, 0);
-    this.machine.position.y = 0; this.machine.scale.setScalar(.9);
-    this.updateCamera();
     this.render();
   }
   pixelRatio(width,height) {
@@ -136,11 +137,64 @@ export class MachineScene {
     if(this.phone!==phone){this.phone=phone;this.yaw=phone?-.15:-.5;this.pitch=phone?.38:.1;this.zoom=1;this.pan={x:0,y:0};this.depthView=null;}
     this.camera.aspect=width/height;
     const view=digitalView(this.camera.aspect,phone);
-    this.distance=view.distance;this.camera.fov=view.fov;this.camera.updateProjectionMatrix();
+    this.camera.fov=view.fov;this.camera.updateProjectionMatrix();return view;
   }
-  poseCamera(yaw, pitch, zoom, pan) {
-    const distance = this.distance / zoom;
-    this.camera.position.set(pan.x - Math.sin(yaw) * Math.cos(pitch) * distance, pan.y + Math.sin(pitch) * distance, Math.cos(yaw) * Math.cos(pitch) * distance);
+  collectFitGeometry() {
+    const nodes=[],routeControlPoints=[],contourVertices=[],carrierEnvelope=[],support=.13;
+    for(const node of GRAPH.nodes)for(const x of [-support,support])for(const y of [-support,support])for(const z of [-support,support])
+      nodes.push([node.position[0]+x,node.position[1]+y,node.position[2]+z]);
+    for(const edge of GRAPH.edges)routeControlPoints.push(...this.edgePoints(edge));
+    const contour=this.contours.geometry.attributes.position.array;
+    for(let index=0;index<contour.length;index+=3)contourVertices.push([contour[index],contour[index+1],contour[index+2]]);
+    for(const center of [[-6,0,.02],[-4.52,0,.02],[4.45,0,.02],[6,0,.02]])
+      for(const x of [-.13,.13])for(const y of [-.85,.85])for(const z of [-.14,.14])carrierEnvelope.push([center[0]+x,center[1]+y,center[2]+z]);
+    const groups={nodes,routeControlPoints,contourVertices,carrierEnvelope};
+    return {...groups,all:Object.values(groups).flat(),routeCount:GRAPH.edges.length,
+      recurrenceCount:GRAPH.edges.filter(edge=>edge.kind.startsWith('shared block')).length};
+  }
+  graphFitsAt(distance,width,height,yaw,pitch,margin) {
+    this.poseCamera(yaw,pitch,1,{x:0,y:0},distance);this.machine.updateMatrixWorld(true);
+    const point=new this.T.Vector3(),limitX=width-margin,limitY=height-margin;
+    for(const [x,y,z] of this.fitGeometry.all) {
+      point.set(x,y,z).applyMatrix4(this.machine.matrixWorld).project(this.camera);
+      const screenX=(point.x+1)*width*.5,screenY=(1-point.y)*height*.5;
+      if(point.z < -1 || point.z > 1 || screenX < margin || screenX > limitX || screenY < margin || screenY > limitY)return false;
+    }
+    return true;
+  }
+  fitGraphDistance(width,height,yaw,pitch,fov) {
+    this.camera.aspect=width/height;this.camera.fov=fov;this.camera.updateProjectionMatrix();
+    const margin=Math.min(12,Math.max(4,Math.min(width,height)*.04));
+    let lower=.1,upper=1;
+    while(upper<72&&!this.graphFitsAt(upper,width,height,yaw,pitch,margin))upper*=1.5;
+    if(upper>=72&&!this.graphFitsAt(upper,width,height,yaw,pitch,margin))throw new Error('Complete graph geometry exceeds the supported camera fit range');
+    for(let iteration=0;iteration<22;iteration++) {
+      const middle=(lower+upper)*.5;
+      if(this.graphFitsAt(middle,width,height,yaw,pitch,margin))upper=middle;else lower=middle;
+    }
+    return upper*1.002;
+  }
+  projectBounds(points,width,height) {
+    const bounds={left:Infinity,right:-Infinity,top:Infinity,bottom:-Infinity,count:points.length},point=new this.T.Vector3();
+    for(const [x,y,z] of points) {
+      point.set(x,y,z).applyMatrix4(this.machine.matrixWorld).project(this.camera);
+      const screenX=(point.x+1)*width*.5,screenY=(1-point.y)*height*.5;
+      bounds.left=Math.min(bounds.left,screenX);bounds.right=Math.max(bounds.right,screenX);
+      bounds.top=Math.min(bounds.top,screenY);bounds.bottom=Math.max(bounds.bottom,screenY);
+    }
+    if(!points.length)Object.assign(bounds,{left:0,right:0,top:0,bottom:0});
+    return Object.fromEntries(Object.entries(bounds).map(([key,value])=>[key,key==='count'?value:+value.toFixed(3)]));
+  }
+  projectedGraphBounds(width,height) {
+    this.machine.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);
+    const components=Object.fromEntries(Object.entries(this.fitGeometry).filter(([key])=>!['all','routeCount','recurrenceCount'].includes(key))
+      .map(([key,points])=>[key,this.projectBounds(points,width,height)]));
+    return {viewport:{width,height},marginPx:Math.min(12,Math.max(4,Math.min(width,height)*.04)),routeCount:this.fitGeometry.routeCount,
+      recurrenceCount:this.fitGeometry.recurrenceCount,components,all:this.projectBounds(this.fitGeometry.all,width,height)};
+  }
+  poseCamera(yaw, pitch, zoom, pan, distance=this.distance) {
+    const viewDistance = distance / zoom;
+    this.camera.position.set(pan.x - Math.sin(yaw) * Math.cos(pitch) * viewDistance, pan.y + Math.sin(pitch) * viewDistance, Math.cos(yaw) * Math.cos(pitch) * viewDistance);
     this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld();
   }
   updateCamera() { this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
@@ -304,23 +358,20 @@ export class MachineScene {
   }
   powerView() {
     this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();
-    return {width:this.glass.viewport.width,height:this.glass.viewport.height,aspect:this.camera.aspect,fov:this.camera.fov,distance:this.distance,
-      landmarks:GRAPH.layers.map(nodes=>{const p=new this.T.Vector3(...GRAPH.nodes[nodes[0]].position).applyMatrix4(this.machine.matrixWorld).project(this.camera);return [(p.x+1)*this.glass.viewport.width*.5,(1-p.y)*this.glass.viewport.height*.5];})};
+    const width=this.glass.viewport.width,height=this.glass.viewport.height,geometryBounds=this.projectedGraphBounds(width,height);
+    return {width,height,aspect:this.camera.aspect,fov:this.camera.fov,distance:this.distance,geometryBounds,
+      landmarks:GRAPH.layers.map(nodes=>{const p=new this.T.Vector3(...GRAPH.nodes[nodes[0]].position).applyMatrix4(this.machine.matrixWorld).project(this.camera);return [(p.x+1)*width*.5,(1-p.y)*height*.5];})};
   }
   diagnostics() {
     const bounds=this.canvas.getBoundingClientRect(),context=this.renderer.getContext(),view=this.powerView();
-    const projected=GRAPH.nodes.map(node=>new this.T.Vector3(...node.position).applyMatrix4(this.machine.matrixWorld).project(this.camera));
-    const graphBounds={left:Math.min(...projected.map(point=>(point.x+1)*bounds.width*.5)),
-      right:Math.max(...projected.map(point=>(point.x+1)*bounds.width*.5)),
-      top:Math.min(...projected.map(point=>(1-point.y)*bounds.height*.5)),
-      bottom:Math.max(...projected.map(point=>(1-point.y)*bounds.height*.5))};
+    const graphBounds=view.geometryBounds.all;
     return {nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
       drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
       transmissionScale:this.renderer.transmissionResolutionScale,resolution:{cssWidth:bounds.width,cssHeight:bounds.height,
         nativeDPR:window.devicePixelRatio||1,effectiveDPR:this.renderer.getPixelRatio(),canvasWidth:this.canvas.width,canvasHeight:this.canvas.height,
         drawingBufferWidth:context.drawingBufferWidth,drawingBufferHeight:context.drawingBufferHeight,
         limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
-      landmarks:view.landmarks,graphBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
+      landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
         lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
       camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}},pointers:this.gestures.points.size};

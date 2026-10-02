@@ -53,7 +53,10 @@ jobs:
           node --check site/assets/model-light.js
           node --check site/assets/model-gestures.js
           node scripts/test-model-replay.mjs
+          node scripts/test-model-pixel-fidelity.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs
           node scripts/test-model-startup.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
           node --check site/assets/research-topology.js
           node --check site/assets/search.js
           node scripts/test-article-runtime.mjs
@@ -65,12 +68,16 @@ jobs:
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
           node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
+      - name: Prepare bounded V2 model visual review evidence
+        if: always()
+        shell: bash
+        run: node scripts/prepare-model-visual-evidence.mjs
       - name: Upload UX review screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ux-review-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ux-screenshots/
+          path: ux-screenshots/visual-v2/review/**
           if-no-files-found: error
           retention-days: 3
       - name: Enforce Lighthouse budgets

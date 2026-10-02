@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
-import {mkdir,writeFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import {articleHost} from './model-audit-host.mjs';
+import {fileURLToPath} from 'node:url';
 
 const sourceBase=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:45937';
 const publishedBase=process.env.PORTFOLIO_PUBLISHED_AUDIT_URL;
@@ -9,10 +11,46 @@ const out=process.env.MODEL_VISUAL_EVIDENCE_DIR||'ux-screenshots/visual-v2';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
 const viewports=[['phone-360-dpr1',360,800,1],['phone-412-dpr3',412,915,3],['desktop-dpr2',1440,1000,2]];
+const root=fileURLToPath(new URL('../',import.meta.url));
+const sharedAssetFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js',
+  'model-glass.js','model-hardware.js','model-light.js','model-gestures.js','model-machine.js','article-runtime.js',
+  'model-machine.css','model-glass.css','site.css','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
+let publishedAssetIdentity=null;
+
+async function verifyPublishedAssetIdentity(articleBase) {
+  const hashes={};
+  for(const file of sharedAssetFiles) {
+    const [sourceResponse,articleResponse]=await Promise.all([
+      fetch(`${sourceBase}/assets/${file}`),fetch(`${articleBase}/assets/${file}`)
+    ]);
+    assert.ok(sourceResponse.ok,`Source host did not serve /assets/${file}`);
+    assert.ok(articleResponse.ok,`Finished article host did not serve /assets/${file}`);
+    const [sourceBytes,articleBytes]=await Promise.all([sourceResponse.arrayBuffer(),articleResponse.arrayBuffer()]);
+    const sourceHash=createHash('sha256').update(Buffer.from(sourceBytes)).digest('hex');
+    const articleHash=createHash('sha256').update(Buffer.from(articleBytes)).digest('hex');
+    assert.equal(articleHash,sourceHash,`Finished article served a different /assets/${file}`);
+    assert.equal(sourceHash,createHash('sha256').update(await readFile(`${root}site/assets/${file}`)).digest('hex'),
+      `Local source checkout differs from served /assets/${file}`);
+    hashes[file]=sourceHash;
+  }
+  return hashes;
+}
 
 function assertHorizontal(xs,label) {
   assert.equal(xs.length,8,`${label}: eight graph layer landmarks`);
   assert.ok(xs.every((x,index)=>index===0||x>xs[index-1]),`${label}: input-to-output landmark order ${xs}`);
+}
+function assertGeometryFit(bounds,label) {
+  const {width,height}=bounds.viewport,margin=bounds.marginPx;
+  assert.equal(bounds.routeCount,3601,`${label}: full display route count`);
+  assert.equal(bounds.recurrenceCount,1,`${label}: shared-block recurrence route`);
+  assert.ok(bounds.components.routeControlPoints.count>3601,`${label}: route control vertices are included`);
+  for(const [part,box] of Object.entries({all:bounds.all,...bounds.components})) {
+    assert.ok(box.left>=margin-.25,`${label}/${part}: left bound ${box.left} misses ${margin}px margin`);
+    assert.ok(box.right<=width-margin+.25,`${label}/${part}: right bound ${box.right} misses ${margin}px margin`);
+    assert.ok(box.top>=margin-.25,`${label}/${part}: top bound ${box.top} misses ${margin}px margin`);
+    assert.ok(box.bottom<=height-margin+.25,`${label}/${part}: bottom bound ${box.bottom} misses ${margin}px margin`);
+  }
 }
 
 async function installFixture(page,host) {
@@ -42,10 +80,12 @@ async function inspectHost(host,viewport) {
   assert.ok(diagnostics.quality.sampleSupport.defaultFramebufferSamples>0);
   assert.equal(diagnostics.transmissionScale,1);
   const canvas=await root.locator('canvas').evaluate(node=>({rect:(()=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})(),width:node.width,height:node.height}));
+  assertGeometryFit(diagnostics.graphGeometryBounds,`${kind}/${name}`);
   const resolution=diagnostics.resolution,limits=diagnostics.quality.limits;
   assert.ok(Math.abs(resolution.effectiveDPR-dpr)<.01,`${kind}/${name}: effective DPR ${resolution.effectiveDPR} != ${dpr}`);
   assert.equal(canvas.width,resolution.drawingBufferWidth);assert.equal(canvas.height,resolution.drawingBufferHeight);
-  assert.equal(canvas.width,Math.round(canvas.rect.width*dpr));assert.equal(canvas.height,Math.round(canvas.rect.height*dpr));
+  assert.ok(Math.abs(canvas.width-Math.round(canvas.rect.width*dpr))<=1,`${kind}/${name}: CSS-to-buffer width rounding`);
+  assert.ok(Math.abs(canvas.height-Math.round(canvas.rect.height*dpr))<=1,`${kind}/${name}: CSS-to-buffer height rounding`);
   assert.ok(canvas.width<=limits.maxTargetDimension&&canvas.height<=limits.maxTargetDimension);
   const transmissivePanels=diagnostics.glass.visible>0&&diagnostics.glass.material.transmission>0;
   if(transmissivePanels) {
@@ -102,9 +142,11 @@ try {
   const sourceArticle=await articleHost(sourceBase);
   hosts.push({kind:'article-fixture',base:sourceBase,url:sourceArticle.url.replace(sourceBase,''),html:sourceArticle.html});
   if(publishedBase) {
+    publishedAssetIdentity=await verifyPublishedAssetIdentity(publishedBase);
     const article=await articleHost(publishedBase);
     assert.equal(article.kind,'published-article','A fixture is not a finished MyST publication');
-    hosts.push({kind:'published-myst-article',base:publishedBase,url:article.url.replace(publishedBase,'')});
+    hosts.push({kind:'published-myst-article',base:publishedBase,url:article.url.replace(publishedBase,''),
+      slug:article.slug,publicationSources:article.publicationSources});
   }
   for(const host of hosts)for(const viewport of viewports)evidence.push(await inspectHost(host,viewport));
   for(const host of hosts)await quietModes(host);
@@ -119,12 +161,21 @@ try {
     await page.waitForTimeout(120);
     const d=await root.evaluate(node=>node.machine.diagnostics());
     assertHorizontal(d.landmarks.map(([x])=>x),`resize-${width}`);
+    assertGeometryFit(d.graphGeometryBounds,`home resize-${width}x${d.graphGeometryBounds.viewport.height}`);
     assert.deepEqual(d.camera.pan,{x:0,y:0});
-    resize.push({width,rotation:'0,0,0',landmarks:d.landmarks});
+    resize.push({width,rotation:'0,0,0',landmarks:d.landmarks,graphGeometryBounds:d.graphGeometryBounds});
   }
   await root.screenshot({path:`${out}/home-resize-boundary.png`});
   evidence.push({kind:'responsive-boundary',widths:resize,screenshot:`${out}/home-resize-boundary.png`});
   await context.close();
+
+  // Headless Chromium cannot change browser chrome zoom. Emulate its layout result
+  // by preserving physical viewport pixels while reducing CSS size and increasing DPR.
+  const zoomProfiles=[[125,1152,720,2.5],[200,720,450,4],[250,576,360,5]];
+  for(const host of [hosts[0],hosts.at(-1)])for(const [percent,width,height,dpr] of zoomProfiles) {
+    const name=`zoom-equivalent-${percent}`;
+    evidence.push(await inspectHost(host,[name,width,height,dpr]));
+  }
 
   // No-JavaScript Home still selects a horizontal native poster, by CSS viewport.
   for(const [name,width,height,dpr] of [['phone',360,800,1],['desktop',1440,1000,2]]) {
@@ -143,9 +194,12 @@ try {
   }
   const result={schemaVersion:1,environment:{browser:'headless Chromium with SwiftShader software rendering',sourceBase,
     publishedBase:publishedBase||null,publishedArticleObserved:hosts.some(host=>host.kind==='published-myst-article'),
-    note:'Software-WebGL is a software observation, not physical Android or deployed GPU evidence.'},evidence};
+    publishedArticle:hosts.filter(host=>host.kind==='published-myst-article').map(host=>({slug:host.slug,publicationSources:host.publicationSources})),
+    publishedAssetIdentity,
+    browserZoomProfiles:zoomProfiles.map(([percent,width,height,dpr])=>({percent,width,height,dpr,method:'headless equivalent CSS viewport and native DPR; browser chrome zoom is unavailable'})),
+    note:'Software-WebGL is a software observation, not physical Android or deployed GPU evidence. Browser zoom is represented by equivalent CSS viewport and DPR metrics; headless Chromium browser chrome zoom is unavailable.'},evidence};
   await writeFile(`${out}/audit.json`,JSON.stringify(result,null,2)+'\n');
-  console.log(JSON.stringify({hosts:hosts.map(({kind,url})=>({kind,url})),profiles:evidence.length,
+  console.log(JSON.stringify({hosts:hosts.map(({kind,url,slug,publicationSources})=>({kind,url,slug,publicationSources})),profiles:evidence.length,
     publishedArticleObserved:result.environment.publishedArticleObserved,evidence:`${out}/audit.json`},null,2));
 } catch(error) {
   await writeFile(`${out}/audit.json`,JSON.stringify({failure:error.message,evidence},null,2)+'\n');throw error;
