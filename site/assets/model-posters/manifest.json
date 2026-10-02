@@ -4,9 +4,9 @@
   "capture": {
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
-    "sourceBase": "http://127.0.0.1:45941",
-    "sourceCommit": "2a7bae2080ac4e32a63cebaf884dc182218379c0",
-    "sourceTreeSha256": "1f36aed18039ee38d532b9666d571c5f1acc71e31806ad5b45ae4f73709875c6",
+    "sourceBase": "http://127.0.0.1:4173",
+    "sourceCommit": "7f82454daefaa54a76343d58e3f1719a509c2d4c",
+    "sourceTreeSha256": "d8738bc6ea783d776bb36cd93d90e53d42eb949250a5df7ef602e630dc2c11b7",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -18,7 +18,7 @@
     "servedSourceHashes": {
       "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
       "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-      "model-scene.js": "736031e0ab1d22569fe1ca87a71bc01af36127253a4e8efe4de9fff5b26e26c2",
+      "model-scene.js": "b9b661b7df967d4f68d92dcdffebabd41c64700f72274e7b4ae2810f0786096a",
       "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
       "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
       "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
@@ -68,7 +68,7 @@
   "sourceHashes": {
     "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
     "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-    "model-scene.js": "736031e0ab1d22569fe1ca87a71bc01af36127253a4e8efe4de9fff5b26e26c2",
+    "model-scene.js": "b9b661b7df967d4f68d92dcdffebabd41c64700f72274e7b4ae2810f0786096a",
     "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
     "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
     "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
