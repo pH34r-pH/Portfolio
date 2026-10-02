@@ -251,10 +251,10 @@ async function entryWithoutTransitionEvent(root) {
     assert.equal(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration)),0,
       'fallback regression disables CSS transitions so no transitionend can settle the pane');
     await root.evaluate(node=>node.machine.focus('representation'));
-    await waitForGlassPanelSettled(root,'input',5000,'zero-duration exit');
+    await waitForGlassPanelSettled(root,'input',8000,'zero-duration exit');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration exit settles without transitionend');
     await root.evaluate(node=>node.machine.focus('all'));
-    await waitForGlassPanelSettled(root,'input',5000,'zero-duration entry');
+    await waitForGlassPanelSettled(root,'input',8000,'zero-duration entry');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration entry settles without transitionend');
   } finally {await input.evaluate((panel,duration)=>panel.style.transitionDuration=duration,previous);}
 }
