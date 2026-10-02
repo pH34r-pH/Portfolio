@@ -16,6 +16,12 @@ const references = [
   { id: 'bruno-simon-successor', class: 'interactive-portfolio-successor', award: 'Current WebGPU/TSL successor; award attribution is to a different 2019 build', url: 'https://bruno-simon.com/' },
   { id: 'breakthrough-energy-2023', class: 'editorial-education-archive', award: '2024 Webby and People’s Voice, Science; archived 2023 State of Transition site', url: 'https://2023.breakthroughenergy.org/bill-foreword/' },
 ];
+const phase2References = [
+  { id: 'niccolo-miranda', class: 'interactive-portfolio', award: 'Awwwards Site of the Day (2021-11-18) and Developer Award', awardUrl: 'https://www.awwwards.com/sites/miranda-paper-portfolio', url: 'https://www.niccolomiranda.com/' },
+  { id: 'usestate-tomoya-okada', class: 'portfolio', award: 'CSSWinner Site of the Day (2024-09-24); award entry is Tomoya Okada Portfolio v5, current URL/title must be recorded as served', awardUrl: 'https://www.csswinner.com/details/tomoyaokada-portfolio-v5/18286', url: 'https://www.usestate.org/' },
+  { id: 'junji-yamazaki', class: 'portfolio', award: 'CSSWinner Site of the Day (2024-10-29)', awardUrl: 'https://www.csswinner.com/details/junji-yamazaki-portfolio/18346', url: 'https://junji-yamazaki.design/' },
+];
+const cohort = process.argv.includes('--phase2') ? phase2References : references;
 
 function arg(name, fallback) {
   const i = process.argv.indexOf(`--${name}`);
@@ -45,8 +51,9 @@ const environment = {
   trust: 'normal TLS validation; supply BROWSER_HOME containing the environment proxy CA in its isolated Chromium NSS database where required',
   order: 'round-major, then frozen reference order, then mode order; serial',
 };
+environment.cohort = process.argv.includes('--phase2') ? 'phase2-locked-three-portfolio-references' : 'phase1';
 await writeFile(path.join(output, 'environment.json'), `${JSON.stringify(environment, null, 2)}\n`);
-await writeFile(path.join(output, 'cohort.json'), `${JSON.stringify(references, null, 2)}\n`);
+await writeFile(path.join(output, 'cohort.json'), `${JSON.stringify(cohort, null, 2)}\n`);
 
 const summary = [];
 const surveyed = new Set();
@@ -94,7 +101,7 @@ async function captureHeaderSurvey(reference, mode, id) {
 }
 
 if (process.argv.includes('--headers-only')) {
-  for (const reference of references) {
+  for (const reference of cohort) {
     for (const mode of modes) {
       const id = `review-${reference.id}-${mode}`;
       const survey = await captureHeaderSurvey(reference, mode, id);
@@ -105,7 +112,7 @@ if (process.argv.includes('--headers-only')) {
 }
 
 for (let round = 1; round <= runs; round += 1) {
-  for (const reference of references) {
+  for (const reference of cohort) {
     for (const mode of modes) {
       const id = `${String(round).padStart(2, '0')}-${reference.id}-${mode}`;
       const reportPath = path.join(output, `${id}.report.json`);

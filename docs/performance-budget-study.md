@@ -1,11 +1,10 @@
 # Performance budget study (draft)
 
-This is a measurement study and proposed policy, not a budget change. The
-existing 50 kB script, 50 kB stylesheet, and 150 kB total Lighthouse
-resource-summary assertions are not yet justified by a reviewed peer
-comparison. The measured-candidate proposal at the end is explicitly
-provisional; keep the current configuration unchanged until the proposal and
-its limitations have been reviewed.
+This is the measurement record for the homepage transfer policy in
+[`performance-budget-policy.md`](performance-budget-policy.md). The existing
+50 kB script and 50 kB stylesheet assertions remain independent. The former
+150 kB total assertion was not supported by the relevant peer data and has
+been replaced by the policy's warning/block thresholds.
 
 ## Frozen reference set
 
@@ -280,52 +279,6 @@ and 5,369 repeat, with 26–27 of 27–28 requests served from cache. All captur
 browser navigations succeeded. These cache results are lab-local, under the
 declared 30-second cache policy.
 
-## Provisional budget proposal (not enacted)
-
-The 21 meaningful scored peer runs are retained regardless of accessibility
-score. Low peer accessibility is not a reason to discard useful performance
-evidence. Accessibility remains an independent Portfolio release requirement:
-automated Lighthouse accessibility 1.00 **and** manual WCAG review of keyboard
-operation, focus visibility/order, contrast, reduced motion, names/labels, and
-representative page states. User-facing behavior must also remain functionally
-correct, secure, and privacy-respecting. Do not lower Portfolio quality to
-match a weak reference.
-
-For review, keep the current strict quality floors (performance ≥.95, LCP
-≤2.5 s, TBT ≤200 ms, CLS ≤.1, best-practices/SEO ≥.95) and accessibility
-1.00-plus-manual checks. Add peer-relative payload ceilings by matching the
-Portfolio home/model-portfolio class to Dennis Snellenberg, the only eligible
-portfolio reference. Use that site's three-run median per profile as the
-target, rounded upward to the nearest 25 kB for transfer values and 50 kB for
-decoded values. This produces the following *review proposal*, not an enacted
-policy:
-
-| Portfolio profile / page class | Total transfer / decoded | Script transfer / decoded | Stylesheet transfer / decoded | Reference median before rounding |
-|---|---:|---:|---:|---|
-| Mobile, home or interactive portfolio | 500 / 1,300 kB | 275 / 800 kB | 25 / 150 kB | Dennis: total 493.7 / 1,261.5; JS 268.9 / 799.3; CSS 20.2 / 116.3 kB |
-| Desktop, home or interactive portfolio | 675 / 1,450 kB | 275 / 800 kB | 25 / 150 kB | Dennis: total 670.5 / 1,437.9; JS 268.9 / 799.3; CSS 20.1 / 116.3 kB |
-
-The rounding gives only a small allowance, not a broad arbitrary margin. Three
-measurements on one peer route do not establish a stable portfolio percentile;
-the 50/50/150 kB existing ceilings are below this peer target, but that alone
-does not prove they are wrong. In the measured candidate, home and research
-pages meet the proposed transfer/decoded figures and strict performance floors.
-The model-rich article does not: its script medians are 412.1 kB transferred /
-2,249.1 kB decoded on both profiles, and its CLS is .388 mobile / .260 desktop
-with no Lighthouse LCP. Preserve its visual state while optimizing/lazy-loading
-the heavy model runtime; do not waive the performance, CLS, or accessibility
-requirements. Educational references are not class-matched to a portfolio
-homepage, and the model article has no valid timing observation, so do not use
-them to fill this gap. Extend the quality-agnostic peer sample with more
-portfolio routes and obtain valid model-page LCP runs before treating the
-proposal as a stable class policy.
-
-This output is a concrete threshold proposal for review. No threshold file has
-been edited. Implementation should use profile- and route-class-specific
-assertions; the current one-URL LHCI configuration cannot express that matrix
-by itself. Keep decoded-size ceilings as a separate check if Lighthouse's
-resource-summary assertion only reports transfer bytes.
-
 The peer metric table below records medians and full three-run ranges for each
 eligible site/profile. Units: performance and accessibility are 0–1 scores;
 LCP/TBT are milliseconds; CLS is unitless. `—` means no valid score/metric, not
@@ -349,6 +302,113 @@ groups. NASA and Bruno have no valid observations; Breakthrough's captured
 intro shell has no page score and remains excluded despite some completed LHR
 processes. These exclusions avoid treating blank/failed states as cheap wins.
 
+## PR91 route and model diagnostics
+
+All Portfolio routes were evaluated from the finished PR91 publication bundle
+on localhost. The host uses an ephemeral `127.0.0.1` port per sample; paths are
+stable: `/`, `/research/`, `/articles/005-unit-hypersphere-anomaly/`, and
+`/articles/accessible-does-not-imply-used/`. The final route is the text-led
+article follow-up that crashed. Do not treat localhost response-time values as
+WAN or Azure measurements.
+
+The model-rich article's 412,138-byte script transfer / 2,249,135-byte decoded
+script total comes from these top contributing requests (Lighthouse request
+audit; byte counts are median-identical across the three runs per profile):
+
+| Request | Transfer bytes | Decoded bytes |
+|---|---:|---:|
+| `/assets/vendor/three@0.186.1/three.core.js` | 244,947 | 1,458,113 |
+| `/assets/vendor/three@0.186.1/three.module.js` | 121,617 | 662,772 |
+| `/assets/model-scene.js` | 9,142 | 30,581 |
+| `/assets/model-machine.js` | 7,848 | 25,523 |
+| `/assets/model-glass.js` | 4,808 | 15,340 |
+| `/assets/model-instruments.js` | 2,846 | 9,303 |
+| `/assets/model-topology.js` | 2,771 | 6,006 |
+| `/assets/article-runtime.js` | 2,483 | 7,408 |
+
+The first two requests account for 366,564 transfer bytes and 2,120,885
+decoded bytes. This is the model engine, specifically Three.js, not a different
+article library. The built article HTML includes `<script type="module"
+src="/assets/model-machine.js">`; its DOM has a `[data-model-machine]` root,
+no `data-model-start` button, and no `modelStartup` instance. In PR91's
+`model-machine.js`, the visible-root `IntersectionObserver` calls `boot()` when
+there is no startup controller; `boot()` dynamically imports the pinned Three.js
+module and scene. CDP recorded both Three.js module requests with the initiator
+stack in `model-machine.js`'s `boot()` (line 206 in the measured source). The
+diagnostic observed `data-render="webgl"`, `diagnostics.quality.effective` as
+`refraction`, and no start button. Thus Three.js loads and the model starts
+before any explicit user start action on this article route. This is specific
+to this generated article markup and does not infer startup behavior on the
+homepage.
+
+Lighthouse's `cumulative-layout-shift` audit supplies the numeric CLS values;
+the separate `cls-culprits-insight` audit identifies these nodes. Mobile's
+largest reported source is the inspect glass panel,
+`section.model-machine > div.machine-spatial-host > div.machine-instruments >
+section.machine-glass-panel` (`data-glass-panel="inspect"`), with per-shift
+scores .14134 and .12356 (the third run reports .12356). Desktop's largest
+source is `div#skip-to-frontmatter > section.model-machine >
+div.machine-spatial-host > div.machine-instruments`, score .259996; the audit
+also reports the article figure
+`figure#id-005-unit-hypersphere-anomaly-intuition`, score .06514. These are
+Lighthouse-attributed shift sources; they show which elements moved, not a
+proved underlying code cause.
+
+The model article has First Contentful Paint (1,514 ms in the saved-trace
+diagnostic) but Lighthouse returns `NO_LCP`. Its saved Chrome trace contains
+first-contentful-paint events and LCP invalidation events, but no LCP candidate
+event; Lighthouse's trace engine therefore throws `LanternError: NO_LCP`, which
+also prevents TBT synthesis. The instrumented Playwright run captured a
+rendered WebGL canvas, no `pageerror`, and no failed requests. Console output
+contained Chromium's software-WebGL fallback warning and two GPU `ReadPixels`
+stall warnings only. A canvas itself is not an LCP candidate, but these data do
+not establish that as the cause: there are text and image elements elsewhere
+in the document. Treat the absent LCP event as unresolved measurement behavior,
+not a zero and not evidence of speed.
+
+The text-led article diagnostic used one verbose Lighthouse capture with Chrome
+stderr logging enabled. Lighthouse records `TARGET_CRASHED`, then
+`Browser tab has unexpectedly crashed`; the runtime error is not an HTTP/proxy
+status. Its devtools log shows the document, styles, article SVGs, scripts, and
+font requests completed before the crash. No Chrome `FATAL`/renderer exit
+message was surfaced in captured stderr, and cgroup OOM counters remained zero.
+The underlying Chromium renderer termination reason is therefore unknown; do
+not attribute it to the proxy or memory pressure without evidence. No further
+retries were made. The full verbose stderr and 23-byte trace artifact are kept
+with the debug LHR files.
+
+## Homepage transfer policy evidence
+
+The selected policy warns above 500,000 bytes and blocks above 750,000 bytes
+for `/`. The 500,000-byte warning boundary is a design target corresponding
+to about 0.5 seconds of payload serialization at 8 Mbit/s; it excludes RTT,
+TTFB, dependencies, and device work, and is not a verified population
+statistic. Dennis Snellenberg, the single measured portfolio peer, had a
+three-run mobile median of 493,673 bytes (range 487,840–493,673) and desktop
+median 670,488 bytes (same value all three runs). The PR91 homepage measured
+196,215 bytes mobile and 271,111 bytes desktop under the slow mobile and
+desktop Lighthouse presets.
+
+A separate mobile profile explicitly set to 7,812.5 Lighthouse Kbps (8,000,000
+bits/s) measured the candidate homepage three times: transfer 196,215 bytes in
+every run; performance 0.98–0.99, accessibility 1.00, LCP 2,107–2,151 ms,
+TBT 61–93 ms, and CLS 0.00155. This bounded design-profile measurement does
+not replace the slow mobile preset. The policy applies only to `/`; it does
+not introduce an article or research total cap, nor alter the independent
+script, stylesheet, score, timing, accessibility, or interaction requirements.
+
+The phase-two cohort is locked but unmeasured; these exact URLs were selected
+by the user based on the supplied award references:
+
+| URL | Recognition source | Scope caveat |
+|---|---|---|
+| [niccolomiranda.com](https://www.niccolomiranda.com/) | [Awwwards SOTD 2021-11-18 and Developer Award](https://www.awwwards.com/sites/miranda-paper-portfolio) | Current URL as supplied. |
+| [usestate.org](https://www.usestate.org/) | [CSSWinner SOTD 2024-09-24, Tomoya Okada Portfolio v5](https://www.csswinner.com/details/tomoyaokada-portfolio-v5/18286) | Record served title/URL and note if current site differs from the award entry. |
+| [junji-yamazaki.design](https://junji-yamazaki.design/) | [CSSWinner SOTD 2024-10-29](https://www.csswinner.com/details/junji-yamazaki-portfolio/18346) | Current URL as supplied. |
+
+No phase-two sample has been run. The policy remains provisional, supported by
+one measured portfolio peer plus the explicit 8 Mbit/s design rationale.
+
 ## Raw artifact index
 
 - Peer raw LHR JSON, stderr, screenshots and summaries:
@@ -360,5 +420,11 @@ processes. These exclusions avoid treating blank/failed states as cheap wins.
   digest `e26fd1aa01e2a4ae1b4126bdf170469bb1f349dcb01f621394ea2a29f976c0fd`.
 - PR91 bundle LHR JSON, stderr, screenshots, exact response logs and cold/warm
   traces: `/tmp/portfolio-perf-study/pr91/bundle-measurements` (18 runs).
+- PR91 homepage 8 Mbit/s profile reports, stderr, screenshots, and response
+  logs: `/tmp/portfolio-perf-study/pr91/homepage-8mbps-mobile` (three mobile
+  and three desktop runs; 8 Mbit/s override is mobile only).
 - Text-article follow-up failures and retained logs:
   `/tmp/portfolio-perf-study/pr91/article-measurements` (6 browser crashes).
+- Saved Lighthouse trace and text-article Chrome diagnostic:
+  `/tmp/portfolio-perf-study/pr91/lcp-trace`; standalone CDP/model state and
+  console evidence are in `/tmp/portfolio-perf-study/pr91/model-article-diagnostic.json`.

@@ -22,6 +22,9 @@ const runsIndex = process.argv.indexOf('--runs');
 const runs = Number(runsIndex < 0 ? '3' : process.argv[runsIndex + 1]);
 const routeArgs = process.argv.flatMap((value, index) => value === '--route' && process.argv[index + 1] ? [process.argv[index + 1]] : []);
 const sourceSha = arg('source-sha', 'a92e93cf91efabf4357c67bedb5a9e19486a1c71');
+const profile = arg('profile', 'default');
+const throughputKbps = arg('throttling-download-throughput-kbps', null);
+const captureWarm = !process.argv.includes('--no-warm-cycles');
 const chrome = process.env.CHROME_PATH;
 const lighthouse = path.join(project, 'node_modules/.bin/lighthouse');
 const defaultRoutes = [
@@ -166,9 +169,10 @@ for (let round = 1; round <= runs; round += 1) {
       await fetch(`${owned.base}/_benchmark/phase?name=lighthouse-cold`);
       const args = [lighthouse, url, '--output=json', `--output-path=${reportPath}`, '--quiet', '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage'];
       if (mode === 'desktop') args.push('--preset=desktop');
+      if (throughputKbps !== null && mode === 'mobile') args.push(`--throttling.downloadThroughputKbps=${throughputKbps}`);
       const run = await runLighthouse(args);
       await writeFile(stderrPath, run.stderr ?? '');
-      const row = { round, id, fixture: root === path.resolve(path.join(project, 'site')) ? 'Portfolio tracked site/ source fixture' : 'assembled Portfolio publication bundle', sourceSha, route: route.path, mode, exitCode: run.status, error: run.error ?? null, report: path.basename(reportPath), stderr: path.basename(stderrPath), server: 'owned loopback server, OS-assigned port (0), readiness GET 200 before Lighthouse', cachePolicy: 'public, must-revalidate, max-age=30 (observed production)', compression: 'Brotli quality 5 for compressible resources, content-encoding br and Vary: Accept-Encoding (observed production)' };
+      const row = { round, id, fixture: root === path.resolve(path.join(project, 'site')) ? 'Portfolio tracked site/ source fixture' : 'assembled Portfolio publication bundle', sourceSha, route: route.path, mode, profile, throttlingDownloadThroughputKbps: mode === 'mobile' ? throughputKbps : null, exitCode: run.status, error: run.error ?? null, report: path.basename(reportPath), stderr: path.basename(stderrPath), server: 'owned loopback server, OS-assigned port (0), readiness GET 200 before Lighthouse', cachePolicy: 'public, must-revalidate, max-age=30 (observed production)', compression: 'Brotli quality 5 for compressible resources, content-encoding br and Vary: Accept-Encoding (observed production)', warmCyclesCaptured: captureWarm };
       if (run.status === 0) {
         try {
           const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
@@ -187,8 +191,10 @@ for (let round = 1; round <= runs; round += 1) {
           }
         } catch (error) { row.parseError = String(error); }
       }
-      await owned.phase('warm-browser-cold-and-repeat');
-      await captureWarmCycles(owned.base, route, mode, owned, id);
+      if (captureWarm) {
+        await owned.phase('warm-browser-cold-and-repeat');
+        await captureWarmCycles(owned.base, route, mode, owned, id);
+      }
       row.responseLog = `${id}.headers.json`;
       await writeFile(path.join(output, row.responseLog), `${JSON.stringify(owned.requests, null, 2)}\n`);
       await new Promise((resolve) => owned.server.close(resolve));
@@ -199,6 +205,6 @@ for (let round = 1; round <= runs; round += 1) {
   }
 }
 
-await writeFile(path.join(output, 'environment.json'), `${JSON.stringify({ startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), sampleCount: results.length, node: process.version, lighthouse: '12.6.1', playwright: '1.55.0', browser: process.env.BROWSER_VERSION ?? '140.0.7339.16', sourceHead: sourceSha, root, routes, inputs: { researchNotes: '965fb9186a0c1bb99cc3bd60b2e86668b0f12a91', theoremLibrary: 'cbc5eebbea115decdc27e2e32bb0dc79738a5947', compiler: '7bf2e42fe1882e3bed9828b43f4354523fd50bd5' }, bundleDigest: 'e26fd1aa01e2a4ae1b4126bdf170469bb1f349dcb01f621394ea2a29f976c0fd' }, null, 2)}\n`);
+await writeFile(path.join(output, 'environment.json'), `${JSON.stringify({ startedAt: new Date().toISOString(), finishedAt: new Date().toISOString(), sampleCount: results.length, node: process.version, lighthouse: '12.6.1', playwright: '1.55.0', browser: process.env.BROWSER_VERSION ?? '140.0.7339.16', profile, throttlingDownloadThroughputKbps: throughputKbps, warmCyclesCaptured: captureWarm, sourceHead: sourceSha, root, routes, inputs: { researchNotes: '965fb9186a0c1bb99cc3bd60b2e86668b0f12a91', theoremLibrary: 'cbc5eebbea115decdc27e2e32bb0dc79738a5947', compiler: '7bf2e42fe1882e3bed9828b43f4354523fd50bd5' }, bundleDigest: 'e26fd1aa01e2a4ae1b4126bdf170469bb1f349dcb01f621394ea2a29f976c0fd' }, null, 2)}\n`);
 const failed = results.filter((row) => row.exitCode !== 0 || row.parseError);
 process.exitCode = failed.length ? 1 : 0;
