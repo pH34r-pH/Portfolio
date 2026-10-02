@@ -341,14 +341,15 @@ async function auditNotebook(page, manifest, path, width) {
     assert.ok(sourceResponse.ok(), `${path}: preserved notebook source resolves (${sourceResponse.status()})`);
     const sourceNotebook = await sourceResponse.json();
     const expectedCode = sourceNotebook.cells.filter(cell => cell.cell_type === "code");
+    const expectedJupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\//, "");
     const labNavigation = page.waitForRequest(request => {
       if (!request.isNavigationRequest()) return false;
       const target = new URL(request.url());
-      return target.pathname === "/lab/lab/" && target.searchParams.get("path") === notebook.path;
+      return target.pathname === "/lab/lab/" && target.searchParams.get("path") === expectedJupyterPath;
     });
     await labLink.click();
     const request = await labNavigation;
-    assert.equal(new URL(request.url()).searchParams.get("path"), notebook.path,
+    assert.equal(new URL(request.url()).searchParams.get("path"), expectedJupyterPath,
       `${path}: clicked JupyterLite navigation requests the intended notebook path`);
     await page.waitForURL(url => url.pathname === "/lab/lab/");
     await expect(page.locator("#jupyter-config-data")).toHaveCount(1);
