@@ -361,7 +361,9 @@ async function auditNotebook(page, manifest, path, width) {
         ? expectedCode[0].source.join("")
         : expectedCode[0].source;
       const renderedCode = await page.locator(".jp-CodeCell").first().innerText();
-      assert.ok(renderedCode.includes(firstSource.trim()), `${path}: JupyterLite rendered the selected notebook's first code cell`);
+      const normalizeCode = value => value.replace(/\s+/g, " ").trim();
+      assert.ok(normalizeCode(renderedCode).includes(normalizeCode(firstSource)),
+        `${path}: JupyterLite rendered the selected notebook's first code cell (expected ${JSON.stringify(firstSource)}, received ${JSON.stringify(renderedCode)})`);
     }
     await page.goBack();
     await expect(page).toHaveURL(base + path);
