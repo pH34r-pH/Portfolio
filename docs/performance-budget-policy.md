@@ -42,14 +42,15 @@ claim.
 
 ## Independent quality gates
 
-The transfer warning and error do not replace the Lighthouse performance,
-accessibility, best-practices, LCP, CLS, or TBT gates. Automated accessibility
-must remain 1.00, alongside keyboard, focus, touch, and semantic interaction
-checks. SEO remains measured and emits an advisory warning below 0.95; it does
-not block the wider route matrix. The first expanded CI matrix found
-`/research/` at 0.90 SEO in all three runs on both profiles. Lighthouse timing
-or functional-invalid results such as `NO_LCP`, a failed navigation, or a
-crashed browser do not count as passing performance observations.
+The transfer warning and error do not replace Lighthouse performance,
+accessibility, best-practices, SEO, LCP, CLS, or TBT gates. Automated
+accessibility must remain 1.00, alongside keyboard, focus, touch, and semantic
+interaction checks. SEO must remain at least 0.95. The expanded CI matrix
+exposed a missing meta description on `/research/`; the page now describes its
+research articles, reproducible experiments, and evidence-led explanations.
+Lighthouse timing or functional-invalid results such as `NO_LCP`, a failed
+navigation, or a crashed browser do not count as passing performance
+observations.
 
 ## Configuration behavior
 
