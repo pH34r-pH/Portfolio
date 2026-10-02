@@ -319,49 +319,51 @@ async function auditArticle(page, context, manifest, path, width) {
   }
 }
 
+async function collectNotebookCellCoverage(panel, expected) {
+  const notebookNode = panel.querySelector(".jp-Notebook");
+  if (!notebookNode) return { expected: expected.length, matched: [], scrollStates: 0, scroller: "missing .jp-Notebook" };
+  let scroller = notebookNode;
+  while (scroller && scroller !== panel.parentElement) {
+    const style = getComputedStyle(scroller);
+    if (scroller.scrollHeight > scroller.clientHeight + 1 && /auto|scroll/.test(style.overflowY)) break;
+    scroller = scroller.parentElement;
+  }
+  if (!scroller || scroller === panel.parentElement) scroller = document.scrollingElement;
+  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  const step = Math.max(160, Math.floor(scroller.clientHeight * 0.7));
+  const positions = [];
+  for (let top = 0; top < maxScroll; top += step) positions.push(top);
+  positions.push(maxScroll);
+  const snapshots = [];
+  for (const top of [...new Set(positions)]) {
+    scroller.scrollTop = top;
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    snapshots.push([...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
+      type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
+      text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
+    })));
+  }
+  const normalize = value => value.replace(/\s+/g, " ").trim();
+  const matched = expected.map(cell => {
+    const source = normalize(cell.source);
+    if (cell.type === "code") {
+      return snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "code" && normalize(rendered.text).includes(source)));
+    }
+    const firstHeading = cell.source.split(/\r?\n/).find(line => line.trim())
+      ?.replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
+    return Boolean(firstHeading) && snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "markdown" && normalize(rendered.text).includes(normalize(firstHeading))));
+  });
+  return {
+    expected: expected.length,
+    matched,
+    scrollStates: snapshots.length,
+    renderedPerState: snapshots.map(snapshot => snapshot.length),
+    scroller: { tag: scroller.tagName, className: String(scroller.className || ""), clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight },
+  };
+}
+
 async function auditJupyterLabCells(page, expectedCells, path) {
-  const cellCoverage = await page.locator(".jp-NotebookPanel").evaluate(async (panel, expected) => {
-    const notebookNode = panel.querySelector(".jp-Notebook");
-    if (!notebookNode) return { expected: expected.length, matched: [], scrollStates: 0, scroller: "missing .jp-Notebook" };
-    let scroller = notebookNode;
-    while (scroller && scroller !== panel.parentElement) {
-      const style = getComputedStyle(scroller);
-      if (scroller.scrollHeight > scroller.clientHeight + 1 && /auto|scroll/.test(style.overflowY)) break;
-      scroller = scroller.parentElement;
-    }
-    if (!scroller || scroller === panel.parentElement) scroller = document.scrollingElement;
-    const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const step = Math.max(160, Math.floor(scroller.clientHeight * 0.7));
-    const positions = [];
-    for (let top = 0; top < maxScroll; top += step) positions.push(top);
-    positions.push(maxScroll);
-    const snapshots = [];
-    for (const top of [...new Set(positions)]) {
-      scroller.scrollTop = top;
-      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      snapshots.push([...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
-        type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
-        text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
-      })));
-    }
-    const normalize = value => value.replace(/\s+/g, " ").trim();
-    const matched = expected.map(cell => {
-      const source = normalize(cell.source);
-      if (cell.type === "code") {
-        return snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "code" && normalize(rendered.text).includes(source)));
-      }
-      const firstHeading = cell.source.split(/\r?\n/).find(line => line.trim())
-        ?.replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
-      return Boolean(firstHeading) && snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "markdown" && normalize(rendered.text).includes(normalize(firstHeading))));
-    });
-    return {
-      expected: expected.length,
-      matched,
-      scrollStates: snapshots.length,
-      renderedPerState: snapshots.map(snapshot => snapshot.length),
-      scroller: { tag: scroller.tagName, className: String(scroller.className || ""), clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight },
-    };
-  }, expectedCells);
+  const cellCoverage = await page.locator(".jp-NotebookPanel").evaluate(collectNotebookCellCoverage, expectedCells);
   console.log(`${path}: JupyterLite selected-notebook cell coverage ${cellCoverage.matched.filter(Boolean).length}/${cellCoverage.expected}; ${cellCoverage.scrollStates} scroll states; rendered ${JSON.stringify(cellCoverage.renderedPerState)}; scroller ${JSON.stringify(cellCoverage.scroller)}`);
   assert.equal(cellCoverage.matched.filter(Boolean).length, expectedCells.length, `${path}: exact selected notebook model cell count`);
   assert.ok(cellCoverage.matched.every(Boolean), `${path}: JupyterLite exposes every selected notebook cell source across the scrollable notebook`);
