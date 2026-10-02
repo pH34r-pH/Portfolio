@@ -102,10 +102,10 @@
     {
       "id": "external-experiment-catalog",
       "surfaces": ["external compiled experiment links", "external catalog download/export"],
-      "status": "uncovered",
+      "status": "automated-with-fixture-limit",
       "tests": ["interaction-audit.mjs"],
-      "assertions": ["Exact published external experiment link targets are checked without following them"],
-      "limits": ["Catalog download/export behavior is owned by experiments.tyharbin.com and is outside the local Portfolio origin; no live external transaction is part of these tests."]
+      "assertions": ["Exact compiled package link targets are checked in the article and evidence handoff", "Article-to-catalog navigation and Back are exercised against a locally intercepted fixture"],
+      "limits": ["The external catalog's actual package downloads/exports are not exercised; the test deliberately makes no live external transaction."]
     },
     {
       "id": "live-notebook-kernel",

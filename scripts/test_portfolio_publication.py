@@ -262,6 +262,8 @@ class ReaderPublicationTest(unittest.TestCase):
                                  "https://github.com/pH34r-pH/research-notes/blob/" + "a" * 40 +
                                  "/notebooks/illustrative_name.ipynb")
                 self.assertTrue(note.select_one("a[download]"))
+                self.assertEqual(page.select_one('a[href^="/lab/lab/"]')['href'],
+                                 '/lab/lab/?path=notebooks%2Fillustrative_name.ipynb')
                 self.assertEqual("Illustrative browser example" in text, kind == "illustrative")
                 if kind != "illustrative":
                     self.assertIn("execution status and scientific acceptance are not inferred", text)

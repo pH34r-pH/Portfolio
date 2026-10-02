@@ -201,6 +201,35 @@ async function auditPublishedArticleHistory(page, manifest) {
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
 }
 
+async function auditCompiledCatalogNavigation(page, context, article, path) {
+  const packagePath = `/experiments/${article.compiled_experiment.ref}/`;
+  const externalUrl = `https://experiments.tyharbin.com${packagePath}`;
+  const contentLink = page.locator(`article.myst-reader a[href="${externalUrl}"]`).first();
+  await expect(contentLink).toHaveCount(1);
+  await expect(page.locator(`aside[aria-label="Compiled experiment reference"] a[href="${externalUrl}"]`)).toHaveCount(1);
+  let intercepted = false;
+  const handler = async route => {
+    intercepted = route.request().url() === externalUrl;
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<!doctype html><html lang=\"en\"><title>Compiler destination fixture</title><body><h1>Compiler destination fixture</h1></body></html>",
+    });
+  };
+  await context.route("https://experiments.tyharbin.com/experiments/**", handler);
+  try {
+    await contentLink.click();
+    await expect(page).toHaveURL(externalUrl);
+    await expect(page.getByRole("heading", { name: "Compiler destination fixture" })).toBeVisible();
+    assert.equal(intercepted, true, "catalog navigation is served from the explicit local fixture");
+    await page.goBack();
+    await expect(page).toHaveURL(base + path);
+    await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+  } finally {
+    await context.unroute("https://experiments.tyharbin.com/experiments/**", handler);
+  }
+}
+
 async function auditWorklogDisclosures(page, width, path) {
   const evidence = page.locator(".compiled-experiment-evidence");
   if (!(await evidence.count())) return;
@@ -226,7 +255,7 @@ async function auditWorklogDisclosures(page, width, path) {
   }
 }
 
-async function auditArticle(page, manifest, path, width) {
+async function auditArticle(page, context, manifest, path, width) {
   const article = manifest.articles.find(item => item.url === path);
   assert.ok(article, `${path}: article must exist in the exact publication manifest`);
   await auditArticleLinks(page, manifest, path);
@@ -267,6 +296,9 @@ async function auditArticle(page, manifest, path, width) {
     const packageLink = 'a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]';
     await expect(page.locator('article.myst-reader').locator(packageLink)).toHaveCount(1);
     await expect(page.locator('aside[aria-label="Compiled experiment reference"]').locator(packageLink)).toHaveCount(1);
+    if (width === 1366 && article.compiled_experiment?.ref) {
+      await auditCompiledCatalogNavigation(page, context, article, path);
+    }
   }
   if (article.slug === "accessible-does-not-imply-used") {
     await expect(page.locator('a[href*="experiments.tyharbin.com/experiments/"]')).toHaveCount(0);
@@ -287,10 +319,18 @@ async function auditNotebook(page, manifest, path, width) {
   if (!notebook) return;
   const labLink = page.getByRole("link", { name: /Open in JupyterLite/ });
   const labHref = await labLink.getAttribute("href");
-  assert.ok(labHref?.startsWith("/lab/lab/index.html?path="), `${path}: notebook has a local JupyterLite link`);
-  const labResponse = await page.request.get(new URL(labHref, base).href);
-  assert.ok(labResponse.ok(), `${path}: JupyterLite shell route must resolve (${labResponse.status()})`);
-  assert.match(await labResponse.text(), /jupyter-config-data/, `${path}: JupyterLite shell includes its bootstrap config`);
+  assert.ok(labHref?.startsWith("/lab/lab/?path="), `${path}: notebook links to the slash-terminated JupyterLite app route`);
+  if (width === 1366) {
+    const labPage = await page.context().newPage();
+    try {
+      await labPage.goto(new URL(labHref, base).href, { waitUntil: "domcontentloaded" });
+      await expect(labPage.locator("#jupyter-config-data")).toHaveCount(1);
+      await expect(labPage.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
+      assert.ok(await labPage.locator(".jp-Cell").count() > 0, `${path}: JupyterLite bootstrapped the published notebook cells`);
+    } finally {
+      await labPage.close();
+    }
+  }
   if (width === 1366 && notebook.path) {
     const href = `/publication/notebooks/${encodeURIComponent(notebook.path.split("/").pop())}`;
     const link = page.getByRole("link", { name: "Download preserved notebook", exact: true });
@@ -352,7 +392,7 @@ async function auditRoute(page, context, width, path, manifest, errors) {
   await auditAccessibility(page, width, path);
   if (path === "/atlas/") await auditAtlasCompatibility(page);
   if (path.startsWith("/notebooks/")) await auditNotebook(page, manifest, path, width);
-  if (path.startsWith("/articles/")) await auditArticle(page, manifest, path, width);
+  if (path.startsWith("/articles/")) await auditArticle(page, context, manifest, path, width);
   if (path === "/research/") await auditResearch(page, manifest);
   if (path === "/research/") {
     await page.locator(".skip-link").focus();
