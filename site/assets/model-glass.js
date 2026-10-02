@@ -108,11 +108,17 @@ export class SharedGlass {
       panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
     }
     this.scene.updateMatrixWorld();
-    const key = `${this.layoutGeneration}:${this.instruments.active}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
+    const contextState = this.panels.map(panel => `${panel.id}:${panel.node.contextVisible}:${panel.node.dataset.contextActive}`).join(',');
+    const key = `${this.layoutGeneration}:${this.instruments.active}:${contextState}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
     if (key === this.poseKey) return; this.poseKey = key;
-    const visible = this.panels.filter(panel => !this.phone || panel.id === this.instruments.active);
+    const visible = this.panels.filter(panel => panel.node.contextVisible !== false
+      && (!this.phone || panel.id === this.instruments.active || panel.node.dataset.contextActive === 'false'));
     const zoomed = (visualViewport?.scale || 1) > 1.15;
-    const safe = !zoomed;
+    // The fit decision uses the pinned article pose, never the user's live
+    // camera pose. Camera gestures therefore cannot reflow article controls.
+    const safe = !zoomed && visible.every(panel => panel.projection.scale >= .94
+      && panel.projection.corners.every(([x, y]) => x >= 12 && x <= this.viewport.width - 12
+        && y >= 12 && y <= this.viewport.height - 12));
     this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
     for (const panel of this.panels) {
       panel.mesh.visible = panel.trim.visible = safe && visible.includes(panel);
@@ -134,7 +140,9 @@ export class SharedGlass {
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
-      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node?.dataset.contextActive !== 'false', cameraPinnedError:pinnedError(panel), corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible,
+        contextActive: panel.node?.dataset.contextActive !== 'false', contextVisible:panel.node?.contextVisible !== false,
+        cameraPinnedError:pinnedError(panel), corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
   dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

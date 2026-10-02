@@ -55,11 +55,15 @@ async function renderShot(page,root,path) {
 }
 async function motion(page,root,name,phone) {
   await root.evaluate(node=>node.machine.seek(145));const a=await diagnostics(root);
-  assert.equal(a.glass.mode,'spatial');assert.equal(a.glass.visible,phone?1:3);
-  const alignment=await align(root);await renderShot(page,root,`${out}/${name}-view-a.png`);
+  assert.ok(['spatial','flow'].includes(a.glass.mode));
+  assert.equal(a.glass.visible,a.glass.mode==='spatial'?(phone?1:3):0);
+  if(a.glass.mode==='spatial') for(const panel of a.glass.panels.filter(panel=>panel.visible))
+    assert.ok(panel.corners.every(([x,y])=>x>=12&&x<=a.resolution.cssWidth-12&&y>=12&&y<=a.resolution.cssHeight-12),
+      `${name} visible glass remains inside the pinned canvas bounds: ${JSON.stringify(panel.corners)}`);
+  const alignment=a.glass.mode==='spatial'?await align(root):[];await renderShot(page,root,`${out}/${name}-view-a.png`);
   await root.evaluate(node=>{for(let i=0;i<8;i++)node.machineController.cameraAction('right');});
   await root.locator('.machine-depth-view').focus();await page.keyboard.press('Enter');
-  const b=await diagnostics(root);assert.equal(b.glass.mode,'spatial');
+  const b=await diagnostics(root);assert.equal(b.glass.mode,a.glass.mode,'camera orbit does not change pinned layout fit mode');
   await expect(root.locator('.machine-depth-view')).toHaveAttribute('aria-pressed','true');
   await renderShot(page,root,`${out}/${name}-view-b.png`);
   const shifts=a.glass.panels.filter(panel=>panel.visible).map(panel=>{
@@ -71,50 +75,115 @@ async function motion(page,root,name,phone) {
   await page.keyboard.press('Enter');await expect(root.locator('.machine-depth-view')).toHaveAttribute('aria-pressed','false');
   return {a,b,alignment,shifts,graphShift};
 }
-async function independentPaneState(page,root,phone) {
-  const cdp=await page.context().newCDPSession(page), canvas=await root.locator('canvas').boundingBox();
-  const duration=await root.locator('[data-glass-panel]').first().evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration));
-  assert.ok(duration>=.7,'context highlight transitions use a longer ease-in/out');
-  const before=await root.evaluate(node=>({camera:node.machine.diagnostics().camera,panels:[...node.querySelectorAll('[data-glass-panel]')].map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()}))}));
+async function touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone) {
   await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:canvas.x+canvas.width*.5,y:canvas.y+canvas.height*.5}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:canvas.x+canvas.width*.62,y:canvas.y+canvas.height*.57}]});
   await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
   const after=await diagnostics(root);
   assert.ok(Math.abs(after.camera.yaw-before.camera.yaw)>.01||Math.abs(after.camera.pitch-before.camera.pitch)>.01,'touch orbit changes camera pose');
-  assert.equal(after.glass.mode,'spatial');assert.equal(after.glass.visible,phone?1:3);
+  assert.equal(after.glass.mode,before.glass.mode,'touch orbit cannot change the pinned layout fit decision');
+  assert.equal(after.glass.visible,before.glass.visible);
   assert.ok(after.glass.panels.filter(panel=>panel.visible).every(panel=>panel.cameraPinnedError<1e-6),'translucent backing meshes stay screen-pinned with their DOM panes');
   const panels=await root.locator('[data-glass-panel]').evaluateAll(nodes=>nodes.map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()})));
   for(const panel of before.panels){const next=panels.find(item=>item.id===panel.id);assert.ok(Math.abs(next.rect.x-panel.rect.x)<.6&&Math.abs(next.rect.y-panel.rect.y)<.6,`pane ${panel.id} moved during touch orbit`);}
+  return after;
+}
+async function contextExitWaitsForTransition(root,phone) {
   await root.evaluate(node=>node.machine.focus('representation'));
   await expect(root.locator('[data-glass-panel="inspect"]')).toHaveAttribute('data-context-active','true');
-  await expect(root.locator('[data-glass-panel="input"]')).toHaveAttribute('data-context-active','false');
-  await expect(root.locator('[data-glass-panel="input"]')).toHaveAttribute('inert','');
+  const input=root.locator('[data-glass-panel="input"]');
+  await expect(input).toHaveAttribute('data-context-active','false');await expect(input).toHaveAttribute('aria-hidden','true');
+  assert.equal(await input.evaluate(panel=>panel.inert),false,'the exiting pane remains available until its visual transition completes');
+  if(phone) {
+    await expect(root.locator('[data-instrument="input"]')).toBeDisabled();
+    await expect(root.locator('[data-instrument="output"]')).toBeDisabled();
+    await expect(root.locator('[data-instrument="inspect"]')).toBeEnabled();
+    const state=await diagnostics(root);assert.equal(state.glass.panels.filter(panel=>panel.visible).length,state.glass.mode==='spatial'?1:0);
+  }
+  await expect.poll(()=>input.evaluate(panel=>panel.contextVisible)).toBe(false);
+  await expect(input).toHaveAttribute('inert','');
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible).toBe(false);
+}
+async function contextReversalKeepsTabsValid(page,root,phone) {
   await page.waitForTimeout(120);
   await root.evaluate(node=>node.machine.focus('consumer'));
   await expect(root.locator('[data-glass-panel="output"]')).toHaveAttribute('data-context-active','true');
   await root.evaluate(node=>node.machine.focus('representation'));
-  await expect(root.locator('[data-glass-panel="inspect"]')).toHaveAttribute('data-context-active','true');
   await root.evaluate(node=>node.machine.focus('all'));
   await expect.poll(async()=>root.locator('[data-glass-panel="input"]').evaluate(panel=>getComputedStyle(panel).opacity)).toBe('1');
-  const zoom=async action=>root.evaluate((node,direction)=>direction>0?node.machineController.cameraAction('in'):node.machineController.cameraAction('out'),action);
-  if(!phone) {
-    for(let i=0;i<100;i++)await zoom(1);
-    let deep=await diagnostics(root);assert.ok(Number.isFinite(deep.camera.zoom)&&deep.camera.zoom>1.8);assert.equal(deep.glass.visible,3);
-    for(let i=0;i<200;i++)await zoom(-1);
-    deep=await diagnostics(root);assert.ok(Number.isFinite(deep.camera.zoom)&&deep.camera.zoom<.75);assert.equal(deep.glass.visible,3);
-    await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=true);
-    await root.locator('[data-camera="reset"]').click();assert.equal((await diagnostics(root)).camera.zoom,1);
-    await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=false);
+  const input=root.locator('[data-glass-panel="input"]');await expect(input).not.toHaveAttribute('inert','');
+  const state=await diagnostics(root);
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.visible).length)
+    .toBe(phone&&state.glass.mode==='spatial'?1:phone?0:3);
+  if(phone) {
+    await root.evaluate(()=>document.querySelector('[data-instrument="output"]').click());
+    assert.equal(await root.evaluate(node=>node.machineController.instruments.active),'output','an enabled mobile tab selects its context-visible instrument');
+    await expect(root.locator('[data-glass-panel="output"]')).toBeVisible();
+    const selected=await diagnostics(root);
+    assert.equal(selected.glass.panels.filter(panel=>panel.visible).length,selected.glass.mode==='spatial'?1:0,
+      'choosing Output never reveals an inactive-context panel');
   }
-  await cdp.detach();
+  await expect.poll(()=>input.evaluate(panel=>panel.inert)).toBe(false);
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.contextVisible!==false).length).toBe(3);
+}
+async function nativeInputSelection(page,root,cdp) {
+  await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});
+  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe('flow');
+  const textInput=root.locator('[data-glass-panel="input"] input');
+  await textInput.scrollIntoViewIfNeeded();await textInput.fill('pane selection stays native');
+  const inputBox=await textInput.boundingBox();assert.ok(inputBox?.width>0&&inputBox?.height>0,'article input remains laid out for text selection');
+  const before=await diagnostics(root);await textInput.selectText();
+  const selection=await textInput.evaluate(input=>({start:input.selectionStart,end:input.selectionEnd,value:input.value}));
+  assert.deepEqual(selection,{start:0,end:selection.value.length,value:'pane selection stays native'},'dragging input text performs native selection');
+  const after=await diagnostics(root);
+  assert.equal(after.camera.yaw,before.camera.yaw,'text selection does not orbit the camera');
+  assert.equal(after.camera.pitch,before.camera.pitch,'text selection does not orbit the camera');
+  await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});
+}
+async function deepZoomIsFinite(root) {
+  const zoom=direction=>root.evaluate((node,value)=>node.machineController.cameraAction(value>0?'in':'out'),direction);
+  for(let index=0;index<100;index++)await zoom(1);
+  const first=await diagnostics(root);assert.ok(Number.isFinite(first.camera.zoom)&&first.camera.zoom>1.8);
+  for(let index=0;index<200;index++)await zoom(-1);
+  const deep=await diagnostics(root);assert.ok(Number.isFinite(deep.camera.zoom)&&deep.camera.zoom<.75);
+  const extreme=await root.evaluate(node=>{
+    const scene=node.machineController.scene;scene.resetView();
+    const before={zoom:scene.zoom,position:scene.camera.position.toArray(),projection:scene.camera.projectionMatrix.elements.slice()};
+    scene.zoomByRatio(3e-307);
+    return {before,after:{zoom:scene.zoom,position:scene.camera.position.toArray(),projection:scene.camera.projectionMatrix.elements.slice(),inverse:scene.camera.matrixWorldInverse.elements.slice()}};
+  });
+  assert.ok([...extreme.after.position,...extreme.after.projection,...extreme.after.inverse].every(Number.isFinite),
+    'overflow-prone finite zoom input never leaves a non-finite camera projection');
+  if(extreme.after.zoom===extreme.before.zoom) {
+    assert.deepEqual(extreme.after.position,extreme.before.position,'invalid projection keeps the prior camera position');
+    assert.deepEqual(extreme.after.projection,extreme.before.projection,'invalid projection keeps the prior camera matrix');
+  }
+  await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=true);
+  await root.locator('[data-camera="reset"]').click();assert.equal((await diagnostics(root)).camera.zoom,1);
+  await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=false);
+}
+async function independentPaneState(page,root,phone) {
+  const cdp=await page.context().newCDPSession(page),canvas=await root.locator('canvas').boundingBox();
+  const duration=await root.locator('[data-glass-panel]').first().evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration));
+  assert.ok(duration>=.7,'context highlight transitions use a longer ease-in/out');
+  const before=await root.evaluate(node=>({camera:node.machine.diagnostics().camera,glass:node.machine.diagnostics().glass,
+    panels:[...node.querySelectorAll('[data-glass-panel]')].map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()}))}));
+  try {
+    await touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone);
+    await contextExitWaitsForTransition(root,phone);
+    await contextReversalKeepsTabsValid(page,root,phone);
+    await nativeInputSelection(page,root,cdp);
+    if(!phone)await deepZoomIsFinite(root);
+  } finally {await cdp.detach();}
 }
 async function reflow(page,root,phone) {
-  if(phone)for(const id of ['inspect','output','input']) {
+  const fitMode=(await diagnostics(root)).glass.mode;
+  if(phone&&(await diagnostics(root)).glass.mode==='spatial')for(const id of ['inspect','output','input']) {
     await root.locator(`[data-instrument="${id}"]`).click();
     const d=await diagnostics(root);assert.equal(d.glass.mode,'spatial');assert.equal(d.glass.visible,1);
     await expect(root.locator(`[data-glass-panel="${id}"]`)).toBeVisible();await align(root);
   }
-  if(phone)await root.locator('[data-instrument="inspect"]').click();
+  if(phone&&(await diagnostics(root)).glass.mode==='spatial')await root.locator('[data-instrument="inspect"]').click();
   await root.locator('[data-glass-panel="inspect"] button').click();
   await expect(root.locator('[data-probe-layer]')).toBeFocused();
   await page.keyboard.press('Escape');
@@ -125,12 +194,12 @@ async function reflow(page,root,phone) {
   for(const panel of await root.locator('[data-glass-panel]').all())await expect(panel).toBeVisible();
   await root.locator('[data-machine-form] input').focus();await expect(root.locator('[data-machine-form] input')).toBeFocused();
   await client.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});await client.detach();
-  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe('spatial');
+  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe(fitMode);
   await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=true);
   await root.locator('[data-camera="in"]').click();await root.locator('[data-camera="in"]').click();
-  assert.equal((await diagnostics(root)).glass.mode,'spatial','camera zoom does not reflow article panes');
-  assert.equal((await diagnostics(root)).glass.visible,phone?1:3,'camera zoom preserves contextual pane selection');
-  await root.locator('[data-camera="reset"]').click();assert.equal((await diagnostics(root)).glass.mode,'spatial');
+  assert.equal((await diagnostics(root)).glass.mode,fitMode,'camera zoom does not reflow article panes');
+  assert.equal((await diagnostics(root)).glass.visible,fitMode==='spatial'?(phone?1:3):0,'camera zoom preserves contextual pane selection');
+  await root.locator('[data-camera="reset"]').click();assert.equal((await diagnostics(root)).glass.mode,fitMode);
   await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=false);
 }
 async function profile(root) {

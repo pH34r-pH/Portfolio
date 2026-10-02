@@ -23,7 +23,10 @@ export class ModelInstruments {
     this.nav.setAttribute('aria-label', 'Visible instrument');
     for (const [id, label] of [['input', 'Input'], ['inspect', 'Coordinate'], ['output', 'Output']]) {
       const button = make('button', '', label); button.type = 'button'; button.dataset.instrument = id;
-      button.addEventListener('click', () => { this.active = id; this.changed?.(); }); this.nav.append(button);
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        this.active = id; this.setMode(this.mode, this.phone); this.changed?.();
+      }); this.nav.append(button);
     }
     this.context = root.dataset.modelFocus || 'all';
     this.setContext(this.context, true);
@@ -38,6 +41,9 @@ export class ModelInstruments {
     const node = make('section', 'machine-glass-panel'); node.dataset.glassPanel = id;
     const heading = make('h3', '', title); heading.id = `model-instrument-${++nextInstrument}`;
     node.setAttribute('aria-labelledby', heading.id); node.append(make('p', 'machine-glass-label', label), heading);
+    node.addEventListener('transitionend', event => {
+      if (event.target === node && event.propertyName === 'opacity') this.finishContextExit(node);
+    });
     this.layer.append(node); return node;
   }
   update(node) {
@@ -52,9 +58,65 @@ export class ModelInstruments {
   }
   setMode(mode, phone) {
     this.mode = mode; this.phone = phone; this.host.dataset.instruments = mode;
-    this.nav.hidden = !phone || mode === 'flow'; this.viewButton.hidden = this.root.dataset.render !== 'webgl';
-    for (const panel of this.layer.children) panel.hidden = mode === 'spatial' && phone && panel.dataset.glassPanel !== this.active;
-    for (const button of this.nav.children) button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
+    this.nav.hidden = !phone || mode === 'flow'; if (this.viewButton) this.viewButton.hidden = this.root.dataset.render !== 'webgl';
+    for (const panel of this.layer.children) {
+      panel.hidden = mode === 'spatial' && phone && (panel.contextVisible === false
+        || (panel.dataset.contextActive !== 'false' && panel.dataset.glassPanel !== this.active));
+    }
+    for (const button of this.nav.children) {
+      button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
+      button.disabled = Boolean(this.relevant && button.dataset.instrument !== this.relevant);
+    }
+  }
+  finishContextExit(panel) {
+    if (panel.dataset.contextActive !== 'false') return;
+    clearTimeout(panel.contextExitTimer);
+    cancelAnimationFrame(panel.contextExitRaf);
+    cancelAnimationFrame(panel.contextExitRaf2);
+    panel.contextExitTimer = 0;
+    panel.contextExitRaf = panel.contextExitRaf2 = 0;
+    panel.contextVisible = false;
+    panel.inert = true;
+    panel.hidden = Boolean(this.phone && this.mode === 'spatial');
+    this.changed?.();
+  }
+  cancelContextExit(panel) {
+    clearTimeout(panel.contextExitTimer);
+    cancelAnimationFrame(panel.contextExitRaf);
+    cancelAnimationFrame(panel.contextExitRaf2);
+    panel.contextExitTimer = 0; panel.contextExitRaf = panel.contextExitRaf2 = 0;
+  }
+  startContextExit(panel) {
+    panel.contextVisible = true;
+    panel.setAttribute('aria-hidden', 'true'); panel.style.pointerEvents = 'none';
+    if (panel.contains(document.activeElement)) this.host.querySelector('[data-machine-stage]')?.focus({preventScroll:true});
+    const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
+      const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
+    });
+    const wait = Math.max(0, ...duration) + 250;
+    // Start the fallback after a paint opportunity so synchronous scene work
+    // cannot consume the visible transition window.
+    panel.contextExitRaf = requestAnimationFrame(() => {
+      panel.contextExitRaf2 = requestAnimationFrame(() => {
+        panel.contextExitTimer = setTimeout(() => this.finishContextExit(panel), wait);
+      });
+    });
+  }
+  setPanelContext(panel, enters, initial) {
+    if (enters) {
+      this.cancelContextExit(panel); panel.contextVisible = true; panel.inert = false;
+      panel.removeAttribute('aria-hidden');
+    } else if (initial) {
+      panel.contextVisible = false; panel.inert = true; panel.setAttribute('aria-hidden', 'true');
+    } else if (panel.dataset.contextActive !== 'false') {
+      this.cancelContextExit(panel); this.startContextExit(panel);
+    }
+    panel.dataset.contextActive = String(enters);
+    panel.style.pointerEvents = enters ? '' : 'none';
+    if (this.mode === 'spatial' && this.phone && panel.contextVisible === false) panel.hidden = true;
+    else if (enters || panel.contextVisible) panel.hidden = false;
+    if (initial) panel.dataset.contextInitial = 'true';
+    else delete panel.dataset.contextInitial;
   }
   setContext(part, initial = false) {
     this.context = part || 'all';
@@ -63,21 +125,14 @@ export class ModelInstruments {
       representation: 'inspect',
       consumer: 'output', output: 'output',
     }[this.context];
+    this.relevant = relevant;
     const selection = relevant || this.active;
     const changedSelection = this.phone && selection !== this.active;
     if (this.phone) this.active = selection;
-    for (const panel of this.layer.children) {
-      const enters = !relevant || panel.dataset.glassPanel === relevant;
-      panel.dataset.contextActive = String(enters);
-      panel.inert = !enters;
-      if (this.mode === 'spatial' && this.phone) panel.hidden = panel.dataset.glassPanel !== this.active;
-      if (initial) panel.dataset.contextInitial = 'true';
-      else delete panel.dataset.contextInitial;
-    }
-    if (changedSelection) {
-      for (const button of this.nav.children) button.setAttribute('aria-pressed', String(button.dataset.instrument === this.active));
-      this.changed?.();
-    }
+    for (const panel of this.layer.children)
+      this.setPanelContext(panel,!relevant || panel.dataset.glassPanel === relevant,initial);
+    this.setMode(this.mode, this.phone);
+    if (changedSelection) this.changed?.();
   }
   dimensions(phone, width) {
     const sizes = {input: 256, inspect: 268, output: 310};

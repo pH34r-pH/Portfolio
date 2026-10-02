@@ -101,7 +101,15 @@ class MachineController {
     this.instruments = new Instruments(this.root, this.stage, io,
       () => { const settings = this.root.querySelector('[data-machine-settings]'); settings.open = true; this.layerSelect.focus(); },
       () => { this.scene?.toggleDepthView(); this.instruments.viewButton.setAttribute('aria-pressed', String(Boolean(this.scene?.depthView))); this.instruments.viewButton.textContent = this.scene?.depthView ? 'Return view' : 'View depth'; });
-    this.instruments.changed = () => this.scene?.resize();
+    this.instrumentRefreshScheduled = false;
+    this.instruments.changed = () => {
+      if (this.instrumentRefreshScheduled) return;
+      this.instrumentRefreshScheduled = true;
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        this.instrumentRefreshScheduled = false;
+        this.scene?.resize();
+      }));
+    };
     const quality = element('label', 'machine-quality', 'Glass quality');
     const choice = element('select', ''); choice.dataset.glassQuality = '';
     choice.setAttribute('aria-label', 'Glass quality'); populate(choice, [['auto','Automatic'], ['refraction','Clear refraction'], ['lightweight','Lightweight']]);

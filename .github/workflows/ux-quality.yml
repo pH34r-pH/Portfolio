@@ -64,6 +64,7 @@ jobs:
           node scripts/interaction-audit.mjs
           node scripts/2071-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
           node scripts/model-startup-audit.mjs
           node scripts/homepage-digital-audit.mjs
           node scripts/appearance-audit.mjs
@@ -80,6 +81,14 @@ jobs:
         with:
           name: ux-review-${{ github.event.pull_request.head.sha || github.sha }}
           path: ux-screenshots/visual-v2/review/**
+          if-no-files-found: error
+          retention-days: 3
+      - name: Upload Leaf03 shared-glass regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leaf03-glass-regression-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ux-screenshots/leaf03-glass/**
           if-no-files-found: error
           retention-days: 3
       - name: Enforce Lighthouse budgets

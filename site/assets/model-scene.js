@@ -224,9 +224,11 @@ export class MachineScene {
       this.camera.near = near; this.camera.far = far; this.camera.updateProjectionMatrix();
     }
     this.camera.position.set(pan.x - Math.sin(yaw) * Math.cos(pitch) * viewDistance, pan.y + Math.sin(pitch) * viewDistance, Math.cos(yaw) * Math.cos(pitch) * viewDistance);
-    this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld(); return true;
+    this.camera.lookAt(pan.x, pan.y, 0); this.camera.updateMatrixWorld();
+    return [...this.camera.projectionMatrix.elements, ...this.camera.matrixWorld.elements,
+      ...this.camera.matrixWorldInverse.elements].every(Number.isFinite);
   }
-  updateCamera() { this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
+  updateCamera() { return this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
   setQuality(mode) {
     this.quality.set(mode);
     this.beads.geometry.dispose();
@@ -323,8 +325,16 @@ export class MachineScene {
     const near = Math.max(Number.MIN_VALUE, Math.min(.1, viewDistance / 1000));
     const far = Math.max(80, viewDistance * 1.25 + this.distance);
     if (!Number.isFinite(near) || !Number.isFinite(far) || far <= near) return;
-    this.poseTouched = true; this.zoom = next;
-    this.updateCamera(); this.render();
+    const previous = {zoom:this.zoom, near:this.camera.near, far:this.camera.far,
+      position:this.camera.position.clone(), quaternion:this.camera.quaternion.clone()};
+    this.zoom = next;
+    if (!this.updateCamera()) {
+      this.zoom = previous.zoom; this.camera.near = previous.near; this.camera.far = previous.far;
+      this.camera.updateProjectionMatrix(); this.camera.position.copy(previous.position);
+      this.camera.quaternion.copy(previous.quaternion); this.camera.updateMatrixWorld();
+      return;
+    }
+    this.poseTouched = true; this.render();
   }
   resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
   panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
@@ -354,6 +364,9 @@ export class MachineScene {
     this.gestureHost.addEventListener("pointerdown",event=>{
       if(event.button!==0){return;}
       const target=event.target;
+      // Preserve native selection, form controls, pane buttons and the mobile
+      // instrument tabs. Only gestures that begin on the model host orbit it.
+      if (target?.closest?.('.machine-glass-panel,.machine-instrument-nav,.machine-depth-view')) return;
       if(!target?.setPointerCapture)return;
       this.gestures.down(event.pointerId,event.clientX,event.clientY);target.setPointerCapture(event.pointerId);this.pointerCaptures.set(event.pointerId,target);
     },options);
