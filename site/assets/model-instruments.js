@@ -90,7 +90,9 @@ export class ModelInstruments {
   }
   finishContextEnter(panel,generation=panel.contextTransitionGeneration) {
     if (panel.dataset.contextActive === 'false'||generation!==panel.contextTransitionGeneration) return;
+    const wasAnimating=panel.contextAnimating;
     this.cancelContextExit(panel); panel.contextAnimating = false; panel.contextVisible = true;
+    if(wasAnimating)this.changed?.();
   }
   cancelContextExit(panel) {
     clearTimeout(panel.contextExitTimer);
@@ -114,6 +116,15 @@ export class ModelInstruments {
     this.scheduleContextCompletion(panel, duration, entering, generation);
   }
   scheduleContextCompletion(panel, duration, entering, generation) {
+    const complete=()=>{
+      if(panel.contextTransitionGeneration!==generation)return;
+      if(entering)this.finishContextEnter(panel,generation);
+      else this.finishContextExit(panel,generation);
+    };
+    // A zero-duration transition emits no transitionend event. Settle after
+    // setPanelContext has committed data-context-active so the generation and
+    // endpoint guards observe the new state.
+    if(duration===0){queueMicrotask(complete);return;}
     const wait = duration + 250;
     // Start the fallback after a paint opportunity so synchronous scene work
     // cannot consume the visible transition window.
@@ -121,11 +132,7 @@ export class ModelInstruments {
       if(panel.contextTransitionGeneration!==generation)return;
       panel.contextExitRaf2 = requestAnimationFrame(() => {
         if(panel.contextTransitionGeneration!==generation)return;
-        panel.contextExitTimer = setTimeout(() => {
-          if(panel.contextTransitionGeneration!==generation)return;
-          if(entering)this.finishContextEnter(panel,generation);
-          else this.finishContextExit(panel,generation);
-        }, wait);
+        panel.contextExitTimer = setTimeout(complete, wait);
       });
     });
   }

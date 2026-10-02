@@ -213,11 +213,21 @@ async function entryWithoutTransitionEvent(root) {
   const input=root.locator('[data-glass-panel="input"]');
   const previous=await input.evaluate(panel=>panel.style.transitionDuration);
   try {
-    await input.evaluate(panel=>panel.style.transitionDuration='0ms');
+    await input.evaluate(panel=>{
+      panel.contextAuditTransitionEnds=0;
+      panel.addEventListener('transitionend',event=>{
+        if(event.propertyName==='opacity')panel.contextAuditTransitionEnds+=1;
+      });
+      panel.style.transitionDuration='0ms';
+    });
+    assert.equal(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration)),0,
+      'fallback regression disables CSS transitions so no transitionend can settle the pane');
     await root.evaluate(node=>node.machine.focus('representation'));
     await expect.poll(()=>glassPanelSettled(root,'input'),{timeout:5000}).toBe(true);
+    assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration exit settles without transitionend');
     await root.evaluate(node=>node.machine.focus('all'));
     await expect.poll(()=>glassPanelSettled(root,'input'),{timeout:3000}).toBe(true);
+    assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration entry settles without transitionend');
   } finally {await input.evaluate((panel,duration)=>panel.style.transitionDuration=duration,previous);}
 }
 async function offscreenContextPause(page,root) {
