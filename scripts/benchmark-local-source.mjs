@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
 import { chromium } from '@playwright/test';
+import { categoryScores, numericMetrics, resourceSummaryRows } from './lighthouse-report-summary.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const project = path.resolve(here, '..');
@@ -198,30 +199,9 @@ function copyLighthouseMetadata(row, lhr) {
   row.lighthouseVersion = lhr.lighthouseVersion;
   row.userAgent = lhr.userAgent;
   row.fetchTime = lhr.fetchTime;
-  row.scores = lighthouseScores(lhr.categories);
-  row.metrics = lighthouseMetrics(lhr.audits);
-  row.resources = resourceBreakdown(lhr.audits);
-}
-
-function lighthouseScores(categories = {}) {
-  return Object.fromEntries(Object.entries(categories).map(([key, value]) => [key, value.score]));
-}
-
-function lighthouseMetrics(audits = {}) {
-  const metrics = {};
-  for (const [key, value] of Object.entries(audits)) {
-    if (isSelectedMetric(key, value)) metrics[key] = { value: value.numericValue, unit: value.numericUnit };
-  }
-  return metrics;
-}
-
-function isSelectedMetric(key, value) {
-  const names = ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive'];
-  return value?.numericValue !== undefined && names.includes(key);
-}
-
-function resourceBreakdown(audits = {}) {
-  return (audits['resource-summary']?.details?.items ?? []).map((row) => ({ resourceType: row.resourceType, label: row.label, transferSize: row.transferSize, resourceSize: row.resourceSize, requestCount: row.requestCount }));
+  row.scores = categoryScores(lhr.categories);
+  row.metrics = numericMetrics(lhr.audits, ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive']);
+  row.resources = resourceSummaryRows(lhr.audits?.['resource-summary']?.details?.items);
 }
 
 async function saveLighthouseScreenshot(row, lhr, output, id) {

@@ -6,6 +6,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { chromium } from '@playwright/test';
+import { categoryScores, numericMetrics, resourceSummaryRows } from './lighthouse-report-summary.mjs';
 
 const references = [
   { id: 'quanta-turbulence', class: 'editorial', award: '2025 Webby People’s Voice, Science', url: 'https://www.quantamagazine.org/sea-monkeys-show-scientists-how-to-rewrite-a-rule-of-turbulence-20261002/' },
@@ -118,9 +119,9 @@ function addReportMetadata(row, lhr, audits) {
   row.userAgent = lhr.userAgent;
   row.fetchTime = lhr.fetchTime;
   row.httpStatus = responseStatus(requestRows, row.finalUrl);
-  row.scores = scoreMap(lhr.categories);
-  row.metrics = metricMap(audits);
-  row.resources = resourceRows(resources);
+  row.scores = categoryScores(lhr.categories);
+  row.metrics = numericMetrics(audits, ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive', 'server-response-time']);
+  row.resources = resourceSummaryRows(resources);
   row.requests = requestRows.map(requestRow);
   row.warnings = lhr.runWarnings ?? [];
   row.runtimeError = lhr.runtimeError ?? null;
@@ -131,29 +132,8 @@ function responseStatus(requestRows, url) {
   return response?.statusCode ?? null;
 }
 
-function resourceRows(resources) {
-  return resources.map((resource) => ({ resourceType: resource.resourceType, label: resource.label, transferSize: resource.transferSize, resourceSize: resource.resourceSize, requestCount: resource.requestCount }));
-}
-
 function requestRow(request) {
   return { url: request.url, resourceType: request.resourceType, statusCode: request.statusCode, transferSize: request.transferSize, resourceSize: request.resourceSize, mimeType: request.mimeType, responseHeaders: request.responseHeaders };
-}
-
-function scoreMap(categories = {}) {
-  return Object.fromEntries(Object.entries(categories).map(([key, value]) => [key, value.score]));
-}
-
-function metricMap(audits = {}) {
-  const metrics = {};
-  for (const [key, value] of Object.entries(audits)) {
-    if (isSelectedMetric(key, value)) metrics[key] = { value: value.numericValue, unit: value.numericUnit };
-  }
-  return metrics;
-}
-
-function isSelectedMetric(key, value) {
-  const names = ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive', 'server-response-time'];
-  return value?.numericValue !== undefined && names.includes(key);
 }
 
 async function saveReportScreenshot(row, audits, output, id) {
