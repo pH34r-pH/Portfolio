@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -41,6 +43,17 @@ async function auditMenuAndThemes(page, width) {
   }
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
+  await expect(menu).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(menu).toHaveAttribute("aria-expanded", "true");
+  const firstMenuLink = page.getByRole("navigation", { name: "Site", exact: true }).getByRole("link").first();
+  await expect(firstMenuLink).toBeFocused();
+  const secondMenuLink = page.getByRole("navigation", { name: "Site", exact: true }).getByRole("link").nth(1);
+  await page.keyboard.press("Tab");
+  await expect(secondMenuLink).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(firstMenuLink).toBeFocused();
+  await page.keyboard.press("Escape");
   await expect(menu).toBeFocused();
 }
 
@@ -113,6 +126,81 @@ async function auditArticleLinks(page, manifest, path) {
   }
 }
 
+async function auditBrowserDownload(page, link, href, label, format) {
+  await expect(link).toHaveAttribute("href", href);
+  await expect(link).toHaveAttribute("download", "");
+  const pageUrl = page.url();
+  const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
+  const filename = decodeURIComponent(new URL(href, base).pathname.split("/").pop());
+  assert.equal(download.suggestedFilename(), filename, `${label}: expected downloaded filename`);
+  assert.equal(await download.failure(), null, `${label}: browser download must complete`);
+  assert.equal(page.url(), pageUrl, `${label}: download must not navigate away from the reader`);
+  const path = await download.path();
+  assert.ok(path, `${label}: browser should materialize a downloaded file`);
+  const bytes = await readFile(path);
+  assert.ok(bytes.length > 0, `${label}: downloaded file is nonempty`);
+  if (format === "pdf") assert.equal(bytes.subarray(0, 5).toString(), "%PDF-");
+  if (format === "zip") assert.equal(bytes.subarray(0, 2).toString(), "PK");
+  if (format === "xml") assert.match(bytes.toString("utf8", 0, Math.min(bytes.length, 256)), /<\?xml|<article/i);
+  if (format === "json") {
+    const notebook = JSON.parse(bytes.toString("utf8"));
+    assert.ok(Array.isArray(notebook.cells), `${label}: downloaded notebook contains cells`);
+  }
+  return { filename, bytes: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") };
+}
+
+async function auditArticleDownloads(page, article) {
+  if (!article.downloads) return;
+  const nav = page.getByRole("navigation", { name: "Article source and downloads", exact: true });
+  const results = [];
+  for (const [kind, label, format] of [
+    ["pdf", "PDF", "pdf"],
+    ["docx", "Word", "zip"],
+    ["latex", "LaTeX source", "zip"],
+    ["jats", "JATS XML", "xml"],
+  ]) {
+    const href = article.downloads[kind];
+    assert.ok(href, `${article.slug}: finished publication manifest lacks ${kind} download`);
+    const link = nav.getByRole("link", { name: label, exact: true });
+    results.push(await auditBrowserDownload(page, link, href, label, format));
+  }
+  return results;
+}
+
+async function auditPublishedArticleHistory(page, manifest) {
+  if (!manifest?.articles?.length) return;
+  await page.goto(base + "/research/", { waitUntil: "networkidle" });
+  const article = manifest.articles[0];
+  const articleLink = page.locator(`#article-list a[href="${article.url}"]`).first();
+  await expect(articleLink).toBeVisible();
+  await articleLink.click();
+  await expect(page).toHaveURL(base + article.url);
+  await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+
+  const fragment = page.locator('article.myst-reader a[href^="#"]').first();
+  await expect(fragment).toBeVisible();
+  const hashHref = await fragment.getAttribute("href");
+  assert.ok(hashHref && hashHref.length > 1, `${article.url}: same-page anchor has a fragment`);
+  await fragment.click();
+  await expect(page).toHaveURL(base + article.url + hashHref);
+  const targetId = decodeURIComponent(hashHref.slice(1));
+  const target = page.locator(`[id=${JSON.stringify(targetId)}]`);
+  await expect(target).toBeVisible();
+  const [targetBox, topbarBox] = await Promise.all([target.boundingBox(), page.locator(".topbar").boundingBox()]);
+  assert.ok(targetBox && topbarBox && targetBox.y >= topbarBox.height - 2,
+    `${article.url}${hashHref}: anchor target should clear the sticky site header`);
+
+  await page.goBack();
+  await expect(page).toHaveURL(base + article.url);
+  await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+  await page.goBack();
+  await expect(page).toHaveURL(base + "/research/");
+  await expect(page.locator("#article-list")).toContainText(article.title);
+  await page.goForward();
+  await expect(page).toHaveURL(base + article.url);
+  await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
+}
+
 async function auditWorklogDisclosures(page, width, path) {
   const evidence = page.locator(".compiled-experiment-evidence");
   if (!(await evidence.count())) return;
@@ -172,6 +260,9 @@ async function auditArticle(page, manifest, path, width) {
   await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
+  if (width === 1366 && article.url === manifest.articles[0].url) {
+    await auditArticleDownloads(page, article);
+  }
   if (article.slug === "005-unit-hypersphere-anomaly") {
     const packageLink = 'a[href="https://experiments.tyharbin.com/experiments/muon-unit-hypersphere-depth3-multiseed-v1-final-87409154/"]';
     await expect(page.locator('article.myst-reader').locator(packageLink)).toHaveCount(1);
@@ -183,7 +274,7 @@ async function auditArticle(page, manifest, path, width) {
   }
 }
 
-async function auditNotebook(page) {
+async function auditNotebook(page, manifest, path, width) {
   await expect(page.locator("main")).toHaveCount(1);
   await expect(page.locator("h1")).toHaveCount(1);
   await expect(page.getByRole("link", { name: "← Research index" }).first())
@@ -191,6 +282,20 @@ async function auditNotebook(page) {
   for (const code of await page.locator(".highlight").all()) {
     await code.focus();
     await expect(code).toBeFocused();
+  }
+  const notebook = manifest?.notebooks?.find(item => path === `/notebooks/${item.slug}/`);
+  if (!notebook) return;
+  const labLink = page.getByRole("link", { name: /Open in JupyterLite/ });
+  const labHref = await labLink.getAttribute("href");
+  assert.ok(labHref?.startsWith("/lab/lab/index.html?path="), `${path}: notebook has a local JupyterLite link`);
+  const labResponse = await page.request.get(new URL(labHref, base).href);
+  assert.ok(labResponse.ok(), `${path}: JupyterLite shell route must resolve (${labResponse.status()})`);
+  assert.match(await labResponse.text(), /jupyter-config-data/, `${path}: JupyterLite shell includes its bootstrap config`);
+  if (width === 1366 && notebook.path) {
+    const href = `/publication/notebooks/${encodeURIComponent(notebook.path.split("/").pop())}`;
+    const link = page.getByRole("link", { name: "Download preserved notebook", exact: true });
+    const result = await auditBrowserDownload(page, link, href, "preserved notebook", "json");
+    if (notebook.sha256) assert.equal(result.sha256, notebook.sha256, `${path}: downloaded notebook digest matches publication manifest`);
   }
 }
 
@@ -237,10 +342,16 @@ async function auditRoute(page, context, width, path, manifest, errors) {
   await page.goto(base + path, { waitUntil: "networkidle" });
   assert.deepEqual(errors, [], `${width}${path}: page errors`);
   await auditMenuAndThemes(page, width);
+  const reducedMotion = await page.evaluate(() => ({
+    enabled: matchMedia("(prefers-reduced-motion: reduce)").matches,
+    scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+  }));
+  assert.equal(reducedMotion.enabled, true, `${width}${path}: audit context exercises reduced motion`);
+  assert.equal(reducedMotion.scrollBehavior, "auto", `${width}${path}: reduced-motion disables smooth document scrolling`);
   await auditOverflow(page, width, path);
   await auditAccessibility(page, width, path);
   if (path === "/atlas/") await auditAtlasCompatibility(page);
-  if (path.startsWith("/notebooks/")) await auditNotebook(page);
+  if (path.startsWith("/notebooks/")) await auditNotebook(page, manifest, path, width);
   if (path.startsWith("/articles/")) await auditArticle(page, manifest, path, width);
   if (path === "/research/") await auditResearch(page, manifest);
   if (path === "/research/") {
@@ -282,6 +393,7 @@ async function auditView(browser, width, height) {
   for (const path of routePaths(manifest)) {
     await auditRoute(page, context, width, path, manifest, errors);
   }
+  if (width === 1366) await auditPublishedArticleHistory(page, manifest);
   await auditNavigationPersistence(page);
   await auditArticleEnhancements(page);
   console.log(

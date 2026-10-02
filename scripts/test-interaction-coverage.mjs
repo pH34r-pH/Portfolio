@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const manifest = JSON.parse(readFileSync(new URL('../design/interaction-coverage.json', import.meta.url), 'utf8'));
-const allowed = new Set(['automated', 'automated-with-fixture-limit', 'automated-artifact-only', 'uncovered', 'manual', 'separate-owner']);
+const allowed = new Set(['automated', 'automated-with-fixture-limit', 'automated-artifact-only', 'automated-sampled-downloads', 'uncovered', 'manual', 'separate-owner']);
 assert.equal(manifest.schemaVersion, 1);
 assert.ok(manifest.coverage.length >= 10, 'The interaction inventory should cover the requested route and state families');
 for (const test of manifest.testRunners) {
