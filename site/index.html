@@ -12,7 +12,7 @@
   <div class="moire" aria-hidden="true"></div>
   <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ research systems</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/">About</a></nav><button class="search-toggle" type="button" aria-haspopup="dialog">Search <kbd>⌘K</kbd></button><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/">About</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Theme"><span class="appearance-label">Environment</span><button type="button" data-theme-choice="auto" aria-pressed="true">Auto</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button></div></div><script src="/assets/appearance.js"></script></header>
   <main id="main-content" data-pagefind-body tabindex="-1">
-    <div class="digital-journey" data-model-machine data-digital-home data-model-startup data-startup="booting">
+    <div class="digital-journey" data-model-machine data-digital-home data-model-startup data-startup="idle" data-topology-version="unit_hypersphere_depth3" data-style-version="leaf01-blue-horizontal-native-resolution">
       <div class="digital-visual" data-pagefind-ignore aria-hidden="true">
       <div class="machine-stage" data-machine-stage>
         <div class="machine-poster" aria-hidden="true"></div>
@@ -32,8 +32,11 @@
         <p class="machine-status" data-machine-status role="status">machine ready</p>
       </div>
       </div>
-      <p class="digital-boot-status" data-model-boot data-pagefind-ignore role="status" aria-live="polite">booting… / architecture display</p>
-      <noscript><style>[data-model-boot]{display:none}</style><p class="digital-boot-status" data-pagefind-ignore>Static architecture display</p></noscript>
+      <div class="digital-startup-panel" data-pagefind-ignore>
+        <button type="button" data-model-start aria-describedby="model-startup-status" hidden>Start interactive model</button>
+        <p class="digital-boot-status" id="model-startup-status" data-model-boot role="status" aria-live="polite">Static architecture display</p>
+      </div>
+      <noscript><style>[data-model-start], [data-model-boot]{display:none}</style><p class="digital-startup-static" data-pagefind-ignore>Static architecture display</p></noscript>
       <div class="digital-chapters">
     <header class="hero digital-chapter" id="introduction" data-digital-chapter><div class="digital-pane" data-digital-pane>
       <div class="register"><span>TYLER J.H.G.</span><span>RESEARCH / SYSTEMS / ML</span><span class="signal">PUBLIC NODE</span></div>

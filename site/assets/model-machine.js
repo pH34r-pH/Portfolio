@@ -28,12 +28,13 @@ function renderTokens(container, tokens) {
 class MachineController {
   constructor(root) {
     this.root = root; this.stage = root.querySelector("[data-machine-stage]");
-    this.startup=root.modelStartup;if(this.startup){this.startup.onFailure=reason=>this.fallback(reason);this.startup.onHandoff=()=>this.setCameraEnabled(true);}
+    this.startup=root.modelStartup;if(this.startup){this.startup.onFailure=reason=>this.fallback(reason,true);this.startup.onHandoff=()=>this.setCameraEnabled(true);}
     this.form = root.querySelector("[data-machine-form]"); this.input = this.form?.querySelector("input");
     this.tokenReadout = root.querySelector("[data-machine-token-readout]");
     this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
     if (!this.stage || !this.input || !this.output || !this.status) return;
     this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false; this.clockTicks = 0;
+    this.bootGeneration=0;this.terminalDisposed=false;this.canvasNeedsReplacement=false;this.wasPlayingBeforePagehide=false;
     this.viewport = matchMedia("(max-width:720px)");
     this.selected = GRAPH.layers[6][0]; this.runData = createReplay(this.input.value);
     this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
@@ -47,11 +48,13 @@ class MachineController {
       clock: () => ({ playing: this.playing, visible: this.visible, hidden: document.hidden, scheduled: Boolean(this.raf), ticks: this.clockTicks, lastTime: this.lastTime ?? null }),
       diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
       startup:()=>this.startup?.snapshot(),
+      requestStartup:()=>this.startup?.start(),
     };
     root.machine = api; window.PortfolioModelMachine ??= api;
     root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all"));
     root.addEventListener("portfolio:reading", event => this.scene?.reading(event.detail));
-    if(this.startup)this.boot();
+    root.machineController=this;
+    if(this.startup?.quiet)this.fallback("quiet-mode",true);
   }
   buildControls() {
     this.root.classList.add("model-machine-replay");
@@ -155,40 +158,70 @@ class MachineController {
     this.observer = new IntersectionObserver(entries => {
       entries.forEach(entry => visibility.set(entry.target, entry.isIntersecting && entry.intersectionRatio >= .15));
       this.visible = [...visibility.values()].some(Boolean);
-      if (this.visible) this.boot(); this.syncClock(); this.publishLight(true);
+      if (this.visible && (!this.startup || this.startup.started)) this.boot(); this.syncClock(); this.publishLight(true);
     }, { threshold: [.15] }); this.observer.observe(this.stage);
     if (this.root.hasAttribute('data-digital-home')) this.observer.observe(this.root.querySelector('#model-chapter'));
     document.addEventListener("visibilitychange", () => { this.syncClock(); this.publishLight(true); });
-    window.addEventListener("pagehide", () => {this.startup?.stop(); this.visible = false; this.pause(); this.scene?.dispose(); this.scene = null; this.bootPromise = null; this.publishLight(true); });
-    window.addEventListener("pageshow", event => { if(event.persisted){const box=this.stage.getBoundingClientRect();this.visible=box.bottom>0&&box.top<innerHeight;if(this.visible)this.boot();} });
-    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion"); else { this.startup?.resume();this.bootPromise = null; this.boot(); } });
+    window.addEventListener("pagehide", event => {
+      this.wasPlayingBeforePagehide=this.playing;this.visible=false;this.pause();
+      if(event.persisted){this.startup?.suspend();return;}
+      this.terminalDisposed=true;this.bootGeneration++;this.startup?.terminalDispose();
+      this.scene?.dispose();this.scene=null;this.bootPromise=null;this.publishLight(true);
+    });
+    window.addEventListener("pageshow", event => {
+      if(!event.persisted||this.terminalDisposed)return;
+      const box=this.stage.getBoundingClientRect();this.visible=box.bottom>0&&box.top<innerHeight;
+      this.startup?.resumeFromBFCache();
+      if(this.scene&&!this.scene.disposed&&this.wasPlayingBeforePagehide&&this.visible)this.play();
+      this.wasPlayingBeforePagehide=false;this.syncClock();this.publishLight(true);
+    });
+    reduceMotion.addEventListener("change", () => { this.pause(); if (reduceMotion.matches) this.fallback("reduced-motion",true); else if(this.startup?.started)this.startup.start({retained:true}); });
     this.viewport.addEventListener("change", () => { if (this.root.dataset.render === "fallback") { this.fallbackNodes = null; this.buildFallback(this.root.querySelector("[data-machine-fallback]")); this.draw(); } });
-    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors"); else {this.startup?.resume(); this.bootPromise = null; this.boot(); } });
+    forcedColors.addEventListener("change", () => { this.pause(); if (forcedColors.matches) this.fallback("forced-colors",true); else if(this.startup?.started)this.startup.start({retained:true}); });
   }
   async boot() {
+    if(this.terminalDisposed||!this.root.isConnected)return null;
+    if(this.startup&&(!this.startup.started||this.startup.quiet))return null;
     if (this.scene) return this.scene;
-    if (reduceMotion.matches || forcedColors.matches) { this.fallback(reduceMotion.matches ? "reduced-motion" : "forced-colors"); return null; }
+    if (reduceMotion.matches || forcedColors.matches) { this.fallback(reduceMotion.matches ? "reduced-motion" : "forced-colors",true); return null; }
     if (this.bootPromise) return this.bootPromise;
     this.root.dataset.render = "loading";
-    if(this.startup&&!this.startup.canPrepare()){this.fallback(this.startup.failure||'startup-canceled');return null;}
-    this.bootPromise = Promise.all([import(THREE_URL), import("./model-scene.js")]).then(async ([T, { MachineScene }]) => {
-      if (reduceMotion.matches || forcedColors.matches) { this.fallback("motion-or-colors"); return null; }
+    if(this.startup&&!this.startup.canPrepare())return null;
+    const generation=++this.bootGeneration;
+    const current=()=>generation===this.bootGeneration&&!this.terminalDisposed&&this.root.isConnected&&!this.startup?.terminal;
+    const task=(async()=>{
+      const [T,{MachineScene}]=await Promise.all([import(THREE_URL),import("./model-scene.js")]);
+      if(!current())return null;
+      if(reduceMotion.matches||forcedColors.matches){this.fallback("motion-or-colors",true);return null;}
       if(this.startup&&!this.startup.canPrepare())return null;
-      this.scene = new MachineScene(T, this.root, index => this.select(index), reason => this.fallback(reason), delta => this.seek(this.frame+delta), this.instruments);
-      const scene=this.scene;
-      if(this.startup&&!(await this.startup.accept(scene))) {scene.dispose();return null;}
-      if(this.scene!==scene||scene.disposed)return null;
-      this.root.dataset.render = "webgl"; this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden", "true");
-      this.setCameraEnabled(!this.startup||this.startup.handoffs>0||this.startup.phase==='ready'); this.setFocus(this.focus); this.draw(); return this.scene;
-    }).catch(error => { this.fallback("webgl-unavailable"); console.warn("Architecture viewer uses static fallback:", error.message); return null; });
-    return this.bootPromise;
+      if(this.canvasNeedsReplacement)this.replaceCanvasForRetry();
+      const scene=new MachineScene(T,this.root,index=>this.select(index),reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments);
+      this.scene=scene;
+      if(this.startup&&!(await this.startup.accept(scene))){scene.dispose();if(this.scene===scene)this.scene=null;return null;}
+      if(!current()||this.scene!==scene||scene.disposed)return null;
+      this.root.dataset.render="webgl";this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden","true");
+      this.setCameraEnabled(!this.startup||this.startup.handoffs>0||this.startup.phase==="ready");this.setFocus(this.focus);this.draw();return this.scene;
+    })().catch(error=>{
+      if(!current())return null;
+      this.fallback("webgl-unavailable");console.warn("Architecture viewer uses static fallback:",error.message);return null;
+    });
+    this.bootPromise=task;
+    task.finally(()=>{if(this.bootPromise===task)this.bootPromise=null;});
+    return task;
+  }
+  replaceCanvasForRetry() {
+    const old=this.root.querySelector("[data-machine-canvas]"),fresh=old.cloneNode(false);
+    old.replaceWith(fresh);this.canvasNeedsReplacement=false;
   }
   setCameraEnabled(enabled) {
     this.root.querySelectorAll("[data-camera],[data-glass-quality]").forEach(button => { button.disabled = !enabled; });
   }
-  fallback(reason) {
-    if(this.startup){this.startup.stop();this.startup.failure=reason;this.startup.setPhase('fallback',reduceMotion.matches||forcedColors.matches?'Static architecture display':'Static architecture available');}
+  fallback(reason,startupHandled=false) {
+    if(this.startup&&!startupHandled&&!this.startup.quiet){this.startup.fail(reason);return;}
+    if(reason==="webgl-context-lost")this.canvasNeedsReplacement=true;
+    this.bootGeneration++;
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
+    if(this.startup&&!this.startup.quiet&&this.startup.phase!=="fallback")this.startup.setPhase("fallback","Interactive model unavailable · Static architecture remains available");
     this.instruments.setMode('flow', this.viewport.matches);
     this.instruments.quality('fallback');
     this.setCameraEnabled(false); const fallback = this.root.querySelector("[data-machine-fallback]");

@@ -44,8 +44,11 @@ async function auditVisibleMachine(browser) {
     await machine.scrollIntoViewIfNeeded();
   } else {
     await expect(machine.locator('.digital-visual')).toBeInViewport();
+    assert.equal(engineRequests.length,0,'Homepage renderer waits for explicit Start intent');
+    await page.getByRole('button',{name:'Start interactive model'}).focus();
+    await page.keyboard.press('Enter');
   }
-  await expect(machine).toHaveAttribute("data-render", /webgl|fallback/, { timeout: 10000 });
+  await expect(machine).toHaveAttribute("data-render", /webgl|fallback/, { timeout: 30000 });
   const loaded = [...engineRequests];
   assert.deepEqual(loaded.map(url=>new URL(url).pathname).sort(), [
     '/assets/vendor/three@0.186.1/three.core.js',

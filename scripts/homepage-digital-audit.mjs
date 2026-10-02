@@ -19,6 +19,8 @@ async function open(options,setup) {
   const context=await browser.newContext({colorScheme:'dark',...options}),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message)); if(setup)await setup(page);
   await page.goto(base,{waitUntil:'networkidle'});
+  const quiet=options.reducedMotion==='reduce'||options.forcedColors==='active';
+  if(!quiet)await page.getByRole('button',{name:'Start interactive model'}).click();
   await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
   await settle(page);return {context,page,root:page.locator('[data-model-machine]').first(),errors};
 }
