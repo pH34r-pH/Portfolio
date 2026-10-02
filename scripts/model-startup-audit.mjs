@@ -331,10 +331,10 @@ async function bfcache() {
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
-    await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
     await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
     const before=await snapshot(page);
     assert.equal(before.ignitionComplete,false,'BFCache case captures partial ignition');
+    assert.ok(before.elapsedActiveMs>=150,'BFCache captures ignition after the partial-progress frame is held');
     assert.ok(before.elapsedActiveMs<IGNITION_DURATION_MS);
     await page.getByRole('link',{name:'About',exact:true}).first().click();
     await expect(page).toHaveURL(/\/about\/$/);
@@ -475,9 +475,11 @@ try {
 async function failContextDuringIgnition(page) {
   await page.getByRole('button',{name:'Start interactive model'}).click();
   await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
-  await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
   if(await page.evaluate(()=>Array.isArray(window.heldStartup)))
     await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
+  const partial=await snapshot(page);
+  assert.ok(partial.elapsedActiveMs>=150&&partial.elapsedActiveMs<IGNITION_DURATION_MS,
+    'Failure injection starts after the partial-progress frame is held but before completion');
   await page.evaluate(()=>document.querySelector('[data-machine-canvas]').dispatchEvent(new Event('webglcontextlost',{cancelable:true})));
   const failed=await snapshot(page);
   assert.equal(failed.ignitionComplete,false);assert.ok(failed.elapsedActiveMs>0&&failed.elapsedActiveMs<IGNITION_DURATION_MS);
