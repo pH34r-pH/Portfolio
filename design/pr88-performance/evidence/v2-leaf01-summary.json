@@ -8,7 +8,7 @@
     "compilerProjectionSha256": "bb2fd0e0b3b2d4fabd9649d7537a87e82fd0b60116e78bcef2b1690411674d8a",
     "finishedBundle": true,
     "testedArticle": "001-text-as-signal",
-    "portfolioPublishedBuildSHA": "1118a715f4ffa7a01dfd487ae5df5ed1157719d9"
+    "portfolioPublishedBuildSHA": "01f4a7ae88778803eab4422716d693be880f8d68"
   },
   "implementation": [
     "Request WebGL2 MSAA at context creation; report actual attributes, framebuffer samples and GL target limits.",
@@ -49,12 +49,12 @@
     }
   },
   "tests": {
-    "npmCi": "passed with temporary cache; Node 24.19.0 warned package requires Node >=22 <23",
+    "npmCi": "passed with temporary cache; Node v22.23.3 (package engine requirement >=22 <23)",
     "startup": "node scripts/test-model-startup.mjs passed after recapture and again at checkpoint",
     "replay": "node scripts/test-model-replay.mjs passed: 361 rewind states, light sampling, gestures and locked engine bytes/license",
     "visual": "scripts/model-visual-audit.mjs passed 18 profiles for Home, fixture and finished MyST article; 360×800/DPR1, 412×915/DPR3, 1440×1000/DPR2; light/dark, reduced-motion and forced-colors zero-engine fallback, 720px resize, NoJS Home poster",
-    "modelMachineAudit": "Full run stopped at 30px visible View depth button; added min-width 104px; targeted article viewport check passed. Full audit not rerun.",
-    "finalChecks": "node --check scripts/model-visual-audit.mjs and git diff --check passed; working tree clean after local commit"
+    "modelMachineAudit": "Full 10-profile published-article audit passed against the rebuilt finished bundle whose Portfolio source is exact leaf commit 01f4a7ae88778803eab4422716d693be880f8d68; article 001-text-as-signal; includes native page scrolling, visible-target limits, controls/accessibility, replay, context loss and viewport/DPR checks.",
+    "finalChecks": "Node 22 syntax checks and git diff --check passed; startup, replay, visual and full published article UI audits passed; evidence summary records the exact published input commit."
   },
   "webgl": {
     "environment": "Headless Chromium / SwiftShader software observation only",
@@ -110,10 +110,19 @@
     "startup": "node scripts/test-model-startup.mjs — passed after recapture",
     "replay": "node scripts/test-model-replay.mjs — passed all 361 rewind states, horizontal/vertical light sampling, gestures and engine integrity",
     "visual": "scripts/model-visual-audit.mjs — passed 18 Home / canonical fixture / finished MyST profiles at 360×800 DPR1, 412×915 DPR3, 1440×1000 DPR2; light/dark, reduced-motion, forced colors, 720px resize, NoJS Home; actual buffer/sample/target evidence recorded",
-    "fullPublishedArticleUI": "scripts/model-machine-audit.mjs — passed 10 profiles against article 001-text-as-signal from finished local bundle; includes native page scrolling, 44px controls, axe, NoJS-equivalent fallback, replay, context loss, viewport/DPR checks",
+    "fullPublishedArticleUI": "scripts/model-machine-audit.mjs — passed 10 profiles against rebuilt finished bundle from exact Portfolio leaf commit 01f4a7ae88778803eab4422716d693be880f8d68; article 001-text-as-signal; native page scrolling, visible transmission target checks, controls/accessibility, replay, context loss and viewport/DPR.",
     "modelGlassLegacyAudit": "Not passing: desktop/article fixture run reaches a legacy assertion expecting spatial glass after the depth-view action (observed flow). Pane motion/lifecycle is out of this leaf; transmission target checks now require a visible transmissive mesh and remain full-resolution when active.",
     "homepageDigitalLegacyAudit": "Not passing: legacy whole-page target-size check sees transformed Home links at 19–28 CSS px wide and a transformed disclosure summary at 6.4px. No test was weakened and this leaf did not redesign the Home pane/zoom behavior; carry as an explicit review issue.",
-    "lighthouse": "Unchanged lighthouserc.cjs assertions, 3 runs on local source server with Node 22 and Chromium 140 SwiftShader. 5 existing assertions fail; see measurements below. No workflow/Azure action."
+    "lighthouse": "Unchanged lighthouserc.cjs assertions, 3 runs on local source server with Node 22 and Chromium 140 SwiftShader. 5 existing assertions fail; see measurements below. No workflow/Azure action.",
+    "publishedBuild": {
+      "portfolio": "01f4a7ae88778803eab4422716d693be880f8d68",
+      "researchNotes": "965fb9186a0c1bb99cc3bd60b2e86668b0f12a91",
+      "theoremLibrary": "cbc5eebbea115decdc27e2e32bb0dc79738a5947",
+      "compiler": "7bf2e42fe1882e3bed9828b43f4354523fd50bd5",
+      "compilerProjectionSha256": "bb2fd0e0b3b2d4fabd9649d7537a87e82fd0b60116e78bcef2b1690411674d8a",
+      "finishedArticle": "001-text-as-signal",
+      "audit": "scripts/model-machine-audit.mjs passed 10 profiles against the rebuilt finished bundle."
+    }
   },
   "lighthouse": {
     "input": "site/ at http://127.0.0.1:45937; original lighthouserc thresholds and 3 runs; temporary config only changed local port and output path",
