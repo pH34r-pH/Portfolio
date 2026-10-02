@@ -119,6 +119,8 @@ async function startup(name,width,height,change,options={}) {
     await expect.poll(()=>page.locator('[data-machine-canvas]').evaluate(canvas=>{
       const box=canvas.getBoundingClientRect();return box.bottom<=0||box.top>=innerHeight;
     })).toBe(true);
+    await expect.poll(async()=>(await snapshot(page)).scheduled,{timeout:5000})
+      .toBe(false);
     const offscreen=await snapshot(page);assert.equal(offscreen.scheduled,false,'Offscreen startup has no pending frame');
     await page.waitForTimeout(120);assert.equal((await snapshot(page)).elapsedActiveMs,offscreen.elapsedActiveMs,'Offscreen time does not count toward ignition');
     await page.evaluate(()=>{
