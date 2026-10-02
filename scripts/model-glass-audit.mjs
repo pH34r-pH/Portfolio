@@ -102,8 +102,12 @@ async function contextExitWaitsForTransition(page,root,phone) {
       stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
     panel.querySelector('input')?.focus();state.focusLeak=panel.contains(document.activeElement);return state;});
   assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
-  try {await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').transitionOpacity,
-    {timeout:5000}).toBeLessThan(1);}
+  try {await expect.poll(()=>input.evaluate(panel=>{
+    const machine=panel.closest('[data-model-machine]'),glass=machine?.machineController.scene?.glass;
+    const backing=glass?.panels.find(item=>item.id==='input'),opacity=Number.parseFloat(getComputedStyle(panel).opacity);
+    return Boolean(backing?.node.contextAnimating&&opacity>0&&opacity<1
+      &&backing.mesh.material.opacity>0&&backing.mesh.material.opacity<1);
+  }),{timeout:5000}).toBe(true);}
   catch(error) {
     const state=await root.evaluate(node=>{const scene=node.machineController.scene,glass=scene?.glass;return {visible:node.machineController.visible,hidden:document.hidden,
       raf:scene?.glassAnimationRaf,panels:glass?.panels.map(panel=>({id:panel.id,active:panel.node.dataset.contextActive,
