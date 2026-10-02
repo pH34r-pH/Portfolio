@@ -100,6 +100,72 @@ async function captureHeaderSurvey(reference, mode, id) {
   return survey;
 }
 
+async function enrichReport(row, reportPath, output, id) {
+  if (row.exitCode !== 0) return;
+  try {
+    const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
+    const audits = lhr.audits ?? {};
+    addReportMetadata(row, lhr, audits);
+    await saveReportScreenshot(row, audits, output, id);
+  } catch (error) { row.parseError = String(error); }
+}
+
+function addReportMetadata(row, lhr, audits) {
+  const requestRows = audits['network-requests']?.details?.items ?? [];
+  const resources = audits['resource-summary']?.details?.items ?? [];
+  row.finalUrl = lhr.finalDisplayedUrl ?? lhr.finalUrl;
+  row.lighthouseVersion = lhr.lighthouseVersion;
+  row.userAgent = lhr.userAgent;
+  row.fetchTime = lhr.fetchTime;
+  row.httpStatus = responseStatus(requestRows, row.finalUrl);
+  row.scores = scoreMap(lhr.categories);
+  row.metrics = metricMap(audits);
+  row.resources = resourceRows(resources);
+  row.requests = requestRows.map(requestRow);
+  row.warnings = lhr.runWarnings ?? [];
+  row.runtimeError = lhr.runtimeError ?? null;
+}
+
+function responseStatus(requestRows, url) {
+  const response = requestRows.find((request) => request.url === url);
+  return response?.statusCode ?? null;
+}
+
+function resourceRows(resources) {
+  return resources.map((resource) => ({ resourceType: resource.resourceType, label: resource.label, transferSize: resource.transferSize, resourceSize: resource.resourceSize, requestCount: resource.requestCount }));
+}
+
+function requestRow(request) {
+  return { url: request.url, resourceType: request.resourceType, statusCode: request.statusCode, transferSize: request.transferSize, resourceSize: request.resourceSize, mimeType: request.mimeType, responseHeaders: request.responseHeaders };
+}
+
+function scoreMap(categories = {}) {
+  return Object.fromEntries(Object.entries(categories).map(([key, value]) => [key, value.score]));
+}
+
+function metricMap(audits = {}) {
+  const metrics = {};
+  for (const [key, value] of Object.entries(audits)) {
+    if (isSelectedMetric(key, value)) metrics[key] = { value: value.numericValue, unit: value.numericUnit };
+  }
+  return metrics;
+}
+
+function isSelectedMetric(key, value) {
+  const names = ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive', 'server-response-time'];
+  return value?.numericValue !== undefined && names.includes(key);
+}
+
+async function saveReportScreenshot(row, audits, output, id) {
+  const screenshot = audits['final-screenshot']?.details?.data;
+  if (typeof screenshot !== 'string' || !screenshot.startsWith('data:image/')) return;
+  const [, encoded] = screenshot.split(',', 2);
+  const extension = screenshot.slice(5, screenshot.indexOf(';')) === 'image/jpeg' ? 'jpg' : 'png';
+  const screenshotPath = path.join(output, `${id}.${extension}`);
+  await writeFile(screenshotPath, Buffer.from(encoded, 'base64'));
+  row.screenshot = path.basename(screenshotPath);
+}
+
 if (process.argv.includes('--headers-only')) {
   for (const reference of cohort) {
     for (const mode of modes) {
@@ -133,35 +199,7 @@ for (let round = 1; round <= runs; round += 1) {
       });
       await writeFile(stderrPath, [result.stderr ?? '', result.error?.stack ?? ''].filter(Boolean).join('\n'));
       const row = { round, id, reference: reference.id, class: reference.class, awardProvenance: reference.award, requestedUrl: reference.url, mode, exitCode: result.status, error: result.error?.message ?? null, report: path.basename(reportPath), stderr: path.basename(stderrPath), headerSurvey: headerSurvey ? path.basename(`${id}.headers.json`) : round > 1 ? `${String(1).padStart(2, '0')}-${reference.id}-${mode}.headers.json` : null };
-      if (result.status === 0) {
-        try {
-          const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
-          const audits = lhr.audits ?? {};
-          const requestRows = audits['network-requests']?.details?.items ?? [];
-          const resources = audits['resource-summary']?.details?.items ?? [];
-          row.finalUrl = lhr.finalDisplayedUrl ?? lhr.finalUrl;
-          row.lighthouseVersion = lhr.lighthouseVersion;
-          row.userAgent = lhr.userAgent;
-          row.fetchTime = lhr.fetchTime;
-          row.httpStatus = requestRows.find((request) => request.url === row.finalUrl)?.statusCode ?? null;
-          row.scores = Object.fromEntries(Object.entries(lhr.categories ?? {}).map(([key, value]) => [key, value.score]));
-          row.metrics = Object.fromEntries(Object.entries(audits).filter(([key, value]) => value?.numericValue !== undefined && ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive', 'server-response-time'].includes(key)).map(([key, value]) => [key, { value: value.numericValue, unit: value.numericUnit }]));
-          row.resources = resources.map((r) => ({ resourceType: r.resourceType, label: r.label, transferSize: r.transferSize, resourceSize: r.resourceSize, requestCount: r.requestCount }));
-          row.requests = requestRows.map((r) => ({ url: r.url, resourceType: r.resourceType, statusCode: r.statusCode, transferSize: r.transferSize, resourceSize: r.resourceSize, mimeType: r.mimeType, responseHeaders: r.responseHeaders }));
-          row.warnings = lhr.runWarnings ?? [];
-          row.runtimeError = lhr.runtimeError ?? null;
-          const screenshot = audits['final-screenshot']?.details?.data;
-          if (typeof screenshot === 'string' && screenshot.startsWith('data:image/')) {
-            const [, encoded] = screenshot.split(',', 2);
-            const extension = screenshot.slice(5, screenshot.indexOf(';')) === 'image/jpeg' ? 'jpg' : 'png';
-            const screenshotPath = path.join(output, `${id}.${extension}`);
-            await writeFile(screenshotPath, Buffer.from(encoded, 'base64'));
-            row.screenshot = path.basename(screenshotPath);
-          }
-        } catch (error) {
-          row.parseError = String(error);
-        }
-      }
+      await enrichReport(row, reportPath, output, id);
       summary.push(row);
       await writeFile(path.join(output, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
       process.stdout.write(`${id}: ${row.exitCode === 0 ? `${row.finalUrl} p=${row.scores?.performance} a=${row.scores?.accessibility}` : `FAILED ${row.error ?? result.stderr}`}\n`);

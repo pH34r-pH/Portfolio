@@ -71,37 +71,8 @@ function runLighthouse(args, timeoutMs = 240_000) {
 async function ownedServer() {
   const requests = [];
   let phase = 'readiness';
-  const server = createServer(async (req, res) => {
-    if (req.url?.startsWith('/_benchmark/phase?')) {
-      phase = new URL(req.url, 'http://127.0.0.1').searchParams.get('name') ?? phase;
-      res.writeHead(204).end();
-      return;
-    }
-    let pathname;
-    try { pathname = decodeURIComponent(new URL(req.url ?? '/', 'http://127.0.0.1').pathname); }
-    catch { res.writeHead(400).end(); return; }
-    let file = path.resolve(root, `.${pathname}`);
-    if (file !== root && !file.startsWith(`${root}${path.sep}`)) { res.writeHead(403).end(); return; }
-    try {
-      if ((await stat(file)).isDirectory()) file = path.join(file, 'index.html');
-      const source = await readFile(file);
-      const type = mime.get(path.extname(file).toLowerCase()) ?? 'application/octet-stream';
-      const headers = { 'content-type': type, 'cache-control': 'public, must-revalidate, max-age=30' };
-      let body = source;
-      if (compressible.test(type) && /(?:^|,)\s*br\s*(?:,|$)/i.test(req.headers['accept-encoding'] ?? '')) {
-        body = brotliCompressSync(source, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } });
-        headers['content-encoding'] = 'br';
-        headers.vary = 'Accept-Encoding';
-      }
-      headers['content-length'] = String(body.length);
-      requests.push({ phase, method: req.method, url: req.url, file: path.relative(root, file), status: 200, requestHeaders: req.headers, responseHeaders: headers, decodedBytes: source.length, transferBodyBytes: body.length });
-      res.writeHead(200, headers);
-      req.method === 'HEAD' ? res.end() : res.end(body);
-    } catch (error) {
-      requests.push({ phase, method: req.method, url: req.url, status: 404, error: String(error) });
-      res.writeHead(404, { 'cache-control': 'public, must-revalidate, max-age=30' }).end('Not found');
-    }
-  });
+  const state = { requests, get phase() { return phase; }, set phase(value) { phase = value; } };
+  const server = createServer((req, res) => { void respondOwnedRequest(req, res, state); });
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);
@@ -113,6 +84,61 @@ async function ownedServer() {
   await readiness.arrayBuffer();
   await fetch(`${base}/_benchmark/phase?name=measurement`);
   return { server, base, requests, async phase(name) { await fetch(`${base}/_benchmark/phase?name=${encodeURIComponent(name)}`); } };
+}
+
+async function respondOwnedRequest(req, res, state) {
+  if (servePhaseRequest(req, res, state)) return;
+  const pathname = requestPath(req, res);
+  if (pathname === null) return;
+  const file = safeFilePath(pathname, res);
+  if (file === null) return;
+  await serveOwnedFile(req, res, file, state);
+}
+
+function servePhaseRequest(req, res, state) {
+  if (!req.url?.startsWith('/_benchmark/phase?')) return false;
+  state.phase = new URL(req.url, 'http://127.0.0.1').searchParams.get('name') ?? state.phase;
+  res.writeHead(204).end();
+  return true;
+}
+
+function requestPath(req, res) {
+  try { return decodeURIComponent(new URL(req.url ?? '/', 'http://127.0.0.1').pathname); }
+  catch { res.writeHead(400).end(); return null; }
+}
+
+function safeFilePath(pathname, res) {
+  const file = path.resolve(root, `.${pathname}`);
+  if (file === root || file.startsWith(`${root}${path.sep}`)) return file;
+  res.writeHead(403).end();
+  return null;
+}
+
+async function serveOwnedFile(req, res, initialFile, state) {
+  try {
+    const file = await resolveFile(initialFile);
+    const source = await readFile(file);
+    const { body, headers } = compressResponse(source, mime.get(path.extname(file).toLowerCase()) ?? 'application/octet-stream', req.headers['accept-encoding']);
+    headers['content-length'] = String(body.length);
+    state.requests.push({ phase: state.phase, method: req.method, url: req.url, file: path.relative(root, file), status: 200, requestHeaders: req.headers, responseHeaders: headers, decodedBytes: source.length, transferBodyBytes: body.length });
+    res.writeHead(200, headers);
+    req.method === 'HEAD' ? res.end() : res.end(body);
+  } catch (error) {
+    state.requests.push({ phase: state.phase, method: req.method, url: req.url, status: 404, error: String(error) });
+    res.writeHead(404, { 'cache-control': 'public, must-revalidate, max-age=30' }).end('Not found');
+  }
+}
+
+async function resolveFile(file) {
+  return (await stat(file)).isDirectory() ? path.join(file, 'index.html') : file;
+}
+
+function compressResponse(source, type, acceptEncoding = '') {
+  const headers = { 'content-type': type, 'cache-control': 'public, must-revalidate, max-age=30' };
+  if (!compressible.test(type) || !/(?:^|,)\s*br\s*(?:,|$)/i.test(acceptEncoding)) return { body: source, headers };
+  headers['content-encoding'] = 'br';
+  headers.vary = 'Accept-Encoding';
+  return { body: brotliCompressSync(source, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } }), headers };
 }
 
 async function captureWarmCycles(base, route, mode, server, stem) {
@@ -158,6 +184,54 @@ async function captureWarmCycles(base, route, mode, server, stem) {
   await browser.close();
 }
 
+async function addReportDetails(row, reportPath, output, id) {
+  if (row.exitCode !== 0) return;
+  try {
+    const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
+    copyLighthouseMetadata(row, lhr);
+    await saveLighthouseScreenshot(row, lhr, output, id);
+  } catch (error) { row.parseError = String(error); }
+}
+
+function copyLighthouseMetadata(row, lhr) {
+  row.finalUrl = lhr.finalDisplayedUrl ?? lhr.finalUrl;
+  row.lighthouseVersion = lhr.lighthouseVersion;
+  row.userAgent = lhr.userAgent;
+  row.fetchTime = lhr.fetchTime;
+  row.scores = lighthouseScores(lhr.categories);
+  row.metrics = lighthouseMetrics(lhr.audits);
+  row.resources = resourceBreakdown(lhr.audits);
+}
+
+function lighthouseScores(categories = {}) {
+  return Object.fromEntries(Object.entries(categories).map(([key, value]) => [key, value.score]));
+}
+
+function lighthouseMetrics(audits = {}) {
+  const metrics = {};
+  for (const [key, value] of Object.entries(audits)) {
+    if (isSelectedMetric(key, value)) metrics[key] = { value: value.numericValue, unit: value.numericUnit };
+  }
+  return metrics;
+}
+
+function isSelectedMetric(key, value) {
+  const names = ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive'];
+  return value?.numericValue !== undefined && names.includes(key);
+}
+
+function resourceBreakdown(audits = {}) {
+  return (audits['resource-summary']?.details?.items ?? []).map((row) => ({ resourceType: row.resourceType, label: row.label, transferSize: row.transferSize, resourceSize: row.resourceSize, requestCount: row.requestCount }));
+}
+
+async function saveLighthouseScreenshot(row, lhr, output, id) {
+  const shot = lhr.audits?.['final-screenshot']?.details?.data;
+  if (typeof shot !== 'string' || !shot.startsWith('data:image/')) return;
+  const ext = shot.slice(5, shot.indexOf(';')) === 'image/jpeg' ? 'jpg' : 'png';
+  row.screenshot = `${id}.${ext}`;
+  await writeFile(path.join(output, row.screenshot), Buffer.from(shot.split(',', 2)[1], 'base64'));
+}
+
 for (let round = 1; round <= runs; round += 1) {
   for (const route of routes) {
     for (const mode of ['mobile', 'desktop']) {
@@ -173,24 +247,7 @@ for (let round = 1; round <= runs; round += 1) {
       const run = await runLighthouse(args);
       await writeFile(stderrPath, run.stderr ?? '');
       const row = { round, id, fixture: root === path.resolve(path.join(project, 'site')) ? 'Portfolio tracked site/ source fixture' : 'assembled Portfolio publication bundle', sourceSha, route: route.path, mode, profile, throttlingDownloadThroughputKbps: mode === 'mobile' ? throughputKbps : null, exitCode: run.status, error: run.error ?? null, report: path.basename(reportPath), stderr: path.basename(stderrPath), server: 'owned loopback server, OS-assigned port (0), readiness GET 200 before Lighthouse', cachePolicy: 'public, must-revalidate, max-age=30 (observed production)', compression: 'Brotli quality 5 for compressible resources, content-encoding br and Vary: Accept-Encoding (observed production)', warmCyclesCaptured: captureWarm };
-      if (run.status === 0) {
-        try {
-          const lhr = JSON.parse(await readFile(reportPath, 'utf8'));
-          row.finalUrl = lhr.finalDisplayedUrl ?? lhr.finalUrl;
-          row.lighthouseVersion = lhr.lighthouseVersion;
-          row.userAgent = lhr.userAgent;
-          row.fetchTime = lhr.fetchTime;
-          row.scores = Object.fromEntries(Object.entries(lhr.categories ?? {}).map(([key, value]) => [key, value.score]));
-          row.metrics = Object.fromEntries(Object.entries(lhr.audits ?? {}).filter(([key, value]) => value?.numericValue !== undefined && ['first-contentful-paint', 'largest-contentful-paint', 'speed-index', 'total-blocking-time', 'cumulative-layout-shift', 'interactive'].includes(key)).map(([key, value]) => [key, { value: value.numericValue, unit: value.numericUnit }]));
-          row.resources = (lhr.audits?.['resource-summary']?.details?.items ?? []).map((r) => ({ resourceType: r.resourceType, label: r.label, transferSize: r.transferSize, resourceSize: r.resourceSize, requestCount: r.requestCount }));
-          const shot = lhr.audits?.['final-screenshot']?.details?.data;
-          if (typeof shot === 'string' && shot.startsWith('data:image/')) {
-            const ext = shot.slice(5, shot.indexOf(';')) === 'image/jpeg' ? 'jpg' : 'png';
-            row.screenshot = `${id}.${ext}`;
-            await writeFile(path.join(output, row.screenshot), Buffer.from(shot.split(',', 2)[1], 'base64'));
-          }
-        } catch (error) { row.parseError = String(error); }
-      }
+      await addReportDetails(row, reportPath, output, id);
       if (captureWarm) {
         await owned.phase('warm-browser-cold-and-repeat');
         await captureWarmCycles(owned.base, route, mode, owned, id);
