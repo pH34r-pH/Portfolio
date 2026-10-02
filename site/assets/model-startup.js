@@ -263,12 +263,15 @@ export class ModelStartup {
   }
 
   schedule() {
-    if (this.raf || this.terminal || this.quiet || document.hidden
+    if (this.terminal || this.quiet || document.hidden
       || !["prepared", "handoff", "igniting"].includes(this.phase)) return;
     if (this.phase !== "prepared" && !this.onScreen()) {
       this.lastTime = null;
+      cancelAnimationFrame(this.raf);
+      this.raf = 0;
       return;
     }
+    if (this.raf) return;
     this.raf = requestAnimationFrame(time => this.advanceStartup(time));
   }
 
