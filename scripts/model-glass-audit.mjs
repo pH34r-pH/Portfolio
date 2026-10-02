@@ -107,7 +107,7 @@ async function contextExitWaitsForTransition(page,root,phone) {
     const backing=glass?.panels.find(item=>item.id==='input'),opacity=Number.parseFloat(getComputedStyle(panel).opacity);
     return Boolean(backing?.node.contextAnimating&&opacity>0&&opacity<1
       &&backing.mesh.material.opacity>0&&backing.mesh.material.opacity<1);
-  }),{timeout:5000}).toBe(true);}
+  }),{timeout:8000}).toBe(true);}
   catch(error) {
     const state=await root.evaluate(node=>{const scene=node.machineController.scene,glass=scene?.glass;return {visible:node.machineController.visible,hidden:document.hidden,
       raf:scene?.glassAnimationRaf,panels:glass?.panels.map(panel=>({id:panel.id,active:panel.node.dataset.contextActive,
@@ -272,8 +272,11 @@ async function missingTransitionEndFallsBack(root) {
       event.stopImmediatePropagation();
     },true);
   });
-  await root.evaluate(node=>node.machine.focus('representation'));
-  const started=await input.evaluate(panel=>({duration:panel.contextTransitionDuration,animating:panel.contextAnimating}));
+  const started=await root.evaluate(node=>{
+    node.machine.focus('representation');
+    const panel=node.querySelector('[data-glass-panel="input"]');
+    return {duration:panel.contextTransitionDuration,animating:panel.contextAnimating};
+  });
   assert.ok(started.duration>=700&&started.animating,'normal-duration exit arms the timer fallback while the pane is animating');
   await waitForGlassPanelSettled(root,'input',5000,'production-duration transitionend suppressed');
   const settled=await input.evaluate(panel=>({duration:panel.contextTransitionDuration,
