@@ -1756,6 +1756,18 @@ body::after {
   font-family: "Portfolio Long Measure", ui-monospace, monospace !important;
 }
 
+/* Keep the homepage's small interactive labels legible without system fonts. */
+.digital-startup-panel,
+.digital-startup-panel [data-model-start],
+.digital-boot-status,
+.digital-startup-static,
+.digital-home .actions a,
+.digital-home .digital-next,
+.digital-home .program-grid a,
+.digital-home summary {
+  font-family: "Portfolio Long Measure", ui-monospace, monospace !important;
+}
+
 .topology-node strong {
   font-family: "Portfolio Long Measure", ui-sans-serif, sans-serif;
   font-weight: 400;
