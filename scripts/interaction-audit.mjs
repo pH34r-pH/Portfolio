@@ -335,8 +335,9 @@ async function auditNotebook(page, manifest, path, width) {
   const labHref = await labLink.getAttribute("href");
   assert.ok(labHref?.startsWith("/lab/lab/?path="), `${path}: notebook links to the slash-terminated JupyterLite app route`);
   if (width === 1366) {
-    assert.ok(notebook.path, `${path}: publication manifest names the preserved notebook`);
-    const sourceResponse = await page.request.get(`${base}/publication/${notebook.path}`);
+    assert.match(notebook.path || "", /^publication\/notebooks\/[^/]+\.ipynb$/,
+      `${path}: publication manifest names the preserved notebook URL`);
+    const sourceResponse = await page.request.get(`${base}/${notebook.path}`);
     assert.ok(sourceResponse.ok(), `${path}: preserved notebook source resolves (${sourceResponse.status()})`);
     const sourceNotebook = await sourceResponse.json();
     const expectedCode = sourceNotebook.cells.filter(cell => cell.cell_type === "code");
