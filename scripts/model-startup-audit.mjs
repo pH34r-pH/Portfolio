@@ -265,17 +265,32 @@ async function bfcache() {
   // policy. Use full Chromium's new headless mode and remove only that switch.
   const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new'],
     ignoreDefaultArgs:['--disable-back-forward-cache']});
-  const {context,page,errors}=await open({},undefined,'',cacheBrowser);
+  const {context,page,errors}=await open({},async page=>{
+    await page.addInitScript(()=>{
+      // Freeze only after partial progress so slow CI cannot turn this into a completed-state case.
+      const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
+      window.requestAnimationFrame=callback=>native(time=>{
+        const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
+        if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
+        else callback(time);
+      });
+      window.releaseStartup=()=>{window.holdStartup=false;window.heldStartup.splice(0).forEach(callback=>native(callback));};
+      addEventListener('pagehide',()=>window.heldStartup.splice(0));
+    });
+  },'',cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
     await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
+    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
     const before=await snapshot(page);
     assert.equal(before.ignitionComplete,false,'BFCache case captures partial ignition');
+    assert.ok(before.elapsedActiveMs<IGNITION_DURATION_MS);
     await page.getByRole('link',{name:'About',exact:true}).first().click();
     await expect(page).toHaveURL(/\/about\/$/);
     await page.waitForTimeout(16000);
     await page.goBack({waitUntil:'commit'});await expect(page).toHaveURL(base+'/');
+    await page.evaluate(()=>window.releaseStartup());
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
     const persisted=await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditPageShowPersisted'));
     assert.equal(persisted,'true','Browser restores the healthy homepage from BFCache');
