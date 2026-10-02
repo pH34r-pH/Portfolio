@@ -254,6 +254,29 @@ async function entryWithoutTransitionEvent(root) {
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration entry settles without transitionend');
   } finally {await input.evaluate((panel,duration)=>panel.style.transitionDuration=duration,previous);}
 }
+async function missingTransitionEndFallsBack(root) {
+  const input=root.locator('[data-glass-panel="input"]');
+  const duration=await input.evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration));
+  assert.ok(duration>=.7,'missing-event fallback covers the production-length easing');
+  await input.evaluate(panel=>{
+    panel.contextAuditSuppressedTransitionEnds=0;
+    panel.contextAuditAnimatingAtTransitionEnd=null;
+    panel.addEventListener('transitionend',event=>{
+      if(event.target!==panel||event.propertyName!=='opacity')return;
+      panel.contextAuditSuppressedTransitionEnds+=1;
+      panel.contextAuditAnimatingAtTransitionEnd=panel.contextAnimating;
+      event.stopImmediatePropagation();
+    },true);
+  });
+  await root.evaluate(node=>node.machine.focus('representation'));
+  await expect.poll(()=>input.evaluate(panel=>panel.contextAuditSuppressedTransitionEnds),{timeout:5000}).toBe(1);
+  assert.equal(await input.evaluate(panel=>panel.contextAuditAnimatingAtTransitionEnd),true,
+    'captured transitionend is stopped before the pane completion listener');
+  await waitForGlassPanelSettled(root,'input',5000,'production-duration transitionend suppressed');
+  assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,
+    'production-duration exit settles through the timer fallback after transitionend is suppressed');
+  await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+}
 async function offscreenContextPause(page,root) {
   const initial=await root.evaluate(node=>node.machineController.visible);
   assert.equal(initial,true,'model starts visible for offscreen context regression');
@@ -268,6 +291,7 @@ async function offscreenContextPause(page,root) {
     await expect.poll(()=>glassContextSettled(root,false),{timeout:3000}).toBe(true);
     await root.locator('[data-machine-stage]').evaluate(node=>node.scrollIntoView({block:'center'}));
     await expect.poll(()=>root.evaluate(node=>node.machineController.visible),{timeout:5000}).toBe(true);
+    await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
     await root.evaluate(node=>node.machine.focus('all'));
     await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
   } finally {await page.locator('[data-glass-audit-spacer]').evaluate(node=>node.remove());}
@@ -349,6 +373,7 @@ async function independentPaneState(page,root,phone) {
     await contextExitWaitsForTransition(page,root,phone);
     await contextReversalKeepsTabsValid(page,root,phone);
     await entryWithoutTransitionEvent(root);
+    await missingTransitionEndFallsBack(root);
     await offscreenContextPause(page,root);
     await realPointerTextSelection(page,root,phone);
     await nativeInputSelection(page,root,cdp);
