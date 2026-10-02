@@ -260,24 +260,26 @@ async function restoredVisit() {
   } finally {await context.close();}
 }
 
+async function holdPartialIgnitionFrame(page) {
+  await page.addInitScript(()=>{
+    // Freeze after partial progress so runner speed cannot turn this into completion.
+    const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
+    window.requestAnimationFrame=callback=>native(time=>{
+      const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
+      if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
+      else callback(time);
+    });
+    window.releaseStartup=()=>{window.holdStartup=false;window.heldStartup.splice(0).forEach(callback=>native(callback));};
+    addEventListener('pagehide',()=>window.heldStartup.splice(0));
+  });
+}
+
 async function bfcache() {
   // Playwright disables BFCache and its headless shell uses a separate cache
   // policy. Use full Chromium's new headless mode and remove only that switch.
   const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new'],
     ignoreDefaultArgs:['--disable-back-forward-cache']});
-  const {context,page,errors}=await open({},async page=>{
-    await page.addInitScript(()=>{
-      // Freeze only after partial progress so slow CI cannot turn this into a completed-state case.
-      const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
-      window.requestAnimationFrame=callback=>native(time=>{
-        const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
-        if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
-        else callback(time);
-      });
-      window.releaseStartup=()=>{window.holdStartup=false;window.heldStartup.splice(0).forEach(callback=>native(callback));};
-      addEventListener('pagehide',()=>window.heldStartup.splice(0));
-    });
-  },'',cacheBrowser);
+  const {context,page,errors}=await open({},holdPartialIgnitionFrame,'',cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
@@ -440,18 +442,7 @@ async function assertStaticHomeFallback(page) {
 }
 
 async function contextLossDuringIgnition() {
-  const {context,page,errors}=await open({},async page=>{
-    await page.addInitScript(()=>{
-      // Freeze the exact partial-ignition frame so slower or faster runners cannot
-      // complete the 1.8 s sequence between the progress check and context loss.
-      const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
-      window.requestAnimationFrame=callback=>native(time=>{
-        const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
-        if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
-        else callback(time);
-      });
-    });
-  });
+  const {context,page,errors}=await open({},holdPartialIgnitionFrame);
   try {
     const failed=await failContextDuringIgnition(page);
     await assertStaticHomeFallback(page);
