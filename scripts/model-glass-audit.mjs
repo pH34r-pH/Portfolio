@@ -82,6 +82,7 @@ async function independentPaneState(page,root,phone) {
   const after=await diagnostics(root);
   assert.ok(Math.abs(after.camera.yaw-before.camera.yaw)>.01||Math.abs(after.camera.pitch-before.camera.pitch)>.01,'touch orbit changes camera pose');
   assert.equal(after.glass.mode,'spatial');assert.equal(after.glass.visible,phone?1:3);
+  assert.ok(after.glass.panels.filter(panel=>panel.visible).every(panel=>panel.cameraPinnedError<1e-6),'translucent backing meshes stay screen-pinned with their DOM panes');
   const panels=await root.locator('[data-glass-panel]').evaluateAll(nodes=>nodes.map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()})));
   for(const panel of before.panels){const next=panels.find(item=>item.id===panel.id);assert.ok(Math.abs(next.rect.x-panel.rect.x)<.6&&Math.abs(next.rect.y-panel.rect.y)<.6,`pane ${panel.id} moved during touch orbit`);}
   await root.evaluate(node=>node.machine.focus('representation'));

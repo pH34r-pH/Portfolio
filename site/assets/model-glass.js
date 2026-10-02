@@ -89,13 +89,25 @@ export class SharedGlass {
   projectLayout() {
     if (!this.viewport || !this.layoutCamera) return;
     this.scene.updateMatrixWorld(); this.layoutCamera.updateMatrixWorld();
+    const inverseCamera = this.layoutCamera.matrixWorld.clone().invert();
     for (const panel of this.panels) {
       panel.projection = project(this.T, this.layoutCamera, panel.mesh, panel, this.viewport);
       panel.node.style.transform = `matrix3d(${panel.projection.css.join(',')})`;
+      panel.cameraPosition = panel.mesh.position.clone().applyMatrix4(inverseCamera);
+      panel.cameraRotation = this.layoutCamera.quaternion.clone().invert().multiply(panel.mesh.quaternion.clone());
     }
   }
-  sync() {
+  sync(camera) {
     if (!this.viewport) return;
+    camera.updateMatrixWorld();
+    this.currentCamera = camera;
+    for (const panel of this.panels) {
+      if (!panel.cameraPosition) continue;
+      panel.mesh.position.copy(panel.cameraPosition).applyMatrix4(camera.matrixWorld);
+      panel.mesh.quaternion.copy(camera.quaternion).multiply(panel.cameraRotation);
+      panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
+    }
+    this.scene.updateMatrixWorld();
     const key = `${this.layoutGeneration}:${this.instruments.active}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
     if (key === this.poseKey) return; this.poseKey = key;
     const visible = this.panels.filter(panel => !this.phone || panel.id === this.instruments.active);
@@ -114,10 +126,15 @@ export class SharedGlass {
   }
   diagnostics() {
     let lights = 0; this.scene.traverse(object => { if (object.isLight && object.userData.replayPulse) lights += 1; });
+    const pinnedError = panel => {
+      if (!this.currentCamera || !panel.projection || !panel.cameraPosition) return null;
+      const current = project(this.T, this.currentCamera, panel.mesh, panel, this.viewport).css;
+      return Math.max(...current.map((value,index)=>Math.abs(value-panel.projection.css[index])));
+    };
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
-      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node?.dataset.contextActive !== 'false', corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+      panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible, contextActive: panel.node?.dataset.contextActive !== 'false', cameraPinnedError:pinnedError(panel), corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
   dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
 }

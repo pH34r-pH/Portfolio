@@ -131,7 +131,7 @@ class MachineController {
     this.scene?.select(index); this.draw();
   }
   setFocus(part) {
-    this.focus = part; this.instruments?.setContext(part); this.scene?.setFocus(part);
+    this.focus = part; this.instruments?.setContext?.(part); this.scene?.setFocus(part);
     const layer = { tokenizer: 0, input: 0, representation: 6, consumer: 7, output: 7 }[part];
     if (layer !== undefined) this.select(GRAPH.layers[layer][0]);
   }
