@@ -16,7 +16,7 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const sourceFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js','model-glass.js','model-hardware.js','model-architecture.json','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
 const pipelineFiles=['scripts/capture-model-posters.mjs','scripts/model-pixel-fidelity.mjs','scripts/model-pixel-fidelity-worker.mjs',
   'scripts/test-model-pixel-fidelity.mjs','scripts/test-model-startup.mjs','scripts/model-audit-host.mjs','scripts/model-visual-audit.mjs',
-  'scripts/prepare-model-visual-evidence.mjs','package.json','package-lock.json'];
+  'scripts/prepare-model-visual-evidence.mjs','.github/workflows/ux-quality.yml','package.json','package-lock.json'];
 
 async function readLocalHashes(files) {
   return Object.fromEntries(await Promise.all(files.map(async file=>[file,hash(await readFile(new URL('../site/assets/'+file,import.meta.url)))])));

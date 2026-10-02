@@ -71,6 +71,8 @@ jobs:
       - name: Prepare bounded V2 model visual review evidence
         if: always()
         shell: bash
+        env:
+          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/prepare-model-visual-evidence.mjs
       - name: Upload UX review screenshots
         if: always()

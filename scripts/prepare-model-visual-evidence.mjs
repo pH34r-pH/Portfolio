@@ -13,7 +13,7 @@ const sourceDir=resolve(root,'ux-screenshots/visual-v2/posters');
 const reviewDir=resolve(root,'ux-screenshots/visual-v2/review');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const exists=async path=>{try{await stat(path);return true;}catch{return false;}};
-const sourceCommit=process.env.GITHUB_SHA||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
+const sourceCommit=process.env.PORTFOLIO_SOURCE_SHA||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim();
 await rm(reviewDir,{recursive:true,force:true});
 await mkdir(reviewDir,{recursive:true});
 await writeFile(resolve(reviewDir,'evidence-status.json'),JSON.stringify({status:'incomplete',reason:'Evidence preparation has not completed.',sourceCommit},null,2)+'\n');
