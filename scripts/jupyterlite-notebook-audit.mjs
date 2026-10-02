@@ -10,20 +10,31 @@ export async function collectNotebookCellCoverage(panel, expected) {
   const scroller = scrollContainers.find(element => element === notebookNode || element.contains(notebookNode))
     || scrollContainers.find(element => notebookNode.contains(element))
     || document.scrollingElement;
-  const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
   const step = Math.max(160, Math.floor(scroller.clientHeight * 0.7));
-  const positions = [];
-  for (let top = 0; top < maxScroll; top += step) positions.push(top);
-  positions.push(maxScroll);
   const snapshots = [];
-  for (const top of [...new Set(positions)]) {
-    scroller.scrollTop = top;
+  const seen = new Set();
+  const snapshot = () => [...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
+    id: cell.getAttribute("data-cell-id") || cell.dataset.id || "",
+    type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
+    text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
+  }));
+  snapshots.push(snapshot());
+  for (const cell of snapshots[0]) seen.add(cell.id || `${cell.type}:${cell.text.replace(/\s+/g, " ").trim()}`);
+  let stableBottomFrames = 0;
+  let previousHeight = scroller.scrollHeight;
+  for (let index = 0; index < 100; index += 1) {
+    // JupyterLab grows its virtual panel as the viewport approaches the current end.
+    // Recompute the end after every scroll so newly materialized cells are visited too.
+    scroller.scrollTop = Math.min(scroller.scrollTop + step, Math.max(0, scroller.scrollHeight - scroller.clientHeight));
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    snapshots.push([...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
-      id: cell.getAttribute("data-cell-id") || cell.dataset.id || "",
-      type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
-      text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
-    })));
+    const cells = snapshot();
+    snapshots.push(cells);
+    for (const cell of cells) seen.add(cell.id || `${cell.type}:${cell.text.replace(/\s+/g, " ").trim()}`);
+    const height = scroller.scrollHeight;
+    const atBottom = scroller.scrollTop + scroller.clientHeight >= height - 1;
+    stableBottomFrames = atBottom && height === previousHeight ? stableBottomFrames + 1 : 0;
+    previousHeight = height;
+    if (stableBottomFrames >= 2) break;
   }
   const normalize = value => value.replace(/\s+/g, " ").trim();
   const matched = expected.map(cell => {
@@ -41,6 +52,7 @@ export async function collectNotebookCellCoverage(panel, expected) {
     expected: expected.length,
     matched,
     scrollStates: snapshots.length,
+    distinctRenderedCells: seen.size,
     renderedPerState: snapshots.map(snapshot => snapshot.length),
     scroller: { tag: scroller.tagName, className: String(scroller.className || ""), clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight },
     scrollContainers: scrollContainers.slice(0, 20).map(element => ({
