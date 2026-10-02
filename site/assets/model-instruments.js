@@ -44,8 +44,11 @@ export class ModelInstruments {
     node.addEventListener('transitionend', event => {
       if (event.target === node && event.propertyName === 'opacity') {
         if (event.timeStamp < (node.contextTransitionStartedAt || 0) - 1) return;
+        const exiting=node.dataset.contextActive === 'false';
+        const targetOpacity=exiting?0:1;
+        if(Math.abs(parseFloat(getComputedStyle(node).opacity)-targetOpacity)>1e-4)return;
         const generation=node.contextTransitionGeneration;
-        if (node.dataset.contextActive === 'false') this.finishContextExit(node,generation);
+        if (exiting) this.finishContextExit(node,generation);
         else this.finishContextEnter(node,generation);
       }
     });
