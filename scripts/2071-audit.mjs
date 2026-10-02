@@ -15,18 +15,54 @@ async function pagefindAvailable(context) {
   return response.ok();
 }
 
-async function auditSearchDialog(page, hasPagefind) {
+async function auditSearchDialog(page, hasPagefind, manifest) {
   await page.keyboard.press("Control+K");
   const dialog = page.locator("dialog.search-dialog");
   await expect(dialog).toBeVisible();
-  await expect(page.locator("#portfolio-search")).toBeFocused();
+  const input = page.locator("#portfolio-search");
+  await expect(input).toBeFocused();
   if (hasPagefind) {
-    await page.locator("#portfolio-search").fill("hypersphere");
+    const results = page.locator(".search-results");
+    await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
+    await input.fill("portfolio-no-match-48271");
+    await expect(page.locator(".search-status")).toHaveText("No matching research.", { timeout: 10000 });
+    await expect(results.locator("li")).toHaveCount(0);
+    await input.fill("");
+    await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
+    await expect(results.locator("li")).toHaveCount(0);
+    await input.fill("hypersphere");
     await expect(page.locator(".search-status")).toContainText(/result/i, { timeout: 10000 });
-    await expect(page.locator(".search-results li").first()).toBeVisible();
+    const target = manifest?.articles?.find(article => article.slug === "005-unit-hypersphere-anomaly");
+    const result = target
+      ? results.locator(`a[href="${target.url}"]`).first()
+      : results.getByRole("link").first();
+    await expect(result).toBeVisible();
+    const destination = await result.getAttribute("href");
+    assert.ok(destination, "search result has an article destination");
+    await result.click();
+    await expect(page).toHaveURL(new URL(destination, base).href);
+    await expect(page.locator("article.myst-reader h1")).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(base + "/");
+    await expect(page.locator("[data-digital-home], .machine-landing").first()).toBeVisible();
+    await page.goForward();
+    await expect(page).toHaveURL(new URL(destination, base).href);
+    await expect(page.locator("article.myst-reader h1")).toBeVisible();
   }
-  await page.keyboard.press("Escape");
+
+  const close = page.getByRole("button", { name: "Close search" });
+  if (await dialog.isVisible()) {
+    await page.keyboard.press("Escape");
+  }
   await expect(dialog).toBeHidden();
+  const trigger = page.getByRole("button", { name: /Search/ });
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await trigger.tap();
+  else await trigger.click();
+  await expect(dialog).toBeVisible();
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await close.tap();
+  else await close.click();
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
 }
 
 async function auditVisibleMachine(browser) {
@@ -123,13 +159,40 @@ async function auditFrontierSelection(page,articles) {
   await expect(page.locator("[data-topology-list] li")).toHaveCount(articles.length);
 }
 
-async function auditPhoneTopology(page,nodes,layout) {
+async function auditPhoneTopology(page,nodes,layout,articles) {
   if (await page.evaluate(() => innerWidth <= 640)) {
     assert.ok(layout.boxes.every((box) => box.left >= layout.viewport.left - 1 && box.right <= layout.viewport.right + 1),
       `phone topology node escaped its viewport: ${JSON.stringify(layout)}`);
     await nodes.first().focus();
     await nodes.first().press("ArrowDown");
     await expect(nodes.nth(1)).toBeFocused();
+    await expect(nodes.nth(1)).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-topology-detail] h3")).toBeVisible();
+    await nodes.nth(1).press("Home");
+    await expect(nodes.first()).toBeFocused();
+    await expect(nodes.first()).toHaveAttribute("aria-pressed", "true");
+    await nodes.first().press("End");
+    await expect(nodes.last()).toBeFocused();
+    await expect(nodes.last()).toHaveAttribute("aria-pressed", "true");
+
+    const selectedArticle = articles.find(article => article.dependsOn?.length
+      || articles.some(candidate => candidate.dependsOn?.includes(article.slug))) || articles[0];
+    const node = page.locator(`.topology-node[data-slug="${selectedArticle.slug}"]`);
+    await node.tap();
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("[data-research-topology]")).toHaveAttribute("data-selected", selectedArticle.slug);
+    assert.ok(await page.locator(".topology-edges path.is-active").count() > 0,
+      "touch-selected connected milestone activates its dependency edge");
+    const heading = selectedArticle.shortTitle || selectedArticle.title?.replace(/^Milestone\s+\d+\s+[—-]\s+/i, "") || selectedArticle.slug;
+    await expect(page.locator("[data-topology-detail] h3")).toHaveText(heading);
+    const readArticle = page.locator(".topology-detail-actions a");
+    await expect(readArticle).toHaveAttribute("href", selectedArticle.url);
+    await readArticle.tap();
+    await expect(page).toHaveURL(base + selectedArticle.url);
+    await expect(page.locator("article.myst-reader h1")).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(base + "/research/");
+    await expect(page.locator(".topology-node")).toHaveCount(articles.length);
   }
 }
 
@@ -144,7 +207,7 @@ async function auditTopology(page, manifest) {
   assert.ok(layout.background.includes("radial-gradient"), "the page field should use dimensional gradients");
   assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
   await auditFrontierSelection(page,manifest.articles);
-  await auditPhoneTopology(page,nodes,layout);
+  await auditPhoneTopology(page,nodes,layout,manifest.articles);
 }
 
 async function auditArticleMachine(page, manifest) {
@@ -189,14 +252,14 @@ async function auditPagefindBoundaries(page, manifest) {
 const browser = await chromium.launch({ headless: true });
 
 try {
-  const context = await browser.newContext({ viewport: { width: 412, height: 915 } });
+  const context = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   const manifest = await optionalJson(context, "/publication.json");
   const hasPagefind = await pagefindAvailable(context);
   await page.goto(base + "/", { waitUntil: "networkidle" });
   await page.evaluate(()=>document.fonts.ready);
   await auditPaintedText(page,['.person-intro .lede','.proof-line','.actions a','.program-grid article p','.menu-toggle']);
-  await auditSearchDialog(page, hasPagefind);
+  await auditSearchDialog(page, hasPagefind, manifest);
   await auditTopology(page, manifest);
   if(manifest?.articles?.length)await auditPaintedText(page,['.topology-node strong','.topology-node small']);
   await auditArticleMachine(page, manifest);

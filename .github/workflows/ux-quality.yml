@@ -112,7 +112,9 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # Run build + interaction validation even when UX/Lighthouse review fails.
+    # Upload remains gated on the complete UX job passing for this exact SHA.
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     permissions:
@@ -366,12 +368,12 @@ jobs:
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-startup-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 PORTFOLIO_PUBLICATION_BUNDLE=1 node scripts/model-machine-audit.mjs
       - name: Hash exact upload bytes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: digest
         shell: bash
         run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
       - name: Upload public publication candidate
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: upload
         uses: actions/upload-artifact@v4
         with:
@@ -381,7 +383,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Summarize public candidate for private verification
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}

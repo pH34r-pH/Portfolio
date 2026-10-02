@@ -31,14 +31,15 @@
       "surfaces": ["homepage chapter anchors", "site menu", "search dialog"],
       "status": "automated",
       "tests": ["homepage-digital-audit.mjs", "interaction-audit.mjs", "2071-audit.mjs"],
-      "assertions": ["Chapter hash updates and browser Back restore route", "Finished-bundle article links, figure anchors, sticky-header clearance, Back and Forward restore route/hash state", "Menu Escape closes and returns focus", "Skip link focuses main", "Ctrl+K opens search and Escape closes it; indexed result behavior runs when Pagefind exists"]
+      "assertions": ["Chapter hash updates and browser Back restore route", "Finished-bundle article links and figure anchors check sticky-header clearance, Back/Forward route, hash and scroll restoration", "Finished-bundle Pagefind search checks no-result, clear, result activation, Back/Forward and touch Close", "Menu Escape closes and returns focus", "Skip link focuses main"]
     },
     {
       "id": "appearance-accessibility-responsive",
-      "surfaces": ["all rendered site routes", "mobile menu", "theme controls"],
+      "surfaces": ["source-served route/theme matrix", "finished-bundle navigation/menu/theme interactions", "mobile menu"],
       "status": "automated",
       "tests": ["appearance-audit.mjs", "interaction-audit.mjs", "ux-audit.mjs"],
-      "assertions": ["Auto/light/dark selection and persistence", "Menu opens from keyboard, moves focus into its links, supports Tab/Shift+Tab, and Escape restores trigger focus", "Mobile menu and theme actions use touch at phone widths", "Axe WCAG checks and focus visibility", "Responsive overflow and interaction target dimensions", "Reduced-motion scroll behavior and forced-colors fallbacks"]
+      "assertions": ["Source-served appearance audit checks Auto/light/dark selection and persistence", "Menu opens from keyboard, moves focus into its links, supports Tab/Shift+Tab, and Escape restores trigger focus", "Mobile menu and theme actions use touch at phone widths", "Axe WCAG checks, responsive overflow and target dimensions run on source-served routes; finished-bundle interaction audit checks representative routes", "Reduced-motion scroll behavior and forced-colors fallbacks"],
+      "limits": ["The exact finished-bundle job does not run the complete appearance matrix or denied-storage audit; those checks are source-served only."]
     },
     {
       "id": "homepage-model-journey",
@@ -73,15 +74,15 @@
       "surfaces": ["research topology", "Atlas crosswalk", "article anchors"],
       "status": "automated",
       "tests": ["2071-audit.mjs", "interaction-audit.mjs"],
-      "assertions": ["Topology nodes and edges match publication metadata", "Phone keyboard navigation selects nodes", "Article links and Atlas destinations resolve", "Anchor scrolling and sticky index are visually/layout checked"]
+      "assertions": ["On the phone viewport, Arrow/Home/End focus changes update aria-pressed/detail selection; touch selects a connected milestone, its Read article link navigates, and Back returns to the selected map", "Article links and Atlas destinations resolve", "Anchor scrolling and sticky index are visually/layout checked"]
     },
     {
       "id": "myst-articles-and-browser-execution",
       "surfaces": ["published MyST articles", "compiled evidence disclosures", "Load browser Python"],
       "status": "automated-with-fixture-limit",
       "tests": ["interaction-audit.mjs", "test-article-runtime.mjs", "model-startup-audit.mjs"],
-      "assertions": ["Finished articles expose executable cell/output structure and source revision", "Evidence disclosures open/close by pointer and keyboard", "Browser runtime success, rejected startup and retry are covered in focused runtime tests"],
-      "limits": ["The runtime unit test stubs the kernel lifecycle; it does not prove a real MyST cell executes in a user browser or a live kernel service is available."]
+      "assertions": ["Finished articles expose executable cell/output structure and source revision", "Evidence disclosures open/close by pointer and keyboard", "On the finished MyST article, Playwright clicks Load browser Python, injects local asset failures, checks retry and duplicate-click behavior, then requires an attached browser kernel and executes a smoke cell or asserts a captured Pyodide network failure", "Focused unit tests separately cover stubbed asset/kernel rejection and retry branches"],
+      "limits": ["Actual MyST execution depends on Pyodide network availability in the CI browser; a network-block result is recorded as blocked runtime, not successful execution."]
     },
     {
       "id": "finished-bundle-exports",
@@ -96,8 +97,8 @@
       "surfaces": ["published notebook reader", "preserved .ipynb download", "Open in JupyterLite"],
       "status": "automated-sampled-downloads",
       "tests": ["test_portfolio_publication.py", "interaction-audit.mjs", ".github/workflows/ux-quality.yml"],
-      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser audit checks reader structure, JupyterLite URL and bootstrap shell route", "Browser triggers a preserved .ipynb download and compares its SHA-256 to the publication manifest"],
-      "limits": ["The browser download is exercised for one published notebook; browser code does not execute a real notebook kernel in JupyterLite."]
+      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser follows the real Open in JupyterLite link, checks the selected notebook path and compares rendered code cell count/source to its preserved .ipynb", "Browser triggers a preserved .ipynb download and compares its SHA-256 to the publication manifest"],
+      "limits": ["JupyterLite bootstrap and cell loading are exercised; this route does not edit or execute a JupyterLite cell or validate workspace persistence."]
     },
     {
       "id": "external-experiment-catalog",
