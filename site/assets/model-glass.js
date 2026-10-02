@@ -118,7 +118,9 @@ export class SharedGlass {
       if (!panel.cameraPosition) continue;
       panel.mesh.position.copy(panel.cameraPosition).applyMatrix4(camera.matrixWorld);
       panel.mesh.quaternion.copy(camera.quaternion).multiply(panel.cameraRotation);
+      panel.mesh.scale.set(1,1,1);
       panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
+      panel.trim.scale.set(1,1,1);
     }
   }
   setPanelVisibility(camera,visible,safe) {
@@ -136,23 +138,43 @@ export class SharedGlass {
     panel.trim.material.opacity=this.trimMaterial.opacity*opacity;
     panel.transitionOpacity=opacity; panel.transitionOffset={x:0,y:0};
   }
-  translatePanelForDOM(panel,camera,offsetX,offsetY) {
+  translatePanelForDOM(panel,camera,rect,canvas) {
     const position=panel.mesh.position;
+    // CSS translate participates in the pane's projective transform, so its
+    // screen-space movement can also change apparent size when the pane tilts.
+    // Fit the GPU bounds to the browser's actual transitioned pane bounds.
     const right=new this.T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
     const up=new this.T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
-    const center=()=>{panel.mesh.updateMatrixWorld(true);const corners=project(this.T,camera,panel.mesh,panel,this.viewport).corners;
-      return corners.reduce((sum,point)=>[sum[0]+point[0]/4,sum[1]+point[1]/4],[0,0]);};
-    const initial=center(),target=[initial[0]+offsetX,initial[1]+offsetY];
-    for(let iteration=0;iteration<3;iteration++) {
-      const current=center(),step=.01;
-      position.addScaledVector(right,step);const rightCenter=center();
-      position.addScaledVector(right,-step).addScaledVector(up,step);const upCenter=center();
-      position.addScaledVector(up,-step);
-      const a=(rightCenter[0]-current[0])/step,b=(upCenter[0]-current[0])/step;
-      const c=(rightCenter[1]-current[1])/step,d=(upCenter[1]-current[1])/step,determinant=a*d-b*c;
-      if(Math.abs(determinant)<1e-8)break;
-      const dx=target[0]-current[0],dy=target[1]-current[1];
-      position.addScaledVector(right,(dx*d-b*dy)/determinant).addScaledVector(up,(a*dy-dx*c)/determinant);
+    const bounds=()=>{panel.mesh.updateMatrixWorld(true);const points=project(this.T,camera,panel.mesh,panel,this.viewport).corners;
+      return [Math.min(...points.map(point=>point[0])),Math.min(...points.map(point=>point[1])),
+        Math.max(...points.map(point=>point[0])),Math.max(...points.map(point=>point[1]))];};
+    const target=[rect.left-canvas.left,rect.top-canvas.top,rect.right-canvas.left,rect.bottom-canvas.top];
+    const solve=(matrix,rhs)=>{
+      const n=rhs.length,a=matrix.map((row,index)=>[...row,rhs[index]]);
+      for(let column=0;column<n;column++){
+        let pivot=column;for(let row=column+1;row<n;row++)if(Math.abs(a[row][column])>Math.abs(a[pivot][column]))pivot=row;
+        if(Math.abs(a[pivot][column])<1e-8)return null;
+        [a[pivot],a[column]]=[a[column],a[pivot]];const divisor=a[column][column];
+        for(let j=column;j<=n;j++)a[column][j]/=divisor;
+        for(let row=0;row<n;row++)if(row!==column){const factor=a[row][column];for(let j=column;j<=n;j++)a[row][j]-=factor*a[column][j];}
+      }
+      return a.map(row=>row[n]);
+    };
+    for(let iteration=0;iteration<3;iteration++){
+      const current=bounds(),steps=[.01,.01,.005,.005],columns=[];
+      for(let axis=0;axis<4;axis++){
+        if(axis===0)position.addScaledVector(right,steps[axis]);
+        else if(axis===1)position.addScaledVector(up,steps[axis]);
+        else panel.mesh.scale[axis===2?'x':'y']+=steps[axis];
+        const sample=bounds();columns.push(sample.map((value,index)=>(value-current[index])/steps[axis]));
+        if(axis===0)position.addScaledVector(right,-steps[axis]);
+        else if(axis===1)position.addScaledVector(up,-steps[axis]);
+        else panel.mesh.scale[axis===2?'x':'y']-=steps[axis];
+      }
+      const delta=solve(current.map((_,row)=>columns.map(column=>column[row])),current.map((value,index)=>target[index]-value));
+      if(!delta)break;
+      position.addScaledVector(right,delta[0]).addScaledVector(up,delta[1]);
+      panel.mesh.scale.x+=delta[2];panel.mesh.scale.y+=delta[3];
     }
     panel.mesh.updateMatrixWorld(true);
   }
@@ -186,8 +208,8 @@ export class SharedGlass {
     const offsetX = animating ? rect.left - canvas.left - baseLeft : 0;
     const offsetY = animating ? rect.top - canvas.top - baseTop : 0;
     panel.domOffset = {x:offsetX,y:offsetY}; panel.backingOpacity = opacity;
-    if (safe && animating) this.translatePanelForDOM(panel,camera,offsetX,offsetY);
-    panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
+    if (safe && animating) this.translatePanelForDOM(panel,camera,rect,canvas);
+    panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);panel.trim.scale.copy(panel.mesh.scale);
     const material = panel.mesh.material, transparent = this.material.transparent || animating;
     if (material.transparent !== transparent) {material.transparent = transparent; material.needsUpdate = true;}
     material.opacity = this.material.opacity * opacity;
@@ -211,9 +233,10 @@ export class SharedGlass {
       if (!this.currentCamera || !panel.node || !panel.projection) return null;
       const corners = project(this.T,this.currentCamera,panel.mesh,panel,this.viewport).corners;
       const rect = panel.node.getBoundingClientRect(), canvas = this.canvas.getBoundingClientRect();
-      const expected = [[rect.left-canvas.left,rect.top-canvas.top],[rect.right-canvas.left,rect.top-canvas.top],
-        [rect.right-canvas.left,rect.bottom-canvas.top],[rect.left-canvas.left,rect.bottom-canvas.top]];
-      return Math.max(...corners.flatMap((point,index)=>point.map((value,axis)=>Math.abs(value-expected[index][axis]))));
+      const xs=corners.map(point=>point[0]),ys=corners.map(point=>point[1]);
+      return Math.max(Math.abs(Math.min(...xs)-(rect.left-canvas.left)),Math.abs(Math.min(...ys)-(rect.top-canvas.top)),
+        Math.abs(Math.max(...xs)-(rect.right-canvas.left)),Math.abs(Math.max(...ys)-(rect.bottom-canvas.top)),
+        Math.abs((Math.max(...xs)-Math.min(...xs))-rect.width),Math.abs((Math.max(...ys)-Math.min(...ys))-rect.height));
     };
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
