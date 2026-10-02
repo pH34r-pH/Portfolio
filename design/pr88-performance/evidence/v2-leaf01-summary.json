@@ -1,8 +1,8 @@
 {
-  "leaf": "V2 leaf 01 — crisp horizontal shared model appearance",
+  "leaf": "V2 leaf 01 \u2014 crisp horizontal shared model appearance",
   "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5",
-  "captureSourceCommit": "7a1c9f716d29e22203d7198848d9a06fe8eaa0b1",
-  "captureSourceTreeSha256": "bdd363bce277a9c618e6f2a7e12cc1e81359dc4b891ecfd0bbb98af1fc29960",
+  "captureSourceCommit": "7e700154879342bcf18811e971c371bc65a11155",
+  "captureSourceTreeSha256": "b06f8418484055a8262f9d2aaa06090049679046bbc4fb26248d5cbc2afdefe6",
   "publishedArticleInputs": {
     "portfolio": "01f4a7ae88778803eab4422716d693be880f8d68",
     "researchNotes": "965fb9186a0c1bb99cc3bd60b2e86668b0f12a91",
@@ -11,6 +11,7 @@
   },
   "implementation": [
     "Request MSAA on the WebGL2 context at creation; record actual context attributes, framebuffer samples, viewport/texture/renderbuffer limits and active transmission targets.",
+    "Preserve stored yaw, pitch, zoom and pan when resize, coordinate selection or glass-quality changes relayout the scene; diagnostics include the rendered camera orientation.",
     "Use native device DPR and full-resolution transmission unless an observed GL dimension limit requires a constraint; Auto stays refraction, and explicit lightweight remains available.",
     "Fit all graph nodes, edge route control points (including recurrence/residual), contour vertices and carrier envelopes to the canvas; keep the graph horizontal at all widths.",
     "Share the blue contour/point appearance with article views without adding the Home-only DOM marker to articles; keep article controls and disclosures intact.",
@@ -19,20 +20,20 @@
   ],
   "posterCapture": {
     "manifest": "site/assets/model-posters/manifest.json",
-    "manifestSha256": "7f27535260bc90dd82c16907a7359c5e36a1f019c66430854db688e1f9527700",
+    "manifestSha256": "f28485612313da1a00b87dc756f121ceddabaee73a43e1a1ed765921517c3893",
     "schemaVersion": 3,
     "sourceWorkingTreeClean": true,
-    "sourceModulesHashed": 11,
+    "sourceModulesHashed": 15,
     "capturePipelineFilesHashed": 11,
     "servedModuleBytesMatchLocal": true,
     "variants": 12,
     "cssPixels": {
-      "desktop": "1280×740",
-      "phone": "500×280"
+      "desktop": "1280\u00d7740",
+      "phone": "500\u00d7280"
     },
     "decodedDensityPixels": [
-      "1280×740, 2560×1480, 3840×2220",
-      "500×280, 1000×560, 1500×840"
+      "1280\u00d7740, 2560\u00d71480, 3840\u00d72220",
+      "500\u00d7280, 1000\u00d7560, 1500\u00d7840"
     ],
     "selectedFormat": "AVIF for all 12 variants; WebP retained as independent alternate.",
     "selectedAssetBytes": 2113391,
@@ -79,20 +80,20 @@
     "graphGeometryFit": "All components remain inside the reported fit margin in capture and live audit profiles."
   },
   "validation": {
-    "runtime": "Node v22.23.3; exact clean npm ci passed (1469 packages).",
-    "startup": "node scripts/test-model-startup.mjs passed after the final recapture: dimensions, decodes, hashes, MSAA/target support, route identity and source provenance.",
-    "replay": "node scripts/test-model-replay.mjs passed all 361 rewind states, horizontal/vertical light sampling, gestures and vendored engine identity.",
-    "pixelFidelity": "node scripts/test-model-pixel-fidelity.mjs passed exact identity, one-step channel deltas, larger channel deltas and parallel-worker equivalence.",
-    "visual": "scripts/model-visual-audit.mjs passed 24 profiles across Home, canonical article fixture and finished article 001-text-as-signal. Includes 360×800/DPR1, 412×915/DPR3, 1440×1000/DPR2, light/dark, reduced-motion and forced-colors no-engine fallback, NoJS posters, 720px resize and full route-fit checks.",
+    "runtime": "Exact clean npm ci passed earlier on Node v22.23.3 (1,469 packages). Repair audits ran on Node v24.19.0 with temporary Chromium 140.0.7339.16 cache.",
+    "startup": "node scripts/test-model-startup.mjs passed after the final recapture: dimensions, decodes, hashes, expanded renderer-dependency provenance, MSAA/target support, route identity and source provenance.",
+    "replay": "node scripts/test-model-replay.mjs passed after the repair: all 361 rewind states, horizontal/vertical light sampling, gestures and vendored engine identity.",
+    "pixelFidelity": "node scripts/test-model-pixel-fidelity.mjs passed after recapture: exact identity, one-step channel deltas, larger channel deltas and parallel-worker equivalence.",
+    "visual": "scripts/model-visual-audit.mjs passed all 24 profiles on Home, the canonical article fixture and the finished MyST article 001-text-as-signal. The article stage is explicitly scrolled into view before asserting engine start. Includes 360\u00d7800/DPR1, 412\u00d7915/DPR3, 1440\u00d71000/DPR2, themes, quiet/fallback modes, NoJS, resize across 720px and 125%/200%/250% equivalent profiles. Exact build inputs are recorded under publishedArticleInputs.",
     "zoom": "Headless browser-chrome zoom is unavailable. Equivalent CSS viewport/native DPR results at 125%, 200% and 250% passed for Home and the finished MyST article; this is not a physical browser-UI zoom observation.",
-    "publishedArticleUI": "scripts/model-machine-audit.mjs passed 10 profiles on the finished MyST article; controls, disclosures, accessibility, replay, WebGL-loss fallback and determinism passed.",
+    "publishedArticleUI": "scripts/model-machine-audit.mjs passed all 10 profiles on the finished MyST article after the camera fix; regression assertions cover UI coordinate selection, lightweight/auto quality changes, and resizes at 720, 721 and 1440px while preserving stored controls and rendered orientation.",
     "eslintStructural": "0 findings on the leaf tree; 0 on exact PR88 base under the workflow rules.",
     "lizardStructural": "0 findings on the leaf tree; 0 on exact PR88 base at lizard 1.24.0.",
-    "workflow": "Existing UX workflow now captures, validates and uploads a compact 16-file review evidence set with 3-day retention. No Actions result exists yet for the new head at this checkpoint."
+    "workflow": "Exact-head UX run 36962460092 on 535c5fbe failed in the new visual audit at article-fixture zoom-equivalent 200% after 15 profiles. The host root was scrolled instead of its tall observed stage, so the deferred engine never entered loading; this was an audit setup failure, not a renderer failure. Stage scrolling is fixed and the full 24-profile audit now passes locally. Evidence preparation/upload succeeded in the old run: artifact 11208014880 is listed, non-expired, 19,240,229 bytes, with 3-day expiry at 2026-10-05T04:05:52Z. A new exact-head workflow result is pending."
   },
   "boundedAuditFindings": {
-    "homepageDigital": "The existing 44×44 target assertion fails identically on PR88 and leaf 01. Both report the same 13 transformed Home links at 19.07–28 CSS px wide and the Build provenance summary at 6.39px wide; heights are 44–48px. This leaf changes blue palette/poster-density declarations but does not change the link/summary sizing or transform behavior.",
-    "articleGlass": "The legacy glass audit passes its desktop profile then fails at phone360 before its first post-seek pane screenshot: it expects spatial mode, but the new compact horizontal view chooses the existing accessible flow fallback. Exact 360×800/DPR3 comparison: PR88 stage 1080px, canvas 338×874 CSS px, spatial glass; leaf 01 stage 570px, canvas 338×358 CSS px, graph bounds fit, panel projects y=197.5–387.9px and exceeds the canvas bottom by 29.9px, so flow mode hides the glass mesh. Saved comparison: ux-screenshots/visual-v2/model-glass-audit/pr88-leaf01-phone-comparison.json. Pane behavior remains for the later pane leaf; the spatial assertion was not weakened."
+    "homepageDigital": "The existing 44\u00d744 target assertion fails identically on PR88 and leaf 01. Both report the same 13 transformed Home links at 19.07\u201328 CSS px wide and the Build provenance summary at 6.39px wide; heights are 44\u201348px. This leaf changes blue palette/poster-density declarations but does not change the link/summary sizing or transform behavior.",
+    "articleGlass": "The legacy glass audit passes its desktop profile then fails at phone360 before its first post-seek pane screenshot: it expects spatial mode, but the new compact horizontal view chooses the existing accessible flow fallback. Exact 360\u00d7800/DPR3 comparison: PR88 stage 1080px, canvas 338\u00d7874 CSS px, spatial glass; leaf 01 stage 570px, canvas 338\u00d7358 CSS px, graph bounds fit, panel projects y=197.5\u2013387.9px and exceeds the canvas bottom by 29.9px, so flow mode hides the glass mesh. Saved comparison: ux-screenshots/visual-v2/model-glass-audit/pr88-leaf01-phone-comparison.json. Pane behavior remains for the later pane leaf; the spatial assertion was not weakened."
   },
   "costAndBudgets": {
     "observedModelWork": "The 10-profile software article audit observed up to 25 draw calls and 33,780 triangles. CPU render-submission p95 reached 156.3ms and CPU frame-update p95 reached 29.7ms in small software samples; GPU timer queries were unsupported. This is diagnostic evidence only, not a frame-time or performance qualification.",
@@ -111,14 +112,22 @@
       "review/phone-500x280-dpr3-native-comparison.png",
       "review/desktop-1280x740-dpr2-native-comparison.png"
     ],
-    "receipt": "review/evidence-status.json",
+    "receipt": "review/evidence-status.json (fresh local receipt: captured with the 24-profile final audit and source commit 7e700154879342bcf18811e971c371bc65a11155)",
     "uploadBytes": 13096271,
     "files": 16,
-    "retentionDays": 3
+    "retentionDays": 3,
+    "actionsArtifact": {
+      "id": 11208014880,
+      "name": "ux-review-535c5fbe6e3dbfdcc4cb15b350d886da521e2151",
+      "run": 36962460092,
+      "state": "uploaded and unexpired; previous-head failure evidence",
+      "sizeBytes": 19240229
+    }
   },
   "remainingLimits": [
     "Physical Android GPU, sustained thermal behavior and the exact deployed preview/grain remain unobserved.",
     "Headless SwiftShader is not physical-device evidence; GPU timer queries are unavailable.",
+    "The old exact-head Actions run failed only because the audit scrolled the tall article root rather than its observed stage; the corrected audit passes locally, and a new exact-head Actions result is still pending.",
     "Browser chrome zoom is unavailable in headless mode; equivalent CSS viewport/DPR profiles were used.",
     "The phone article spatial-glass expectation needs review in the later pane-layout leaf; accessible flow fallback is active at compact phone size.",
     "The unchanged Home minimum target-size check still fails on the PR88 baseline and leaf 01."
@@ -126,6 +135,7 @@
   "stack": {
     "pr": 89,
     "branch": "work-2071-dr-cho-visual-leaf01",
-    "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5"
+    "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5",
+    "lastCommittedSourceFix": "7e700154879342bcf18811e971c371bc65a11155"
   }
 }
