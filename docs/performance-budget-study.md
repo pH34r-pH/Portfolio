@@ -194,7 +194,14 @@ to the implementation shown in the award entry.
   These later 503s were not substituted into earlier Lighthouse results. The
   review artifacts preserve the statuses and screenshots. An earlier `curl`
   check returned HTTP 200 for all seven routes; no 503 was bypassed with retries
-  or another client. No entered Breakthrough state was captured.
+  or another client. A separate bounded userflow check then received HTTP 200,
+  found the accessible `Enter Website` button, and activated it once. Seven
+  seconds later the viewport was blank below the site header; body text remained
+  empty and 11 requests had failed/aborted, including video/telemetry requests.
+  Thus this attempt did not capture meaningful entered article content and is
+  not a scored page result. Before/after screenshots and the complete check
+  output are `breakthrough-entry-before.png`, `breakthrough-entry-after.png`,
+  and `breakthrough-entry-userflow.json` under the peer raw evidence directory.
 - The separate source-fixture run measured `/` and `/research/` three times in
   each mode (12 cold Lighthouse reports), using the observed production-like
   Brotli and 30-second cache policy. It remains source-only, not the generated
@@ -345,7 +352,8 @@ processes. These exclusions avoid treating blank/failed states as cheap wins.
 ## Raw artifact index
 
 - Peer raw LHR JSON, stderr, screenshots and summaries:
-  `/tmp/portfolio-perf-study/reports` (42 attempts).
+  `/tmp/portfolio-perf-study/reports` (42 attempts, plus the separately labeled
+  one-click Breakthrough entered-state check).
 - Main-source fixture reports and header/CDP logs:
   `/tmp/portfolio-perf-study/source-fixture` (12 LHR samples).
 - Finished PR91 bundle and digest: `/tmp/portfolio-perf-study/pr91/bundle`,
