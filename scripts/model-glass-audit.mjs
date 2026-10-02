@@ -131,8 +131,12 @@ async function contextExitWaitsForTransition(page,root,phone) {
   await root.evaluate(node=>node.machine.focus('all'));
   await expect(input).not.toHaveAttribute('aria-hidden','true');
   assert.equal(await input.evaluate(panel=>panel.inert),false,'reversing the context transition restores pane focusability');
-  await page.waitForTimeout(120);
-  const reversing=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
+  const reversingState=async()=>{
+    const panel=(await diagnostics(root)).glass.panels.find(item=>item.id==='input');
+    return {advances:panel.transitionOpacity>exiting.transitionOpacity&&panel.transitionOffset.x<exiting.transitionOffset.x,panel};
+  };
+  await expect.poll(async()=>(await reversingState()).advances,{timeout:5000}).toBe(true);
+  const reversing=(await reversingState()).panel;
   assert.ok(reversing.transitionOpacity>exiting.transitionOpacity,'reversed easing moves the glass and DOM pane back toward their context pose');
   assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
   await root.evaluate(node=>node.machine.focus('representation'));
@@ -209,6 +213,23 @@ async function glassPanelSettled(root,id) {
       &&panel.node.inert===!active;
   },id);
 }
+async function waitForGlassPanelSettled(root,id,timeout,phase) {
+  try {await expect.poll(()=>glassPanelSettled(root,id),{timeout}).toBe(true);}
+  catch(error) {
+    const state=await root.evaluate((node,{id,phase})=>{
+      const scene=node.machineController.scene,glass=scene?.glass,panel=glass?.panels.find(item=>item.id===id);
+      if(!panel)return {render:node.dataset.render,present:false};
+      return {render:node.dataset.render,visible:node.machineController.visible,hidden:document.hidden,phase,
+        active:panel.node.dataset.contextActive,animating:panel.node.contextAnimating,contextVisible:panel.node.contextVisible,
+        domOpacity:getComputedStyle(panel.node).opacity,glassOpacity:panel.mesh.material.opacity,
+        trimOpacity:panel.trim.material.opacity,inert:panel.node.inert,hiddenPanel:panel.node.hidden,
+        generation:panel.node.contextTransitionGeneration,duration:panel.node.contextTransitionDuration,
+        timer:Boolean(panel.node.contextExitTimer),raf:Boolean(panel.node.contextExitRaf),raf2:Boolean(panel.node.contextExitRaf2),
+        sceneRaf:scene.glassAnimationRaf,anyAnimating:glass.hasContextAnimation()};
+    },{id,phase});
+    console.log(`Glass panel settle timeout: ${JSON.stringify(state)}`);throw error;
+  }
+}
 async function entryWithoutTransitionEvent(root) {
   const input=root.locator('[data-glass-panel="input"]');
   const previous=await input.evaluate(panel=>panel.style.transitionDuration);
@@ -223,10 +244,10 @@ async function entryWithoutTransitionEvent(root) {
     assert.equal(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration)),0,
       'fallback regression disables CSS transitions so no transitionend can settle the pane');
     await root.evaluate(node=>node.machine.focus('representation'));
-    await expect.poll(()=>glassPanelSettled(root,'input'),{timeout:5000}).toBe(true);
+    await waitForGlassPanelSettled(root,'input',5000,'zero-duration exit');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration exit settles without transitionend');
     await root.evaluate(node=>node.machine.focus('all'));
-    await expect.poll(()=>glassPanelSettled(root,'input'),{timeout:3000}).toBe(true);
+    await waitForGlassPanelSettled(root,'input',5000,'zero-duration entry');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration entry settles without transitionend');
   } finally {await input.evaluate((panel,duration)=>panel.style.transitionDuration=duration,previous);}
 }

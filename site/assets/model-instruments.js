@@ -86,13 +86,11 @@ export class ModelInstruments {
     panel.contextAnimating = false; panel.contextVisible = false;
     panel.inert = true;
     panel.hidden = Boolean(this.phone && this.mode === 'spatial');
-    this.changed?.();
+    if(this.phone)this.changed?.();
   }
   finishContextEnter(panel,generation=panel.contextTransitionGeneration) {
     if (panel.dataset.contextActive === 'false'||generation!==panel.contextTransitionGeneration) return;
-    const wasAnimating=panel.contextAnimating;
     this.cancelContextExit(panel); panel.contextAnimating = false; panel.contextVisible = true;
-    if(wasAnimating)this.changed?.();
   }
   cancelContextExit(panel) {
     clearTimeout(panel.contextExitTimer);
