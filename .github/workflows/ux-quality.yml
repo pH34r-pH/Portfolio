@@ -63,9 +63,9 @@ jobs:
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/2071-audit.mjs
-          node scripts/homepage-digital-audit.mjs
-          node scripts/model-startup-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
+          node scripts/model-startup-audit.mjs
+          node scripts/homepage-digital-audit.mjs
           node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
       - name: Prepare bounded V2 model visual review evidence

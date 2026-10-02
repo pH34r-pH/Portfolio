@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {createRequire} from 'node:module';
 import {ignitionLevel} from '../site/assets/model-power.js';
+import {POSTER_FIT_MARGIN} from '../site/assets/model-view.js';
 
 const sharp=createRequire(import.meta.url)('sharp');
 for(let layer=0;layer<8;layer++) {
@@ -30,6 +31,7 @@ for(const asset of manifest.assets) {
   const key=`${asset.name}:${asset.theme}:${asset.density}`;assert.ok(!observed.has(key),`Duplicate capture ${key}`);observed.add(key);
   assert.equal(asset.nodes,1668);assert.equal(asset.displayRoutes,3601);assert.equal(asset.power,0);assert.equal(asset.orientation,'input-to-output');
   const geometry=asset.graphGeometryBounds,margin=geometry.marginPx;
+  assert.equal(geometry.cameraFitMarginPx,POSTER_FIT_MARGIN,`${key}: capture uses the shared canonical poster fit margin`);
   assert.equal(geometry.routeCount,3601);assert.equal(geometry.recurrenceCount,1);
   assert.ok(geometry.components.routeControlPoints.count>3601);
   for(const [part,bounds] of Object.entries({all:geometry.all,...geometry.components})) {

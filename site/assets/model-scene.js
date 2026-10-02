@@ -7,7 +7,7 @@ import { ModelQuality } from "./model-quality.js";
 import { buildMachineHardware } from "./model-hardware.js";
 import { digitalContours } from './model-digital.js';
 import { HomepageScreens } from './homepage-screens.js';
-import { digitalView } from './model-view.js';
+import { containedDigitalView, digitalView, POSTER_FIT_MARGIN, POSTER_VIEWS } from './model-view.js';
 import { applyPower } from './model-power.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
@@ -39,7 +39,8 @@ export class MachineScene {
     this.scene = new T.Scene();
     this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
     this.machine = new T.Group(); this.scene.add(this.machine);
-    this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan = {x:0,y:0}; this.selected = GRAPH.layers[6][0]; this.focus = "all";
+    this.phone=mobile();this.poseTouched=false;
+    this.yaw = this.phone ? -.15 : -.5; this.pitch = this.phone ? .38 : .1; this.zoom = 1; this.pan = {x:0,y:0}; this.selected = GRAPH.layers[6][0]; this.focus = "all";
     this.materials = {
       shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
       ceramic: new T.MeshStandardMaterial({ color: 0x8faabd, metalness: .32, roughness: .23 }),
@@ -116,9 +117,24 @@ export class MachineScene {
     this.renderer.setPixelRatio(this.pixelRatio(width,height));
     this.renderer.transmissionResolutionScale = 1;
     this.renderer.setSize(width, height, false);
-    const view=this.configureView(width,height),phone=mobile();
+    const view=this.configureView(width,height),phone=mobile(),fitKey=this.digital?`poster:${phone}`:`${width}x${height}:${view.fov}`;
     this.machine.rotation.set(0,0,0);this.machine.position.y=0;this.machine.scale.setScalar(.9);this.machine.updateMatrixWorld(true);
-    this.distance=this.fitGraphDistance(width,height,this.yaw,this.pitch,view.fov);
+    // Refit only when the actual layout changes. Same-size glass/coordinate
+    // relayouts must not alter the base camera distance after user inspection.
+    if(this.fitKey!==fitKey) {
+      if(this.digital) {
+        const poster=POSTER_VIEWS[phone?'phone':'desktop'];
+        const posterView=digitalView(poster.width/poster.height,phone);
+        this.distance=this.fitGraphDistance(poster.width,poster.height,poster.yaw,poster.pitch,posterView.fov,POSTER_FIT_MARGIN);
+      } else {
+        this.distance=this.fitGraphDistance(width,height,this.yaw,this.pitch,view.fov);
+      }
+      this.fitKey=fitKey;
+    }
+    // Home borrows the canonical poster's distance, while its live camera keeps
+    // the actual canvas projection so a contained poster and live graph scale
+    // together at every host aspect ratio.
+    this.camera.aspect=width/height;this.camera.fov=view.fov;this.camera.updateProjectionMatrix();
     this.updateCamera();
     const stage = this.canvas.parentElement;
     if (!this.digital) {this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;}
@@ -137,9 +153,12 @@ export class MachineScene {
   }
   configureView(width,height) {
     const phone=mobile();
+    if(this.phone!==phone&&this.digital&&!this.poseTouched) {
+      this.yaw=phone ? -.15 : -.5;this.pitch=phone ? .38 : .1;this.zoom=1;this.pan={x:0,y:0};
+    }
     this.phone=phone;
     this.camera.aspect=width/height;
-    const view=digitalView(this.camera.aspect,phone);
+    const view=this.digital?containedDigitalView(width,height,phone):digitalView(this.camera.aspect,phone);
     this.camera.fov=view.fov;this.camera.updateProjectionMatrix();return view;
   }
   collectFitGeometry() {
@@ -165,9 +184,10 @@ export class MachineScene {
     }
     return true;
   }
-  fitGraphDistance(width,height,yaw,pitch,fov) {
+  fitGraphDistance(width,height,yaw,pitch,fov,requestedMargin) {
     this.camera.aspect=width/height;this.camera.fov=fov;this.camera.updateProjectionMatrix();
-    const margin=Math.min(12,Math.max(4,Math.min(width,height)*.04));
+    const margin=requestedMargin??Math.min(12,Math.max(4,Math.min(width,height)*.04));
+    this.cameraFitMargin=margin;
     let lower=.1,upper=1;
     while(upper<72&&!this.graphFitsAt(upper,width,height,yaw,pitch,margin))upper*=1.5;
     if(upper>=72&&!this.graphFitsAt(upper,width,height,yaw,pitch,margin))throw new Error('Complete graph geometry exceeds the supported camera fit range');
@@ -192,7 +212,7 @@ export class MachineScene {
     this.machine.updateMatrixWorld(true);this.camera.updateMatrixWorld(true);
     const components=Object.fromEntries(Object.entries(this.fitGeometry).filter(([key])=>!['all','routeCount','recurrenceCount'].includes(key))
       .map(([key,points])=>[key,this.projectBounds(points,width,height)]));
-    return {viewport:{width,height},marginPx:Math.min(12,Math.max(4,Math.min(width,height)*.04)),routeCount:this.fitGeometry.routeCount,
+    return {viewport:{width,height},marginPx:Math.min(12,Math.max(4,Math.min(width,height)*.04)),cameraFitMarginPx:this.cameraFitMargin,routeCount:this.fitGeometry.routeCount,
       recurrenceCount:this.fitGeometry.recurrenceCount,components,all:this.projectBounds(this.fitGeometry.all,width,height)};
   }
   poseCamera(yaw, pitch, zoom, pan, distance=this.distance) {
@@ -286,10 +306,10 @@ export class MachineScene {
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
   setFocus(part) { this.focus = part; if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
-  orbit(dx, dy) { this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
-  zoomBy(amount) { this.zoom = clamp(this.zoom + amount, .75, 1.8); this.updateCamera(); this.render(); }
-  resetView() { this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; this.resize(); }
-  panBy(dx,dy) { this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
+  orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
+  zoomBy(amount) { this.poseTouched=true;this.zoom = clamp(this.zoom + amount, .75, 1.8); this.updateCamera(); this.render(); }
+  resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; this.resize(); }
+  panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
     if (this.depthView) { const {yaw, pitch} = this.depthView; this.depthView = null; this.yaw = yaw; this.pitch = pitch; this.updateCamera(); this.render(); }
     else { this.depthView = {yaw:this.yaw, pitch:this.pitch}; this.orbit(-.05, .01); }
@@ -304,7 +324,7 @@ export class MachineScene {
     this.abort=new AbortController();const options={signal:this.abort.signal};
     this.gestures=new ModelGestures({
       orbit:(dx,dy)=>this.orbit(dx*.007,dy*.005),
-      zoom:ratio=>{this.zoom=clamp(this.zoom*ratio,.75,1.8);this.updateCamera();this.render();},
+      zoom:ratio=>{this.poseTouched=true;this.zoom=clamp(this.zoom*ratio,.75,1.8);this.updateCamera();this.render();},
       pan:(dx,dy)=>this.panBy(-dx*.012,dy*.012),
       scrub:dx=>scrub(dx*360/Math.max(this.canvas.clientWidth,1)),
     });
@@ -377,7 +397,8 @@ export class MachineScene {
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
         lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
-      camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},position:this.camera.position.toArray(),quaternion:this.camera.quaternion.toArray()},pointers:this.gestures.points.size};
+      camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},distance:this.distance,
+        position:this.camera.position.toArray(),quaternion:this.camera.quaternion.toArray()},pointers:this.gestures.points.size};
   }
   dispose() {
     if (this.disposed) {return;} this.disposed = true;

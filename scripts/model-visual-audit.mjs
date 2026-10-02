@@ -60,6 +60,15 @@ async function installFixture(page,host) {
   }));
 }
 
+async function scrollObservedStageIntoView(page) {
+  const root=page.locator('[data-model-machine]').first();
+  // The model section can be taller than the viewport. Scrolling the root only
+  // may leave its observed stage below the fold, where the deferred engine
+  // never starts. Scroll the observed stage before asserting render.
+  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
+  return root;
+}
+
 async function inspectHost(host,viewport) {
   const {kind,base,url}=host;
   const [name,width,height,dpr]=viewport;
@@ -68,11 +77,7 @@ async function inspectHost(host,viewport) {
   page.on('pageerror',error=>errors.push(error.message));
   await installFixture(page,host);
   await page.goto(base+url,{waitUntil:'networkidle'});
-  const root=page.locator('[data-model-machine]').first();
-  // The model section can be taller than the viewport. Scrolling the root only
-  // may leave its stage below the fold, where the intentionally deferred engine
-  // never starts. Bring the observed stage into view before asserting render.
-  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
+  const root=await scrollObservedStageIntoView(page);
   await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
   await expect(root).toHaveAttribute('data-render','webgl');
   await root.evaluate(node=>node.machine.seek(145));
@@ -125,7 +130,7 @@ async function quietModes(host) {
     page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
     await installFixture(page,host);
     await page.goto(base+url,{waitUntil:'networkidle'});
-    const root=page.locator('[data-model-machine]').first();await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
+    const root=await scrollObservedStageIntoView(page);
     await expect(root).toHaveAttribute('data-render','fallback');
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
     assert.equal(engineRequests,0,`${kind}/${mode} must perform zero Three.js loads`);
@@ -158,15 +163,20 @@ try {
   const context=await browser.newContext({viewport:{width:721,height:900},deviceScaleFactor:2});
   const page=await context.newPage();await page.goto(sourceBase+'/',{waitUntil:'networkidle'});
   const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();await expect(root).toHaveAttribute('data-render','webgl');
-  const resize=[];
+  const resize=[],canonicalHomeViews={};
   for(const width of [721,720,412,721]) {
     await page.setViewportSize({width,height:900});
     await page.waitForTimeout(120);
     const d=await root.evaluate(node=>node.machine.diagnostics());
+    const phone=width<=720,profile=phone?'phone':'desktop';
+    assert.equal(d.camera.yaw,phone?-.15:-.5,`resize-${width}: untouched Home yaw follows the canonical ${profile} pose`);
+    assert.equal(d.camera.pitch,phone ? .38 : .1,`resize-${width}: untouched Home pitch follows the canonical ${profile} pose`);
+    if(canonicalHomeViews[profile])assert.equal(d.camera.distance,canonicalHomeViews[profile],`resize-${width}: ${profile} keeps its poster distance`);
+    else canonicalHomeViews[profile]=d.camera.distance;
     assertHorizontal(d.landmarks.map(([x])=>x),`resize-${width}`);
     assertGeometryFit(d.graphGeometryBounds,`home resize-${width}x${d.graphGeometryBounds.viewport.height}`);
     assert.deepEqual(d.camera.pan,{x:0,y:0});
-    resize.push({width,rotation:'0,0,0',landmarks:d.landmarks,graphGeometryBounds:d.graphGeometryBounds});
+    resize.push({width,rotation:'0,0,0',camera:d.camera,landmarks:d.landmarks,graphGeometryBounds:d.graphGeometryBounds});
   }
   await root.screenshot({path:`${out}/home-resize-boundary.png`});
   evidence.push({kind:'responsive-boundary',widths:resize,screenshot:`${out}/home-resize-boundary.png`});

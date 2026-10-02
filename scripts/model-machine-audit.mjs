@@ -24,12 +24,16 @@ async function open(options={}, setup) {
 }
 async function snapshot(root) { return root.evaluate(node=>node.machine.snapshot()); }
 async function seek(root, frame) { await root.evaluate((node,value)=>node.machine.seek(value), frame); }
-function assertInspectionPose(actual,expected,label) {
+function assertInspectionPose(actual,expected,label,{layoutUnchanged=true}={}) {
   const controls=pose=>({yaw:pose.yaw,pitch:pose.pitch,zoom:pose.zoom,pan:pose.pan});
   assert.deepEqual(controls(actual),controls(expected),`${label}: stored orbit/zoom/pan controls`);
   assert.equal(actual.quaternion.length,expected.quaternion.length,`${label}: camera quaternion length`);
   actual.quaternion.forEach((value,index)=>assert.ok(Math.abs(value-expected.quaternion[index])<1e-10,
     `${label}: rendered camera quaternion component ${index} drifted (${value} vs ${expected.quaternion[index]})`));
+  if(layoutUnchanged) {
+    assert.equal(actual.distance,expected.distance,`${label}: same-size base camera distance`);
+    assert.deepEqual(actual.position,expected.position,`${label}: same-size rendered camera position`);
+  }
 }
 async function auditTouch(page,root) {
   const canvas=root.locator('canvas');await canvas.scrollIntoViewIfNeeded();
@@ -113,7 +117,7 @@ try {
       assertInspectionPose(await camera(),inspectedPose,'restoring automatic quality preserves camera pose');
       for(const width of [720,721,1440]) {
         await page.setViewportSize({width,height});await page.waitForTimeout(120);
-        assertInspectionPose(await camera(),inspectedPose,`resize to ${width}px preserves inspection pose`);
+        assertInspectionPose(await camera(),inspectedPose,`resize to ${width}px preserves inspection pose`,{layoutUnchanged:false});
       }
       await page.setViewportSize({width,height});await page.waitForTimeout(120);
     }
