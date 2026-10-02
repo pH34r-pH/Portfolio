@@ -60,6 +60,7 @@ jobs:
           node --check site/assets/research-topology.js
           node --check site/assets/search.js
           node scripts/test-article-runtime.mjs
+          node scripts/test-interaction-coverage.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
           node scripts/2071-audit.mjs

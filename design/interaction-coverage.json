@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "scope": "Browser-visible Portfolio interactions on the exact publication bundle; this is a test inventory, not a claim of physical-device qualification.",
+  "reviewedSource": {
+    "pullRequest": 91,
+    "commit": "c165374"
+  },
+  "testRunners": [
+    "scripts/interaction-audit.mjs",
+    "scripts/appearance-audit.mjs",
+    "scripts/2071-audit.mjs",
+    "scripts/homepage-digital-audit.mjs",
+    "scripts/model-startup-audit.mjs",
+    "scripts/model-glass-audit.mjs",
+    "scripts/model-machine-audit.mjs",
+    "scripts/test-model-replay.mjs",
+    "scripts/test-model-startup.mjs",
+    "scripts/test-article-runtime.mjs"
+  ],
+  "coverage": [
+    {
+      "id": "routes-and-content",
+      "surfaces": ["/", "/research/", "/about/", "/atlas/", "/articles/:slug/", "/notebooks/:slug/", "/reproduce/"],
+      "status": "automated",
+      "tests": ["interaction-audit.mjs", "appearance-audit.mjs", "2071-audit.mjs"],
+      "assertions": ["Published route titles and internal links resolve", "Atlas crosswalk destinations match", "Research article and notebook links use the rendered reader surface", "Legacy /reproduce/ redirect reaches the external catalog fixture"],
+      "limits": ["Article and notebook route coverage is conditional on publication.json being served by the finished bundle; source-only runs exercise the local static routes."]
+    },
+    {
+      "id": "navigation-search-history",
+      "surfaces": ["homepage chapter anchors", "site menu", "search dialog"],
+      "status": "automated",
+      "tests": ["homepage-digital-audit.mjs", "interaction-audit.mjs", "2071-audit.mjs"],
+      "assertions": ["Chapter hash updates and browser Back restore route", "Menu Escape closes and returns focus", "Skip link focuses main", "Ctrl+K opens search and Escape closes it; indexed result behavior runs when Pagefind exists"]
+    },
+    {
+      "id": "appearance-accessibility-responsive",
+      "surfaces": ["all rendered site routes", "mobile menu", "theme controls"],
+      "status": "automated",
+      "tests": ["appearance-audit.mjs", "interaction-audit.mjs", "ux-audit.mjs"],
+      "assertions": ["Auto/light/dark selection and persistence", "Menu keyboard and touch actions", "Axe WCAG checks and focus visibility", "Responsive overflow and interaction target dimensions", "Reduced-motion and forced-colors fallbacks"]
+    },
+    {
+      "id": "homepage-model-journey",
+      "surfaces": ["homepage model stage", "sticky visual and article panes", "chapter anchors"],
+      "status": "automated",
+      "tests": ["homepage-digital-audit.mjs", "homepage-lifecycle-audit.mjs", "model-machine-audit.mjs"],
+      "assertions": ["Native wheel/finger scroll moves the page without changing camera or replay", "Sticky stage remains aligned across chapter scroll and releases at journey end", "Chapter anchor navigation preserves history", "Desktop browser zoom does not change graph camera"]
+    },
+    {
+      "id": "model-startup-and-recovery",
+      "surfaces": ["homepage Start action", "machine loading and fallback states"],
+      "status": "automated",
+      "tests": ["model-startup-audit.mjs", "homepage-lifecycle-audit.mjs", "model-machine-audit.mjs"],
+      "assertions": ["No engine request before explicit intent", "Concurrent Start is deduplicated", "Ignition counts 1.8 seconds of active-visible time", "Started state survives session navigation and BFCache", "Startup timeout, failed imports and context loss retain state and permit retry", "Reduced-motion/no-script/WebGL failure keeps a usable static model"]
+    },
+    {
+      "id": "model-controls-and-input",
+      "surfaces": ["replay timeline", "play/pause/rewind", "inspection controls", "orbit/zoom/pan/reset", "token input"],
+      "status": "automated",
+      "tests": ["homepage-digital-audit.mjs", "model-machine-audit.mjs", "test-model-replay.mjs"],
+      "assertions": ["Keyboard and pointer replay state changes are checked", "Inspector selection reports selected node and route counts", "Camera controls preserve replay position and reset view", "Touch gestures cover orbit, pinch, pan and replay scrubbing", "Input selection and pointer text drag remain native without camera movement", "Replay and lighting are deterministic over all 361 frames"]
+    },
+    {
+      "id": "context-pane-state",
+      "surfaces": ["input/output/inspection panes", "mobile context tabs", "GPU glass backing"],
+      "status": "automated",
+      "tests": ["model-glass-audit.mjs"],
+      "assertions": ["Tab selection updates active pane", "Exiting panes become inert and aria-hidden immediately and relocate focus", "Reversal restores valid focusable tabs", "DOM pane and GPU backing easing remain synchronized", "Touch orbit preserves pane alignment", "Deep zoom remains finite and reset returns framing", "Reduced-motion context transitions, keyboard operation and axe checks"]
+    },
+    {
+      "id": "research-and-atlas-interactions",
+      "surfaces": ["research topology", "Atlas crosswalk", "article anchors"],
+      "status": "automated",
+      "tests": ["2071-audit.mjs", "interaction-audit.mjs"],
+      "assertions": ["Topology nodes and edges match publication metadata", "Phone keyboard navigation selects nodes", "Article links and Atlas destinations resolve", "Anchor scrolling and sticky index are visually/layout checked"]
+    },
+    {
+      "id": "myst-articles-and-browser-execution",
+      "surfaces": ["published MyST articles", "compiled evidence disclosures", "Load browser Python"],
+      "status": "automated-with-fixture-limit",
+      "tests": ["interaction-audit.mjs", "test-article-runtime.mjs", "model-startup-audit.mjs"],
+      "assertions": ["Finished articles expose executable cell/output structure and source revision", "Evidence disclosures open/close by pointer and keyboard", "Browser runtime success, rejected startup and retry are covered in focused runtime tests"],
+      "limits": ["The runtime unit test stubs the kernel lifecycle; it does not prove a real MyST cell executes in a user browser or a live kernel service is available."]
+    },
+    {
+      "id": "finished-bundle-exports",
+      "surfaces": ["article PDF/Word/LaTeX/JATS links", "preserved notebook download"],
+      "status": "automated-artifact-only",
+      "tests": [".github/workflows/ux-quality.yml", "interaction-audit.mjs"],
+      "assertions": ["Finished bundle requires article export links and checks PDF/DOCX/LaTeX/JATS bytes and formats", "Reader source/download links are route-checked"],
+      "limits": ["Bundle checks validate generated files and links; Playwright does not yet assert browser download events or opening each downloaded artifact."]
+    },
+    {
+      "id": "preserved-notebooks-and-downloads",
+      "surfaces": ["published notebook reader", "preserved .ipynb download", "Open in JupyterLite"],
+      "status": "automated-artifact-only",
+      "tests": ["test_portfolio_publication.py", "interaction-audit.mjs", ".github/workflows/ux-quality.yml"],
+      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser audit checks notebook reader structure and research return link when published bundle metadata exists"],
+      "limits": ["Automated checks do not click through a browser download event or execute a real notebook kernel in JupyterLite."]
+    },
+    {
+      "id": "external-experiment-catalog",
+      "surfaces": ["external compiled experiment links", "external catalog download/export"],
+      "status": "uncovered",
+      "tests": ["interaction-audit.mjs"],
+      "assertions": ["Exact published external experiment link targets are checked without following them"],
+      "limits": ["Catalog download/export behavior is owned by experiments.tyharbin.com and is outside the local Portfolio origin; no live external transaction is part of these tests."]
+    },
+    {
+      "id": "live-notebook-kernel",
+      "surfaces": ["JupyterLite workspace", "browser notebook kernel execution"],
+      "status": "uncovered",
+      "tests": ["interaction-audit.mjs"],
+      "limits": ["No test launches JupyterLite, runs a published notebook cell, or validates persistence of edits in that workspace."]
+    },
+    {
+      "id": "physical-device-and-assistive-technology",
+      "surfaces": ["physical GPU/driver", "physical phone/tablet touch", "screen readers and hardware keyboard"],
+      "status": "manual",
+      "tests": [],
+      "limits": ["Playwright Chromium emulation, injected WebGL loss, axe and synthetic touch do not substitute for physical-device, GPU-driver, or screen-reader testing."]
+    },
+    {
+      "id": "performance-qualification",
+      "surfaces": ["homepage Lighthouse flow", "GPU profiling"],
+      "status": "separate-owner",
+      "tests": ["lighthouserc.cjs", "homepage-digital-audit.mjs"],
+      "limits": ["Performance profile and score/byte budgets are maintained separately; they are not changed or conflated with deterministic interaction assertions."]
+    }
+  ]
+}
