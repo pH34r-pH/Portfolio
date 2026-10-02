@@ -1756,7 +1756,7 @@ body::after {
   font-family: "Portfolio Long Measure", ui-monospace, monospace !important;
 }
 
-/* Keep the homepage's small interactive labels legible without system fonts. */
+/* Prefer native UI fonts; keep small labels painted in stripped-down browsers. */
 .digital-startup-panel,
 .digital-startup-panel [data-model-start],
 .digital-boot-status,
@@ -1765,7 +1765,7 @@ body::after {
 .digital-home .digital-next,
 .digital-home .program-grid a,
 .digital-home summary {
-  font-family: "Portfolio Long Measure", ui-monospace, monospace !important;
+  font-family: ui-monospace, monospace, "Portfolio Long Measure" !important;
 }
 
 .topology-node strong {
