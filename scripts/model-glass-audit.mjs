@@ -99,8 +99,16 @@ async function contextExitWaitsForTransition(page,root,phone) {
       stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
     panel.querySelector('input')?.focus();state.focusLeak=panel.contains(document.activeElement);return state;});
   assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
-  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').transitionOpacity,
-    {timeout:5000}).toBeLessThan(1);
+  try {await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').transitionOpacity,
+    {timeout:5000}).toBeLessThan(1);}
+  catch(error) {
+    const state=await root.evaluate(node=>{const scene=node.machineController.scene,glass=scene?.glass;return {visible:node.machineController.visible,hidden:document.hidden,
+      raf:scene?.glassAnimationRaf,panels:glass?.panels.map(panel=>({id:panel.id,active:panel.node.dataset.contextActive,
+        animating:panel.node.contextAnimating,contextVisible:panel.node.contextVisible,domOpacity:getComputedStyle(panel.node).opacity,
+        glassOpacity:panel.mesh.material.opacity,trimOpacity:panel.trim.material.opacity,hidden:panel.node.hidden})),
+      stageRect:node.querySelector('[data-machine-stage]').getBoundingClientRect().toJSON()};});
+    console.log(`Glass context state at exit sample timeout: ${JSON.stringify(state)}`);throw error;
+  }
   const exiting=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
   assert.ok(exiting.transitionOpacity>0,'sample is inside the visible DOM transition');
   assert.equal(exiting.contextAnimating,true,'GPU transition remains active while the paused article replay is idle');
