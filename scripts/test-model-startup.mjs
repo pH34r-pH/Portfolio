@@ -17,6 +17,8 @@ const base=new URL('../site/assets/',import.meta.url),manifest=JSON.parse(readFi
 assert.equal(manifest.schemaVersion,3);assert.deepEqual(manifest.capture.densityVariants,[1,2,3]);
 assert.equal(manifest.capture.provenanceVerified,true);assert.match(manifest.capture.sourceCommit,/^[0-9a-f]{40}$/);
 assert.deepEqual(manifest.capture.servedSourceHashes,manifest.sourceHashes,'HTTP capture source matches the exact local asset bytes');
+for(const file of ['model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js'])
+  assert.ok(manifest.capture.servedSourceHashes[file],`Renderer dependency is covered by served and local provenance: ${file}`);
 for(const [file,expected] of Object.entries(manifest.capture.pipelineHashes))
   assert.equal(createHash('sha256').update(readFileSync(new URL('../'+file,import.meta.url))).digest('hex'),expected,`Capture pipeline changed: ${file}`);
 assert.equal(manifest.capture.sourceTreeSha256,createHash('sha256').update(JSON.stringify({sourceHashes:manifest.sourceHashes,pipelineHashes:manifest.capture.pipelineHashes})).digest('hex'),

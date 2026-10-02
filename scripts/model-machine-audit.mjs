@@ -24,6 +24,13 @@ async function open(options={}, setup) {
 }
 async function snapshot(root) { return root.evaluate(node=>node.machine.snapshot()); }
 async function seek(root, frame) { await root.evaluate((node,value)=>node.machine.seek(value), frame); }
+function assertInspectionPose(actual,expected,label) {
+  const controls=pose=>({yaw:pose.yaw,pitch:pose.pitch,zoom:pose.zoom,pan:pose.pan});
+  assert.deepEqual(controls(actual),controls(expected),`${label}: stored orbit/zoom/pan controls`);
+  assert.equal(actual.quaternion.length,expected.quaternion.length,`${label}: camera quaternion length`);
+  actual.quaternion.forEach((value,index)=>assert.ok(Math.abs(value-expected.quaternion[index])<1e-10,
+    `${label}: rendered camera quaternion component ${index} drifted (${value} vs ${expected.quaternion[index]})`));
+}
 async function auditTouch(page,root) {
   const canvas=root.locator('canvas');await canvas.scrollIntoViewIfNeeded();
   const box=await canvas.boundingBox(),client=await page.context().newCDPSession(page);
@@ -93,6 +100,23 @@ try {
     // Orbit and zoom change the camera without modifying the replay frame.
     await root.locator('[data-camera="right"]').click(); await root.locator('[data-camera="in"]').click();
     assert.equal((await snapshot(root)).frame,145);
+    if(name==='desktop') {
+      await root.locator('[data-camera="up"]').click(); await root.locator('[data-camera="pan-right"]').click();
+      const camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
+      const inspectedPose=await camera();
+      await root.locator('[data-probe-node]').selectOption('130');
+      await expect(root.locator('[data-probe-readout]')).toContainText('L1-002');
+      assertInspectionPose(await camera(),inspectedPose,'coordinate selection preserves camera pose');
+      await root.locator('[data-glass-quality]').selectOption('lightweight');
+      assertInspectionPose(await camera(),inspectedPose,'quality change preserves camera pose');
+      await root.locator('[data-glass-quality]').selectOption('auto');
+      assertInspectionPose(await camera(),inspectedPose,'restoring automatic quality preserves camera pose');
+      for(const width of [720,721,1440]) {
+        await page.setViewportSize({width,height});await page.waitForTimeout(120);
+        assertInspectionPose(await camera(),inspectedPose,`resize to ${width}px preserves inspection pose`);
+      }
+      await page.setViewportSize({width,height});await page.waitForTimeout(120);
+    }
     await root.locator('[data-camera="reset"]').click();
     if(name==='phone360')await auditTouch(page,root);
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();

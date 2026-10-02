@@ -13,7 +13,7 @@ const browser=await chromium.launch({headless:true}),evidence=[];
 const viewports=[['phone-360-dpr1',360,800,1],['phone-412-dpr3',412,915,3],['desktop-dpr2',1440,1000,2]];
 const root=fileURLToPath(new URL('../',import.meta.url));
 const sharedAssetFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js',
-  'model-glass.js','model-hardware.js','model-light.js','model-gestures.js','model-machine.js','article-runtime.js',
+  'model-glass.js','model-hardware.js','model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js','model-machine.js','article-runtime.js',
   'model-machine.css','model-glass.css','site.css','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
 let publishedAssetIdentity=null;
 
@@ -69,7 +69,10 @@ async function inspectHost(host,viewport) {
   await installFixture(page,host);
   await page.goto(base+url,{waitUntil:'networkidle'});
   const root=page.locator('[data-model-machine]').first();
-  await root.scrollIntoViewIfNeeded();
+  // The model section can be taller than the viewport. Scrolling the root only
+  // may leave its stage below the fold, where the intentionally deferred engine
+  // never starts. Bring the observed stage into view before asserting render.
+  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
   await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
   await expect(root).toHaveAttribute('data-render','webgl');
   await root.evaluate(node=>node.machine.seek(145));
@@ -122,7 +125,7 @@ async function quietModes(host) {
     page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
     await installFixture(page,host);
     await page.goto(base+url,{waitUntil:'networkidle'});
-    const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
+    const root=page.locator('[data-model-machine]').first();await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
     await expect(root).toHaveAttribute('data-render','fallback');
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
     assert.equal(engineRequests,0,`${kind}/${mode} must perform zero Three.js loads`);

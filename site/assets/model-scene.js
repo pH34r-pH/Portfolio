@@ -116,13 +116,16 @@ export class MachineScene {
     this.renderer.setPixelRatio(this.pixelRatio(width,height));
     this.renderer.transmissionResolutionScale = 1;
     this.renderer.setSize(width, height, false);
-    const view=this.configureView(width,height),phone=mobile(),yaw=phone?-.15:-.5,pitch=phone?.38:.1;
+    const view=this.configureView(width,height),phone=mobile();
     this.machine.rotation.set(0,0,0);this.machine.position.y=0;this.machine.scale.setScalar(.9);this.machine.updateMatrixWorld(true);
-    this.distance=this.fitGraphDistance(width,height,yaw,pitch,view.fov);
-    this.poseCamera(yaw,pitch,1,{x:0,y:0});
+    this.distance=this.fitGraphDistance(width,height,this.yaw,this.pitch,view.fov);
+    this.updateCamera();
     const stage = this.canvas.parentElement;
     if (!this.digital) {this.glass.instruments.layer.style.cssText = `width:${width}px;height:${height}px;top:${stage.offsetTop + stage.clientTop + this.canvas.offsetTop}px;left:${stage.offsetLeft + stage.clientLeft + this.canvas.offsetLeft}px`;}
     this.glass.layout(this.camera, {width, height}, this.distance, mobile());
+    // Layout can rebuild scene planes. Keep the rendered camera synchronized
+    // with the stored inspection pose after every resize-driven layout.
+    this.updateCamera();
     this.render();
   }
   pixelRatio(width,height) {
@@ -134,7 +137,7 @@ export class MachineScene {
   }
   configureView(width,height) {
     const phone=mobile();
-    if(this.phone!==phone){this.phone=phone;this.yaw=phone?-.15:-.5;this.pitch=phone?.38:.1;this.zoom=1;this.pan={x:0,y:0};this.depthView=null;}
+    this.phone=phone;
     this.camera.aspect=width/height;
     const view=digitalView(this.camera.aspect,phone);
     this.camera.fov=view.fov;this.camera.updateProjectionMatrix();return view;
@@ -374,7 +377,7 @@ export class MachineScene {
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
         lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
-      camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan}},pointers:this.gestures.points.size};
+      camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},position:this.camera.position.toArray(),quaternion:this.camera.quaternion.toArray()},pointers:this.gestures.points.size};
   }
   dispose() {
     if (this.disposed) {return;} this.disposed = true;
