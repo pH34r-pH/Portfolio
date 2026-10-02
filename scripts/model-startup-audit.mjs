@@ -424,6 +424,8 @@ async function failContextDuringIgnition(page) {
   await page.getByRole('button',{name:'Start interactive model'}).click();
   await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
   await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(150);
+  if(await page.evaluate(()=>Array.isArray(window.heldStartup)))
+    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
   await page.evaluate(()=>document.querySelector('[data-machine-canvas]').dispatchEvent(new Event('webglcontextlost',{cancelable:true})));
   const failed=await snapshot(page);
   assert.equal(failed.ignitionComplete,false);assert.ok(failed.elapsedActiveMs>0&&failed.elapsedActiveMs<IGNITION_DURATION_MS);
@@ -438,7 +440,18 @@ async function assertStaticHomeFallback(page) {
 }
 
 async function contextLossDuringIgnition() {
-  const {context,page,errors}=await open();
+  const {context,page,errors}=await open({},async page=>{
+    await page.addInitScript(()=>{
+      // Freeze the exact partial-ignition frame so slower or faster runners cannot
+      // complete the 1.8 s sequence between the progress check and context loss.
+      const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
+      window.requestAnimationFrame=callback=>native(time=>{
+        const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
+        if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
+        else callback(time);
+      });
+    });
+  });
   try {
     const failed=await failContextDuringIgnition(page);
     await assertStaticHomeFallback(page);
