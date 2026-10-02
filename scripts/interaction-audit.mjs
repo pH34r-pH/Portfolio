@@ -329,7 +329,9 @@ async function auditNotebook(page, manifest, path, width) {
   }
   const notebook = manifest?.notebooks?.find(item => path === `/notebooks/${item.slug}/`);
   if (!notebook) return;
-  const labLink = page.getByRole("link", { name: /Open in JupyterLite/ });
+  const labLink = page.locator('a[href^="/lab/lab/?path="]');
+  await expect(labLink).toHaveCount(1, `${path}: notebook reader exposes its local JupyterLite link`);
+  await expect(labLink).toHaveAccessibleName(/(?:Run illustrative example|Inspect or run) in Lab/);
   const labHref = await labLink.getAttribute("href");
   assert.ok(labHref?.startsWith("/lab/lab/?path="), `${path}: notebook links to the slash-terminated JupyterLite app route`);
   if (width === 1366) {
