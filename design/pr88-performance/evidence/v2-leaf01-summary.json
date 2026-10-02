@@ -1,181 +1,131 @@
 {
   "leaf": "V2 leaf 01 — crisp horizontal shared model appearance",
   "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5",
-  "inputs": {
+  "captureSourceCommit": "7a1c9f716d29e22203d7198848d9a06fe8eaa0b1",
+  "captureSourceTreeSha256": "bdd363bce277a9c618e6f2a7e12cc1e81359dc4b891ecfd0bbb98af1fc29960",
+  "publishedArticleInputs": {
+    "portfolio": "01f4a7ae88778803eab4422716d693be880f8d68",
     "researchNotes": "965fb9186a0c1bb99cc3bd60b2e86668b0f12a91",
     "theoremLibrary": "cbc5eebbea115decdc27e2e32bb0dc79738a5947",
-    "compiler": "7bf2e42fe1882e3bed9828b43f4354523fd50bd5",
-    "compilerProjectionSha256": "bb2fd0e0b3b2d4fabd9649d7537a87e82fd0b60116e78bcef2b1690411674d8a",
-    "finishedBundle": true,
-    "testedArticle": "001-text-as-signal",
-    "portfolioPublishedBuildSHA": "01f4a7ae88778803eab4422716d693be880f8d68"
+    "finishedArticle": "001-text-as-signal"
   },
   "implementation": [
-    "Request WebGL2 MSAA at context creation; report actual attributes, framebuffer samples and GL target limits.",
-    "Keep native DPR/full transmission resolution unless the real GL dimension limit requires a reduction; auto stays refraction, explicit lightweight remains.",
-    "Share blue contour/point appearance without adding Home DOM markers to articles; keep phone fallback, poster and live graph horizontal.",
-    "Capture 1x/2x/3x desktop and phone PNGs from the renderer; encode WebP/AVIF separately and hash input/output provenance."
+    "Request MSAA on the WebGL2 context at creation; record actual context attributes, framebuffer samples, viewport/texture/renderbuffer limits and active transmission targets.",
+    "Use native device DPR and full-resolution transmission unless an observed GL dimension limit requires a constraint; Auto stays refraction, and explicit lightweight remains available.",
+    "Fit all graph nodes, edge route control points (including recurrence/residual), contour vertices and carrier envelopes to the canvas; keep the graph horizontal at all widths.",
+    "Share the blue contour/point appearance with article views without adding the Home-only DOM marker to articles; keep article controls and disclosures intact.",
+    "Capture lossless renderer PNGs at explicit native 1x/2x/3x pixels, independently encode WebP and AVIF, and record source/pipeline/output hashes and renderer evidence.",
+    "Add exact RGB-channel pixel tests and bounded 3-day visual evidence to the existing UX review workflow; no existing budget threshold was changed."
   ],
-  "posterManifest": {
-    "path": "site/assets/model-posters/manifest.json",
-    "sha256": "0a3ed94c578b5665fdc31d0e316aed4f24c6987dbce83134bc5bd153a3f530ff",
+  "posterCapture": {
+    "manifest": "site/assets/model-posters/manifest.json",
+    "manifestSha256": "7f27535260bc90dd82c16907a7359c5e36a1f019c66430854db688e1f9527700",
+    "schemaVersion": 3,
+    "sourceWorkingTreeClean": true,
+    "sourceModulesHashed": 11,
+    "capturePipelineFilesHashed": 11,
+    "servedModuleBytesMatchLocal": true,
     "variants": 12,
     "cssPixels": {
       "desktop": "1280×740",
       "phone": "500×280"
     },
-    "densities": [
-      1,
-      2,
-      3
+    "decodedDensityPixels": [
+      "1280×740, 2560×1480, 3840×2220",
+      "500×280, 1000×560, 1500×840"
     ],
-    "selectedFormat": "AVIF passed native-pixel threshold for every variant; WebP retained as compatible alternate.",
-    "selectedAssetsBytes": 2530854,
-    "allSelectedAlternativesBytes": 6160660,
-    "largestVariant": {
-      "file": "powered-down-desktop-3x.avif",
-      "bytes": 1032582,
-      "name": "desktop",
-      "theme": "light",
-      "density": 3
+    "selectedFormat": "AVIF for all 12 variants; WebP retained as independent alternate.",
+    "selectedAssetBytes": 2113391,
+    "allEncodedVariantsBytes": 5146987,
+    "nativePixelComparison": {
+      "metric": "Direct absolute 8-bit sRGB RGB-channel error after identical background compositing; lossless PNG source compared to independently decoded output.",
+      "unchangedThresholds": {
+        "AVIF meanAbsoluteChannelErrorAtMost": 2,
+        "AVIF p99AbsoluteChannelErrorAtMost": 12
+      },
+      "observedMaximumAcrossVariants": {
+        "meanAbsoluteChannelError": 0.4646,
+        "p99AbsoluteChannelError": 5,
+        "maximumSingleChannelError": 20
+      }
     },
-    "desktopLightDpr1Bytes": 175932,
-    "largestSelectedVariant": {
-      "file": "powered-down-desktop-3x.avif",
-      "bytes": 1032582,
-      "name": "desktop",
-      "theme": "light",
-      "density": 3
-    }
-  },
-  "tests": {
-    "npmCi": "passed with temporary cache; Node v22.23.3 (package engine requirement >=22 <23)",
-    "startup": "node scripts/test-model-startup.mjs passed after recapture and again at checkpoint",
-    "replay": "node scripts/test-model-replay.mjs passed: 361 rewind states, light sampling, gestures and locked engine bytes/license",
-    "visual": "scripts/model-visual-audit.mjs passed 18 profiles for Home, fixture and finished MyST article; 360×800/DPR1, 412×915/DPR3, 1440×1000/DPR2; light/dark, reduced-motion and forced-colors zero-engine fallback, 720px resize, NoJS Home poster",
-    "modelMachineAudit": "Full 10-profile published-article audit passed against the rebuilt finished bundle whose Portfolio source is exact leaf commit 01f4a7ae88778803eab4422716d693be880f8d68; article 001-text-as-signal; includes native page scrolling, visible-target limits, controls/accessibility, replay, context loss and viewport/DPR checks.",
-    "finalChecks": "Node 22 syntax checks and git diff --check passed; startup, replay, visual and full published article UI audits passed; evidence summary records the exact published input commit."
+    "phoneLight3xGeometryCssPixels": {
+      "left": 24.613,
+      "right": 488.299,
+      "top": 19.608,
+      "bottom": 248.657
+    },
+    "evidence": "Lossless masters, independently encoded posters, and running-detail frame 145 use one CSS crop and pose; unscaled comparisons were visually inspected."
   },
   "webgl": {
-    "environment": "Headless Chromium / SwiftShader software observation only",
+    "environment": "Headless Chromium with SwiftShader; software observation only.",
     "contextAntialias": true,
     "defaultFramebufferSamples": 4,
     "maxSamples": 4,
-    "GLLimits": {
-      "maxTextureSize": 8192,
-      "maxRenderbufferSize": 8192,
-      "maxViewport": [
-        8192,
-        8192
-      ]
+    "maxTextureSize": 8192,
+    "maxRenderbufferSize": 8192,
+    "maxViewport": [
+      8192,
+      8192
+    ],
+    "nativeDPRPreserved": true,
+    "transmissionResolutionScale": 1,
+    "activeTransmissiveTargets": "When visible, the actual target matched the drawing buffer and reported 4 samples. No target is created for powered-down or flow-only views.",
+    "graphIdentity": {
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "recurrenceRoutes": 1
     },
-    "nativeDprPreserved": true,
-    "transmissionScale": 1,
-    "visibleGlassTargets": "When visible, actual transmission target matched drawing buffer and reported 4 samples; powered-down/phone flow states with no visible transmissive mesh correctly had no active target.",
-    "browserMatrixProfiles": 18,
-    "allGraphLandmarksHorizontal": true,
-    "allGraphBoundsWithinHost": true,
-    "frameCosts": "maximum observed 25 draw calls / 33,780 triangles; software CPU render-submission p95 peak 282ms; GPU timer unsupported; not TBT or a physical-device frame-time result"
+    "graphGeometryFit": "All components remain inside the reported fit margin in capture and live audit profiles."
   },
-  "budget": {
-    "unchanged": {
-      "scriptBytes": 50000,
-      "totalBytes": 150000,
-      "totalBlockingTimeMs": 200,
-      "performanceScore": 0.95,
-      "bestPracticesScore": 0.95
+  "validation": {
+    "runtime": "Node v22.23.3; exact clean npm ci passed (1469 packages).",
+    "startup": "node scripts/test-model-startup.mjs passed after the final recapture: dimensions, decodes, hashes, MSAA/target support, route identity and source provenance.",
+    "replay": "node scripts/test-model-replay.mjs passed all 361 rewind states, horizontal/vertical light sampling, gestures and vendored engine identity.",
+    "pixelFidelity": "node scripts/test-model-pixel-fidelity.mjs passed exact identity, one-step channel deltas, larger channel deltas and parallel-worker equivalence.",
+    "visual": "scripts/model-visual-audit.mjs passed 24 profiles across Home, canonical article fixture and finished article 001-text-as-signal. Includes 360×800/DPR1, 412×915/DPR3, 1440×1000/DPR2, light/dark, reduced-motion and forced-colors no-engine fallback, NoJS posters, 720px resize and full route-fit checks.",
+    "zoom": "Headless browser-chrome zoom is unavailable. Equivalent CSS viewport/native DPR results at 125%, 200% and 250% passed for Home and the finished MyST article; this is not a physical browser-UI zoom observation.",
+    "publishedArticleUI": "scripts/model-machine-audit.mjs passed 10 profiles on the finished MyST article; controls, disclosures, accessibility, replay, WebGL-loss fallback and determinism passed.",
+    "eslintStructural": "0 findings on the leaf tree; 0 on exact PR88 base under the workflow rules.",
+    "lizardStructural": "0 findings on the leaf tree; 0 on exact PR88 base at lizard 1.24.0.",
+    "workflow": "Existing UX workflow now captures, validates and uploads a compact 16-file review evidence set with 3-day retention. No Actions result exists yet for the new head at this checkpoint."
+  },
+  "boundedAuditFindings": {
+    "homepageDigital": "The existing 44×44 target assertion fails identically on PR88 and leaf 01. Both report the same 13 transformed Home links at 19.07–28 CSS px wide and the Build provenance summary at 6.39px wide; heights are 44–48px. This leaf changes blue palette/poster-density declarations but does not change the link/summary sizing or transform behavior.",
+    "articleGlass": "The legacy glass audit passes its desktop profile then fails at phone360 before its first post-seek pane screenshot: it expects spatial mode, but the new compact horizontal view chooses the existing accessible flow fallback. Exact 360×800/DPR3 comparison: PR88 stage 1080px, canvas 338×874 CSS px, spatial glass; leaf 01 stage 570px, canvas 338×358 CSS px, graph bounds fit, panel projects y=197.5–387.9px and exceeds the canvas bottom by 29.9px, so flow mode hides the glass mesh. Saved comparison: ux-screenshots/visual-v2/model-glass-audit/pr88-leaf01-phone-comparison.json. Pane behavior remains for the later pane leaf; the spatial assertion was not weakened."
+  },
+  "costAndBudgets": {
+    "observedModelWork": "The 10-profile software article audit observed up to 25 draw calls and 33,780 triangles. CPU render-submission p95 reached 156.3ms and CPU frame-update p95 reached 29.7ms in small software samples; GPU timer queries were unsupported. This is diagnostic evidence only, not a frame-time or performance qualification.",
+    "existingBudgetThresholdsUnchanged": {
+      "scriptsBytes": 50000,
+      "totalResourceBytes": 150000,
+      "totalBlockingTimeMs": 200
     },
-    "lighthouseRun": "completed; failures retained as listed",
-    "performanceQualification": false
+    "performanceQualification": false,
+    "note": "No new exact-head Lighthouse result yet. Previous local runs failed the existing budgets; the thresholds are unchanged and failures remain reviewable."
   },
   "visualEvidence": {
     "ignoredDirectory": "ux-screenshots/visual-v2/",
-    "samples": [
-      "before-after-phone-native.png",
-      "before-after-desktop-native.png",
-      "phone-poster-live-detail-native.png",
-      "desktop-poster-live-detail-native.png",
-      "audit.json"
+    "beforeAfter": "before-after-phone-native.png and before-after-desktop-native.png",
+    "nativeComparisons": [
+      "review/phone-500x280-dpr3-native-comparison.png",
+      "review/desktop-1280x740-dpr2-native-comparison.png"
     ],
-    "posterSourceAndDetail": "PNG source and frame-145 live detail at identical pose/resolution; hashes and capture metadata are in manifest."
+    "receipt": "review/evidence-status.json",
+    "uploadBytes": 13096271,
+    "files": 16,
+    "retentionDays": 3
   },
   "remainingLimits": [
-    "Software WebGL only: SwiftShader sample and frame evidence is not Android GPU or thermal evidence.",
-    "Deployed preview appearance/grain remains unobserved.",
-    "Desktop Home target-size and legacy glass pane-action assertions remain for independent review/next scoped pane work."
+    "Physical Android GPU, sustained thermal behavior and the exact deployed preview/grain remain unobserved.",
+    "Headless SwiftShader is not physical-device evidence; GPU timer queries are unavailable.",
+    "Browser chrome zoom is unavailable in headless mode; equivalent CSS viewport/DPR profiles were used.",
+    "The phone article spatial-glass expectation needs review in the later pane-layout leaf; accessible flow fallback is active at compact phone size.",
+    "The unchanged Home minimum target-size check still fails on the PR88 baseline and leaf 01."
   ],
-  "validation": {
-    "runtime": "Node v22.23.3",
-    "install": "npm ci — passed, 1459 packages",
-    "startup": "node scripts/test-model-startup.mjs — passed after recapture",
-    "replay": "node scripts/test-model-replay.mjs — passed all 361 rewind states, horizontal/vertical light sampling, gestures and engine integrity",
-    "visual": "scripts/model-visual-audit.mjs — passed 18 Home / canonical fixture / finished MyST profiles at 360×800 DPR1, 412×915 DPR3, 1440×1000 DPR2; light/dark, reduced-motion, forced colors, 720px resize, NoJS Home; actual buffer/sample/target evidence recorded",
-    "fullPublishedArticleUI": "scripts/model-machine-audit.mjs — passed 10 profiles against rebuilt finished bundle from exact Portfolio leaf commit 01f4a7ae88778803eab4422716d693be880f8d68; article 001-text-as-signal; native page scrolling, visible transmission target checks, controls/accessibility, replay, context loss and viewport/DPR.",
-    "modelGlassLegacyAudit": "Not passing: desktop/article fixture run reaches a legacy assertion expecting spatial glass after the depth-view action (observed flow). Pane motion/lifecycle is out of this leaf; transmission target checks now require a visible transmissive mesh and remain full-resolution when active.",
-    "homepageDigitalLegacyAudit": "Not passing: legacy whole-page target-size check sees transformed Home links at 19–28 CSS px wide and a transformed disclosure summary at 6.4px. No test was weakened and this leaf did not redesign the Home pane/zoom behavior; carry as an explicit review issue.",
-    "lighthouse": "Unchanged lighthouserc.cjs assertions, 3 runs on local source server with Node 22 and Chromium 140 SwiftShader. 5 existing assertions fail; see measurements below. No workflow/Azure action.",
-    "publishedBuild": {
-      "portfolio": "01f4a7ae88778803eab4422716d693be880f8d68",
-      "researchNotes": "965fb9186a0c1bb99cc3bd60b2e86668b0f12a91",
-      "theoremLibrary": "cbc5eebbea115decdc27e2e32bb0dc79738a5947",
-      "compiler": "7bf2e42fe1882e3bed9828b43f4354523fd50bd5",
-      "compilerProjectionSha256": "bb2fd0e0b3b2d4fabd9649d7537a87e82fd0b60116e78bcef2b1690411674d8a",
-      "finishedArticle": "001-text-as-signal",
-      "audit": "scripts/model-machine-audit.mjs passed 10 profiles against the rebuilt finished bundle."
-    }
-  },
-  "lighthouse": {
-    "input": "site/ at http://127.0.0.1:45937; original lighthouserc thresholds and 3 runs; temporary config only changed local port and output path",
-    "runs": [
-      {
-        "performance": 0.67,
-        "bestPractices": 0.93,
-        "accessibility": 1,
-        "seo": 1,
-        "scriptBytes": 465828,
-        "totalBytes": 680611,
-        "imageBytes": 136895,
-        "tbtMs": 6740.8835,
-        "lcpMs": 2458.8495,
-        "cls": 0
-      },
-      {
-        "performance": 0.68,
-        "bestPractices": 0.93,
-        "accessibility": 1,
-        "seo": 1,
-        "scriptBytes": 465828,
-        "totalBytes": 680611,
-        "imageBytes": 136895,
-        "tbtMs": 5883.925,
-        "lcpMs": 2414.55,
-        "cls": 0
-      },
-      {
-        "performance": 0.68,
-        "bestPractices": 0.93,
-        "accessibility": 1,
-        "seo": 1,
-        "scriptBytes": 465828,
-        "totalBytes": 680611,
-        "imageBytes": 136895,
-        "tbtMs": 5429.739,
-        "lcpMs": 2416.434,
-        "cls": 0
-      }
-    ],
-    "assertionFailures": [
-      "performance minimum 0.95 (0.67–0.68)",
-      "best-practices minimum 0.95 (0.93)",
-      "scripts maximum 50,000 bytes (465,828)",
-      "total resources maximum 150,000 bytes (680,611)",
-      "TBT maximum 200ms (5,429.739–6,740.884ms)"
-    ],
-    "latestRunImage": "powered-down-phone-2x.avif (98,314 transferred bytes); Lighthouse viewport/DPR is mobile emulation. Report files are in ux-screenshots/visual-v2/lighthouse/."
-  },
   "stack": {
-    "pr88": 88,
-    "baseBranch": "work/2071-dr-cho-startup",
-    "draftHeadBranch": "work-2071-dr-cho-visual-leaf01"
+    "pr": 89,
+    "branch": "work-2071-dr-cho-visual-leaf01",
+    "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5"
   }
 }

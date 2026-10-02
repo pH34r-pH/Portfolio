@@ -1,15 +1,46 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "renderer": "Three.js 0.186.1",
   "capture": {
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
+    "sourceBase": "http://127.0.0.1:45941",
+    "sourceCommit": "7a1c9f716d29e22203d7198848d9a06fe8eaa0b1",
+    "sourceTreeSha256": "bdd363bce277a9c618e6f2a7e12cc1e81359dc4b891ecfd0bbb98af1fc29960e",
+    "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
       2,
       3
     ],
-    "quality": "Explicit refraction; capture is independent of automatic driver policy"
+    "quality": "Explicit refraction; capture is independent of automatic driver policy",
+    "provenanceVerified": true,
+    "servedSourceHashes": {
+      "model-view.js": "67941ca91972e37ce736bc6e8a8cf24f1b71dc495754a5f9583ba532dc7bcb33",
+      "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
+      "model-scene.js": "b5fd071a6f548a04b89388dda7486d3c955e86b43519e3b395079117de92aad1",
+      "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
+      "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
+      "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
+      "model-glass.js": "90a6d9adff2af735675cd3d58c47794dfccfd3221edecd71b620b82b154b51d3",
+      "model-hardware.js": "4bc54771d746bad6fca332703e17e8140af5249744497c38f29506154f2b13b6",
+      "model-architecture.json": "21b52b2a78ed8ae4b632eb8e5d0be2b650e7539d37162cc5caef0283f0954307",
+      "vendor/three@0.186.1/three.module.js": "9052042d676cb0fdc1ddfefe193053f34b7ac0513a616fdac4535d49987812ea",
+      "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
+    },
+    "pipelineHashes": {
+      "scripts/capture-model-posters.mjs": "863f78a70985e3f20b987e6f4414065b46bd16f67b4d139cd82ccc6ed5b17c87",
+      "scripts/model-pixel-fidelity.mjs": "014e2c7baa3a713a81e8d44d42daef819ae29834957a74be13ea3ff400593f32",
+      "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
+      "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
+      "scripts/test-model-startup.mjs": "1a3f54e4fb0e7b6f67b05bd4da6f56cb965338837d8e3f73e2c134a0f5ceb6fd",
+      "scripts/model-audit-host.mjs": "6dfe2ce3cd85b759d873f092200d3e25297acbbdf57e79fe561396be641cf44f",
+      "scripts/model-visual-audit.mjs": "f18bdda6bbad3d7fabe2bd0df2250cc4c1ebf80ee8473b78d86da3920b8f087a",
+      "scripts/prepare-model-visual-evidence.mjs": "ecf01f8bbed493c7495b5c9a1607cd881dffe95097393842290cf37052a3f2a0",
+      ".github/workflows/ux-quality.yml": "92578b94967c7e2a5338a5bd3db570eb9c3c525471dae698e1d9d53a71db75f3",
+      "package.json": "ff2b12aaa7162bbf9c70019fd33d82d9630f2b41ec290cd648545be421f087a5",
+      "package-lock.json": "c5f194fbc3ed499ac712905c5bbba0502097c15c0277768fa9f6d4c38aba66b2"
+    }
   },
   "encoders": {
     "webp": {
@@ -24,15 +55,16 @@
     },
     "sharp": "0.35.4"
   },
-  "cssFormatPolicy": "AVIF passed native-pixel threshold for every variant; WebP retained as compatible alternate.",
+  "cssFormatPolicy": "AVIF passed direct RGB-channel native-pixel threshold for every variant; WebP retained as compatible alternate.",
   "nativePixelThreshold": {
-    "avifMeanAbsoluteErrorAtMost": 2,
-    "avifP99AbsoluteErrorAtMost": 12
+    "metric": "MAE and p99 are computed from direct absolute differences for every decoded 8-bit sRGB RGB channel after identical background compositing.",
+    "avifMeanAbsoluteChannelErrorAtMost": 2,
+    "avifP99AbsoluteChannelErrorAtMost": 12
   },
   "sourceHashes": {
     "model-view.js": "67941ca91972e37ce736bc6e8a8cf24f1b71dc495754a5f9583ba532dc7bcb33",
     "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-    "model-scene.js": "0b3b8031203e9f60d98ead300d933d72b295b383d226ae7015617441692d4f17",
+    "model-scene.js": "b5fd071a6f548a04b89388dda7486d3c955e86b43519e3b395079117de92aad1",
     "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
     "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
     "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
@@ -57,14 +89,60 @@
         "width": 1280,
         "height": 740
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-1x.png",
-        "sha256": "3e972c1276f246bc354fe2c4d79c95ece126778419b55a9cfe87b32c2ccc4077"
+        "sha256": "0453d95e4ab174db3d0021f85cefb16d1689d6b9ae554ac30d1bea8a1e900434"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-1x.png",
-        "runningDetailSha256": "de5c52e2d331358321fe06171f1bcf9bfb74c2de040dd27b0423516f48af281f",
+        "runningDetailSha256": "110106ef46141a2e8a2d934ce95749cff684b0b74675eed3d3ce0106983f2653",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -88,23 +166,25 @@
         }
       },
       "file": "powered-down-desktop-1x.webp",
-      "bytes": 230794,
-      "sha256": "145ca67330bc4140d1702934e73fa36aeac2409f874787492f96e9cc7cc14782",
+      "bytes": 193430,
+      "sha256": "689170a857791358f27ba49f0cf84758ca9e734f6ad53c84d2d865f206522d42",
       "avifFile": "powered-down-desktop-1x.avif",
-      "avifBytes": 175932,
-      "avifSha256": "dbde0f0de68dad1fab94041889ee908a0951deec29f7bf487b5a40a3e6ddf011",
+      "avifBytes": 146095,
+      "avifSha256": "fd9db93b3e98e4fd71fc991ec6dfb3fd2b921443645428d734461b817d9937e3",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.2554,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 17,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.9072,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 21,
+          "comparedChannelSamples": 2841600,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.216,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 15,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4042,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 17,
+          "comparedChannelSamples": 2841600,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -113,39 +193,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -225,14 +351,60 @@
         "width": 2560,
         "height": 1480
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-2x.png",
-        "sha256": "16945506c8531f90ceadbbd2cf110dc1e672c2d097cc60f9c9741f06dc1c62be"
+        "sha256": "d577fce4f68bb5aba5d2eaed418bd8f5e7773607124df8b5fa38f98bd71e6709"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-2x.png",
-        "runningDetailSha256": "73e921c6dac2b95fab8ef62730551a946b9774e308e72bdf836637d9bc918141",
+        "runningDetailSha256": "d1edf7db0f4e96d7b19edb0df4f0c7a1876b7735991b3ecc9c517d67055a76c9",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -256,23 +428,25 @@
         }
       },
       "file": "powered-down-desktop-2x.webp",
-      "bytes": 732044,
-      "sha256": "0e367f0d89a0d9540939b91ec79e2df1d5fe227a4f2acad2338b20d327198508",
+      "bytes": 619144,
+      "sha256": "dd993f16c6fefd95063bf93a9c4d5e0341b528496d2d46267ecbfc2bf8422ede",
       "avifFile": "powered-down-desktop-2x.avif",
-      "avifBytes": 543477,
-      "avifSha256": "790d054ac3bc2e61543a744c0af39bebdaf740e5c0f2a0d13aa2ef0f81a1df12",
+      "avifBytes": 458834,
+      "avifSha256": "c8e9e44631c17deccb9e0f48e537cd9bf2e6e8c0bbd76a891012954603251aa7",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.177,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 19,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.8339,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 11366400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.1423,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 15,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.2898,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 20,
+          "comparedChannelSamples": 11366400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -281,39 +455,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -393,14 +613,60 @@
         "width": 3840,
         "height": 2220
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-3x.png",
-        "sha256": "bf72a57b83755e765d10083fbe515f3bed06ac12c07566c398425346fa85a356"
+        "sha256": "99b1777a2e8bae5df9d3a6d1c2ae7aab6e92faff16aba6790bbc73163a63a5ae"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-3x.png",
-        "runningDetailSha256": "7d7bca16bcc93636160f8ecb4b7da5c041d7541a2b10c8613ec9bb8a01205a90",
+        "runningDetailSha256": "f18917220b832ab0dc3e3ddc6e79b80bab17e9aebf7beeb94fd42c9bedc7cb2c",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -424,23 +690,25 @@
         }
       },
       "file": "powered-down-desktop-3x.webp",
-      "bytes": 1405810,
-      "sha256": "33c7c18e9d50d4bfd293f7eb8b973d1e3cfdfcd3c2a0536681369454447c6b52",
+      "bytes": 1192704,
+      "sha256": "37567e1487d92dbfda207f4062185af47b31c6ccaaf98f6f4a508815a7ede47b",
       "avifFile": "powered-down-desktop-3x.avif",
-      "avifBytes": 1032582,
-      "avifSha256": "d927f17bcb77efdceb5e9b299bd0b192524575e6a4bc833878146d5a94798cf5",
+      "avifBytes": 875819,
+      "avifSha256": "99a6b8bd90cb70504ef77fb5fc8410bf5875a88edc91079d97a67c1f2ca75465",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.1393,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 17,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.7968,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 25574400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.0999,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 16,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.2242,
+          "p99AbsoluteChannelError": 3,
+          "maxAbsoluteChannelError": 17,
+          "comparedChannelSamples": 25574400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -449,39 +717,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -561,14 +875,60 @@
         "width": 1280,
         "height": 740
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-1x.png",
-        "sha256": "ab93fb0356b95e89403e76dee4e36e512eeaf5f39896840f50ad54903d4eb4c3"
+        "sha256": "665931704ccfef58107ee13f22a621e281ec2df2d51cbffa5159f74a32653b60"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-1x.png",
-        "runningDetailSha256": "ea3979e350a2c4f0d38c4a30a3837bbfd10a1ccafd9d9f7343f4a59594317288",
+        "runningDetailSha256": "f6dd4879b2d0c1ab24b50b12669b9b18da6b5312bad4f44e7060718450c8e2e6",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -592,23 +952,25 @@
         }
       },
       "file": "powered-down-desktop-dark-1x.webp",
-      "bytes": 86982,
-      "sha256": "f42009b26cf9939039a83d25073391e27ff10a4d7232d8637ef8acbb84273ca8",
+      "bytes": 75126,
+      "sha256": "7cefe17fef10359e14da9cb40c4868445b5cc3be7f367539f60843657cb204ba",
       "avifFile": "powered-down-desktop-dark-1x.avif",
-      "avifBytes": 48227,
-      "avifSha256": "bb23b708dd16077290cc05fe6f60bc73b6f2be272af70b2b078f1e45e1bdfcb0",
+      "avifBytes": 41412,
+      "avifSha256": "0c38b5be5fa6886816ab88232bb1d063d54cbe7cca0ea963da0e695c4297642f",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.4527,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 18,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.6112,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 20,
+          "comparedChannelSamples": 2841600,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.096,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 12,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4646,
+          "p99AbsoluteChannelError": 2,
+          "maxAbsoluteChannelError": 11,
+          "comparedChannelSamples": 2841600,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -617,39 +979,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -729,14 +1137,60 @@
         "width": 2560,
         "height": 1480
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-2x.png",
-        "sha256": "a1a183812ea70bc6c8044eca1617338d737fae24ba847d9beb04288278cb0ceb"
+        "sha256": "227b47813ae4e62c8aa52acba33d8c7814ef01933a6c7cbb49c739d2d9f9feec"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-2x.png",
-        "runningDetailSha256": "3e01cf4cfa302356d538b65699ddbb3ce369a9de9464dacc3ec7324f79402977",
+        "runningDetailSha256": "33389951fde010b919ff47482af5a66dbb4cbe95f15927941a95e1c847585db7",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -760,23 +1214,25 @@
         }
       },
       "file": "powered-down-desktop-dark-2x.webp",
-      "bytes": 225802,
-      "sha256": "30ce70cbbe0358b7d99b5a7c1e23f3516d09efe43dc8671a4926c7af7bf395b8",
+      "bytes": 199014,
+      "sha256": "96f047bb4693ea6f8dc300d71de5bd40773f32e361fb92fe36126e09e37dadd0",
       "avifFile": "powered-down-desktop-dark-2x.avif",
-      "avifBytes": 121960,
-      "avifSha256": "6a150e71504a247eebac9e9c741dcfb6205458489cae196b0ae2f39ea22657b6",
+      "avifBytes": 106798,
+      "avifSha256": "19d8889b1743f7a34577913b0a37e2bccac5d37fa5e9114600e3f6f28fa544e9",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.391,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 18,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.5218,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 11366400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.0737,
-          "p99AbsoluteError": 1,
-          "maxAbsoluteError": 12,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4285,
+          "p99AbsoluteChannelError": 2,
+          "maxAbsoluteChannelError": 11,
+          "comparedChannelSamples": 11366400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -785,39 +1241,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -897,14 +1399,60 @@
         "width": 3840,
         "height": 2220
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 1280,
+          "height": 740
+        },
+        "marginPx": 12,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 186.119,
+            "right": 1132.943,
+            "top": 107.378,
+            "bottom": 644.876,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 212.298,
+            "right": 1110.937,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 178.11,
+            "right": 1131.62,
+            "top": 74.226,
+            "bottom": 670.3,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 262.026,
+            "bottom": 503.285,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 123.561,
+          "right": 1266.605,
+          "top": 51.488,
+          "bottom": 674.745,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-3x.png",
-        "sha256": "1f9610470a7270f030e4222771c388137aabaea2d81e23a89bcc9b9f29d76461"
+        "sha256": "7aa5f199ab41fdf469220f148e1242980a00f5ceeb9845db30456added5a14e0"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-3x.png",
-        "runningDetailSha256": "b033d4d4f7f4e6f7d2ec4c14e35a7879faefd1b88ab97bfa1f40ede6cc12309e",
+        "runningDetailSha256": "54b4816e461b8f6624164fcb5ba8946a7bea334b47847c18499dc5d0bdf13d7d",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -928,23 +1476,25 @@
         }
       },
       "file": "powered-down-desktop-dark-3x.webp",
-      "bytes": 373962,
-      "sha256": "bf477cdf7370bf94dd80837e2bdbb19a84fd050c78b44b17a77826e455566332",
+      "bytes": 333362,
+      "sha256": "63517f78f47e26b79da90e32d8931e9bfcdb088d6da5227a4960380683425da1",
       "avifFile": "powered-down-desktop-dark-3x.avif",
-      "avifBytes": 202133,
-      "avifSha256": "313dfccfd4f8d10ff626ffb3ff1c60b5e1e1135a93dbd1e87b33900db32b1c27",
+      "avifBytes": 178904,
+      "avifSha256": "d73e17c0c54ca559e4ab6354c4978398b059b06f47ed73fa4471f0b3abbb28e4",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.3674,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 22,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4783,
+          "p99AbsoluteChannelError": 3,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 25574400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.0631,
-          "p99AbsoluteError": 1,
-          "maxAbsoluteError": 12,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4065,
+          "p99AbsoluteChannelError": 2,
+          "maxAbsoluteChannelError": 13,
+          "comparedChannelSamples": 25574400,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -953,39 +1503,85 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 23.2625294145079,
+        "distance": 25.791931367543715,
+        "geometryBounds": {
+          "viewport": {
+            "width": 1280,
+            "height": 740
+          },
+          "marginPx": 12,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 186.119,
+              "right": 1132.943,
+              "top": 107.378,
+              "bottom": 644.876,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 212.298,
+              "right": 1110.937,
+              "top": 51.488,
+              "bottom": 674.745,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 178.11,
+              "right": 1131.62,
+              "top": 74.226,
+              "bottom": 670.3,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 123.561,
+              "right": 1266.605,
+              "top": 262.026,
+              "bottom": 503.285,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 123.561,
+            "right": 1266.605,
+            "top": 51.488,
+            "bottom": 674.745,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            252.7328590396201,
-            306.0502272077341
+            288.31567415774947,
+            311.9260496089596
           ],
           [
-            288.72185048382653,
-            258.0282095669202
+            322.4077041034427,
+            268.7657557173145
           ],
           [
-            466.8571932827938,
-            288.465854537792
+            483.38761674807876,
+            296.25014530288144
           ],
           [
-            581.0950506289462,
-            321.18659599332864
+            586.8236088276341,
+            325.93374251860314
           ],
           [
-            700.1883290023801,
-            334.35583018383096
+            694.2200776697189,
+            337.89029222211997
           ],
           [
-            824.6845055936445,
-            332.4152328981491
+            805.9957317089562,
+            336.2185471589602
           ],
           [
-            954.9085344604923,
-            338.41811318145443
+            922.3827841092354,
+            341.6800907205564
           ],
           [
-            1091.232650785503,
-            348.0015205654299
+            1043.6467181828007,
+            350.32142839548845
           ]
         ]
       },
@@ -1065,14 +1661,60 @@
         "width": 500,
         "height": 280
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-1x.png",
-        "sha256": "f3a2452ffdcc47b06c653c6a8864b2cfa4f9ec9eddc6943a2dbb851338877c84"
+        "sha256": "13c3db0b1f51558e97865fbff110ef2b2fdf428fa603c48050f4a30635ebea4f"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-1x.png",
-        "runningDetailSha256": "1b075100bef1c3ff674e1a6ed9f7af57f02e9d829823129bcc02c8f9629823a2",
+        "runningDetailSha256": "d43b8767b0b1c55254a7604b9d298c0cb47f9471daae9875150fda10b55f86b2",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1096,23 +1738,25 @@
         }
       },
       "file": "powered-down-phone-1x.webp",
-      "bytes": 38452,
-      "sha256": "4e5d9a77481e18e98a95d40254d7d040c780740deef7c85a9c9b3f8305149458",
+      "bytes": 27494,
+      "sha256": "f07159b59a65e15bc55682d9afe80c14eca94d1daaa6d3d8e27aa1313d8c6fa0",
       "avifFile": "powered-down-phone-1x.avif",
-      "avifBytes": 30172,
-      "avifSha256": "179db88829466ac5e1d4df3061c75e041bb71cde8d04f82d78f6c90d5a6ac428",
+      "avifBytes": 21785,
+      "avifSha256": "c77e95135389bc0b385a3624d588076ba2db00a886b839cb516dc753823fb173",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.3255,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 29,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.9121,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 32,
+          "comparedChannelSamples": 420000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.2744,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 18,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4551,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 20,
+          "comparedChannelSamples": 420000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1121,39 +1765,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -1233,14 +1923,60 @@
         "width": 1000,
         "height": 560
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-2x.png",
-        "sha256": "5c59f94ab769a4d151a776694ec2e5d093f2a5f9fe229f7f29c5fa2527a7a36f"
+        "sha256": "bfb7327d55c56b5cc1244ccf69ac7f2837cd82f37236325da98cd719cf6fb8d2"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-2x.png",
-        "runningDetailSha256": "511cd6a217bf5d5373cbce1c9dd558672dda632588eec74d1dc88cfd6e16a954",
+        "runningDetailSha256": "d6843883adc669cc7746f428b4f2276fb9918e72cab2d79b3ba65a1b7f6a6463",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1264,23 +2000,25 @@
         }
       },
       "file": "powered-down-phone-2x.webp",
-      "bytes": 130818,
-      "sha256": "c6e025e0bc3a91c785b484d58e488b0aeca29617e77c62fbcf690e8960b5a4d6",
+      "bytes": 95268,
+      "sha256": "9fe5a0ba2bd24d31d5c7219cf0bd83bde81fb044c89c031f445773ae3888b260",
       "avifFile": "powered-down-phone-2x.avif",
-      "avifBytes": 98048,
-      "avifSha256": "db98b76478d59826c20be2c3279dec59b4b3b01b9846f342620854e4a9660d8e",
+      "avifBytes": 73233,
+      "avifSha256": "39103846dc9c807e0203ceca7eb724f40f9d976926870912f81a2a7832bb068f",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.2592,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 26,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.8768,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 26,
+          "comparedChannelSamples": 1680000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.219,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 20,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.3771,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 1680000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1289,39 +2027,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -1401,14 +2185,60 @@
         "width": 1500,
         "height": 840
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-3x.png",
-        "sha256": "3a6e2c736aae8b5175126af78915b0230bd9936f3d107eae2a538c152aaefb0a"
+        "sha256": "1911a468426d8ad62933c1032ac8dfd6d62fa3fa345d8baaaa869eabc0017b08"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-3x.png",
-        "runningDetailSha256": "d96e505ef309d471af612634d48d939277cef4c3352677a38f16b39cd288a031",
+        "runningDetailSha256": "67b35e690dc515a53541efb04b5195c081c6105dbfd1ac31d0babaac64bd8e46",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1432,23 +2262,25 @@
         }
       },
       "file": "powered-down-phone-3x.webp",
-      "bytes": 261826,
-      "sha256": "55fb0e80b058db52de46f77e1b10978686641b8ea896afc72ebb5a89adf5fb54",
+      "bytes": 191464,
+      "sha256": "c0cbe0c673cf1ef92c3d12f4a0b098e96336aca8bb0701ff247fe6e1a1534796",
       "avifFile": "powered-down-phone-3x.avif",
-      "avifBytes": 192067,
-      "avifSha256": "2f7f5cdfe543e135e16a6902f96c4eb171f6424ac2110fb3fffb177de23f6f52",
+      "avifBytes": 145240,
+      "avifSha256": "53164b5e09f864d62214f5c5e9d0d43d4155c5845d7441f3e76719a0818c7a82",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.2117,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 20,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.8405,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 28,
+          "comparedChannelSamples": 3780000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.1885,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 16,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.3353,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 18,
+          "comparedChannelSamples": 3780000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1457,39 +2289,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -1569,14 +2447,60 @@
         "width": 500,
         "height": 280
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-1x.png",
-        "sha256": "2a20ec065195126ddf2593de46d3cad03f6ecd48439f69c923050b93528e794b"
+        "sha256": "c0a4af6a5c53551c2f238bb8981ef90032672e3b8f5a1d3d3aa7678ebccd714e"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-1x.png",
-        "runningDetailSha256": "7b56394b1baa30780b4ffdb288b1e33778d0e0ecbf6529142370433677b9a38d",
+        "runningDetailSha256": "9a2bb6feb7c3be2ff154febf4682b20ad3e94f04a9e20d4fb7a6619aba26be88",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1600,23 +2524,25 @@
         }
       },
       "file": "powered-down-phone-dark-1x.webp",
-      "bytes": 14830,
-      "sha256": "5fa353fcc48c2d66d7a3a05364ff11a4cd667314425728d99b094ab1ba2525b5",
+      "bytes": 10312,
+      "sha256": "0399dd4c9a06701e0c617eacd92284d89dc16ee586aeefa7eca10792d3f92964",
       "avifFile": "powered-down-phone-dark-1x.avif",
-      "avifBytes": 9974,
-      "avifSha256": "41d81a0be97ccc07431d4aedd1431537e93d3455578882f59b6c29ff344b671a",
+      "avifBytes": 7668,
+      "avifSha256": "86484727e16bc96ee098561e07f2d6bf4f1adf78187bca2bb941dec110a87cd4",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.4896,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 29,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.6161,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 32,
+          "comparedChannelSamples": 420000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.1054,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 8,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.447,
+          "p99AbsoluteChannelError": 3,
+          "maxAbsoluteChannelError": 8,
+          "comparedChannelSamples": 420000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1625,39 +2551,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -1737,14 +2709,60 @@
         "width": 1000,
         "height": 560
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-2x.png",
-        "sha256": "0872d049892442a75c39e2372ca2979f76b08d8493f772e2194e6b782d4708c8"
+        "sha256": "9736a7de2c272c262843f9e93cfc3fd5596d9596ad86913b57dc4959971e3e03"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-2x.png",
-        "runningDetailSha256": "353e80d17e163207933a06f9181d5b1be0e78213dc4f441cd041f473e8d74b56",
+        "runningDetailSha256": "04faf9a72fc734f8abe4aeb3ae3e62dc44f859db2b59310b899c6bf18a022603",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1768,23 +2786,25 @@
         }
       },
       "file": "powered-down-phone-dark-2x.webp",
-      "bytes": 44806,
-      "sha256": "b17a66708c113ec4810107f63ac282f5d61d50caabb014f6e8b96b193ba2576c",
+      "bytes": 33506,
+      "sha256": "2386b4090579a8fc5781ba7e8db694fa1cf35faaeb68dd8cf85c92277ca5c2b4",
       "avifFile": "powered-down-phone-dark-2x.avif",
-      "avifBytes": 27092,
-      "avifSha256": "69ca70c173b790d8332880061ef4091805c3ca50cb23fbf8a2b393394f8e0f8d",
+      "avifBytes": 20320,
+      "avifSha256": "d4c0c2ca099498d431d7d9376dda178cf3c3f3e486bcf6cca1db67e5fce2a5b9",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.4446,
-          "p99AbsoluteError": 3,
-          "maxAbsoluteError": 26,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.5618,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 25,
+          "comparedChannelSamples": 1680000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.0878,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 10,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4365,
+          "p99AbsoluteChannelError": 2,
+          "maxAbsoluteChannelError": 9,
+          "comparedChannelSamples": 1680000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1793,39 +2813,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -1905,14 +2971,60 @@
         "width": 1500,
         "height": 840
       },
+      "graphGeometryBounds": {
+        "viewport": {
+          "width": 500,
+          "height": 280
+        },
+        "marginPx": 11.200000000000001,
+        "routeCount": 3601,
+        "recurrenceCount": 1,
+        "components": {
+          "nodes": {
+            "left": 76.554,
+            "right": 416.369,
+            "top": 42.93,
+            "bottom": 237.307,
+            "count": 13344
+          },
+          "routeControlPoints": {
+            "left": 84.669,
+            "right": 410.655,
+            "top": 19.608,
+            "bottom": 236.822,
+            "count": 7268
+          },
+          "contourVertices": {
+            "left": 78.607,
+            "right": 412.086,
+            "top": 33.679,
+            "bottom": 248.657,
+            "count": 2048
+          },
+          "carrierEnvelope": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 96.948,
+            "bottom": 185.771,
+            "count": 32
+          }
+        },
+        "all": {
+          "left": 24.613,
+          "right": 488.299,
+          "top": 19.608,
+          "bottom": 248.657,
+          "count": 22692
+        }
+      },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-3x.png",
-        "sha256": "52bb6d3f51d0b6eb6b482c99a89ab0496ab130298435dca0c3bdec4a4660064e"
+        "sha256": "5f39cfafe2f325c4fc48b98f3bc35b2b340d8e063a8c48a780ee5aefd5af9873"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-3x.png",
-        "runningDetailSha256": "216234b35903dea7e3da44852cde134b1804a5406786ae5f242a632c85c138eb",
+        "runningDetailSha256": "2e39aa58ccaacbbd4dffce7b1dba343955d7445dd7c638949276a36509aab1e8",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1936,23 +3048,25 @@
         }
       },
       "file": "powered-down-phone-dark-3x.webp",
-      "bytes": 83680,
-      "sha256": "d4d68d8ebf1cf19c29615d751ab7317e2686dc692428ab3c38927b85805793de",
+      "bytes": 62772,
+      "sha256": "71864de8c58e90cd107b2b8d4536a7d3abb6e59795405b014025d5eeb6f14baf",
       "avifFile": "powered-down-phone-dark-3x.avif",
-      "avifBytes": 49190,
-      "avifSha256": "9be4d215255702ec371d69a65fb6ca686c841c73a7b72f9f325fb8cdd69d171a",
+      "avifBytes": 37283,
+      "avifSha256": "d4b4c92cb6dbdf5476c4760bb7b37e002a9eb51adbcc96b201a11e1408d201a8",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteError": 0.4137,
-          "p99AbsoluteError": 2,
-          "maxAbsoluteError": 21,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.5225,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 26,
+          "comparedChannelSamples": 3780000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteError": 0.0801,
-          "p99AbsoluteError": 1,
-          "maxAbsoluteError": 11,
-          "percentileDefinition": "p99 of native-resolution per-pixel grayscale absolute difference after theme-background compositing"
+          "meanAbsoluteChannelError": 0.4274,
+          "p99AbsoluteChannelError": 2,
+          "maxAbsoluteChannelError": 11,
+          "comparedChannelSamples": 3780000,
+          "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
       },
       "selectedFormat": "avif",
@@ -1961,39 +3075,85 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 20.454982761032806,
+        "distance": 24.50162550274619,
+        "geometryBounds": {
+          "viewport": {
+            "width": 500,
+            "height": 280
+          },
+          "marginPx": 11.200000000000001,
+          "routeCount": 3601,
+          "recurrenceCount": 1,
+          "components": {
+            "nodes": {
+              "left": 76.554,
+              "right": 416.369,
+              "top": 42.93,
+              "bottom": 237.307,
+              "count": 13344
+            },
+            "routeControlPoints": {
+              "left": 84.669,
+              "right": 410.655,
+              "top": 19.608,
+              "bottom": 236.822,
+              "count": 7268
+            },
+            "contourVertices": {
+              "left": 78.607,
+              "right": 412.086,
+              "top": 33.679,
+              "bottom": 248.657,
+              "count": 2048
+            },
+            "carrierEnvelope": {
+              "left": 24.613,
+              "right": 488.299,
+              "top": 96.948,
+              "bottom": 185.771,
+              "count": 32
+            }
+          },
+          "all": {
+            "left": 24.613,
+            "right": 488.299,
+            "top": 19.608,
+            "bottom": 248.657,
+            "count": 22692
+          }
+        },
         "landmarks": [
           [
-            69.60021964662799,
-            113.36030045577017
+            98.93807967156121,
+            117.6926326504323
           ],
           [
-            101.38775458384522,
-            106.36670677112421
+            126.57284076957521,
+            112.06648868550936
           ],
           [
-            171.26010751431937,
-            108.42789156729191
+            184.26247354778812,
+            113.64141291373129
           ],
           [
-            223.66987853283774,
-            121.63901611950662
+            228.02932818268155,
+            124.67902430360982
           ],
           [
-            276.49282885511366,
-            127.29161825476625
+            272.0838451504605,
+            129.40656975102493
           ],
           [
-            330.1487822611721,
-            127.3605097252288
+            316.7166393971307,
+            129.47876323213998
           ],
           [
-            384.56804453959086,
-            130.28465197549542
+            361.8772724570791,
+            131.92284734706786
           ],
           [
-            439.7122220200899,
-            134.40262350534903
+            407.53738414911277,
+            135.3519280852044
           ]
         ]
       },
@@ -2060,5 +3220,5 @@
       "orientation": "input-to-output"
     }
   ],
-  "description": "Actual Three.js renderer, complete source topology, horizontal powered-down state and independently encoded native pixels. Not trained activation evidence."
+  "description": "Actual Three.js renderer, complete source topology and fitted graph geometry including route controls, recurrence, contours and carrier envelopes. Lossless capture inputs are compared directly against independently encoded poster pixels. Not trained activation evidence."
 }
