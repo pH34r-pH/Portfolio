@@ -71,16 +71,33 @@ export class ModelStartup {
     this.firstFrame = null;
     this.startPromise = null;
     this.abort = new AbortController();
-    const options = { signal: this.abort.signal, passive: true };
-
-    for (const type of ["scroll", "resize"]) addEventListener(type, () => this.schedule(), options);
-    document.addEventListener("visibilitychange", () => this.visibilityChanged(), options);
-    for (const query of QUIET_QUERIES) {
-      matchMedia(query).addEventListener("change", () => this.refreshQuietMode(), options);
-    }
-    this.button?.addEventListener("click", () => this.start(), { signal: this.abort.signal });
+    this.bindEvents();
     this.setPhase(this.phase, this.initialStatus());
     this.persist();
+  }
+
+  bindEvents() {
+    const options = { signal: this.abort.signal, passive: true };
+    this.bindViewportEvents(options);
+    this.bindVisibilityEvent(options);
+    this.bindQuietPreferenceEvents(options);
+    this.button?.addEventListener("click", this.start.bind(this), { signal: this.abort.signal });
+  }
+
+  bindViewportEvents(options) {
+    const schedule = this.schedule.bind(this);
+    addEventListener("scroll", schedule, options);
+    addEventListener("resize", schedule, options);
+  }
+
+  bindVisibilityEvent(options) {
+    document.addEventListener("visibilitychange", this.visibilityChanged.bind(this), options);
+  }
+
+  bindQuietPreferenceEvents(options) {
+    for (const query of QUIET_QUERIES) {
+      matchMedia(query).addEventListener("change", this.refreshQuietMode.bind(this), options);
+    }
   }
 
   get started() { return this.state.started; }
@@ -257,60 +274,77 @@ export class ModelStartup {
 
   advanceStartup(time) {
     this.raf = 0;
+    if (!this.canAdvance()) return;
+    if (this.phase === "prepared") this.handoffScene();
+    else if (this.phase === "handoff" && this.restoreCompletedIgnition()) return;
+    else if (this.phase === "handoff") this.beginIgnition(time);
+    else this.advanceIgnition(time);
+    this.schedule();
+  }
+
+  canAdvance() {
     if (this.terminal || this.quiet || document.hidden) {
       this.lastTime = null;
-      return;
+      return false;
     }
     if (this.phase !== "prepared" && !this.onScreen()) {
       this.lastTime = null;
       this.persist();
-      return;
+      return false;
     }
     if (!this.scene || this.scene.disposed || !this.root.isConnected) {
       this.fail("startup-root-disposed");
-      return;
+      return false;
     }
-    if (this.phase === "prepared") {
-      this.scene.resize();
-      this.scene.setPower(0, true);
-      this.firstFrame = this.scene.powerView();
-      this.handoffs++;
-      this.setPhase("handoff", "Architecture display ready");
-      this.onHandoff?.();
-    } else if (this.phase === "handoff") {
-      if (this.state.ignitionComplete) {
-        this.scene.finishPower();
-        this.setPhase("ready", "Interactive architecture ready");
-        this.stop();
-        this.persist();
-        return;
-      }
-      this.lastTime = time;
-      this.scene.setPower(this.elapsedActiveMs / IGNITION_DURATION_MS);
-      this.setPhase("igniting", "Starting architecture display");
-    } else {
-      this.elapsedActiveMs = Math.min(
-        IGNITION_DURATION_MS,
-        this.elapsedActiveMs + Math.max(0, time - (this.lastTime ?? time)),
-      );
-      this.lastTime = time;
-      this.scene.setPower(this.elapsedActiveMs / IGNITION_DURATION_MS);
-      if (this.elapsedActiveMs - this.lastPersistedElapsedMs >= 100) {
-        this.lastPersistedElapsedMs = this.elapsedActiveMs;
-        this.persist();
-      }
-      if (this.elapsedActiveMs >= IGNITION_DURATION_MS) {
-        this.state.ignitionComplete = true;
-        this.elapsedActiveMs = IGNITION_DURATION_MS;
-        this.scene.finishPower();
-        this.completions++;
-        this.persist();
-        this.setPhase("ready", "Interactive architecture ready");
-        this.stop();
-        return;
-      }
+    return true;
+  }
+
+  handoffScene() {
+    this.scene.resize();
+    this.scene.setPower(0, true);
+    this.firstFrame = this.scene.powerView();
+    this.handoffs++;
+    this.setPhase("handoff", "Architecture display ready");
+    this.onHandoff?.();
+  }
+
+  restoreCompletedIgnition() {
+    if (!this.state.ignitionComplete) return false;
+    this.scene.finishPower();
+    this.setPhase("ready", "Interactive architecture ready");
+    this.stop();
+    this.persist();
+    return true;
+  }
+
+  beginIgnition(time) {
+    this.lastTime = time;
+    this.scene.setPower(this.elapsedActiveMs / IGNITION_DURATION_MS);
+    this.setPhase("igniting", "Starting architecture display");
+  }
+
+  advanceIgnition(time) {
+    this.elapsedActiveMs = Math.min(
+      IGNITION_DURATION_MS,
+      this.elapsedActiveMs + Math.max(0, time - (this.lastTime ?? time)),
+    );
+    this.lastTime = time;
+    this.scene.setPower(this.elapsedActiveMs / IGNITION_DURATION_MS);
+    if (this.elapsedActiveMs - this.lastPersistedElapsedMs >= 100) {
+      this.lastPersistedElapsedMs = this.elapsedActiveMs;
+      this.persist();
     }
-    this.schedule();
+    if (this.elapsedActiveMs >= IGNITION_DURATION_MS) this.finishIgnition();
+  }
+
+  finishIgnition() {
+    this.state.ignitionComplete = true;
+    this.elapsedActiveMs = IGNITION_DURATION_MS;
+    this.scene.finishPower();
+    this.completions++;
+    this.persist();
+    this.setPhase("ready", "Interactive architecture ready");
+    this.stop();
   }
 
   snapshot() {
