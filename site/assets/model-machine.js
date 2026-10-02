@@ -166,10 +166,15 @@ class MachineController {
     this.observer = new IntersectionObserver(entries => {
       entries.forEach(entry => visibility.set(entry.target, entry.isIntersecting && entry.intersectionRatio >= .15));
       this.visible = [...visibility.values()].some(Boolean);
-      if (this.visible && (!this.startup || this.startup.started)) this.boot(); this.syncClock(); this.publishLight(true);
+      if (this.visible && (!this.startup || this.startup.started)) this.boot();
+      if(this.visible)this.scene?.animateGlassContext();else this.scene?.pauseGlassContext();
+      this.syncClock(); this.publishLight(true);
     }, { threshold: [.15] }); this.observer.observe(this.stage);
     if (this.root.hasAttribute('data-digital-home')) this.observer.observe(this.root.querySelector('#model-chapter'));
-    document.addEventListener("visibilitychange", () => { this.syncClock(); this.publishLight(true); });
+    document.addEventListener("visibilitychange", () => {
+      if(document.hidden)this.scene?.pauseGlassContext();else this.scene?.animateGlassContext();
+      this.syncClock(); this.publishLight(true);
+    });
     window.addEventListener("pagehide", event => {
       this.wasPlayingBeforePagehide=this.playing;this.visible=false;this.pause();
       if(event.persisted){this.startup?.suspend();return;}
@@ -180,6 +185,7 @@ class MachineController {
       if(!event.persisted||this.terminalDisposed)return;
       const box=this.stage.getBoundingClientRect();this.visible=box.bottom>0&&box.top<innerHeight;
       this.startup?.resumeFromBFCache();
+      if(this.visible)this.scene?.animateGlassContext();
       if(this.scene&&!this.scene.disposed&&this.wasPlayingBeforePagehide&&this.visible)this.play();
       this.wasPlayingBeforePagehide=false;this.syncClock();this.publishLight(true);
     });
@@ -209,7 +215,7 @@ class MachineController {
       if(reduceMotion.matches||forcedColors.matches){this.fallback("motion-or-colors",true);return null;}
       if(this.startup&&!this.startup.canPrepare())return null;
       if(this.canvasNeedsReplacement)this.replaceCanvasForRetry();
-      const scene=new MachineScene(T,this.root,index=>this.select(index),reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments);
+      const scene=new MachineScene(T,this.root,index=>this.select(index),reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments,()=>this.visible&&!document.hidden);
       this.scene=scene;
       if(this.startup&&!(await this.startup.accept(scene))){scene.dispose();if(this.scene===scene)this.scene=null;return null;}
       if(!current()||this.scene!==scene||scene.disposed)return null;

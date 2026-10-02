@@ -12,8 +12,9 @@ import { applyPower } from './model-power.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
-  constructor(T, root, selectNode, fail, scrub, instruments) {
+  constructor(T, root, selectNode, fail, scrub, instruments, animationActive=()=>!document.hidden) {
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
+    this.animationActive=animationActive;
     this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
     const options = { alpha: true, antialias: true, powerPreference: "low-power" };
     const context = this.canvas.getContext("webgl2", options);
@@ -320,14 +321,20 @@ export class MachineScene {
     this.animateGlassContext();
   }
   animateGlassContext() {
-    if (this.digital || this.glassAnimationRaf || !this.glass.hasContextAnimation?.()) return;
+    if (this.digital || this.disposed || !this.animationActive?.()) return;
+    if(!this.glass.hasContextAnimation?.()){this.render();return;}
+    if(this.glassAnimationRaf)return;
     const tick = () => {
       this.glassAnimationRaf = 0;
-      if (this.disposed) return;
+      if (this.disposed||!this.animationActive?.()) return;
       this.render();
-      if (this.glass.hasContextAnimation?.()) this.glassAnimationRaf = requestAnimationFrame(tick);
+      if (this.glass.hasContextAnimation?.()&&this.animationActive?.()) this.glassAnimationRaf = requestAnimationFrame(tick);
     };
     this.glassAnimationRaf = requestAnimationFrame(tick);
+  }
+  pauseGlassContext() {
+    if(this.glassAnimationRaf)cancelAnimationFrame(this.glassAnimationRaf);
+    this.glassAnimationRaf=0;
   }
   orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }

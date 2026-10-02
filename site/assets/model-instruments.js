@@ -43,9 +43,13 @@ export class ModelInstruments {
     node.setAttribute('aria-labelledby', heading.id); node.append(make('p', 'machine-glass-label', label), heading);
     node.addEventListener('transitionend', event => {
       if (event.target === node && event.propertyName === 'opacity') {
-        if (performance.now() - (node.contextTransitionStartedAt || 0) < (node.contextTransitionDuration || 0) - 32) return;
-        if (node.dataset.contextActive === 'false') this.finishContextExit(node);
-        else this.finishContextEnter(node);
+        if (event.timeStamp < (node.contextTransitionStartedAt || 0) - 1) return;
+        const exiting=node.dataset.contextActive === 'false';
+        const targetOpacity=exiting?0:1;
+        if(Math.abs(parseFloat(getComputedStyle(node).opacity)-targetOpacity)>1e-4)return;
+        const generation=node.contextTransitionGeneration;
+        if (exiting) this.finishContextExit(node,generation);
+        else this.finishContextEnter(node,generation);
       }
     });
     this.layer.append(node); return node;
@@ -72,8 +76,8 @@ export class ModelInstruments {
       button.disabled = Boolean(this.relevant && button.dataset.instrument !== this.relevant);
     }
   }
-  finishContextExit(panel) {
-    if (panel.dataset.contextActive !== 'false') return;
+  finishContextExit(panel,generation=panel.contextTransitionGeneration) {
+    if (panel.dataset.contextActive !== 'false'||generation!==panel.contextTransitionGeneration) return;
     clearTimeout(panel.contextExitTimer);
     cancelAnimationFrame(panel.contextExitRaf);
     cancelAnimationFrame(panel.contextExitRaf2);
@@ -84,9 +88,9 @@ export class ModelInstruments {
     panel.hidden = Boolean(this.phone && this.mode === 'spatial');
     this.changed?.();
   }
-  finishContextEnter(panel) {
-    if (panel.dataset.contextActive === 'false') return;
-    this.cancelContextExit(panel); panel.contextAnimating = false;
+  finishContextEnter(panel,generation=panel.contextTransitionGeneration) {
+    if (panel.dataset.contextActive === 'false'||generation!==panel.contextTransitionGeneration) return;
+    this.cancelContextExit(panel); panel.contextAnimating = false; panel.contextVisible = true;
   }
   cancelContextExit(panel) {
     clearTimeout(panel.contextExitTimer);
@@ -102,19 +106,26 @@ export class ModelInstruments {
     const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
       const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
     });
-    this.beginContextTransition(panel, Math.max(0, ...duration));
+    this.beginContextTransition(panel, Math.max(0, ...duration),false);
   }
-  beginContextTransition(panel, duration) {
+  beginContextTransition(panel, duration, entering) {
+    const generation=panel.contextTransitionGeneration=(panel.contextTransitionGeneration||0)+1;
     panel.contextTransitionStartedAt = performance.now(); panel.contextTransitionDuration = duration;
-    this.scheduleContextCompletion(panel, duration);
+    this.scheduleContextCompletion(panel, duration, entering, generation);
   }
-  scheduleContextCompletion(panel, duration) {
+  scheduleContextCompletion(panel, duration, entering, generation) {
     const wait = duration + 250;
     // Start the fallback after a paint opportunity so synchronous scene work
     // cannot consume the visible transition window.
     panel.contextExitRaf = requestAnimationFrame(() => {
+      if(panel.contextTransitionGeneration!==generation)return;
       panel.contextExitRaf2 = requestAnimationFrame(() => {
-        panel.contextExitTimer = setTimeout(() => this.finishContextExit(panel), wait);
+        if(panel.contextTransitionGeneration!==generation)return;
+        panel.contextExitTimer = setTimeout(() => {
+          if(panel.contextTransitionGeneration!==generation)return;
+          if(entering)this.finishContextEnter(panel,generation);
+          else this.finishContextExit(panel,generation);
+        }, wait);
       });
     });
   }
@@ -127,7 +138,7 @@ export class ModelInstruments {
     const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
       const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
     });
-    this.beginContextTransition(panel, Math.max(0, ...duration));
+    this.beginContextTransition(panel, Math.max(0, ...duration),true);
   }
   setPanelContext(panel, enters, initial) {
     if (!initial) delete panel.dataset.contextInitial;

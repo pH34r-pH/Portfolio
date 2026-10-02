@@ -161,7 +161,7 @@ export class SharedGlass {
     camera.updateMatrixWorld();
     this.currentCamera = camera;
     this.resetPanelPoses(camera);
-    const contextState = this.panels.map(panel => `${panel.id}:${panel.node.contextVisible}:${panel.node.dataset.contextActive}`).join(',');
+    const contextState = this.panels.map(panel => `${panel.id}:${panel.node.contextVisible}:${panel.node.dataset.contextActive}:${panel.node.contextAnimating}`).join(',');
     const key = `${this.layoutGeneration}:${this.instruments.active}:${contextState}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
     const stateChanged = key !== this.poseKey; this.poseKey = key;
     const visible = this.visiblePanels();
