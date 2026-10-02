@@ -50,15 +50,21 @@ async function auditSearchDialog(page, hasPagefind, manifest) {
     await expect(page.locator("article.myst-reader h1")).toBeVisible();
   }
 
+  if (!hasPagefind) console.log("Pagefind result states not exercised: this exact site surface has no bundled /pagefind/pagefind.js index.");
+  await page.goto(base + "/", { waitUntil: "domcontentloaded" });
   const close = page.getByRole("button", { name: "Close search" });
-  if (await dialog.isVisible()) {
-    await page.keyboard.press("Escape");
-  }
-  await expect(dialog).toBeHidden();
   const trigger = page.getByRole("button", { name: /Search/ });
   if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await trigger.tap();
   else await trigger.click();
   await expect(dialog).toBeVisible();
+  await expect(input).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
+  if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await trigger.tap();
+  else await trigger.click();
+  await expect(dialog).toBeVisible();
+  await expect(input).toBeFocused();
   if (await page.evaluate(() => matchMedia("(pointer: coarse)").matches)) await close.tap();
   else await close.click();
   await expect(dialog).toBeHidden();
@@ -193,6 +199,14 @@ async function auditPhoneTopology(page,nodes,layout,articles) {
     await page.goBack();
     await expect(page).toHaveURL(base + "/research/");
     await expect(page.locator(".topology-node")).toHaveCount(articles.length);
+    await expect(node).toHaveAttribute("aria-pressed", "true");
+    await expect(node).toHaveClass(/is-selected/);
+    await expect(page.locator("[data-research-topology]")).toHaveAttribute("data-selected", selectedArticle.slug);
+    await expect(page.locator("[data-topology-detail] h3")).toHaveText(heading);
+    assert.equal(await page.evaluate(() => history.state?.topologySelection), selectedArticle.slug,
+      "Back restores the selected research milestone in its history entry");
+    assert.ok(await page.locator(".topology-edges path.is-active").count() > 0,
+      "Back restores active dependency edges for the selected milestone");
   }
 }
 

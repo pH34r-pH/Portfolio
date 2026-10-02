@@ -156,6 +156,11 @@ if (root) {
     appendFrontier(article);
     detail.append(detailActions(article));
     root.dataset.selected = slug;
+    const state = history.state && typeof history.state === "object" ? { ...history.state } : {};
+    if (state.topologySelection !== slug) {
+      state.topologySelection = slug;
+      history.replaceState(state, "", window.location.href);
+    }
     drawEdges();
     if (moveFocus) {
       const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
@@ -253,7 +258,8 @@ if (root) {
     requestAnimationFrame(() => {
       drawEdges();
       const frontier = [...articles].reverse().find((article) => article.frontierOpen?.length || article.frontierNext?.length);
-      select(frontier?.slug || articles.at(-1)?.slug, false);
+      const saved = articles.find((article) => article.slug === history.state?.topologySelection);
+      select(saved?.slug || frontier?.slug || articles.at(-1)?.slug, false);
     });
   }
 

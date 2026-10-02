@@ -86,10 +86,11 @@ export async function auditPublishedBrowserPython(page) {
     }, marker);
     assert.ok(result && !result.error, `real browser kernel execution completes: ${JSON.stringify(result)}`);
     await expect(page.locator("[data-output]")).toContainText(marker, { timeout: 15000 });
+    return { outcome: "executed", marker };
   } else {
     assert.match(state.status || "", /could not start/i, "blocked runtime is reported to the actual article user");
     assert.ok(externalFailures.length > 0,
       `article runtime failed only with a captured Pyodide/network block; status was ${state.status}; requests: ${JSON.stringify(externalFailures)}`);
+    return { outcome: "blocked-runtime", status: state.status, networkFailures: externalFailures };
   }
 }
-

@@ -313,7 +313,8 @@ async function auditArticle(page, context, manifest, path, width) {
     await expect(page.locator("article.myst-reader")).toContainText("An exact frozen-model replay package is not currently published.");
     if (width === 1366) {
       await auditArticleProjection(page, path);
-      await auditPublishedBrowserPython(page);
+      const browserPython = await auditPublishedBrowserPython(page);
+      console.log(`${path}: MyST browser Python ${browserPython.outcome}: ${JSON.stringify(browserPython)}`);
     }
   }
 }
@@ -340,7 +341,10 @@ async function auditNotebook(page, manifest, path, width) {
     const sourceResponse = await page.request.get(`${base}/${notebook.path}`);
     assert.ok(sourceResponse.ok(), `${path}: preserved notebook source resolves (${sourceResponse.status()})`);
     const sourceNotebook = await sourceResponse.json();
-    const expectedCode = sourceNotebook.cells.filter(cell => cell.cell_type === "code");
+    const expectedCells = sourceNotebook.cells.map(cell => ({
+      type: cell.cell_type,
+      source: Array.isArray(cell.source) ? cell.source.join("") : cell.source,
+    }));
     const expectedJupyterPath = notebook.jupyterPath || notebook.path.replace(/^publication\//, "");
     const labNavigation = page.waitForRequest(request => {
       if (!request.isNavigationRequest()) return false;
@@ -354,17 +358,51 @@ async function auditNotebook(page, manifest, path, width) {
     await page.waitForURL(url => url.pathname === "/lab/lab/");
     await expect(page.locator("#jupyter-config-data")).toHaveCount(1);
     await expect(page.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
-    await expect(page.locator(".jp-Cell")).toHaveCount(sourceNotebook.cells.length);
-    await expect(page.locator(".jp-CodeCell")).toHaveCount(expectedCode.length);
-    if (expectedCode.length) {
-      const firstSource = Array.isArray(expectedCode[0].source)
-        ? expectedCode[0].source.join("")
-        : expectedCode[0].source;
-      const renderedCode = await page.locator(".jp-CodeCell").first().innerText();
-      const normalizeCode = value => value.replace(/\s+/g, " ").trim();
-      assert.ok(normalizeCode(renderedCode).includes(normalizeCode(firstSource)),
-        `${path}: JupyterLite rendered the selected notebook's first code cell (expected ${JSON.stringify(firstSource)}, received ${JSON.stringify(renderedCode)})`);
-    }
+    const cellCoverage = await page.locator(".jp-NotebookPanel").evaluate(async (panel, expected) => {
+      const notebookNode = panel.querySelector(".jp-Notebook");
+      if (!notebookNode) return { expected: expected.length, matched: [], scrollStates: 0, scroller: "missing .jp-Notebook" };
+      let scroller = notebookNode;
+      while (scroller && scroller !== panel.parentElement) {
+        const style = getComputedStyle(scroller);
+        if (scroller.scrollHeight > scroller.clientHeight + 1 && /auto|scroll/.test(style.overflowY)) break;
+        scroller = scroller.parentElement;
+      }
+      if (!scroller || scroller === panel.parentElement) scroller = document.scrollingElement;
+      const maxScroll = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+      const step = Math.max(160, Math.floor(scroller.clientHeight * 0.7));
+      const positions = [];
+      for (let top = 0; top < maxScroll; top += step) positions.push(top);
+      positions.push(maxScroll);
+      const snapshots = [];
+      for (const top of [...new Set(positions)]) {
+        scroller.scrollTop = top;
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        snapshots.push([...notebookNode.querySelectorAll(".jp-Cell")].map(cell => ({
+          type: cell.classList.contains("jp-CodeCell") ? "code" : "markdown",
+          text: (cell.querySelector(cell.classList.contains("jp-CodeCell") ? ".cm-content" : ".jp-RenderedHTMLCommon") || cell).innerText || "",
+        })));
+      }
+      const normalize = value => value.replace(/\s+/g, " ").trim();
+      const matched = expected.map(cell => {
+        const source = normalize(cell.source);
+        if (cell.type === "code") {
+          return snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "code" && normalize(rendered.text).includes(source)));
+        }
+        const firstHeading = cell.source.split(/\r?\n/).find(line => line.trim())
+          ?.replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
+        return Boolean(firstHeading) && snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "markdown" && normalize(rendered.text).includes(normalize(firstHeading))));
+      });
+      return {
+        expected: expected.length,
+        matched,
+        scrollStates: snapshots.length,
+        renderedPerState: snapshots.map(snapshot => snapshot.length),
+        scroller: { tag: scroller.tagName, className: String(scroller.className || ""), clientHeight: scroller.clientHeight, scrollHeight: scroller.scrollHeight },
+      };
+    }, expectedCells);
+    console.log(`${path}: JupyterLite selected-notebook cell coverage ${cellCoverage.matched.filter(Boolean).length}/${cellCoverage.expected}; ${cellCoverage.scrollStates} scroll states; rendered ${JSON.stringify(cellCoverage.renderedPerState)}; scroller ${JSON.stringify(cellCoverage.scroller)}`);
+    assert.equal(cellCoverage.matched.filter(Boolean).length, sourceNotebook.cells.length, `${path}: exact selected notebook model cell count`);
+    assert.ok(cellCoverage.matched.every(Boolean), `${path}: JupyterLite exposes every selected notebook cell source across the scrollable notebook`);
     await page.goBack();
     await expect(page).toHaveURL(base + path);
     await expect(page.locator("main h1")).toHaveText(notebook.title);
