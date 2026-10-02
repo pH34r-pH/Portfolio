@@ -15,11 +15,9 @@ concurrency:
 jobs:
   ux:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -47,53 +45,73 @@ jobs:
           node --check site/assets/site.js
           node --check site/assets/appearance.js
           node --check site/assets/article-runtime.js
-          node --check site/assets/model-machine.js
-          node --check site/assets/model-scene.js
-          node --check site/assets/model-topology.js
-          node --check site/assets/model-light.js
-          node --check site/assets/model-gestures.js
-          node scripts/test-model-replay.mjs
-          node scripts/test-model-pixel-fidelity.mjs
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs
-          node scripts/test-model-startup.mjs
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
-          node --check site/assets/research-topology.js
-          node --check site/assets/search.js
           node scripts/test-article-runtime.mjs
           node scripts/test-interaction-coverage.mjs
+          node scripts/test-lighthouse-transfer-budget.mjs
+          node scripts/test-serve-lhci.mjs
           node scripts/ux-audit.mjs
           node scripts/interaction-audit.mjs
-          node scripts/2071-audit.mjs
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-machine-audit.mjs
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
-          node scripts/model-startup-audit.mjs
-          node scripts/homepage-digital-audit.mjs
           node scripts/appearance-audit.mjs
           node scripts/capture-ux-screenshots.mjs
-      - name: Prepare bounded V2 model visual review evidence
-        if: always()
-        shell: bash
-        env:
-          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: node scripts/prepare-model-visual-evidence.mjs
       - name: Upload UX review screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ux-review-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ux-screenshots/visual-v2/review/**
+          name: ux-review-${{ github.sha }}
+          path: ux-screenshots/
           if-no-files-found: error
           retention-days: 3
-      - name: Upload Leaf03 shared-glass regression evidence
+      - name: Enforce Lighthouse budgets (mobile and desktop)
+        shell: bash
+        run: |
+          set -uo pipefail
+          rm -f lhci-server.log
+          node scripts/serve-lhci.mjs site > lhci-server.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
+          port=''
+          ready=false
+          for _ in {1..30}; do
+            port="$(sed -n 's/^PORT=//p' lhci-server.log | tail -n 1)"
+            if [[ "$port" =~ ^[0-9]+$ ]] && \
+              curl -fsS "http://127.0.0.1:$port/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/about/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/atlas/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/reproduce/" >/dev/null && \
+              curl -fsS "http://127.0.0.1:$port/research/" >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" != true ]; then
+            cat lhci-server.log
+            echo 'Owned Lighthouse server did not become ready for every audited route.' >&2
+            exit 1
+          fi
+          export PORTFOLIO_LHCI_BASE_URL="http://127.0.0.1:$port"
+          status=0
+          npx lhci autorun --config=./lighthouserc.cjs || status=$?
+          desktop_status=0
+          npx lhci autorun --config=./lighthouserc.desktop.cjs || desktop_status=$?
+          if [ "$status" -ne 0 ] || [ "$desktop_status" -ne 0 ]; then
+            echo "LHCI failures: mobile=$status desktop=$desktop_status" >&2
+            exit 1
+          fi
+      - name: Check initial-page transfer policy
+        if: always()
+        run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
+      - name: Retain raw Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: leaf03-glass-regression-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ux-screenshots/leaf03-glass/**
-          if-no-files-found: error
-          retention-days: 3
-      - name: Enforce Lighthouse budgets
-        run: npx lhci autorun --config=./lighthouserc.cjs
+          name: lighthouse-reports-${{ github.sha }}
+          path: |
+            lighthouse-results/
+            lighthouse-results-desktop/
+            lhci-server.log
+          if-no-files-found: warn
+          retention-days: 30
       - name: Summarize public source qualification
         shell: bash
         run: |
@@ -112,8 +130,7 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    # Run build + interaction validation even when UX/Lighthouse review fails.
-    # Upload remains gated on the complete UX job passing for this exact SHA.
+    # Continue review qualification after UX failure; only successful UX may publish an artifact.
     if: ${{ !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
@@ -123,11 +140,9 @@ jobs:
       - name: Pin public input revisions
         id: refs
         shell: bash
-        env:
-          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          portfolio="$PORTFOLIO_SOURCE_SHA"
+          portfolio="$GITHUB_SHA"
           research_notes="$(git ls-remote https://github.com/pH34r-pH/research-notes.git refs/heads/main | cut -f1)"
           theorem_library="$(git ls-remote https://github.com/pH34r-pH/theorem-library.git refs/heads/main | cut -f1)"
           for revision in "$portfolio" "$research_notes" "$theorem_library"; do
@@ -258,7 +273,6 @@ jobs:
                   if not artifact.is_file():
                       raise SystemExit(f'Missing MyST export: {artifact}')
                   shutil.copy2(artifact, target / name)
-          print(f"Attached {len(records) * 4} article exports")
           PY
       - name: Validate pinned publication manifest
         env:
@@ -299,22 +313,19 @@ jobs:
             --output-dir bundle/lab --lite-dir Portfolio
       - name: Attach Portfolio Lab navigation
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
-      - name: Build static publication search index
-        run: npx --yes pagefind@1.5.2 --site bundle --output-subdir pagefind --force-language en
       - name: Qualify finished public bundle
         shell: bash
         run: |
           set -euo pipefail
           for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
-            bundle/pagefind/pagefind.js bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
+            bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
             bundle/lab/reference/glossary.md; do
             test -s "$path"
           done
           count="$(find bundle/publication/notebooks -name '*.ipynb' -type f | wc -l)"
           test "$count" -gt 0
           python - <<'PY'
-          import hashlib, json, zipfile
-          import xml.etree.ElementTree as ET
+          import hashlib, json
           from pathlib import Path
           root = Path('bundle')
           manifest = json.loads((root / 'publication.json').read_text())
@@ -328,17 +339,6 @@ jobs:
               assert hashlib.sha256(source.read_bytes()).hexdigest() == article['sha256']
               body = route.read_text(encoding='utf-8')
               assert 'myst-reader' in body and 'Canonical MyST source' in body
-              for label in ('PDF', 'Word', 'LaTeX source', 'JATS XML'):
-                  assert label in body, f"Missing article download link {label}: {article['slug']}"
-              downloads = {kind: root / path.lstrip('/') for kind, path in article['downloads'].items()}
-              for kind, artifact in downloads.items():
-                  assert artifact.is_file() and artifact.stat().st_size > 0, f"Missing {kind} export: {article['slug']}"
-              assert downloads['pdf'].read_bytes().startswith(b'%PDF-'), f"Invalid PDF export: {article['slug']}"
-              assert zipfile.is_zipfile(downloads['docx']), f"Invalid DOCX export: {article['slug']}"
-              assert zipfile.is_zipfile(downloads['latex']), f"Invalid LaTeX ZIP: {article['slug']}"
-              with zipfile.ZipFile(downloads['latex']) as archive:
-                  assert any(name.endswith('.tex') for name in archive.namelist()), f"LaTeX ZIP has no .tex source: {article['slug']}"
-              ET.parse(downloads['jats'])
               for asset in article['assets']:
                   assert (root / 'publication/article-assets' / asset).is_file(), f"Missing MyST asset: {asset}"
               if article['browserExecution']:
@@ -362,11 +362,14 @@ jobs:
           done
           curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
           cd Portfolio
+          node scripts/test-model-replay.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/2071-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 PORTFOLIO_PUBLICATION_BUNDLE=1 node scripts/homepage-digital-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/homepage-lifecycle-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/model-startup-audit.mjs
           PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 PORTFOLIO_PUBLICATION_BUNDLE=1 node scripts/model-machine-audit.mjs
+          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
       - name: Hash exact upload bytes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: digest

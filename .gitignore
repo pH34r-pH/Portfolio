@@ -4,7 +4,9 @@ _jupyter-lite/
 .jupyterlite.doit.db
 dist/
 node_modules/
+.lighthouseci/
 .venv/
 __pycache__/
 *.egg-info/
 ux-screenshots/
+lhci-server.log

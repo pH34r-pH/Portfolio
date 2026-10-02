@@ -4,7 +4,8 @@
   "sourceUnderTest": {
     "pullRequest": 91,
     "commit": "f5c04c5cabbb4cbffd39901da622cc61326707ee",
-    "reviewStatus": "draft; not yet reviewed"
+    "reviewStatus": "draft; not yet reviewed",
+    "policyBaseCommit": "910e50d86e4fb751fdb934c9b0fe54834e0ba906"
   },
   "testRunners": [
     "scripts/interaction-audit.mjs",
