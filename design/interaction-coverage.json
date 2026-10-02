@@ -1,9 +1,10 @@
 {
   "schemaVersion": 1,
   "scope": "Browser-visible Portfolio interactions on the exact publication bundle; this is a test inventory, not a claim of physical-device qualification.",
-  "reviewedSource": {
+  "sourceUnderTest": {
     "pullRequest": 91,
-    "commit": "48d46f0016e56260b2f6af2757fe6b9afd047560"
+    "commit": "f5c04c5cabbb4cbffd39901da622cc61326707ee",
+    "reviewStatus": "draft; not yet reviewed"
   },
   "testRunners": [
     "scripts/interaction-audit.mjs",
