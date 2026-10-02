@@ -42,7 +42,11 @@ export class ModelInstruments {
     const heading = make('h3', '', title); heading.id = `model-instrument-${++nextInstrument}`;
     node.setAttribute('aria-labelledby', heading.id); node.append(make('p', 'machine-glass-label', label), heading);
     node.addEventListener('transitionend', event => {
-      if (event.target === node && event.propertyName === 'opacity') this.finishContextExit(node);
+      if (event.target === node && event.propertyName === 'opacity') {
+        if (performance.now() - (node.contextTransitionStartedAt || 0) < (node.contextTransitionDuration || 0) - 32) return;
+        if (node.dataset.contextActive === 'false') this.finishContextExit(node);
+        else this.finishContextEnter(node);
+      }
     });
     this.layer.append(node); return node;
   }
@@ -75,10 +79,14 @@ export class ModelInstruments {
     cancelAnimationFrame(panel.contextExitRaf2);
     panel.contextExitTimer = 0;
     panel.contextExitRaf = panel.contextExitRaf2 = 0;
-    panel.contextVisible = false;
+    panel.contextAnimating = false; panel.contextVisible = false;
     panel.inert = true;
     panel.hidden = Boolean(this.phone && this.mode === 'spatial');
     this.changed?.();
+  }
+  finishContextEnter(panel) {
+    if (panel.dataset.contextActive === 'false') return;
+    this.cancelContextExit(panel); panel.contextAnimating = false;
   }
   cancelContextExit(panel) {
     clearTimeout(panel.contextExitTimer);
@@ -88,12 +96,20 @@ export class ModelInstruments {
   }
   startContextExit(panel) {
     panel.contextVisible = true;
+    panel.contextAnimating = true;
     if (panel.contains(document.activeElement)) this.host.querySelector('[data-machine-stage]')?.focus({preventScroll:true});
     panel.setAttribute('aria-hidden', 'true'); panel.inert = true; panel.style.pointerEvents = 'none';
     const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
       const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
     });
-    const wait = Math.max(0, ...duration) + 250;
+    this.beginContextTransition(panel, Math.max(0, ...duration));
+  }
+  beginContextTransition(panel, duration) {
+    panel.contextTransitionStartedAt = performance.now(); panel.contextTransitionDuration = duration;
+    this.scheduleContextCompletion(panel, duration);
+  }
+  scheduleContextCompletion(panel, duration) {
+    const wait = duration + 250;
     // Start the fallback after a paint opportunity so synchronous scene work
     // cannot consume the visible transition window.
     panel.contextExitRaf = requestAnimationFrame(() => {
@@ -102,13 +118,25 @@ export class ModelInstruments {
       });
     });
   }
+  startContextEnter(panel, initial, previouslyActive) {
+    if (initial || !previouslyActive) this.cancelContextExit(panel);
+    panel.contextVisible = true; panel.inert = false; panel.removeAttribute('aria-hidden');
+    const entering = !initial && !previouslyActive;
+    panel.contextAnimating = entering || (!initial && panel.contextAnimating);
+    if (!entering) return;
+    const duration = getComputedStyle(panel).transitionDuration.split(',').map(value => {
+      const amount = parseFloat(value); return value.trim().endsWith('ms') ? amount : amount * 1000;
+    });
+    this.beginContextTransition(panel, Math.max(0, ...duration));
+  }
   setPanelContext(panel, enters, initial) {
-    if (enters) {
-      this.cancelContextExit(panel); panel.contextVisible = true; panel.inert = false;
-      panel.removeAttribute('aria-hidden');
-    } else if (initial) {
-      panel.contextVisible = false; panel.inert = true; panel.setAttribute('aria-hidden', 'true');
-    } else if (panel.dataset.contextActive !== 'false') {
+    if (!initial) delete panel.dataset.contextInitial;
+    const previouslyActive = panel.dataset.contextActive !== 'false';
+    if (enters) this.startContextEnter(panel, initial, previouslyActive);
+    else if (initial) {
+      panel.contextAnimating = false; panel.contextVisible = false; panel.inert = true;
+      panel.setAttribute('aria-hidden', 'true');
+    } else if (previouslyActive) {
       this.cancelContextExit(panel); this.startContextExit(panel);
     }
     panel.dataset.contextActive = String(enters);
@@ -116,8 +144,8 @@ export class ModelInstruments {
     if (this.mode === 'spatial' && this.phone && panel.contextVisible === false) panel.hidden = true;
     else if (enters || panel.contextVisible) panel.hidden = false;
     if (initial) panel.dataset.contextInitial = 'true';
-    else delete panel.dataset.contextInitial;
   }
+  hasContextAnimation() { return [...this.layer.children].some(panel => panel.contextAnimating); }
   setContext(part, initial = false) {
     this.context = part || 'all';
     const relevant = {

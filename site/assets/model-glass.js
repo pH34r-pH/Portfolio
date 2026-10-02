@@ -60,13 +60,20 @@ export class SharedGlass {
     this.material.transmission = low ? 0 : .99; this.material.opacity = low ? .07 : 1;
     this.material.transparent = low; this.material.roughness = low ? .16 : .025;
     this.material.needsUpdate = true;
+    for (const panel of this.panels) {
+      panel.mesh.material.copy(this.material); panel.trim.material.copy(this.trimMaterial);
+    }
   }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
     this.pinnedToArticleContext = true;
     this.poseKey = null;
     this.instruments.host.dataset.instruments = 'spatial';
-    this.panels.forEach(panel => { this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose(); });
+    this.panels.forEach(panel => {
+      this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose();
+      panel.mesh.material.dispose(); panel.trim.material.dispose();
+    });
+    this.canvas = this.instruments.host.querySelector('canvas');
     this.panels = this.instruments.dimensions(phone, viewport.width).map(size => {
       const anchor = anchors[size.id], depth = phone ? anchor.depth * .65 : anchor.depth;
       const center = new this.T.Vector3(phone ? 0 : anchor.x * 2 - 1, phone ? -.62 : 1 - anchor.y * 2, 0).unproject(camera);
@@ -74,9 +81,9 @@ export class SharedGlass {
       const position = camera.position.clone().addScaledVector(direction, (distance - depth) / direction.dot(camera.getWorldDirection(new this.T.Vector3())));
       const unit = 2 * (distance - depth) * Math.tan(camera.fov * Math.PI / 360) / viewport.height;
       size.worldWidth = size.width * unit; size.worldHeight = size.height * unit;
-      const mesh = new this.T.Mesh(glassGeometry(this.T, size.worldWidth + unit * 24, size.worldHeight + unit * 24), this.material);
+      const mesh = new this.T.Mesh(glassGeometry(this.T, size.worldWidth + unit * 24, size.worldHeight + unit * 24), this.material.clone());
       mesh.position.copy(position); mesh.quaternion.copy(camera.quaternion); mesh.rotateY(anchor.tilt * (phone ? .4 : 1));
-      const trim = new this.T.LineSegments(new this.T.EdgesGeometry(mesh.geometry, 24), this.trimMaterial);
+      const trim = new this.T.LineSegments(new this.T.EdgesGeometry(mesh.geometry, 24), this.trimMaterial.clone());
       trim.position.copy(mesh.position); trim.quaternion.copy(mesh.quaternion); this.scene.add(mesh, trim);
       return {...size, mesh, trim, depth, projection: null};
     });
@@ -97,34 +104,97 @@ export class SharedGlass {
       panel.cameraRotation = this.layoutCamera.quaternion.clone().invert().multiply(panel.mesh.quaternion.clone());
     }
   }
-  sync(camera) {
-    if (!this.viewport) return;
-    camera.updateMatrixWorld();
-    this.currentCamera = camera;
+  visiblePanels() {
+    return this.panels.filter(panel => panel.node.contextVisible !== false
+      && (!this.phone || panel.id === this.instruments.active || panel.node.dataset.contextActive === 'false'));
+  }
+  layoutFits(visible) {
+    return visible.every(panel => panel.projection.scale >= .94
+      && panel.projection.corners.every(([x,y])=>x>=12&&x<=this.viewport.width-12
+        &&y>=12&&y<=this.viewport.height-12));
+  }
+  resetPanelPoses(camera) {
     for (const panel of this.panels) {
       if (!panel.cameraPosition) continue;
       panel.mesh.position.copy(panel.cameraPosition).applyMatrix4(camera.matrixWorld);
       panel.mesh.quaternion.copy(camera.quaternion).multiply(panel.cameraRotation);
       panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
     }
-    this.scene.updateMatrixWorld();
+  }
+  setPanelVisibility(camera,visible,safe) {
+    for (const panel of this.panels) {
+      if (panel.node.contextAnimating) this.animatePanel(panel,camera,safe);
+      else this.resetPanelMaterial(panel);
+      panel.mesh.visible = panel.trim.visible = safe && visible.includes(panel);
+    }
+  }
+  resetPanelMaterial(panel) {
+    const opacity=panel.node.dataset.contextActive === 'false' ? 0 : 1;
+    const material=panel.mesh.material;
+    material.opacity=this.material.opacity*opacity;
+    if(material.transparent!==this.material.transparent) {material.transparent=this.material.transparent;material.needsUpdate=true;}
+    panel.trim.material.opacity=this.trimMaterial.opacity*opacity;
+    panel.transitionOpacity=opacity; panel.transitionOffset={x:0,y:0};
+  }
+  translatePanelForDOM(panel,camera,offsetX,offsetY) {
+    const position=panel.mesh.position;
+    const right=new this.T.Vector3(1,0,0).applyQuaternion(camera.quaternion);
+    const up=new this.T.Vector3(0,1,0).applyQuaternion(camera.quaternion);
+    const center=()=>{panel.mesh.updateMatrixWorld(true);const corners=project(this.T,camera,panel.mesh,panel,this.viewport).corners;
+      return corners.reduce((sum,point)=>[sum[0]+point[0]/4,sum[1]+point[1]/4],[0,0]);};
+    const initial=center(),target=[initial[0]+offsetX,initial[1]+offsetY];
+    for(let iteration=0;iteration<3;iteration++) {
+      const current=center(),step=.01;
+      position.addScaledVector(right,step);const rightCenter=center();
+      position.addScaledVector(right,-step).addScaledVector(up,step);const upCenter=center();
+      position.addScaledVector(up,-step);
+      const a=(rightCenter[0]-current[0])/step,b=(upCenter[0]-current[0])/step;
+      const c=(rightCenter[1]-current[1])/step,d=(upCenter[1]-current[1])/step,determinant=a*d-b*c;
+      if(Math.abs(determinant)<1e-8)break;
+      const dx=target[0]-current[0],dy=target[1]-current[1];
+      position.addScaledVector(right,(dx*d-b*dy)/determinant).addScaledVector(up,(a*dy-dx*c)/determinant);
+    }
+    panel.mesh.updateMatrixWorld(true);
+  }
+  sync(camera) {
+    if (!this.viewport) return;
+    camera.updateMatrixWorld();
+    this.currentCamera = camera;
+    this.resetPanelPoses(camera);
     const contextState = this.panels.map(panel => `${panel.id}:${panel.node.contextVisible}:${panel.node.dataset.contextActive}`).join(',');
     const key = `${this.layoutGeneration}:${this.instruments.active}:${contextState}:${visualViewport?.scale || 1}:${this.instruments.root.dataset.render}`;
-    if (key === this.poseKey) return; this.poseKey = key;
-    const visible = this.panels.filter(panel => panel.node.contextVisible !== false
-      && (!this.phone || panel.id === this.instruments.active || panel.node.dataset.contextActive === 'false'));
+    const stateChanged = key !== this.poseKey; this.poseKey = key;
+    const visible = this.visiblePanels();
     const zoomed = (visualViewport?.scale || 1) > 1.15;
     // The fit decision uses the pinned article pose, never the user's live
     // camera pose. Camera gestures therefore cannot reflow article controls.
-    const safe = !zoomed && visible.every(panel => panel.projection.scale >= .94
-      && panel.projection.corners.every(([x, y]) => x >= 12 && x <= this.viewport.width - 12
-        && y >= 12 && y <= this.viewport.height - 12));
-    this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
-    for (const panel of this.panels) {
-      panel.mesh.visible = panel.trim.visible = safe && visible.includes(panel);
-    }
+    const safe = !zoomed && this.layoutFits(visible);
+    if (stateChanged || (safe ? 'spatial' : 'flow') !== this.mode) this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
     this.mode = safe ? 'spatial' : 'flow';
+    if (!stateChanged && !this.hasContextAnimation()) {this.scene.updateMatrixWorld();return;}
+    this.setPanelVisibility(camera,visible,safe);
+    this.scene.updateMatrixWorld();
   }
+  animatePanel(panel, camera, safe) {
+    const style = getComputedStyle(panel.node);
+    const animating = Boolean(panel.node.contextAnimating);
+    const opacity = animating ? clamp(Number.parseFloat(style.opacity) || 0, 0, 1)
+      : panel.node.dataset.contextActive === 'false' ? 0 : 1;
+    const rect = panel.node.getBoundingClientRect();
+    const canvas = this.canvas.getBoundingClientRect(), corners = panel.projection.corners;
+    const baseLeft = Math.min(...corners.map(point => point[0])), baseTop = Math.min(...corners.map(point => point[1]));
+    const offsetX = animating ? rect.left - canvas.left - baseLeft : 0;
+    const offsetY = animating ? rect.top - canvas.top - baseTop : 0;
+    panel.domOffset = {x:offsetX,y:offsetY}; panel.backingOpacity = opacity;
+    if (safe && animating) this.translatePanelForDOM(panel,camera,offsetX,offsetY);
+    panel.trim.position.copy(panel.mesh.position); panel.trim.quaternion.copy(panel.mesh.quaternion);
+    const material = panel.mesh.material, transparent = this.material.transparent || animating;
+    if (material.transparent !== transparent) {material.transparent = transparent; material.needsUpdate = true;}
+    material.opacity = this.material.opacity * opacity;
+    panel.trim.material.opacity = this.trimMaterial.opacity * opacity;
+    panel.transitionOpacity = opacity; panel.transitionOffset = {x:offsetX,y:offsetY};
+  }
+  hasContextAnimation() { return this.instruments.hasContextAnimation(); }
   pulse(value) {
     const energy = clamp(value, 0, 1); this.light.intensity = energy * 16;
     const output = this.panels.find(panel => panel.id === 'output');
@@ -137,12 +207,27 @@ export class SharedGlass {
       const current = project(this.T, this.currentCamera, panel.mesh, panel, this.viewport).css;
       return Math.max(...current.map((value,index)=>Math.abs(value-panel.projection.css[index])));
     };
+    const alignmentError = panel => {
+      if (!this.currentCamera || !panel.node || !panel.projection) return null;
+      const corners = project(this.T,this.currentCamera,panel.mesh,panel,this.viewport).corners;
+      const rect = panel.node.getBoundingClientRect(), canvas = this.canvas.getBoundingClientRect();
+      const expected = [[rect.left-canvas.left,rect.top-canvas.top],[rect.right-canvas.left,rect.top-canvas.top],
+        [rect.right-canvas.left,rect.bottom-canvas.top],[rect.left-canvas.left,rect.bottom-canvas.top]];
+      return Math.max(...corners.flatMap((point,index)=>point.map((value,axis)=>Math.abs(value-expected[index][axis]))));
+    };
     return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
       panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible,
         contextActive: panel.node?.dataset.contextActive !== 'false', contextVisible:panel.node?.contextVisible !== false,
-        cameraPinnedError:pinnedError(panel), corners: panel.projection?.corners, scale: panel.projection?.scale}))};
+        contextAnimating:Boolean(panel.node?.contextAnimating),backingOpacity:panel.mesh.material.opacity,trimOpacity:panel.trim.material.opacity,
+        transitionOpacity:panel.transitionOpacity??1,transitionOffset:panel.transitionOffset??{x:0,y:0},
+        transitionAlignmentError:alignmentError(panel),cameraPinnedError:pinnedError(panel),
+        corners: panel.projection?.corners, scale: panel.projection?.scale}))};
   }
-  dispose() { this.instruments.setMode('flow', this.phone); this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose(); }
+  dispose() {
+    this.instruments.setMode('flow', this.phone);
+    this.panels.forEach(panel=>{panel.mesh.material.dispose();panel.trim.material.dispose();});
+    this.environment?.dispose(); this.material.dispose(); this.trimMaterial.dispose();
+  }
 }

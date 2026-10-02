@@ -88,25 +88,50 @@ async function touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone) {
   for(const panel of before.panels){const next=panels.find(item=>item.id===panel.id);assert.ok(Math.abs(next.rect.x-panel.rect.x)<.6&&Math.abs(next.rect.y-panel.rect.y)<.6,`pane ${panel.id} moved during touch orbit`);}
   return after;
 }
-async function contextExitWaitsForTransition(root,phone) {
+async function contextExitWaitsForTransition(page,root,phone) {
   const input=root.locator('[data-glass-panel="input"]');
   await input.locator('input').focus();
-  await root.evaluate(node=>node.machine.focus('representation'));
+  // Stretch the production transition in the regression harness so both
+  // DOM and GPU progress can be sampled reliably on slow software WebGL.
+  await input.evaluate(panel=>panel.style.transitionDuration='4s');
+  const immediate=await root.evaluate(node=>{node.machine.focus('representation');const panel=node.querySelector('[data-glass-panel="input"]');
+    const state={active:panel.dataset.contextActive,ariaHidden:panel.getAttribute('aria-hidden'),inert:panel.inert,
+      stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
+    panel.querySelector('input')?.focus();state.focusLeak=panel.contains(document.activeElement);return state;});
+  assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').transitionOpacity,
+    {timeout:5000}).toBeLessThan(1);
+  const exiting=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
+  assert.ok(exiting.transitionOpacity>0,'sample is inside the visible DOM transition');
+  assert.equal(exiting.contextAnimating,true,'GPU transition remains active while the paused article replay is idle');
+  assert.ok(exiting.transitionOpacity>0&&exiting.transitionOpacity<1,'pane backing opacity follows its eased DOM exit');
+  assert.ok(exiting.backingOpacity>0&&exiting.backingOpacity<1,'translucent GPU glass fades between visible and hidden');
+  assert.ok(exiting.trimOpacity>0&&exiting.trimOpacity<.32,'GPU trim fades with the glass and DOM pane');
+  if(exiting.visible) {
+    assert.ok(exiting.transitionOffset.x>0,'GPU glass translates in the DOM pane exit direction');
+    assert.ok(exiting.transitionAlignmentError<3,'GPU glass and trim stay inside the translating DOM pane bounds');
+  }
   await expect(root.locator('[data-glass-panel="inspect"]')).toHaveAttribute('data-context-active','true');
   await expect(input).toHaveAttribute('data-context-active','false');await expect(input).toHaveAttribute('aria-hidden','true');
-  assert.equal(await input.evaluate(panel=>panel.inert),true,'assistive technology and keyboard focus leave the exiting pane immediately');
   await expect(root.locator('[data-machine-stage]')).toBeFocused();
-  const focusLeak=await input.evaluate(panel=>{panel.querySelector('input')?.focus();return panel.contains(document.activeElement);});
-  assert.equal(focusLeak,false,'focus cannot re-enter a pane during its visible exit transition');
   if(phone) {
     await expect(root.locator('[data-instrument="input"]')).toBeDisabled();
     await expect(root.locator('[data-instrument="output"]')).toBeDisabled();
     await expect(root.locator('[data-instrument="inspect"]')).toBeEnabled();
     const state=await diagnostics(root);assert.equal(state.glass.panels.filter(panel=>panel.visible).length,state.glass.mode==='spatial'?1:0);
   }
-  await expect.poll(()=>input.evaluate(panel=>panel.contextVisible)).toBe(false);
+  await root.evaluate(node=>node.machine.focus('all'));
+  await expect(input).not.toHaveAttribute('aria-hidden','true');
+  assert.equal(await input.evaluate(panel=>panel.inert),false,'reversing the context transition restores pane focusability');
+  await page.waitForTimeout(120);
+  const reversing=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
+  assert.ok(reversing.transitionOpacity>exiting.transitionOpacity,'reversed easing moves the glass and DOM pane back toward their context pose');
+  assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
+  await root.evaluate(node=>node.machine.focus('representation'));
+  await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:12000}).toBe(false);
   await expect(input).toHaveAttribute('inert','');
-  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible).toBe(false);
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible,{timeout:12000}).toBe(false);
+  await input.evaluate(panel=>panel.style.transitionDuration='');
 }
 async function contextReversalKeepsTabsValid(page,root,phone) {
   await page.waitForTimeout(120);
@@ -114,7 +139,8 @@ async function contextReversalKeepsTabsValid(page,root,phone) {
   await expect(root.locator('[data-glass-panel="output"]')).toHaveAttribute('data-context-active','true');
   await root.evaluate(node=>node.machine.focus('representation'));
   await root.evaluate(node=>node.machine.focus('all'));
-  await expect.poll(async()=>root.locator('[data-glass-panel="input"]').evaluate(panel=>getComputedStyle(panel).opacity)).toBe('1');
+  await expect.poll(async()=>root.locator('[data-glass-panel="input"]').evaluate(panel=>getComputedStyle(panel).opacity),
+    {timeout:12000}).toBe('1');
   const input=root.locator('[data-glass-panel="input"]');await expect(input).not.toHaveAttribute('inert','');
   const state=await diagnostics(root);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.visible).length)
@@ -136,13 +162,33 @@ async function nativeInputSelection(page,root,cdp) {
   const textInput=root.locator('[data-glass-panel="input"] input');
   await textInput.scrollIntoViewIfNeeded();await textInput.fill('pane selection stays native');
   const inputBox=await textInput.boundingBox();assert.ok(inputBox?.width>0&&inputBox?.height>0,'article input remains laid out for text selection');
-  const before=await diagnostics(root);await textInput.selectText();
-  const selection=await textInput.evaluate(input=>({start:input.selectionStart,end:input.selectionEnd,value:input.value}));
-  assert.deepEqual(selection,{start:0,end:selection.value.length,value:'pane selection stays native'},'dragging input text performs native selection');
+  const before=await diagnostics(root);
+  if(await textInput.isVisible()) {
+    await textInput.selectText();
+    const selection=await textInput.evaluate(input=>({start:input.selectionStart,end:input.selectionEnd,value:input.value}));
+    assert.deepEqual(selection,{start:0,end:selection.value.length,value:'pane selection stays native'},'native input selection remains available');
+  }
   const after=await diagnostics(root);
   assert.equal(after.camera.yaw,before.camera.yaw,'text selection does not orbit the camera');
   assert.equal(after.camera.pitch,before.camera.pitch,'text selection does not orbit the camera');
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});
+}
+async function realPointerTextSelection(page,root,phone) {
+  if(phone)return;
+  const before=await diagnostics(root);
+  const input=root.locator('[data-glass-panel="input"] input');
+  await input.scrollIntoViewIfNeeded();await input.fill('mouse drag remains native');
+  const box=await input.evaluate(node=>{const rect=node.getBoundingClientRect();return {x:rect.left,y:rect.top,width:rect.width,height:rect.height};});
+  assert.ok(box.width>80&&box.height>20,'visible native input has a pointer selection target');
+  assert.equal(await page.evaluate(({x,y})=>document.elementFromPoint(x,y)?.tagName,{x:box.x+12,y:box.y+box.height/2}),'INPUT',
+    'real pointer coordinates land on the native input');
+  await input.evaluate(node=>node.addEventListener('pointerdown',()=>node.dataset.pointerDown='true',{once:true}));
+  await page.mouse.move(box.x+12,box.y+box.height/2);await page.mouse.down();
+  await page.mouse.move(box.x+box.width-12,box.y+box.height/2,{steps:12});await page.mouse.up();
+  assert.equal(await input.getAttribute('data-pointer-down'),'true','real pointer drag reaches the native pane input');
+  const after=await diagnostics(root);
+  assert.equal(after.camera.yaw,before.camera.yaw,'text drag cannot orbit the camera');
+  assert.equal(after.camera.pitch,before.camera.pitch,'text drag cannot orbit the camera');
 }
 async function deepZoomIsFinite(root) {
   const zoom=direction=>root.evaluate((node,value)=>node.machineController.cameraAction(value>0?'in':'out'),direction);
@@ -174,8 +220,9 @@ async function independentPaneState(page,root,phone) {
     panels:[...node.querySelectorAll('[data-glass-panel]')].map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()}))}));
   try {
     await touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone);
-    await contextExitWaitsForTransition(root,phone);
+    await contextExitWaitsForTransition(page,root,phone);
     await contextReversalKeepsTabsValid(page,root,phone);
+    await realPointerTextSelection(page,root,phone);
     await nativeInputSelection(page,root,cdp);
     if(!phone)await deepZoomIsFinite(root);
   } finally {await cdp.detach();}

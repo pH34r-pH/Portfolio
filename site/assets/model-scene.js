@@ -40,6 +40,7 @@ export class MachineScene {
     this.camera = new T.PerspectiveCamera(28, 1, .1, 80);
     this.machine = new T.Group(); this.scene.add(this.machine);
     this.phone=mobile();this.poseTouched=false;
+    this.glassAnimationRaf = 0;
     this.yaw = this.phone ? -.15 : -.5; this.pitch = this.phone ? .38 : .1; this.zoom = 1; this.pan = {x:0,y:0}; this.selected = GRAPH.layers[6][0]; this.focus = "all";
     this.materials = {
       shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
@@ -313,7 +314,21 @@ export class MachineScene {
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) { this.focus = part; this.glass.instruments.setContext?.(part); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} }
+  setFocus(part) {
+    this.focus = part; this.glass.instruments.setContext?.(part);
+    if (this.snapshot) this.applyFrame(this.run, this.snapshot);
+    this.animateGlassContext();
+  }
+  animateGlassContext() {
+    if (this.digital || this.glassAnimationRaf || !this.glass.hasContextAnimation?.()) return;
+    const tick = () => {
+      this.glassAnimationRaf = 0;
+      if (this.disposed) return;
+      this.render();
+      if (this.glass.hasContextAnimation?.()) this.glassAnimationRaf = requestAnimationFrame(tick);
+    };
+    this.glassAnimationRaf = requestAnimationFrame(tick);
+  }
   orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }
   zoomByRatio(ratio) {
@@ -437,6 +452,7 @@ export class MachineScene {
   }
   dispose() {
     if (this.disposed) {return;} this.disposed = true;
+    cancelAnimationFrame(this.glassAnimationRaf);
     this.gestures.clear(); this.pointerCaptures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
     this.canvas.removeEventListener("webglcontextlost", this.contextLost);
     this.glass.dispose(); this.metrics.dispose();
