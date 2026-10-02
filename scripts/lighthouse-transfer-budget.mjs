@@ -87,8 +87,8 @@ export function validateFindingMatrix(findings, expectedProfiles) {
     const profile = expectedProfiles.get(finding.reportDir);
     if (finding.profile !== profile) throw new Error(`Lighthouse profile mismatch for ${finding.url}: expected ${profile}, got ${finding.profile}`);
     if (finding.formFactor !== profile) throw new Error(`Lighthouse report form factor mismatch for ${finding.url}: expected ${profile}, got ${finding.formFactor ?? 'missing'}`);
-    if (routePath(finding.observedUrl) !== route) {
-      throw new Error(`Lighthouse final URL route mismatch: manifest ${route}, report ${finding.observedUrl}`);
+    if (routePath(finding.requestedUrl) !== route) {
+      throw new Error(`Lighthouse requested URL route mismatch: manifest ${route}, report ${finding.requestedUrl}`);
     }
     const key = `${profile} ${route}`;
     counts.set(key, (counts.get(key) ?? 0) + 1);
@@ -131,7 +131,7 @@ async function readFinding(entry, reportDir, profile) {
   const bytes = totalTransferBytes(lhr);
   return {
     url: entry.url ?? lhr.finalDisplayedUrl ?? lhr.finalUrl,
-    observedUrl: lhr.finalDisplayedUrl ?? lhr.finalUrl ?? lhr.requestedUrl,
+    requestedUrl: lhr.requestedUrl,
     formFactor: lhr.configSettings?.formFactor,
     reportDir,
     profile,

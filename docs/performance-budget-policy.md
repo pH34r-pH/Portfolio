@@ -56,9 +56,12 @@ observations.
 
 The postprocessor requires both mobile and desktop LHCI manifests and validates
 exactly three reports for each of `/`, `/about/`, `/atlas/`, `/reproduce/`, and
-`/research/` in each profile. CI retains the manifests and full JSON reports as
-a 30-day workflow artifact, including on failed audits. The checker emits at
-most one policy annotation per report.
+`/research/` in each profile. It matches each report's original requested URL
+to its manifest route, while still counting redirects and their resources in
+the initial-navigation transfer. For example, `/reproduce/` currently lands on
+the external Experiments host. CI retains the manifests and full JSON reports
+as a 30-day workflow artifact, including on failed audits. The checker emits
+at most one policy annotation per report.
 Script and stylesheet sizes remain available as resource-summary diagnostics
 in raw reports and are not hard byte gates. Boundary behavior is covered by
 `scripts/test-lighthouse-transfer-budget.mjs`.
