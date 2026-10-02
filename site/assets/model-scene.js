@@ -340,6 +340,7 @@ export class MachineScene {
   }
   bindOrbit(selectNode,scrub) {
     this.abort=new AbortController();const options={signal:this.abort.signal};
+    this.gestureHost=this.glass.instruments.host;this.pointerCaptures=new Map();
     this.gestures=new ModelGestures({
       orbit:(dx,dy)=>this.orbit(dx*.007,dy*.005),
       zoom:ratio=>this.zoomByRatio(ratio),
@@ -350,21 +351,24 @@ export class MachineScene {
       window.visualViewport?.addEventListener('resize', () => this.render(), options);
       return; // Homepage gestures belong to native scrolling and browser zoom.
     }
-    this.canvas.addEventListener("pointerdown",event=>{
+    this.gestureHost.addEventListener("pointerdown",event=>{
       if(event.button!==0){return;}
-      this.gestures.down(event.pointerId,event.clientX,event.clientY);this.canvas.setPointerCapture(event.pointerId);
+      const target=event.target;
+      if(!target?.setPointerCapture)return;
+      this.gestures.down(event.pointerId,event.clientX,event.clientY);target.setPointerCapture(event.pointerId);this.pointerCaptures.set(event.pointerId,target);
     },options);
-    this.canvas.addEventListener("pointermove",event=>this.gestures.move(event.pointerId,event.clientX,event.clientY),options);
-    this.canvas.addEventListener("pointerup",event=>{
+    this.gestureHost.addEventListener("pointermove",event=>this.gestures.move(event.pointerId,event.clientX,event.clientY),options);
+    this.gestureHost.addEventListener("pointerup",event=>{
       const select=this.gestures.up(event.pointerId);
-      if(this.canvas.hasPointerCapture(event.pointerId)){this.canvas.releasePointerCapture(event.pointerId);}
+      const capture=this.pointerCaptures.get(event.pointerId);this.pointerCaptures.delete(event.pointerId);
+      if(capture?.hasPointerCapture(event.pointerId)){capture.releasePointerCapture(event.pointerId);}
       if(select) {
         const rect=this.canvas.getBoundingClientRect(),pointer=new this.T.Vector2((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
         const ray=new this.T.Raycaster();ray.setFromCamera(pointer,this.camera);
         const hit=ray.intersectObject(this.beads)[0];if(hit?.instanceId!==undefined){selectNode(hit.instanceId);}
       }
     },options);
-    for(const type of ["pointercancel","lostpointercapture"]){this.canvas.addEventListener(type,event=>this.gestures.up(event.pointerId,true),options);}
+    for(const type of ["pointercancel","lostpointercapture"]){this.gestureHost.addEventListener(type,event=>{this.gestures.up(event.pointerId,true);this.pointerCaptures.delete(event.pointerId);},options);}
     window.addEventListener("blur",()=>this.gestures.clear(),options);
     window.visualViewport?.addEventListener('resize', () => this.render(), options);
     // No global touch listeners or gesture prevention: OS gestures remain OS-owned.
@@ -420,7 +424,7 @@ export class MachineScene {
   }
   dispose() {
     if (this.disposed) {return;} this.disposed = true;
-    this.gestures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
+    this.gestures.clear(); this.pointerCaptures.clear(); this.abort.abort(); this.resizeObserver.disconnect(); this.themeObserver.disconnect();
     this.canvas.removeEventListener("webglcontextlost", this.contextLost);
     this.glass.dispose(); this.metrics.dispose();
     const geometry = new Set(), materials = new Set();
