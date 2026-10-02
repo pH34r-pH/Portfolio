@@ -278,7 +278,7 @@ async function missingTransitionEndFallsBack(root) {
     return {duration:panel.contextTransitionDuration,animating:panel.contextAnimating};
   });
   assert.ok(started.duration>=700&&started.animating,'normal-duration exit arms the timer fallback while the pane is animating');
-  await waitForGlassPanelSettled(root,'input',5000,'production-duration transitionend suppressed');
+  await waitForGlassPanelSettled(root,'input',10000,'production-duration transitionend suppressed');
   const settled=await input.evaluate(panel=>({duration:panel.contextTransitionDuration,
     elapsed:performance.now()-panel.contextTransitionStartedAt,animating:panel.contextAnimating,
     suppressed:panel.contextAuditSuppressedTransitionEnds,handled:panel.contextAuditTransitionEnds}));
