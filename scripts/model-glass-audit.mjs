@@ -168,22 +168,32 @@ async function contextReversalKeepsTabsValid(page,root,phone) {
   await expect.poll(()=>input.evaluate(panel=>panel.inert)).toBe(false);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.contextVisible!==false).length).toBe(3);
 }
-async function glassContextSettled(root,checkGpu=true) {
+async function glassContextStatus(root,checkGpu=true) {
   return root.evaluate((node,checkGpu)=>{
-    const scene=node.machineController.scene,glass=scene?.glass;if(!scene||!glass)return false;
-    return scene.glassAnimationRaf===0&&!glass.hasContextAnimation()&&glass.panels.every(panel=>{
+    const scene=node.machineController.scene,glass=scene?.glass;if(!scene||!glass)return {settled:false,panels:[]};
+    const panels=glass.panels.map(panel=>{
       const active=panel.node.dataset.contextActive==='true',expected=active?glass.material.opacity:0;
-      return panel.node.contextAnimating===false&&panel.node.contextVisible===active
+      const state={id:panel.id,active,animating:panel.node.contextAnimating,contextVisible:panel.node.contextVisible,
+        domOpacity:getComputedStyle(panel.node).opacity,glassOpacity:panel.mesh.material.opacity,trimOpacity:panel.trim.material.opacity,
+        inert:panel.node.inert,hidden:panel.node.hidden};
+      state.settled=panel.node.contextAnimating===false&&panel.node.contextVisible===active
         &&(!checkGpu||(Math.abs(panel.mesh.material.opacity-expected)<1e-6
         &&Math.abs(panel.trim.material.opacity-glass.trimMaterial.opacity*(active?1:0))<1e-6))
         &&panel.node.inert===!active;
+      return state;
     });
+    return {settled:scene.glassAnimationRaf===0&&!glass.hasContextAnimation()&&panels.every(panel=>panel.settled),
+      raf:scene.glassAnimationRaf,anyAnimating:glass.hasContextAnimation(),visible:node.machineController.visible,panels};
   },checkGpu);
+}
+async function glassContextSettled(root,checkGpu=true) {
+  return (await glassContextStatus(root,checkGpu)).settled;
 }
 async function entryWithoutTransitionEvent(root) {
   const input=root.locator('[data-glass-panel="input"]');
   await root.evaluate(node=>node.machine.focus('representation'));
-  await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+  try {await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);}
+  catch(error) {console.log(`Glass context state at entry setup timeout: ${JSON.stringify(await glassContextStatus(root))}`);throw error;}
   await input.evaluate(panel=>panel.style.transitionDuration='0ms');
   await root.evaluate(node=>node.machine.focus('all'));
   await expect.poll(()=>glassContextSettled(root),{timeout:3000}).toBe(true);
