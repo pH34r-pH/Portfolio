@@ -45,7 +45,7 @@ console.log('Homepage presentation: desktop/mobile Start, ignition, replay, poin
 
 
 async function transportDuringIgnition() {
-  for (const action of ['pause', 'rewind', 'scrub', 'keyboard']) {
+  for (const action of ['pause', 'rewind', 'scrub', 'keyboard', 'viewer-pointer']) {
     const context = await browser.newContext({viewport:{width:1200,height:900}});
     try {
       const page = await context.newPage();
@@ -72,7 +72,8 @@ async function transportDuringIgnition() {
       else if (action === 'scrub') {
         await page.locator('[data-replay-timeline]').focus();
         await page.keyboard.press('ArrowRight');
-      } else {
+      } else if (action === 'viewer-pointer') await page.locator('canvas').click();
+      else {
         await page.locator('[data-machine-stage]').focus();
         await page.keyboard.press('ArrowRight');
       }

@@ -40,13 +40,14 @@ const transport = '[data-replay-play],[data-replay-rewind],[data-replay-step],[d
 function claimReplay(event) {
   const keyboard = event.type === 'keydown';
   const replayKey = [' ', 'k', 'arrowleft', 'arrowright', 'home', 'end'].includes(event.key?.toLowerCase());
+  const viewerPointer = event.type === 'pointerdown' && event.target.closest('[data-machine-stage]');
   const ownsTransport = keyboard
     ? event.target.matches('[data-machine-stage]') && replayKey
-    : event.target.closest(transport);
-  // Explicit transport intent during loading/ignition wins over the first replay.
+    : viewerPointer || event.target.closest(transport);
+  // Explicit viewer/transport intent during loading/ignition wins over the first replay.
   if (ownsTransport) replayStarted = true;
 }
-for (const type of ['click', 'input', 'submit', 'keydown']) root.addEventListener(type, claimReplay, true);
+for (const type of ['click', 'input', 'submit', 'keydown', 'pointerdown']) root.addEventListener(type, claimReplay, true);
 const readyObserver = new MutationObserver(() => {
   if (!replayStarted && startup.phase === 'ready' && !startup.quiet) {
     replayStarted = true;
