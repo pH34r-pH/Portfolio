@@ -310,7 +310,10 @@ async function auditReleaseAtArticleEnd(page, view) {
   });
   const atEnd = await observeArticleEndRelease({
     snapshot: () => snapshot(page),
-    scrollTo: top => page.evaluate(y => scrollTo({ top: y, behavior: "instant" }), top),
+    scrollTo: top => page.evaluate(y => {
+      scrollTo({ top: y, behavior: "instant" });
+      return scrollY;
+    }, top),
     wait: () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve()))),
   }, { label: view.name });
   assert.ok(atEnd.readerBottom <= atEnd.headerBottom + atEnd.stageHeight + 50,

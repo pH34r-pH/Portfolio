@@ -19,7 +19,7 @@ function geometry({ scrollY = 3000, readerHeight = 5000, targetHeight = 280,
   };
 }
 
-function harness(sample) {
+function harness(sample, scrollResult = () => undefined) {
   let time = 0;
   let scrollAt = null;
   let requestedScrollY = null;
@@ -36,6 +36,7 @@ function harness(sample) {
         scrollAt = time;
         requestedScrollY = top;
         scrolls.push({ top, time });
+        return scrollResult(top);
       },
       snapshot: async () => {
         const state = { time, scrollAt, requestedScrollY,
@@ -101,11 +102,43 @@ assert.ok(slowScroll.time >= slowScroll.scrolls[0].time + 250,
   "wait for the requested position and a stable scroll, even if release geometry already passes");
 assert.equal(slowScroll.scrolls.length, 1);
 
-async function rejectsWithoutRescrolling(name, sample, expectedFailure) {
-  const test = harness(sample);
+// A completed scroll can be followed by legitimate context reflow and browser
+// anchoring. Observe completion once, then wait for the new stable geometry.
+const anchoredReflow = harness(({ requestedScrollY, sinceScroll }) => {
+  const reflowed = sinceScroll !== null && sinceScroll >= 25;
+  return geometry({
+    scrollY: requestedScrollY === null ? 3000 : requestedScrollY + (reflowed ? 2 : 0),
+    readerHeight: reflowed ? 5001.1875 : 5000,
+    context: reflowed ? "tokenizer" : "representation",
+  });
+});
+const anchoredEnd = await observeArticleEndRelease(anchoredReflow.adapter, bounds);
+checkFinal(anchoredEnd);
+assert.equal(anchoredEnd.scrollY, anchoredReflow.scrolls[0].top + 2);
+assert.equal(anchoredReflow.scrolls.length, 1);
+assert.ok(anchoredReflow.time >= anchoredReflow.scrolls[0].time + 125,
+  "anchored reflow starts a new stable window after the original scroll completes");
+
+// A real instant-scroll callback can observe completion before the next
+// snapshot. This evidence survives anchoring between those two browser calls.
+const atomicReflow = harness(({ requestedScrollY }) => geometry({
+  scrollY: requestedScrollY === null ? 3000 : requestedScrollY + 2,
+  readerHeight: requestedScrollY === null ? 5000 : 5001.1875,
+}), top => top);
+const atomicEnd = await observeArticleEndRelease(atomicReflow.adapter, bounds);
+checkFinal(atomicEnd);
+assert.equal(atomicEnd.scrollY, atomicReflow.scrolls[0].top + 2);
+assert.equal(atomicReflow.scrolls.length, 1);
+assert.ok(atomicReflow.samples.filter(item => item.sinceScroll !== null)
+  .every(item => item.result.scrollY !== item.requestedScrollY),
+"completion was observed by the scroll callback, never by a later snapshot");
+
+async function rejectsWithoutRescrolling(name, sample, expectedFailure, scrollResult) {
+  const test = harness(sample, scrollResult);
+  let diagnostic;
   await assert.rejects(observeArticleEndRelease(test.adapter, { ...bounds, label: name }), error => {
     assert.match(error.message, new RegExp(`${name}: article-end release observation timed out`));
-    const diagnostic = JSON.parse(error.message.slice(error.message.indexOf("; ") + 2));
+    diagnostic = JSON.parse(error.message.slice(error.message.indexOf("; ") + 2));
     assert.equal(diagnostic.phase, "observing scroll completion and release");
     assert.equal(diagnostic.checks[expectedFailure], false);
     assert.equal(diagnostic.lastSample.context, "output");
@@ -117,6 +150,7 @@ async function rejectsWithoutRescrolling(name, sample, expectedFailure) {
   });
   assert.equal(test.scrolls.length, 1, `${name}: never re-scroll to make a broken model pass`);
   assert.equal(test.time, bounds.timeoutMs, `${name}: observation has a strict deadline`);
+  return diagnostic;
 }
 
 // Stable-but-wrong geometry must still time out. Exercise each release
@@ -137,17 +171,37 @@ await rejectsWithoutRescrolling("reader never approaches end", ({ requestedScrol
 
 // All release inequalities are true here, but the requested scroll never
 // finishes. Geometry alone must not be mistaken for scroll completion.
-await rejectsWithoutRescrolling("unfinished scroll", ({ requestedScrollY }) => geometry({
+const unfinishedScroll = await rejectsWithoutRescrolling("unfinished scroll", ({ requestedScrollY }) => geometry({
   scrollY: requestedScrollY === null ? 3000 : requestedScrollY - 10,
 }), "scrollComplete");
+assert.equal(unfinishedScroll.scrollCompletion, null);
+assert.equal(unfinishedScroll.immediateScrollY, null);
 
-// Reproduce the reported +707px anchoring after a delayed mode transition.
-// Even eventual stable samples must not trigger another corrective scroll.
-await rejectsWithoutRescrolling("late layout anchoring", ({ requestedScrollY, sinceScroll }) => geometry({
-  scrollY: requestedScrollY === null ? 3000 : requestedScrollY + (sinceScroll >= 75 ? 707 : 0),
-  readerHeight: sinceScroll !== null && sinceScroll >= 75 ? 5707.86 : 5000,
-  ...(sinceScroll === null || sinceScroll < 75 ? { targetTop: 62 } : {}),
-}), "scrollComplete");
+const wrongImmediate = await rejectsWithoutRescrolling("wrong immediate position", ({ requestedScrollY }) => geometry({
+  scrollY: requestedScrollY === null ? 3000 : requestedScrollY + 2,
+}), "scrollComplete", top => top - 10);
+assert.equal(wrongImmediate.scrollCompletion, null);
+assert.equal(wrongImmediate.immediateScrollY, wrongImmediate.expectedScrollY - 10);
+assert.equal(wrongImmediate.finalScrollDrift, 2);
+
+// Reproduce the original stale spatial-height target: scrolling completes,
+// then the mode changes to flow and height/anchoring grow by ~707px. The
+// reader remains too far down and the model stays pinned. Completion alone
+// must never hide those failed geometry checks or cause another scroll.
+const lateAnchoring = await rejectsWithoutRescrolling("late layout anchoring", ({ requestedScrollY, sinceScroll }) => {
+  const flow = sinceScroll !== null && sinceScroll >= 75;
+  return geometry({
+    scrollY: requestedScrollY === null ? 3000 : requestedScrollY + (flow ? 707 : 0),
+    readerHeight: flow ? 5707.86 : 5000,
+    targetHeight: flow ? 280 : 419.64,
+    mode: flow ? "flow" : "spatial",
+    maxScrollY: flow ? 7107.86 : 6400,
+  });
+}, "readerAtEnd");
+assert.equal(lateAnchoring.checks.scrollComplete, true);
+assert.equal(lateAnchoring.scrollCompletion.scrollY, lateAnchoring.expectedScrollY);
+assert.equal(lateAnchoring.checks.targetReleased, false);
+assert.ok(Math.abs(lateAnchoring.lastSample.readerBottom - 442.5) < 0.001);
 
 const unstable = harness(({ time }) => geometry({ readerHeight: 5000 + time / 1000 }));
 await assert.rejects(observeArticleEndRelease(unstable.adapter, {
@@ -175,4 +229,4 @@ await assert.rejects(observeArticleEndRelease({
   scrollTo: () => assert.fail("must not scroll without a valid snapshot"),
 }, { timeoutMs: 20 }), /timed out.*settling layout before scroll/);
 
-console.log("Article release observation passed: delayed resize/release, transient layout, completed and stable scroll, rounding/clamping, bounded diagnostics, and rejection of pinned/escaped/unreleased models, unfinished scroll, anchoring and cumulative drift without re-scrolling.");
+console.log("Article release observation passed: delayed resize/release, transient layout, completed scroll with stable anchored reflow, rounding/clamping, bounded diagnostics, and rejection of pinned/escaped/unreleased models, unfinished scroll, stale spatial-height targeting and cumulative drift without re-scrolling.");

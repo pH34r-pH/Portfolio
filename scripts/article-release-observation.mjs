@@ -15,13 +15,23 @@ function geometryChanges(before, after, tolerance) {
   ].map(key => [key, { before: before[key], after: after[key] }]));
 }
 
-function releaseChecks(sample, expectedScrollY, scrollTolerance) {
+function releaseChecks(sample, scrollCompletion) {
   return {
-    scrollComplete: Math.abs(sample.scrollY - expectedScrollY) <= scrollTolerance,
+    scrollComplete: scrollCompletion !== null,
     readerAtEnd: sample.readerBottom <= sample.headerBottom + sample.stageHeight + 50,
     targetInsideReader: sample.targetBottom <= sample.readerBottom + 2,
     targetReleased: sample.targetTop < sample.headerBottom + 7,
   };
+}
+
+function observeScrollCompletion(state, position, source) {
+  // Completion is an observed event. Later browser scroll anchoring is valid
+  // when the final geometry still settles and passes every release check.
+  if (state.scrollCompletion === null
+    && Number.isFinite(position)
+    && Math.abs(position - state.expectedScrollY) <= state.options.scrollTolerance) {
+    state.scrollCompletion = { elapsedMs: state.now() - state.startedAt, scrollY: position, source };
+  }
 }
 
 function validateOptions({ timeoutMs, pollIntervalMs, stableForMs, stableSamples, geometryTolerance, scrollTolerance }) {
@@ -43,10 +53,11 @@ function validateSnapshot(sample, label) {
 
 function timeout(state) {
   state.expired = true;
-  const { phase, requestedScrollY, expectedScrollY, checks, stableCount, stableSince,
+  const { phase, requestedScrollY, expectedScrollY, immediateScrollY, scrollCompletion, checks, stableCount, stableSince,
     lastChanges, lastSample, history, now, startedAt, options } = state;
   return new Error(`${options.label}: article-end release observation timed out after ${Math.round(now() - startedAt)}ms; ${JSON.stringify({
-    phase, requestedScrollY, expectedScrollY, checks,
+    phase, requestedScrollY, expectedScrollY, immediateScrollY, scrollCompletion, checks,
+    finalScrollDrift: expectedScrollY === null || !lastSample ? null : lastSample.scrollY - expectedScrollY,
     stableCount, stableForMs: stableSince === null ? 0 : now() - stableSince,
     lastChanges, lastSample, history,
   })}`);
@@ -69,7 +80,8 @@ function updateStability(state, sample, eligible) {
 function recordSample(state, sample, requireRelease) {
   validateSnapshot(sample, state.options.label);
   state.lastSample = sample;
-  state.checks = requireRelease ? releaseChecks(sample, state.expectedScrollY, state.options.scrollTolerance) : null;
+  if (requireRelease) observeScrollCompletion(state, sample.scrollY, "snapshot");
+  state.checks = requireRelease ? releaseChecks(sample, state.scrollCompletion) : null;
   const eligible = !requireRelease || Object.values(state.checks).every(Boolean);
   updateStability(state, sample, eligible);
   state.history.push({ elapsedMs: state.now() - state.startedAt, phase: state.phase, sample, checks: state.checks });
@@ -98,7 +110,11 @@ async function scrollAndObserve(state) {
     - settled.targetHeight - settled.headerBottom - 8 + 40;
   state.expectedScrollY = Math.max(0, Math.min(settled.maxScrollY, state.requestedScrollY));
   state.phase = "observing scroll completion and release";
-  await state.scrollTo(state.requestedScrollY);
+  // Browser adapters can read the position atomically with the instant scroll,
+  // before a later context reflow anchors it away from the requested position.
+  const immediate = await state.scrollTo(state.requestedScrollY);
+  state.immediateScrollY = Number.isFinite(immediate) ? immediate : null;
+  observeScrollCompletion(state, state.immediateScrollY, "scroll callback");
   return observe(state, true);
 }
 
@@ -114,7 +130,7 @@ export async function observeArticleEndRelease(adapter, options = {}) {
     wait: milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)),
     ...adapter,
     options, history: [], phase: "settling layout before scroll",
-    requestedScrollY: null, expectedScrollY: null, checks: null,
+    requestedScrollY: null, expectedScrollY: null, immediateScrollY: null, scrollCompletion: null, checks: null,
     lastChanges: {}, lastSample: null, expired: false, stableCount: 0, stableSince: null,
   };
   state.startedAt = state.now();
