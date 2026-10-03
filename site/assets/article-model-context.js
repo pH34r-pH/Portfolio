@@ -4,11 +4,12 @@
 for (const model of document.querySelectorAll(".myst-reader .article-model-machine[data-model-machine]")) {
   const article = model.closest(".myst-reader");
   const stage = model.querySelector("[data-machine-stage]");
-  const host = model.querySelector(".machine-spatial-host");
-  if (!article || !stage || !host) continue;
+  let host = model.querySelector(".machine-spatial-host");
+  if (!article || !stage) continue;
   const headings = [...article.querySelectorAll("[data-model-context]")];
   if (!headings.length) continue;
 
+  const initialHost = host;
   let context = model.dataset.modelFocus || "all";
   let observer;
   let frame = 0;
@@ -19,7 +20,7 @@ for (const model of document.querySelectorAll(".myst-reader .article-model-machi
     const headerHeight = header?.getBoundingClientRect().height
       || Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--2071-header"))
       || 58;
-    const spatial = host.dataset.instruments === "spatial";
+    const spatial = host?.dataset.instruments === "spatial";
     const targetHeight = spatial ? host.getBoundingClientRect().height : stage.getBoundingClientRect().height;
     const readingGap = spatial ? 28 : 72;
     return Math.min(Math.max(0, innerHeight - 3), headerHeight + (targetHeight || 280) + readingGap);
@@ -57,11 +58,20 @@ for (const model of document.querySelectorAll(".myst-reader .article-model-machi
 
   const layoutObserver = new ResizeObserver(observeAtCurrentSize);
   layoutObserver.observe(stage);
-  layoutObserver.observe(host);
+  if (host) layoutObserver.observe(host);
   observeAtCurrentSize();
+  model.addEventListener("portfolio:model-ready", () => {
+    host = model.querySelector(".machine-spatial-host");
+    if (host && host !== initialHost) layoutObserver.observe(host);
+    observeAtCurrentSize();
+    model.dispatchEvent(new CustomEvent("portfolio:model-focus", {
+      detail: { part: context, source: "article" },
+    }));
+  });
   window.addEventListener("resize", observeAtCurrentSize, { passive: true });
   window.addEventListener("orientationchange", observeAtCurrentSize, { passive: true });
   window.addEventListener("pageshow", observeAtCurrentSize, { passive: true });
+  window.addEventListener("scroll", scheduleUpdate, { passive: true });
   window.addEventListener("hashchange", scheduleUpdate, { passive: true });
   window.addEventListener("popstate", scheduleUpdate, { passive: true });
 }

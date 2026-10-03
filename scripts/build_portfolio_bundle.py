@@ -499,8 +499,11 @@ def render_article_model_machine(metadata: dict, slug: str) -> str:
     part = _MODEL_FOCUS_PARTS.get(focus, 'all')
     label = f'{focus} / {variant}'.upper()
     prompt_id = f'machine-prompt-{slug}'
+    startup_status_id = f'model-startup-status-{slug}'
     return f'''<section class="model-machine article-model-machine" data-pagefind-ignore
-      data-model-machine data-model-focus="{html.escape(part, quote=True)}"
+      data-model-machine data-model-startup data-startup="idle"
+      data-topology-version="unit_hypersphere_depth3" data-style-version="leaf01-blue-horizontal-native-resolution"
+      data-model-focus="{html.escape(part, quote=True)}"
       aria-labelledby="model-machine-{html.escape(slug, quote=True)}">
       <header class="machine-heading"><div><p class="eyebrow">MODEL VIEW / {html.escape(label)}</p>
       <h2 id="model-machine-{html.escape(slug, quote=True)}">Same machine. Different intervention.</h2></div>
@@ -511,10 +514,14 @@ def render_article_model_machine(metadata: dict, slug: str) -> str:
         <form class="machine-console machine-input" data-machine-form>
           <label for="{html.escape(prompt_id, quote=True)}">Input</label>
           <div><input id="{html.escape(prompt_id, quote=True)}" name="prompt" value="the model learned a useful distinction" autocomplete="off"><button type="submit">Run</button></div>
-          <div class="machine-token-readout" data-machine-token-readout aria-label="Tokenized input"></div>
+          <div class="machine-token-readout" data-machine-token-readout role="group" aria-label="Tokenized input"></div>
         </form>
         <div class="machine-console machine-output"><span class="machine-console-label">Output</span><p data-machine-output aria-live="polite">waiting for input</p></div>
         <p class="machine-status" data-machine-status role="status">machine ready</p>
+      </div>
+      <div class="article-model-startup" data-pagefind-ignore>
+        <button type="button" data-model-start aria-describedby="{startup_status_id}" hidden>Start interactive model</button>
+        <p id="{startup_status_id}" data-model-boot role="status" aria-live="polite">Static architecture display</p>
       </div>
     </section>'''
 
@@ -583,7 +590,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/model-machine.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
