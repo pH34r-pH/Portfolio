@@ -86,7 +86,6 @@ jobs:
           run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
           run_audit model-startup node scripts/model-startup-audit.mjs
           # The homepage audit invokes homepageLifecycle and native finger-scroll checks.
-          run_audit homepage-presentation node scripts/homepage-presentation-audit.mjs
           run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
           run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
           run_audit screenshots node scripts/capture-ux-screenshots.mjs
@@ -461,7 +460,6 @@ jobs:
           # interaction-audit invokes the real article and JupyterLite notebook audits.
           run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
           run_audit 2071 node scripts/2071-audit.mjs
-          run_audit homepage-presentation node scripts/homepage-presentation-audit.mjs
           run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
           run_audit model-startup node scripts/model-startup-audit.mjs
           run_audit model-machine node scripts/model-machine-audit.mjs

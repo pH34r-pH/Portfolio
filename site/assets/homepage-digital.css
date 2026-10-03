@@ -105,3 +105,8 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
  .digital-home .digital-visual .machine-fallback { inset:4%; }
 }
 @media print { .digital-visual { display:none; } .digital-chapter { min-height:0; padding:20px 0; } .digital-pane { transform:none!important; background:none; } }
+@media(forced-colors:active) {
+ html[data-theme] .digital-home .model-machine-replay [data-replay-play] { color:ButtonText; background:ButtonFace; border-color:ButtonText; }
+ .digital-home .digital-visual .machine-fallback { color:CanvasText; }
+ .digital-home .digital-visual .machine-fallback svg circle { fill:CanvasText; }
+}

@@ -59,6 +59,8 @@ export async function auditDelayedClock(open) {
       window.auditReleaseClock=()=>{window.auditHoldClock=false;window.auditHeldClock.splice(0).forEach(callback=>native(callback));};
     });
   });
+  // Discard the deliberately held startup replay after open() has paused it.
+  await page.evaluate(()=>auditHeldClock.splice(0));
   await eligible(root);await root.evaluate(node=>node.machine.seek(70));
   const progressing=advance(root,70,true);
   await expect.poll(()=>page.evaluate(()=>auditHeldClock.length),{timeout:5000}).toBe(1);
