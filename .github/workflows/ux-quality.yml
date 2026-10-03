@@ -41,6 +41,8 @@ jobs:
             node --check "site/assets/$asset.js"
           done
           node scripts/test-model-replay.mjs
+          node scripts/test-model-instrument-orientation.mjs
+          node scripts/test-article-release-observation.mjs
           node scripts/test-model-pixel-fidelity.mjs
           node scripts/test-article-runtime.mjs
           node scripts/test-interaction-coverage.mjs
