@@ -36,6 +36,17 @@ else if(startup.started){startup.start({retained:true});}
 // A deliberate Start completes ignition before the first illustrative replay.
 // Retained starts restore the viewer with Play available, without restarting it.
 let replayStarted = startup.started;
+const transport = '[data-replay-play],[data-replay-rewind],[data-replay-step],[data-replay-timeline],[data-machine-form]';
+function claimReplay(event) {
+  const keyboard = event.type === 'keydown';
+  const replayKey = [' ', 'k', 'arrowleft', 'arrowright', 'home', 'end'].includes(event.key?.toLowerCase());
+  const ownsTransport = keyboard
+    ? event.target.matches('[data-machine-stage]') && replayKey
+    : event.target.closest(transport);
+  // Explicit transport intent during loading/ignition wins over the first replay.
+  if (ownsTransport) replayStarted = true;
+}
+for (const type of ['click', 'input', 'submit', 'keydown']) root.addEventListener(type, claimReplay, true);
 const readyObserver = new MutationObserver(() => {
   if (!replayStarted && startup.phase === 'ready' && !startup.quiet) {
     replayStarted = true;

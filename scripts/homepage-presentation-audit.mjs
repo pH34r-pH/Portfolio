@@ -7,6 +7,7 @@ await mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const evidence=[];
 try {
+  await transportDuringIgnition();
   for(const width of [1440,390]) for(const fallback of [false,true]) {
     const context=await browser.newContext({viewport:{width,height:900},colorScheme:'dark'});
     const page=await context.newPage();
@@ -41,3 +42,52 @@ try {
   }
 } finally {await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2));await browser.close();}
 console.log('Homepage presentation: desktop/mobile Start, ignition, replay, pointer/keyboard inspection, retained state and real fallback geometry passed.');
+
+
+async function transportDuringIgnition() {
+  for (const action of ['pause', 'rewind', 'scrub', 'keyboard']) {
+    const context = await browser.newContext({viewport:{width:1200,height:900}});
+    try {
+      const page = await context.newPage();
+      await page.goto(base);
+      await expect(page.locator('[data-model-start]')).toBeVisible();
+      await page.evaluate(() => {
+        const startup = document.querySelector('[data-model-startup]').modelStartup;
+        const advance = startup.advanceIgnition.bind(startup);
+        window.ignitionHeld = false;
+        startup.advanceIgnition = time => {
+          if (startup.elapsedActiveMs < 150) advance(time);
+          else { window.ignitionHeld = true; startup.lastTime = null; }
+        };
+        window.releaseIgnition = () => { startup.advanceIgnition = advance; };
+      });
+      await page.locator('[data-model-start]').click();
+      await page.waitForFunction(() => window.ignitionHeld);
+      const root = page.locator('[data-model-startup]');
+      await expect(root).toHaveAttribute('data-startup','igniting');
+      if (action === 'pause') {
+        await page.getByRole('button',{name:'Play',exact:true}).click();
+        await page.getByRole('button',{name:'Pause',exact:true}).click();
+      } else if (action === 'rewind') await page.locator('[data-replay-rewind]').click();
+      else if (action === 'scrub') {
+        await page.locator('[data-replay-timeline]').focus();
+        await page.keyboard.press('ArrowRight');
+      } else {
+        await page.locator('[data-machine-stage]').focus();
+        await page.keyboard.press('ArrowRight');
+      }
+      const before = await root.evaluate(node => node.machine.snapshot());
+      assert.equal(before.playing,false);
+      await page.evaluate(() => window.releaseIgnition());
+      await expect(root).toHaveAttribute('data-startup','ready',{timeout:15000});
+      const after = await root.evaluate(async node => {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        return node.machine.snapshot();
+      });
+      assert.equal(after.playing,false,`${action}: readiness preserves explicit pause`);
+      assert.equal(after.frame,before.frame,`${action}: readiness preserves the chosen frame`);
+      await expect(page.locator('[data-replay-play]')).toHaveText('Play');
+      evidence.push({heldIgnition:action,frame:after.frame,playing:after.playing});
+    } finally { await context.close(); }
+  }
+}
