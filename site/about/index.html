@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="en" data-palette="nacre" data-style="orbit">
-<head>
+<html lang="en">
+<head><link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="About Tyler James Harbin-Giuntoli, a software engineer at Microsoft building agent infrastructure and pursuing independent machine-learning research.">
@@ -11,44 +11,62 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="moire" aria-hidden="true"></div>
-  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ about</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a></nav><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Appearance settings"><fieldset class="style-options"><legend>Style</legend><button type="button" data-style="orbit" aria-pressed="true"><span class="style-mark mark-orbit" aria-hidden="true"></span>Orbit</button><button type="button" data-style="register" aria-pressed="false"><span class="style-mark mark-register" aria-hidden="true"></span>Register</button><button type="button" data-style="overprint" aria-pressed="false"><span class="style-mark mark-overprint" aria-hidden="true"></span>Overprint</button><button type="button" data-style="hinge" aria-pressed="false"><span class="style-mark mark-hinge" aria-hidden="true"></span>Hinge</button></fieldset><fieldset class="palette"><legend>Palette</legend><button type="button" data-palette="nacre" aria-pressed="true"><span class="palette-mark swatch-nacre" aria-hidden="true"></span>Nacre</button><button type="button" data-palette="oxide" aria-pressed="false"><span class="palette-mark swatch-oxide" aria-hidden="true"></span>Oxide</button><button type="button" data-palette="violet" aria-pressed="false"><span class="palette-mark swatch-violet" aria-hidden="true"></span>Violet</button><button type="button" data-palette="high-contrast" aria-pressed="false"><span class="palette-mark swatch-contrast" aria-hidden="true"></span>High contrast</button></fieldset><p>Combine any style with any palette.</p></div></div><script src="/assets/appearance.js"></script></header>
-  <main id="main-content" tabindex="-1" class="about-page">
-    <header>
+  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ about</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a></nav><button class="search-toggle" type="button" aria-haspopup="dialog">Search <kbd>⌘K</kbd></button><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Theme"><span class="appearance-label">Environment</span><button type="button" data-theme-choice="auto" aria-pressed="true">Auto</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button></div></div><script src="/assets/appearance.js"></script></header>
+  <main id="main-content" data-pagefind-body tabindex="-1" class="about-page">
+    <header class="about-hero">
       <p class="eyebrow">ABOUT / TYLER J.H.G.</p>
-      <h1 class="page-title"><span class="title-line">Curiosity needs</span> <span class="title-line title-accent">a test bench.</span></h1>
-      <div class="person-intro"><img class="profile-portrait" src="/assets/images/tyler-harbin-giuntoli.jpg" alt="Tyler Harbin-Giuntoli" width="400" height="400" decoding="async"><div>
-      <p class="lede">I’m Tyler James Harbin-Giuntoli, a software engineer at Microsoft. I build agent infrastructure, cloud systems, and the experiments that let me take a machine-learning idea apart.</p>
-      <p class="about-intro">I like making things work better, then finding out why they work better. That can mean an agent recovering from a failed tool call, a model making better use of its state, or a piece of hardware doing more with the memory it already has.</p>
+      <h1 class="page-title"><span class="title-line">I build systems,</span> <span class="title-line title-accent">then try to break</span> <span class="title-line">the explanation.</span></h1>
+      <div class="person-intro"><figure class="portrait-optic"><img class="profile-portrait" src="/assets/images/tyler-harbin-giuntoli.jpg" alt="Tyler Harbin-Giuntoli" width="400" height="400" decoding="async"><span aria-hidden="true"></span></figure><div>
+        <p class="lede">I’m Tyler James Harbin-Giuntoli, a software engineer at Microsoft and an independent machine-learning researcher. I care about systems that keep working when the clean example stops being clean.</p>
+        <p class="about-intro">That means production schedulers, agents that recover from broken tools, experiments designed to attack the reason I think something worked, and small models pushed until the hardware tells me no.</p>
       </div></div>
     </header>
+    <section class="impact-rail" aria-label="Selected engineering scale">
+      <article><strong>Tens of billions</strong><span>monthly value flowing through work coordinated by a production scheduler I wrote</span></article>
+      <article><strong>1 hour</strong><span>the end-to-end SLA target we are driving that scheduling system toward</span></article>
+      <article><strong>Thousands</strong><span>of evaluations run through Micro Suite; about 850 were the focused prompt-stabilization pass</span></article>
+    </section>
     <div class="about-sections">
-      <section aria-labelledby="what-i-build">
-        <h2 id="what-i-build">What I build</h2>
-        <p>My recent work at Microsoft is about making agents useful for the people doing the work. Micro Suite is used by all 26 people on my team. I built its benchmark suite around 850 evaluations, tuned prompt profiles to model families and versions, and added recovery so a failed tool call can be repaired within the same session. Reliable overnight work is running; a full weekend is the next horizon.</p>
-        <p>Auto Research takes a repository, an objective, and a way to measure improvement, then works through relevant papers, experiment proposals, tests, and POCs. I’m also building multi-agent livesite triage: automatic triage works today, and the next phase is a warm handoff between team agents that follows both teams’ policies.</p>
-        <p>Those systems connect to the independent work on this site. I’m investigating representations and model architecture, building <a href="https://experiments.tyharbin.com/">portable experiment packages</a>, working on <a href="https://github.com/pH34r-pH/long-haul">inference across different devices</a>, and using <a href="https://github.com/pH34r-pH/theorem-library">Lean proofs</a> to make the mathematical assumptions explicit.</p>
+      <section aria-labelledby="why-this-work">
+        <p class="eyebrow">THE PIVOT</p>
+        <h2 id="why-this-work">My daughter changed the accounting.</h2>
+        <p>I had a safe trajectory. I had also become a parent, which made the fact that time is finite substantially less abstract. I stopped being willing to spend most of that time simply staying on the safest path because it was already working.</p>
+        <p>I wanted the work to matter to me. That pushed me harder toward agents, machine learning, robotics, and research: places where I could use the production-engineering habits I already had, but aim them at questions I actually wanted answered.</p>
+        <p>The independent work on this site is not a separate academic persona. It is what happened when I started applying the same standard outside production: <strong>define the claim, build the comparison, look for the failure case, and keep attacking the explanation until the weak version stops surviving.</strong></p>
       </section>
-      <section aria-labelledby="how-i-got-here">
-        <h2 id="how-i-got-here">How I got here</h2>
-        <p>I started with .NET web development at UCF’s Burnett Honors College, then spent three summers interning at Microsoft, from 2016 through 2018. I joined full-time in February 2019, building commerce data pipelines, reconciliation, and automation.</p>
-        <p>That work involved systems where a late job or a bad join has consequences. I cut a clearing job from roughly 35 hours to just over 3, built reporting for a reconciliation process covering about $360 million a month, and prototyped autoencoder-based ledger anomaly detection.</p>
-        <p>From 2022 onward, I worked on shared cloud services: Azure Functions modernization, durable dependency-aware scheduling, observability, privileged operations, and audit metadata. More recently, I’ve been bringing that operational experience into agent systems, including security repairs, incident triage, and moving audit metadata into the scheduler.</p>
+      <section aria-labelledby="production">
+        <p class="eyebrow">PRODUCTION / CONSEQUENCES</p>
+        <h2 id="production">I learned engineering where being wrong is expensive.</h2>
+        <p>I joined Microsoft full-time in 2019 after three internships, initially working on commerce data pipelines, reconciliation, and automation. A late job, a bad join, or a plausible-looking number could have real downstream consequences.</p>
+        <p>I cut one clearing workflow from roughly 35 hours to just over 3 and built reporting around a reconciliation process covering about $360 million a month. The work later moved into shared cloud services, durable dependency-aware scheduling, observability, privileged operations, and auditability. Today, a scheduler I wrote coordinates workflows handling value measured in <strong>tens of billions of dollars per month</strong>, and we are working to drive its end-to-end SLA toward <strong>one hour</strong>.</p>
+        <p>That scale is useful training. “It usually works” stops sounding like an engineering argument very quickly.</p>
       </section>
-      <section aria-labelledby="how-i-work">
-        <h2 id="how-i-work">How I work</h2>
-        <p>An idea gets interesting when I can change something and see what happens. I want the comparison, the failure cases, and enough of the run record to explain the result. The articles follow the question; the notebooks, proofs, and experiment packages give you something to take apart.</p>
-        <p>I use small examples because you can see the whole mechanism at once. Then I change the task, the data, or the hardware and test what survives. The same approach applies to an agent: completing one task is a start; recovering when a tool breaks and leaving useful work behind is where the engineering gets interesting.</p>
+      <section aria-labelledby="agents">
+        <p class="eyebrow">AGENTS / EVALUATION</p>
+        <h2 id="agents">The agent has to survive the part after the demo.</h2>
+        <p>My recent work is increasingly agent-shaped. Micro Suite is used across my team and has been through <strong>thousands of evaluations</strong>. About 850 of those were a focused stabilization pass to determine which prompt changes each model family and version actually required; that is one slice of the evaluation history, not the total.</p>
+        <p>I added same-session recovery so a failed tool call can be repaired instead of ending the job. Auto Research starts from a repository, an objective, and a measurable notion of improvement, then works through papers, experiment proposals, tests, and proofs of concept. I’m also building multi-agent livesite triage where the interesting problem is not merely automatic classification, but a reliable warm handoff between agents operating under different teams’ policies.</p>
+        <p>Completion is the easy screenshot. I care more about whether the system notices that reality diverged from the plan, repairs the state, and leaves evidence explaining what happened.</p>
       </section>
-      <section aria-labelledby="what-keeps-me-interested">
-        <h2 id="what-keeps-me-interested">What keeps me interested</h2>
-        <p>Machine learning, robotics, and philosophy keep pulling me toward the same kinds of questions: what a system knows, what it can do with that information, and how we tell whether our explanation is any good.</p>
-        <p>Away from the screen, I work on my 1987 Toyota MR2 or head out on a birdwatching hike. Designing an active aero component and optimizing a data pipeline scratch much the same itch for me: understand what is happening, change something, and see whether it works better.</p>
-        <p>I’m interested in what happens when an elegant idea meets a battery, a memory limit, or a part that needs repairing. Those constraints are part of the problem. They often make the next experiment more interesting.</p>
+      <section aria-labelledby="research-method">
+        <p class="eyebrow">RESEARCH / METHOD</p>
+        <h2 id="research-method">I try to break my own idea first.</h2>
+        <p>A result gets more interesting when the explanation becomes harder to defend. If an endpoint looks dramatic, I want the trajectory. If a representation looks expressive, I want to know whether the consumer can use it. If a mechanism sounds plausible, I want the control that would make it fail.</p>
+        <p>I use small examples when they expose the whole mechanism, then vary the task, data, architecture, or hardware and see what survives. Proofs are useful when they can kill an empirical branch before another training run; experiments are useful when the theorem’s assumptions stop matching the thing we actually built.</p>
+        <p>The articles are the readable argument. The notebooks preserve the sequence and saved computational record. <a href="https://experiments.tyharbin.com/">Compiled Experiments</a> bind code, artifacts, environment, and run identity. <a href="https://github.com/pH34r-pH/theorem-library">Theorem Library</a> makes formal assumptions inspectable. I want disagreement to have somewhere concrete to land.</p>
+      </section>
+      <section aria-labelledby="constraints">
+        <p class="eyebrow">CONSTRAINTS / MACHINES</p>
+        <h2 id="constraints">The hardware gets a vote.</h2>
+        <p>I’m interested in models and agents that operate under real constraints, which is why so much of the surrounding work ends up touching heterogeneous local inference, old GPUs, small shared-memory devices, and reproducible experiment packaging.</p>
+        <p>Away from the screen, I work on my 1987 Toyota MR2 or go birdwatching. Designing an active-aero component, tracing a model failure, and repairing an old machine scratch a similar itch: understand the mechanism well enough that a change has a reason to work.</p>
+        <p>Machine learning, robotics, and philosophy keep pulling me toward the same questions: what information is actually present, what a system can do with it, what the constraints remove, and how much confidence the evidence has earned.</p>
       </section>
       <section aria-labelledby="find-my-work">
-        <h2 id="find-my-work">Find my work</h2>
-        <p>The <a href="/research/">research articles</a> follow the current investigation. <a href="https://experiments.tyharbin.com/">Compiled experiments</a> connect code, artifacts, and run records.</p>
-        <div class="actions"><a class="primary" href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="https://github.com/pH34r-pH" rel="me">GitHub ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email me</a></div>
+        <p class="eyebrow">CONTINUE</p>
+        <h2 id="find-my-work">Take the work apart.</h2>
+        <p>The <a href="/research/">research map and articles</a> follow the current investigation. <a href="https://experiments.tyharbin.com/">Compiled Experiments</a> are the reproduction surface.</p>
+        <div class="actions"><a class="primary" href="/research/">Research</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="https://github.com/pH34r-pH" rel="me">GitHub ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></div>
       </section>
     </div>
     <footer id="provenance">
@@ -56,6 +74,6 @@
       <details><summary>Build provenance <span id="build-id" aria-label="portfolio build revision"></span></summary><pre id="provenance-data">Loading…</pre></details>
     </footer>
   </main>
-  <script src="/assets/site.js"></script>
+  <script src="/assets/search.js"></script><script src="/assets/site.js"></script>
 </body>
 </html>

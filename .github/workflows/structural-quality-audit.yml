@@ -15,6 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -27,13 +28,14 @@ jobs:
       - name: Install Lizard
         run: python -m pip install --disable-pip-version-check "lizard==1.24.0"
 
+      # Upstream Three.js files are byte-verified separately; this ratchet covers authored code.
       - name: Native JavaScript structural lint (audit only)
         shell: bash
         run: |
           set +e
           mkdir -p quality-audit
           npx --yes eslint@9.38.0 site scripts \
-            --no-config-lookup \
+            --ignore-pattern "site/assets/vendor/three@0.186.1/**" --no-config-lookup \
             --ext .js,.mjs,.cjs \
             --rule 'max-lines: ["warn", {"max": 500, "skipBlankLines": true, "skipComments": true}]' \
             --rule 'max-lines-per-function: ["warn", {"max": 75, "skipBlankLines": true, "skipComments": true}]' \
@@ -50,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          lizard site scripts -C 15 -L 75 -a 7 -w > quality-audit/lizard.txt 2>&1
+          lizard site scripts -x "site/assets/vendor/three@0.186.1/*" -C 15 -L 75 -a 7 -w > quality-audit/lizard.txt 2>&1
           status=$?
           cat quality-audit/lizard.txt
           echo "lizard_status=$status" >> "$GITHUB_STEP_SUMMARY"
@@ -63,7 +65,7 @@ jobs:
           npx --yes jscpd@5.0.12 site scripts \
             --min-lines 8 --min-tokens 60 \
             --format javascript,typescript \
-            --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json" \
+            --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json,**/site/assets/vendor/three@0.186.1/**" \
             --reporters console,json --output quality-audit/jscpd \
             > quality-audit/jscpd-console.txt 2>&1
           status=$?
@@ -84,9 +86,9 @@ jobs:
           (
             cd "$base_dir"
             set +e
-            npx --yes eslint@9.38.0 site scripts               --no-config-lookup --ext .js,.mjs,.cjs               --rule 'max-lines: ["warn", {"max": 500, "skipBlankLines": true, "skipComments": true}]'               --rule 'max-lines-per-function: ["warn", {"max": 75, "skipBlankLines": true, "skipComments": true}]'               --rule 'complexity: ["warn", 15]'               --rule 'max-params: ["warn", 7]'               --rule 'max-depth: ["warn", 4]'               > "$GITHUB_WORKSPACE/quality-audit/base/eslint.txt" 2>&1
-            lizard site scripts -C 15 -L 75 -a 7 -w > "$GITHUB_WORKSPACE/quality-audit/base/lizard.txt" 2>&1
-            npx --yes jscpd@5.0.12 site scripts               --min-lines 8 --min-tokens 60 --format javascript,typescript               --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json"               --reporters console > "$GITHUB_WORKSPACE/quality-audit/base/jscpd.txt" 2>&1
+            npx --yes eslint@9.38.0 site scripts               --ignore-pattern "site/assets/vendor/three@0.186.1/**" --no-config-lookup --ext .js,.mjs,.cjs               --rule 'max-lines: ["warn", {"max": 500, "skipBlankLines": true, "skipComments": true}]'               --rule 'max-lines-per-function: ["warn", {"max": 75, "skipBlankLines": true, "skipComments": true}]'               --rule 'complexity: ["warn", 15]'               --rule 'max-params: ["warn", 7]'               --rule 'max-depth: ["warn", 4]'               > "$GITHUB_WORKSPACE/quality-audit/base/eslint.txt" 2>&1
+            lizard site scripts -x "site/assets/vendor/three@0.186.1/*" -C 15 -L 75 -a 7 -w > "$GITHUB_WORKSPACE/quality-audit/base/lizard.txt" 2>&1
+            npx --yes jscpd@5.0.12 site scripts               --min-lines 8 --min-tokens 60 --format javascript,typescript               --ignore "**/node_modules/**,**/dist/**,**/build/**,**/*-lock.json,**/site/assets/vendor/three@0.186.1/**"               --reporters console > "$GITHUB_WORKSPACE/quality-audit/base/jscpd.txt" 2>&1
             true
           )
           count_eslint() { grep -Eo '✖ [0-9]+ problems?' "$1" | tail -1 | grep -Eo '[0-9]+' || echo 0; }

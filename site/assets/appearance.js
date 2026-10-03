@@ -1,65 +1,165 @@
-/* Shared by Portfolio pages, generated readers, and the Lab return strip. */
-(() => {
+/* Shared shell behavior for Portfolio 2071. */
+{
   const root = document.documentElement;
-  const choices = {
-    style: ["orbit", "register", "overprint", "hinge"],
-    palette: ["nacre", "oxide", "violet", "high-contrast"],
-  };
-  function read(kind) {
-    try { return localStorage.getItem("portfolio-" + kind); }
-    catch { return null; }
+  const modes = new Set(["auto", "light", "dark"]);
+  const mediaDark = matchMedia("(prefers-color-scheme: dark)");
+  const mediaReduced = matchMedia("(prefers-reduced-motion: reduce)");
+
+  function readMode() {
+    try {
+      const value = localStorage.getItem("portfolio-theme");
+      return modes.has(value) ? value : "auto";
+    } catch {
+      return "auto";
+    }
   }
-  function select(kind, value, persist = false) {
-    const name = choices[kind].includes(value) ? value : choices[kind][0];
-    root.dataset[kind] = name;
-    document.querySelectorAll(`.appearance button[data-${kind}]`).forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset[kind] === name));
+
+  function resolveMode(mode) {
+    return mode === "auto" ? (mediaDark.matches ? "dark" : "light") : mode;
+  }
+
+  function writeMode(mode) {
+    try { localStorage.setItem("portfolio-theme", mode); }
+    catch { /* Local preference is optional. */ }
+  }
+
+  function syncThemeColor(theme) {
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "theme-color";
+      document.head.append(meta);
+    }
+    meta.content = theme === "dark" ? "#00070d" : "#f4f9fd";
+  }
+
+  function ensureThemeControls() {
+    document.querySelectorAll(".appearance").forEach((container) => {
+      if (container.querySelector("[data-theme-choice]")) return;
+      container.replaceChildren();
+
+      const label = document.createElement("span");
+      label.className = "appearance-label";
+      label.textContent = "Environment";
+      container.append(label);
+
+      for (const value of ["auto", "light", "dark"]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.themeChoice = value;
+        button.textContent = value[0].toUpperCase() + value.slice(1);
+        button.setAttribute("aria-pressed", "false");
+        container.append(button);
+      }
     });
-    if (persist) {
-      try { localStorage.setItem("portfolio-" + kind, name); }
-      catch { /* The current page still works when storage is unavailable. */ }
-    }
   }
-  for (const kind of Object.keys(choices)) select(kind, read(kind));
-  document.addEventListener("click", event => {
-    const button = event.target.closest?.(".appearance button");
-    if (!button) return;
-    for (const kind of Object.keys(choices)) {
-      if (button.dataset[kind]) select(kind, button.dataset[kind], true);
-    }
-  });
-  addEventListener("storage", event => {
-    for (const kind of Object.keys(choices)) {
-      if (event.key === "portfolio-" + kind || event.key === null)
-        select(kind, read(kind));
-    }
+
+  function applyTheme(mode, persist = false) {
+    const safeMode = modes.has(mode) ? mode : "auto";
+    const theme = resolveMode(safeMode);
+    root.dataset.themeMode = safeMode;
+    root.dataset.theme = theme;
+    delete root.dataset.palette;
+    delete root.dataset.style;
+    syncThemeColor(theme);
+
+    document.querySelectorAll("[data-theme-choice]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.themeChoice === safeMode));
+    });
+
+    if (persist) writeMode(safeMode);
+  }
+
+  /* Apply before the rest of the page paints; legacy data attributes are removed
+     so the archived multi-style selectors never participate in the 2071 surface. */
+  applyTheme(readMode());
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      ensureThemeControls();
+      applyTheme(readMode());
+      setupMenu();
+      setupReaderTitle();
+      setupTransientEmphasis();
+    }, { once: true });
+  } else {
+    ensureThemeControls();
+    applyTheme(readMode());
+    setupMenu();
+    setupReaderTitle();
+    setupTransientEmphasis();
+  }
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest?.("[data-theme-choice]");
+    if (button) applyTheme(button.dataset.themeChoice, true);
   });
 
-  const menuButton = document.querySelector(".menu-toggle");
-  const menu = document.querySelector("#site-menu");
-  if (menuButton && menu) {
+  addEventListener("storage", (event) => {
+    if (event.key === "portfolio-theme" || event.key === null) applyTheme(readMode());
+  });
+
+  mediaDark.addEventListener?.("change", () => {
+    if (root.dataset.themeMode === "auto") applyTheme("auto");
+  });
+
+  function setupMenu() {
+    const menuButton = document.querySelector(".menu-toggle");
+    const menu = document.querySelector("#site-menu");
+    if (!menuButton || !menu || menu.dataset.ready === "true") return;
+    menu.dataset.ready = "true";
+
+    const focusable = () => [...menu.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )].filter((element) => !element.hidden && element.getClientRects().length);
+
     const close = (focus = false) => {
       menu.hidden = true;
       menuButton.setAttribute("aria-expanded", "false");
       if (focus) menuButton.focus();
     };
+
     menuButton.addEventListener("click", () => {
       const open = menuButton.getAttribute("aria-expanded") === "true";
-      menuButton.setAttribute("aria-expanded", String(!open));
-      menu.hidden = open;
+      if (open) {
+        close();
+        return;
+      }
+
+      menuButton.setAttribute("aria-expanded", "true");
+      menu.hidden = false;
+      requestAnimationFrame(() => focusable()[0]?.focus());
     });
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape" && !menu.hidden) close(true);
+
+    document.addEventListener("keydown", (event) => {
+      if (menu.hidden) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        close(true);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const items = focusable();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items.at(-1);
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     });
-    menu.querySelectorAll("a").forEach(link => link.addEventListener("click", () => close()));
-    document.addEventListener("click", event => {
+
+    menu.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => close()));
+
+    document.addEventListener("click", (event) => {
       if (!menu.hidden && !menu.contains(event.target) && !menuButton.contains(event.target)) close();
     });
   }
 
-  // Readers retain the exact authored title and its casing. Only a presentation
-  // span is added; source notebook cells and generated scientific output stay intact.
-  function prepareReaderTitle() {
+  function setupReaderTitle() {
     const title = document.querySelector(".notebook-reader > header h1");
     if (!title || title.querySelector(".title-accent")) return;
     const text = title.textContent;
@@ -69,6 +169,24 @@
     accent.textContent = split < 0 ? text : text.slice(split + 3);
     title.replaceChildren(...(split < 0 ? [] : [document.createTextNode(text.slice(0, split + 3))]), accent);
   }
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", prepareReaderTitle);
-  else prepareReaderTitle();
-})();
+
+  function setupTransientEmphasis() {
+    if (mediaReduced.matches) return;
+
+    const scopes = document.querySelectorAll(".myst-reader, .about-sections, .lede, .proof-line");
+    const emphasized = [...scopes].flatMap((scope) => [...scope.querySelectorAll("strong, em")]);
+    if (!emphasized.length || !("IntersectionObserver" in window)) return;
+
+    scopes.forEach((scope) => scope.classList.add("transient-reading"));
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) entry.target.classList.toggle("is-reading", entry.isIntersecting);
+    }, {
+      root: null,
+      threshold: 0,
+      rootMargin: "-34% 0px -52% 0px",
+    });
+
+    emphasized.forEach((node) => observer.observe(node));
+  }
+}

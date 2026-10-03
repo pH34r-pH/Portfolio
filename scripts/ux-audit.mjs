@@ -14,7 +14,7 @@ const sizes = [
   ['desktop', 1920, 1080],
   ['ultrawide', 2560, 1080],
 ];
-const palettes = ['nacre', 'oxide', 'violet', 'high-contrast'];
+const themes = ['light', 'dark'];
 const browser = await chromium.launch({ headless: true });
 const failures = [];
 
@@ -35,13 +35,13 @@ for (const [name, width, height] of sizes) {
     failures.push(`${name}: horizontal overflow ${JSON.stringify(metrics)}`);
   }
 
-  for (const palette of palettes) {
-    await page.evaluate((value) => { document.documentElement.dataset.palette = value; }, palette);
+  for (const theme of themes) {
+    await page.evaluate((value) => { document.documentElement.dataset.themeMode = value; document.documentElement.dataset.theme = value; }, theme);
     const axe = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
       .analyze();
     if (axe.violations.length) {
-      failures.push(`${name}/${palette}: axe ${axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} => ${n.failureSummary}`).join(' | ')}`).join(' || ')}`);
+      failures.push(`${name}/${theme}: axe ${axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => `${n.target.join(' ')} => ${n.failureSummary}`).join(' | ')}`).join(' || ')}`);
     }
   }
 

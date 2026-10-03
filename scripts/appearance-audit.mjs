@@ -4,8 +4,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { mkdir } from 'node:fs/promises';
 
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
-const styles = ['orbit', 'register', 'overprint', 'hinge'];
-const palettes = ['nacre', 'oxide', 'violet', 'high-contrast'];
+const modes = ['auto', 'light', 'dark'];
 const shots = process.env.PORTFOLIO_STYLE_SCREENSHOTS;
 
 async function discoverPaths(context) {
@@ -13,6 +12,7 @@ async function discoverPaths(context) {
   const response = await context.request.get(base + '/publication.json');
   if (response.ok() && response.headers()['content-type']?.includes('json')) {
     const manifest = await response.json();
+    if (manifest.articles?.length) paths.push(manifest.articles[0].url);
     if (manifest.notebooks?.length) paths.push('/notebooks/' + manifest.notebooks[0].slug + '/');
   }
   return paths;
@@ -23,62 +23,87 @@ async function choose(page, locator, width) {
   else await locator.click();
 }
 
-async function auditPalette(page, width, path, style, palette) {
-  const paletteButton = page.locator(`.appearance button[data-palette="${palette}"]`);
-  await choose(page, paletteButton, width);
-  await expect(page.locator('html')).toHaveAttribute('data-style', style);
-  await expect(page.locator('html')).toHaveAttribute('data-palette', palette);
-  await expect(paletteButton).toHaveAttribute('aria-pressed', 'true');
-  const overflowing = await page.evaluate(
-    () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+async function auditMode(page, width, path, mode, title) {
+  const button = page.locator(`.appearance button[data-theme-choice="${mode}"]`);
+  await choose(page, button, width);
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode', mode);
+  await expect(button).toHaveAttribute('aria-pressed', 'true');
+
+  const theme = await page.locator('html').getAttribute('data-theme');
+  assert.ok(theme === 'light' || theme === 'dark', `${path}: resolved theme must be light/dark`);
+  if (mode !== 'auto') assert.equal(theme, mode);
+
+  assert.equal(await page.locator('h1').innerText(), title, 'Changing environment must preserve title text');
+
+  const overflow = await page.evaluate(() => {
+    const root = document.documentElement;
+    const width = root.clientWidth;
+    const offenders = [...document.querySelectorAll('body *')]
+      .map(element => {
+        const box = element.getBoundingClientRect();
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id || null,
+          classes: [...element.classList].slice(0, 4),
+          left: Math.round(box.left * 10) / 10,
+          right: Math.round(box.right * 10) / 10,
+          scrollWidth: element.scrollWidth,
+          clientWidth: element.clientWidth,
+        };
+      })
+      .filter(item => item.left < -1 || item.right > width + 1 || item.scrollWidth > item.clientWidth + 1)
+      .slice(0, 12);
+    return { scrollWidth: root.scrollWidth, clientWidth: width, offenders };
+  });
+  assert.ok(
+    overflow.scrollWidth <= overflow.clientWidth + 1,
+    `${width} ${path} ${mode}: overflow ${JSON.stringify(overflow)}`,
   );
-  assert.equal(overflowing, false, `${width} ${path} ${style}/${palette}: overflow`);
-  if (width !== 412 && width !== 1366) return;
-  const axe = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
-    .analyze();
-  assert.deepEqual(
-    axe.violations.map(v => ({
-      id: v.id,
-      nodes: v.nodes.map(n => ({ target: n.target, failure: n.failureSummary })),
-    })),
-    [],
-    `${width} ${path} ${style}/${palette}: axe`,
-  );
+
+  if (width === 412 || width === 1366) {
+    const axe = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    assert.deepEqual(
+      axe.violations.map(v => ({
+        id: v.id,
+        nodes: v.nodes.map(n => ({ target: n.target, failure: n.failureSummary })),
+      })),
+      [],
+      `${width} ${path} ${mode}: axe`,
+    );
+  }
 }
 
-async function captureStyle(page, width, path, style) {
+async function capture(page, width, path) {
   if (!shots || ![412, 1366].includes(width) || !['/', '/research/'].includes(path)) return;
-  await page.locator('.appearance button[data-palette="nacre"]').click();
-  if (path === '/' && style === 'orbit') {
-    await page.screenshot({ path: `${shots}/settings-${width}.png` });
-  }
+  await page.locator('.appearance button[data-theme-choice="light"]').click();
   await page.keyboard.press('Escape');
   await page.evaluate(() => window.scrollTo(0, 0));
   await page.screenshot({
-    path: `${shots}/${style}-${path === '/' ? 'home' : 'research'}-${width}.png`,
+    path: `${shots}/2071-light-${path === '/' ? 'home' : 'research'}-${width}.png`,
+    fullPage: false,
   });
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
-}
-
-async function auditStyle(page, width, path, title, style) {
-  const previousPalette = await page.locator('html').getAttribute('data-palette');
-  const styleButton = page.locator(`.appearance button[data-style="${style}"]`);
-  await choose(page, styleButton, width);
-  await expect(styleButton).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.locator('html')).toHaveAttribute('data-palette', previousPalette);
-  for (const palette of palettes) await auditPalette(page, width, path, style, palette);
-  assert.equal(await page.locator('h1').innerText(), title, 'Changing appearance must preserve the title text');
-  await captureStyle(page, width, path, style);
+  await page.locator('.appearance button[data-theme-choice="dark"]').click();
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: `${shots}/2071-dark-${path === '/' ? 'home' : 'research'}-${width}.png`,
+    fullPage: false,
+  });
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
 }
 
 async function auditPath(page, width, path) {
   await page.goto(base + path, { waitUntil: 'networkidle' });
   const title = await page.locator('h1').innerText();
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await expect(page.getByRole('group', { name: 'Style', exact: true })).toBeVisible();
-  await expect(page.getByRole('group', { name: 'Palette', exact: true })).toBeVisible();
-  for (const style of styles) await auditStyle(page, width, path, title, style);
+  await expect(page.getByRole('group', { name: 'Theme', exact: true })).toBeVisible();
+
+  for (const mode of modes) await auditMode(page, width, path, mode, title);
+  await capture(page, width, path);
+
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Menu', exact: true })).toBeFocused();
 }
@@ -86,13 +111,12 @@ async function auditPath(page, width, path) {
 async function auditPersistence(page) {
   await page.goto(base + '/');
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await page.locator('.appearance button[data-style="register"]').click();
-  await page.locator('.appearance button[data-palette="oxide"]').click();
+  await page.locator('.appearance button[data-theme-choice="dark"]').click();
   await page.getByRole('navigation', { name: 'Site', exact: true })
     .getByRole('link', { name: 'Research', exact: true }).click();
   await page.reload();
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'register');
-  await expect(page.locator('html')).toHaveAttribute('data-palette', 'oxide');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode', 'dark');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 }
 
 async function auditViewport(browser, width) {
@@ -109,7 +133,7 @@ async function auditViewport(browser, width) {
   for (const path of paths) await auditPath(page, width, path);
   await auditPersistence(page);
   assert.deepEqual(errors, [], `${width}: runtime errors`);
-  console.log(`Appearance: ${width}px, four styles × four palettes, ${paths.length} routes`);
+  console.log(`Appearance: ${width}px, 2071 auto/light/dark, ${paths.length} routes`);
   await context.close();
 }
 
@@ -124,13 +148,11 @@ async function auditDeniedStorage(browser) {
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(base + '/');
   await page.getByRole('button', { name: 'Menu', exact: true }).click();
-  await page.locator('.appearance button[data-style="hinge"]').click();
-  await page.locator('.appearance button[data-palette="violet"]').click();
-  await expect(page.locator('html')).toHaveAttribute('data-style', 'hinge');
-  await expect(page.locator('html')).toHaveAttribute('data-palette', 'violet');
+  await page.locator('.appearance button[data-theme-choice="dark"]').click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   assert.deepEqual(errors, []);
   await restricted.close();
-  console.log('Storage-denied appearance controls passed');
+  console.log('Storage-denied 2071 environment controls passed');
 }
 
 if (shots) await mkdir(shots, { recursive: true });
