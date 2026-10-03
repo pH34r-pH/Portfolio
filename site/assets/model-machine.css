@@ -1,0 +1,71 @@
+/* Model-only host contract. Global Portfolio materials/layout stay with site.css. */
+.model-machine-replay .machine-stage { min-height: 0; height: clamp(460px, 48vw, 650px); overflow: hidden; clip-path: none; }
+.model-machine-replay .machine-stage::after { display: none; }
+.model-machine-replay .machine-canvas { inset: 88px 0 58px; height: calc(100% - 146px); touch-action: none; cursor: grab; }
+.model-machine-replay .machine-canvas:active { cursor: grabbing; }
+.model-machine-replay .machine-stage:focus-visible { outline: 3px solid var(--accent); outline-offset: -4px; }
+.model-machine-replay .machine-legend { position: absolute; z-index: 2; inset: 24px 24px auto; display: flex; justify-content: space-between; gap: 12px; pointer-events: none; font: 600 11px/1.5 ui-monospace, monospace; color: var(--ink); }
+.model-machine-replay .machine-legend span { display: block; color: var(--muted); font-size: 10px; }
+.model-machine-replay .machine-axis-labels { position: absolute; z-index: 2; inset: auto 8% 26px; display: flex; justify-content: space-between; gap: 8px; font: 600 11px/1.4 ui-monospace, monospace; color: var(--ink); pointer-events: none; }
+.model-machine-replay .machine-io { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 24px; margin-top: 20px; }
+.model-machine-replay .machine-console { position: static; width: auto; max-width: none; background: transparent; border: 0; padding: 0; backdrop-filter: none; box-shadow: none; clip-path: none; }
+.model-machine-replay .machine-console label,.model-machine-replay .machine-console-label { font-size: 11px; }
+.model-machine-replay .machine-input > div:first-of-type { grid-template-columns: minmax(0,1fr) auto; }
+.model-machine-replay .machine-input input { font-size: 14px; }
+.model-machine-replay .machine-output p { font-size: 14px; }
+.model-machine-replay .machine-token-readout span { font-size: 11px; }
+.model-machine-replay .machine-replay { display: grid; gap: 16px; padding: 20px 0; border-bottom: 1px solid var(--line); }
+.model-machine-replay .machine-transport { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.model-machine-replay .machine-transport button { min-width: 48px; min-height: 48px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 0; padding: 10px 14px; font: 600 12px/1.2 ui-monospace,monospace; }
+.model-machine-replay .machine-transport button[data-replay-play] { background: var(--accent); border-color: var(--accent); color: white; min-width: 88px; }
+.model-machine-replay .machine-timeline { flex: 1 1 240px; min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 12px; align-items: center; font: 600 11px/1.4 ui-monospace,monospace; }
+.model-machine-replay input[type=range] { width: 100%; min-width: 0; min-height: 48px; margin: 0; accent-color: var(--accent); }
+.model-machine-replay .machine-status { position: static; font: 600 11px/1.5 ui-monospace,monospace; letter-spacing: 0; text-transform: none; }
+.model-machine-replay .machine-inspection { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr) minmax(0,1.2fr); gap: 16px; align-items: end; }
+.model-machine-replay .machine-inspection label { display: grid; gap: 6px; font: 600 11px/1.4 ui-monospace,monospace; color: var(--muted); }
+.model-machine-replay .machine-inspection select { width: 100%; min-width: 0; min-height: 48px; font: 600 12px/1.4 ui-monospace,monospace; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 0; padding: 8px; }
+.model-machine-replay .machine-probe { margin: 0; color: var(--ink); font: 600 12px/1.6 ui-monospace,monospace; }
+.model-machine-replay .machine-probe span { display: block; color: var(--muted); }
+.model-machine-replay .machine-disclosure,.model-machine-replay .machine-help { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 14px 0 0; max-width: 90ch; }
+.model-machine-replay .machine-fallback { inset: 72px 5% 56px; flex-direction: column; gap: 12px; }
+.model-machine-replay .machine-fallback svg { width: 100%; height: 100%; min-height: 0; overflow: visible; }
+.model-machine-replay .machine-fallback svg line { stroke: var(--accent); stroke-width: .7; opacity: .1; }
+.model-machine-replay .machine-fallback svg circle { fill: var(--ink); }
+.model-machine-replay .machine-fallback svg circle.is-active { fill: var(--accent); }
+.model-machine-replay .machine-fallback p { font: 600 11px/1.4 ui-monospace,monospace; text-transform: none; letter-spacing: 0; margin: 0; color: var(--ink); }
+@media(max-width:720px) {
+ .model-machine-replay .machine-stage { height: 570px; }
+ .model-machine-replay.article-model-machine .machine-stage { min-height: 0; }
+ .model-machine-replay .machine-legend { inset: 22px 16px auto; font-size: 10px; }
+ .model-machine-replay .machine-canvas { inset: 128px 0 82px; height: calc(100% - 210px); }
+ .model-machine-replay .machine-axis-labels { inset: auto 12px 52px; justify-content: space-between; flex-direction: row; font-size: 9px; }
+ .model-machine-replay .machine-io { grid-template-columns: minmax(0,1fr); gap: 20px; }
+ .model-machine-replay .machine-timeline { flex-basis: 100%; }
+ .model-machine-replay .machine-inspection { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+ .model-machine-replay .machine-probe { grid-column: 1/-1; }
+ .model-machine-replay .machine-fallback { inset: 128px 8% 78px; }
+ .model-machine-replay .machine-fallback svg { transform: none; }
+}
+@media(forced-colors:active) {
+ .model-machine-replay .machine-canvas { visibility: hidden; }
+ .model-machine-replay .machine-fallback { display: flex; }
+ .model-machine-replay .machine-fallback svg line { stroke: CanvasText; opacity: .2; }
+ .model-machine-replay .machine-fallback svg circle { fill: CanvasText; }
+ .model-machine-replay .machine-fallback svg circle.is-active { fill: Highlight; }
+ .model-machine-replay .machine-transport button[data-replay-play] { color: ButtonText; }
+}
+/* Article columns are narrower than the standalone source fixture. Reserve the
+   wrapped legend and quality hint before the embedded graph at phone widths. */
+@media(max-width:360px) {
+ .article-model-machine .machine-canvas { inset:128px 0 82px; height:calc(100% - 210px); }
+ .article-model-machine .machine-fallback { inset:128px 8% 78px; }
+ .model-machine-replay.article-model-machine .machine-render-hint { top:148px; }
+}
+
+html[data-theme=dark] .model-machine-replay .machine-input button,html[data-theme=dark] .model-machine-replay [data-replay-play] { color: var(--bg); }
+
+.model-machine-replay .machine-settings { border: 1px solid var(--line); background: var(--panel); }
+.model-machine-replay .machine-settings summary { min-height: 48px; display: flex; align-items: center; gap: 8px; padding: 8px 14px; cursor: pointer; color: var(--ink); font: 600 12px/1.5 ui-monospace,monospace; }
+.model-machine-replay .machine-settings summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.model-machine-replay .machine-settings-content { display: grid; gap: 18px; padding: 16px; border-top: 1px solid var(--line); }
+.model-machine-replay .machine-legend > div { max-width: 50%; }

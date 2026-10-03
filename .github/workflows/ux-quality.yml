@@ -15,9 +15,12 @@ concurrency:
 jobs:
   ux:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -30,37 +33,93 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Check UX environment
         run: python3 scripts/preflight_env.py ux
-      - name: Run responsive and accessibility audit
+      - name: Check source syntax and audit regressions
         shell: bash
         run: |
           set -euo pipefail
-          npx serve site -l 4173 >/tmp/portfolio-serve.log 2>&1 &
+          for asset in site appearance article-runtime model-machine model-scene model-topology model-light model-gestures research-topology search; do
+            node --check "site/assets/$asset.js"
+          done
+          node scripts/test-model-replay.mjs
+          node scripts/test-model-pixel-fidelity.mjs
+          node scripts/test-article-runtime.mjs
+          node scripts/test-interaction-coverage.mjs
+          node scripts/test-jupyterlite-notebook-audit.mjs
+          node scripts/test-lighthouse-transfer-budget.mjs
+          node scripts/test-serve-lhci.mjs
+      - name: Run responsive, accessibility, interaction and model audits
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./node_modules/.bin/serve site -l tcp://127.0.0.1:4173 >/tmp/portfolio-serve.log 2>&1 &
           server=$!
-          trap 'kill $server || true' EXIT
+          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
             sleep 1
           done
+          kill -0 "$server"
           curl -fsS http://127.0.0.1:4173/ >/dev/null
-          node --check site/assets/site.js
-          node --check site/assets/appearance.js
-          node --check site/assets/article-runtime.js
-          node scripts/test-article-runtime.mjs
-          node scripts/test-lighthouse-transfer-budget.mjs
-          node scripts/test-serve-lhci.mjs
-          node scripts/ux-audit.mjs
-          node scripts/interaction-audit.mjs
-          node scripts/appearance-audit.mjs
-          node scripts/capture-ux-screenshots.mjs
+          export PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173
+          mkdir -p ux-screenshots/logs
+          status=0
+          # Retain each audit's evidence after a failure without relaxing any gate.
+          run_audit() {
+            local name="$1"
+            shift
+            if "$@" 2>&1 | tee "ux-screenshots/logs/$name.log"; then
+              return 0
+            else
+              echo "Audit failed: $name" >&2
+              status=1
+            fi
+          }
+          run_audit model-posters node scripts/capture-model-posters.mjs
+          run_audit model-startup-regressions node scripts/test-model-startup.mjs
+          run_audit model-visual env MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
+          run_audit ux node scripts/ux-audit.mjs
+          run_audit interaction node scripts/interaction-audit.mjs
+          run_audit 2071 node scripts/2071-audit.mjs
+          run_audit model-machine node scripts/model-machine-audit.mjs
+          run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
+          run_audit model-startup node scripts/model-startup-audit.mjs
+          # The homepage audit invokes homepageLifecycle and native finger-scroll checks.
+          run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
+          run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
+          run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          exit "$status"
+      - name: Prepare bounded V2 model visual review evidence
+        if: always()
+        shell: bash
+        env:
+          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: node scripts/prepare-model-visual-evidence.mjs
       - name: Upload UX review screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: ux-review-${{ github.sha }}
+          name: ux-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ux-screenshots/visual-v2/review/**
+          if-no-files-found: error
+          retention-days: 3
+      - name: Upload all source audit screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux-audit-evidence-${{ github.event.pull_request.head.sha || github.sha }}
           path: ux-screenshots/
           if-no-files-found: error
           retention-days: 3
+      - name: Upload Leaf03 shared-glass regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: leaf03-glass-regression-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ux-screenshots/leaf03-glass/**
+          if-no-files-found: error
+          retention-days: 3
       - name: Enforce Lighthouse budgets (mobile and desktop)
+        if: ${{ !cancelled() }}
         shell: bash
         run: |
           set -uo pipefail
@@ -104,7 +163,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: lighthouse-reports-${{ github.sha }}
+          name: lighthouse-reports-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
             lighthouse-results/
             lighthouse-results-desktop/
@@ -129,18 +188,21 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    # Continue review qualification after UX failure; only successful UX may publish an artifact.
+    if: ${{ !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 90
     permissions:
       contents: read
     steps:
       - name: Pin public input revisions
         id: refs
         shell: bash
+        env:
+          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          portfolio="$GITHUB_SHA"
+          portfolio="$PORTFOLIO_SOURCE_SHA"
           research_notes="$(git ls-remote https://github.com/pH34r-pH/research-notes.git refs/heads/main | cut -f1)"
           theorem_library="$(git ls-remote https://github.com/pH34r-pH/theorem-library.git refs/heads/main | cut -f1)"
           for revision in "$portfolio" "$research_notes" "$theorem_library"; do
@@ -199,8 +261,31 @@ jobs:
           cache: npm
           cache-dependency-path: Portfolio/package-lock.json
       - uses: astral-sh/setup-uv@v6
+      - uses: typst-community/setup-typst@v4
+      - name: Install document export image conversion
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y inkscape
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
+      - name: Prepare isolated article export sources
+        run: |
+          python3 Portfolio/scripts/prepare_article_exports.py \
+            --research-notes research-notes \
+            --output research-notes-exports \
+            --manifest article-exports.json
+      - name: Build PDF, Word, LaTeX and JATS article exports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/portfolio-article-export-sources
+          import json
+          for item in json.load(open('article-exports.json', encoding='utf-8')):
+              print(item['source'])
+          PY
+          while IFS= read -r source; do
+            (cd research-notes-exports && ../Portfolio/node_modules/.bin/myst build "$source" --ci)
+          done < /tmp/portfolio-article-export-sources
       - name: Render canonical MyST articles from the pinned Research Notes checkout
         working-directory: research-notes
         run: ../Portfolio/node_modules/.bin/myst build --html --strict --ci
@@ -229,6 +314,27 @@ jobs:
             --theorem-library-sha "$THEOREM_LIBRARY_SHA" \
             --compiler-projection compiler-public/data/experiments.json \
             --compiler-projection-pin Portfolio/publication/compiler-projection.lock.json
+      - name: Attach static article export artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p bundle/article-exports
+          python3 - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+          records = json.load(open('article-exports.json', encoding='utf-8'))
+          source = Path('research-notes-exports/articles/_build/exports')
+          target = Path('bundle/article-exports')
+          for item in records:
+              for key in ('pdf', 'docx', 'latex', 'jats'):
+                  name = item[key]
+                  artifact = source / name
+                  if not artifact.is_file():
+                      raise SystemExit(f'Missing MyST export: {artifact}')
+                  shutil.copy2(artifact, target / name)
+          print(f"Attached {len(records) * 4} article exports")
+          PY
       - name: Validate pinned publication manifest
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
@@ -268,19 +374,22 @@ jobs:
             --output-dir bundle/lab --lite-dir Portfolio
       - name: Attach Portfolio Lab navigation
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/finish_portfolio_lab.py --portfolio Portfolio --bundle bundle
+      - name: Build static publication search index
+        run: npx --yes pagefind@1.5.2 --site bundle --output-subdir pagefind --force-language en
       - name: Qualify finished public bundle
         shell: bash
         run: |
           set -euo pipefail
           for path in bundle/index.html bundle/publication.json bundle/data/atlas-evidence.json \
-            bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
+            bundle/pagefind/pagefind.js bundle/lab/index.html bundle/lab/lab/index.html bundle/lab/files/reference/glossary.md \
             bundle/lab/reference/glossary.md; do
             test -s "$path"
           done
           count="$(find bundle/publication/notebooks -name '*.ipynb' -type f | wc -l)"
           test "$count" -gt 0
           python - <<'PY'
-          import hashlib, json
+          import hashlib, json, zipfile
+          import xml.etree.ElementTree as ET
           from pathlib import Path
           root = Path('bundle')
           manifest = json.loads((root / 'publication.json').read_text())
@@ -294,6 +403,18 @@ jobs:
               assert hashlib.sha256(source.read_bytes()).hexdigest() == article['sha256']
               body = route.read_text(encoding='utf-8')
               assert 'myst-reader' in body and 'Canonical MyST source' in body
+              for label in ('PDF', 'Word', 'LaTeX source', 'JATS XML'):
+                  assert label in body, f"Missing article download link {label}: {article['slug']}"
+              downloads = {kind: root / path.lstrip('/') for kind, path in article['downloads'].items()}
+              assert set(downloads) == {'pdf', 'docx', 'latex', 'jats'}
+              for kind, artifact in downloads.items():
+                  assert artifact.is_file() and artifact.stat().st_size > 0, f"Missing {kind} export: {article['slug']}"
+              assert downloads['pdf'].read_bytes().startswith(b'%PDF-'), f"Invalid PDF export: {article['slug']}"
+              assert zipfile.is_zipfile(downloads['docx']), f"Invalid DOCX export: {article['slug']}"
+              assert zipfile.is_zipfile(downloads['latex']), f"Invalid LaTeX ZIP: {article['slug']}"
+              with zipfile.ZipFile(downloads['latex']) as archive:
+                  assert any(name.endswith('.tex') for name in archive.namelist()), f"LaTeX ZIP has no .tex source: {article['slug']}"
+              ET.parse(downloads['jats'])
               for asset in article['assets']:
                   assert (root / 'publication/article-assets' / asset).is_file(), f"Missing MyST asset: {asset}"
               if article['browserExecution']:
@@ -303,28 +424,64 @@ jobs:
                   assert (root / 'lab/lab/index.html').is_file()
           print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
           PY
-      - name: Exercise every article route in the exact bundle
+      - name: Exercise article, notebook and model routes in the exact bundle
         shell: bash
         run: |
           set -euo pipefail
           Portfolio/node_modules/.bin/playwright install --with-deps chromium
-          npx serve bundle -l 4173 >/tmp/portfolio-candidate-serve.log 2>&1 &
+          Portfolio/node_modules/.bin/serve bundle -l tcp://127.0.0.1:4173 >/tmp/portfolio-candidate-serve.log 2>&1 &
           server_pid=$!
-          trap 'kill "$server_pid" || true' EXIT
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
           for i in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
             sleep 1
           done
+          kill -0 "$server_pid"
           curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
           cd Portfolio
-          PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/interaction-audit.mjs
+          export PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173
+          export PORTFOLIO_PUBLICATION_BUNDLE=1
+          mkdir -p ux-screenshots/logs
+          status=0
+          run_audit() {
+            local name="$1"
+            shift
+            if "$@" 2>&1 | tee "ux-screenshots/logs/$name.log"; then
+              return 0
+            else
+              echo "Audit failed: $name" >&2
+              status=1
+            fi
+          }
+          run_audit model-replay node scripts/test-model-replay.mjs
+          run_audit ux node scripts/ux-audit.mjs
+          # interaction-audit invokes the real article and JupyterLite notebook audits.
+          run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
+          run_audit 2071 node scripts/2071-audit.mjs
+          run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
+          run_audit model-startup node scripts/model-startup-audit.mjs
+          run_audit model-machine node scripts/model-machine-audit.mjs
+          run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
+          run_audit model-visual env PORTFOLIO_PUBLISHED_AUDIT_URL="$PORTFOLIO_AUDIT_URL" MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
+          run_audit article-model-sticky node scripts/article-model-sticky-audit.mjs
+          run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
+          run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          exit "$status"
+      - name: Upload all finished-bundle audit screenshots and reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-ux-review-${{ github.event.pull_request.head.sha || github.sha }}
+          path: Portfolio/ux-screenshots/
+          if-no-files-found: error
+          retention-days: 3
       - name: Hash exact upload bytes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: digest
         shell: bash
         run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
       - name: Upload public publication candidate
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: upload
         uses: actions/upload-artifact@v4
         with:
@@ -334,7 +491,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - name: Summarize public candidate for private verification
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         env:
           PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
           RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}

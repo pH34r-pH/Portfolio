@@ -1,0 +1,185 @@
+{
+  "leaf": "V2 leaf 01 — crisp horizontal shared model appearance",
+  "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5",
+  "captureSourceCommit": "7f82454daefaa54a76343d58e3f1719a509c2d4c",
+  "captureSourceTreeSha256": "d8738bc6ea783d776bb36cd93d90e53d42eb949250a5df7ef602e630dc2c11b7",
+  "publishedArticleInputs": {
+    "portfolio": "01f4a7ae88778803eab4422716d693be880f8d68",
+    "researchNotes": "965fb9186a0c1bb99cc3bd60b2e86668b0f12a91",
+    "theoremLibrary": "cbc5eebbea115decdc27e2e32bb0dc79738a5947",
+    "finishedArticle": "001-text-as-signal"
+  },
+  "implementation": [
+    "Request MSAA on the WebGL2 context at creation; record actual context attributes, framebuffer samples, viewport/texture/renderbuffer limits and active transmission targets.",
+    "Preserve stored yaw, pitch, zoom and pan when resize, coordinate selection or glass-quality changes relayout the scene; diagnostics include the rendered camera orientation.",
+    "Use native device DPR and full-resolution transmission unless an observed GL dimension limit requires a constraint; Auto stays refraction, and explicit lightweight remains available.",
+    "Fit all graph nodes, edge route control points (including recurrence/residual), contour vertices and carrier envelopes to the canvas; keep the graph horizontal at all widths.",
+    "Share the blue contour/point appearance with article views without adding the Home-only DOM marker to articles; keep article controls and disclosures intact.",
+    "Capture lossless renderer PNGs at explicit native 1x/2x/3x pixels, independently encode WebP and AVIF, and record source/pipeline/output hashes and renderer evidence.",
+    "Add exact RGB-channel pixel tests and bounded 3-day visual evidence to the existing UX review workflow; no existing budget threshold was changed."
+  ],
+  "posterCapture": {
+    "manifest": "site/assets/model-posters/manifest.json",
+    "manifestSha256": "a4f5e64abae05aff27c724d76f91fa41fdfca9292a8ba3497d7ea0858779a24e",
+    "schemaVersion": 3,
+    "sourceWorkingTreeClean": true,
+    "sourceModulesHashed": 15,
+    "capturePipelineFilesHashed": 11,
+    "servedModuleBytesMatchLocal": true,
+    "variants": 12,
+    "cssPixels": {
+      "desktop": "1280×740",
+      "phone": "500×280"
+    },
+    "decodedDensityPixels": [
+      "1280×740, 2560×1480, 3840×2220",
+      "500×280, 1000×560, 1500×840"
+    ],
+    "selectedFormat": "AVIF for all 12 variants; WebP retained as an independently encoded alternate.",
+    "selectedAssetBytes": 2060211,
+    "allEncodedVariantsBytes": 5025815,
+    "nativePixelComparison": {
+      "metric": "Direct absolute 8-bit sRGB RGB-channel error after identical background compositing; lossless PNG source compared to independently decoded output.",
+      "unchangedThresholds": {
+        "AVIF meanAbsoluteChannelErrorAtMost": 2,
+        "AVIF p99AbsoluteChannelErrorAtMost": 12
+      },
+      "observedMaximumAcrossVariants": {
+        "meanAbsoluteChannelError": 0.4623,
+        "p99AbsoluteChannelError": 4,
+        "maximumSingleChannelError": 20
+      }
+    },
+    "phoneLight3xGeometryCssPixels": {
+      "left": 32.424,
+      "right": 479.519,
+      "top": 23.88,
+      "bottom": 244.788
+    },
+    "evidence": "Genuine native-resolution renderer recapture at source commit 7f82454daefaa54a76343d58e3f1719a509c2d4c; lossless masters and independently decoded AVIF/WebP variants. Article reset fit was corrected without changing Home poster projection; canonical fit and source provenance were reverified.",
+    "desktopLight2xGeometryCssPixels": {
+      "left": 128.975,
+      "right": 1258.625,
+      "top": 55.33,
+      "bottom": 671.206
+    }
+  },
+  "webgl": {
+    "environment": "Headless Chromium with SwiftShader; software observation only.",
+    "contextAntialias": true,
+    "defaultFramebufferSamples": 4,
+    "maxSamples": 4,
+    "maxTextureSize": 8192,
+    "maxRenderbufferSize": 8192,
+    "maxViewport": [
+      8192,
+      8192
+    ],
+    "nativeDPRPreserved": true,
+    "transmissionResolutionScale": 1,
+    "activeTransmissiveTargets": "When visible, the actual target matched the drawing buffer and reported 4 samples. No target is created for powered-down or flow-only views.",
+    "graphIdentity": {
+      "nodes": 1668,
+      "displayRoutes": 3601,
+      "recurrenceRoutes": 1
+    },
+    "graphGeometryFit": "All components remain inside the reported fit margin in capture and live audit profiles."
+  },
+  "validation": {
+    "runtime": "Exact clean npm ci passed earlier on Node v22.23.3 (1,469 packages). Repair audits ran on Node v24.19.0 with temporary Chromium 140.0.7339.16 cache.",
+    "startup": "node scripts/test-model-startup.mjs passed after genuine recapture: declared dimensions, independent decodes, hashes, 20px canonical fit margin, renderer-source hashes, route identity and provenance.",
+    "replay": "node scripts/test-model-replay.mjs passed after the reset repair: all 361 rewind states, horizontal/vertical light sampling, gesture/replay behavior and vendored license.",
+    "pixelFidelity": "node scripts/test-model-pixel-fidelity.mjs passed after the reset repair.",
+    "visual": "Post-recapture node scripts/model-visual-audit.mjs passed 19 Home and canonical article fixture profiles, including responsive widths/DPR, themes, quiet/forced colors and NoJS. This checkout has no finished publication bundle; the prior finished MyST article audit is recorded below and was not rerun after the reset-only change.",
+    "zoom": "Headless browser-chrome zoom is unavailable. Equivalent CSS viewport/native DPR results at 125%, 200% and 250% passed for Home and the finished MyST article; this is not a physical browser-UI zoom observation.",
+    "publishedArticleUI": "scripts/model-machine-audit.mjs passed all 10 profiles on the finished MyST article after the camera repair, covering node selection, lightweight/auto quality changes, stored and rendered camera pose preservation, accessible controls and deterministic replay.",
+    "eslintStructural": "ESLint 9.38.0 workflow structural rules: no findings on the reset repair.",
+    "lizardStructural": "Lizard 1.24.0: no structural warnings on the reset repair.",
+    "workflow": "Exact-head Actions for reviewed code head 6f26ffb347c9da08d231f834740598d216319d24: Structural quality audit run 36973023289 passed. Portfolio UX run 36973023266 passed responsive/accessibility step 8, prepared visual evidence and uploaded artifact 11211774846; the workflow then failed only its existing Lighthouse budgets (performance 0.35/0.69/0.68 vs >=0.95; scripts 467,418 bytes vs <=50,000; total resources 653,284 bytes vs <=150,000; TBT 10,371.62/4,383/4,440.5 ms vs <=200 ms). Publication-candidate job was skipped; no performance qualification.",
+    "browserStartup": "node scripts/model-startup-audit.mjs passed all 13 cases on retry (poster projection, quiet, resize/scroll, no-script, startup, fallback and context-loss cases). First local attempt had a transient context-loss scheduled flag; unchanged retry passed.",
+    "resetFit": "node scripts/model-machine-audit.mjs passed 11 canonical fixture profiles. Real pointer orbit reaches yaw 1.05/pitch 0 at 338×358; a real viewport resize changes it to 337×358, where the orbit-fit distance is 17.270241266. Reset recomputes 25.164832841, exactly matching a fresh default view; every projected node, route control point, contour and carrier envelope fits the full 12px margin. This reproduces and repairs the reported stale-fit-key clipping.",
+    "finishedArticle": "Prior exact finished MyST audit passed 10 profiles at the pinned inputs on the earlier camera-repair head. After this reset-only fix the finished publication build was unavailable in the current checkout; the same reset regression passed on the canonical article fixture. Inputs: 01f4a7ae88778803eab4422716d693be880f8d68 / 965fb9186a0c1bb99cc3bd60b2e86668b0f12a91 / cbc5eebbea115decdc27e2e32bb0dc79738a5947.",
+    "homePause": "Prior exact-head Actions run 36969517904 observed frame 71→183 after the Playwright click action had completed. The cause remains unexplained; this observation does not establish a click-latency cause. Local source/UI probes show Pause normally clears playing, cancels the pending RAF and keeps the frame stable across two RAFs. The current exact-head audit asserts stopped state, canceled RAF and frame stability; responsive/accessibility step 8 passed on code head 6f26ffb347c9da08d231f834740598d216319d24.",
+    "jscpd": "jscpd 5.0.12: 0 clones on the reset repair."
+  },
+  "boundedAuditFindings": {
+    "homepageDigital": "The existing 44×44 target assertion fails identically on PR88 and leaf 01. Both report the same 13 transformed Home links at 19.07–28 CSS px wide and the Build provenance summary at 6.39px wide; heights are 44–48px. This leaf changes blue palette/poster-density declarations but does not change the link/summary sizing or transform behavior.",
+    "articleGlass": "The legacy glass audit passes its desktop profile then fails at phone360 before its first post-seek pane screenshot: it expects spatial mode, but the new compact horizontal view chooses the existing accessible flow fallback. Exact 360×800/DPR3 comparison: PR88 stage 1080px, canvas 338×874 CSS px, spatial glass; leaf 01 stage 570px, canvas 338×358 CSS px, graph bounds fit, panel projects y=197.5–387.9px and exceeds the canvas bottom by 29.9px, so flow mode hides the glass mesh. Saved comparison: ux-screenshots/visual-v2/model-glass-audit/pr88-leaf01-phone-comparison.json. Pane behavior remains for the later pane leaf; the spatial assertion was not weakened.",
+    "articleResetFit": "Fixed stale article fitKey reuse on Reset after orbit + genuine resize. At 337×358 CSS px, the repro had angle-fit distance 17.270241266; reusing it at default yaw/pitch clipped graph bounds to x=-45.757…401.305. Reset now invalidates only the article fit key, recomputes 25.164832841, equals fresh-default full bounds and restores 12px fit margin. Home canonical poster fitting remains unchanged.",
+    "homePause": "The prior exact-head Actions run observed frame 71→183 after the Playwright click action had completed. The cause remains unexplained; the observation does not establish that click waiting caused the advancement. Local UI probes show normal Pause behavior: playing becomes false, its RAF is canceled and the frame stays fixed across two animation frames. The strengthened current exact-head audit checks stopped state, canceled RAF and frame stability; responsive/accessibility step 8 passed. The full UX workflow failed later at the existing Lighthouse budgets."
+  },
+  "costAndBudgets": {
+    "observedModelWork": "The final 15 live-scene software profiles observed up to 25 draw calls and 33,780 triangles. Across those small SwiftShader samples CPU render-submission p95 reached 232.7ms and CPU frame-update p95 27.9ms; GPU timer queries were unsupported. Diagnostic evidence only; no frame-time, performance or physical-device qualification.",
+    "existingBudgetThresholdsUnchanged": {
+      "scriptsBytes": 50000,
+      "totalResourceBytes": 150000,
+      "totalBlockingTimeMs": 200
+    },
+    "performanceQualification": false,
+    "note": "Existing 50KB scripts / 150KB total / 200ms TBT budgets and inherited Lighthouse failures remain unaltered; this local-only leaf does not claim performance qualification."
+  },
+  "visualEvidence": {
+    "ignoredDirectory": "ux-screenshots/visual-v2/",
+    "beforeAfter": "ux-screenshots/visual-v2/before-after-phone-native.png and ux-screenshots/visual-v2/before-after-desktop-native.png (baseline PR88 and freshly recaptured leaf poster pixels, unscaled native sources).",
+    "nativeComparisons": [
+      "ux-screenshots/visual-v2/review/phone-500x280-dpr3-native-comparison.png",
+      "ux-screenshots/visual-v2/review/desktop-1280x740-dpr2-native-comparison.png"
+    ],
+    "receipt": "evidence-status.json inside UX artifact 11211774846, source commit 6f26ffb347c9da08d231f834740598d216319d24; captured receipt SHA-256 484f448817a9c198ce68be8033dc35070655b60ba953abe91ad5c26e3fa6acf4",
+    "uploadBytes": 12731714,
+    "files": 16,
+    "retentionDays": 3,
+    "actionsArtifact": {
+      "id": 11211774846,
+      "run": 36973023266,
+      "state": "Exact code-head UX artifact for 6f26ffb347c9da08d231f834740598d216319d24. Responsive/accessibility checks, including strengthened Home Pause state and frame-stability assertions, passed; evidence preparation and upload passed. The workflow failed only at its existing Lighthouse gate; publication-candidate job skipped.",
+      "sizeBytes": 18706921,
+      "sha256": "29650233be1f0b267281f7a8476202bdeba6171c466b8c4626c5fd5385ee89b9",
+      "url": "https://github.com/pH34r-pH/Portfolio/actions/runs/36973023266/artifacts/11211774846"
+    },
+    "postResetRegression": "ux-screenshots/visual-v2/reset-regression/audit.json contains the exact 338×358 → 337×358 orbit/reset/fresh comparison; screenshots and audit evidence remain ignored local review files.",
+    "postResetVisualAudit": "ux-screenshots/visual-v2/reset-regression/visual/audit.json; 19 profiles, Home and canonical article fixture, no finished publication bundle.",
+    "receiptDetails": {
+      "artifactId": 11211774846,
+      "workflowRun": 36973023266,
+      "sourceCommit": "6f26ffb347c9da08d231f834740598d216319d24",
+      "sourceBase": "http://127.0.0.1:4173",
+      "provenanceVerified": true,
+      "receiptSha256": "484f448817a9c198ce68be8033dc35070655b60ba953abe91ad5c26e3fa6acf4",
+      "totalBytes": 12731714,
+      "files": 16,
+      "retentionDays": 3,
+      "selectedRepresentatives": [
+        {
+          "name": "phone",
+          "theme": "light",
+          "density": 3
+        },
+        {
+          "name": "desktop",
+          "theme": "light",
+          "density": 2
+        }
+      ]
+    }
+  },
+  "remainingLimits": [
+    "Physical Android GPU, sustained thermal behavior and the exact deployed preview/grain remain unobserved.",
+    "Headless SwiftShader is a software observation; GPU timer queries are unavailable.",
+    "Browser-chrome zoom is unavailable in headless mode; equivalent CSS viewport/DPR profiles passed.",
+    "Compact article glass uses its accessible flow fallback; spatial-pane behavior remains owned by the later pane leaf.",
+    "The inherited Home 44x44 minimum-target-size audit still has the same PR88-baseline failures; thresholds were not weakened.",
+    "Exact-head Actions ran for code head 6f26ffb347c9da08d231f834740598d216319d24. Structural audit passed; UX responsive/accessibility and evidence capture passed, but the existing Lighthouse budgets failed, so production performance qualification remains false."
+  ],
+  "stack": {
+    "pr": 89,
+    "branch": "work-2071-dr-cho-visual-leaf01",
+    "baseCommit": "40701bd8342eb28c1179a1d89b4c56599d7a0fd5",
+    "lastCommittedSourceFix": "7f82454daefaa54a76343d58e3f1719a509c2d4c",
+    "manifestSha256": "a4f5e64abae05aff27c724d76f91fa41fdfca9292a8ba3497d7ea0858779a24e",
+    "reviewedCodeHead": "6f26ffb347c9da08d231f834740598d216319d24",
+    "latestUxWorkflowRun": 36973023266,
+    "latestUxArtifactId": 11211774846,
+    "latestStructuralWorkflowRun": 36973023289
+  }
+}

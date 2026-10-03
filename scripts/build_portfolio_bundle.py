@@ -100,6 +100,45 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
         shutil.copytree(research_notes / "articles", output / "publication" / "articles")
 
 
+
+_ARTICLE_METADATA_FIELDS = {
+    'short_title': 'shortTitle',
+    'model_focus': 'modelFocus',
+    'model_variant': 'modelVariant',
+    'depends_on': 'dependsOn',
+    'tags': 'tags',
+}
+_ARTICLE_FRONTIER_FIELDS = {
+    'frontier_observed_json': 'frontierObserved',
+    'frontier_open_json': 'frontierOpen',
+    'frontier_next_json': 'frontierNext',
+}
+
+
+def _frontier_metadata_value(value, source_key: str, src: Path) -> list[str]:
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except json.JSONDecodeError as error:
+            raise ValueError(f'Invalid {source_key} JSON in {src}: {error}') from error
+    valid = isinstance(value, list) and all(isinstance(item, str) and item.strip() for item in value)
+    if not valid:
+        raise ValueError(f'{source_key} must be a JSON/YAML list of non-empty strings: {src}')
+    return value
+
+
+def _copy_structured_article_metadata(metadata: dict, structured, src: Path) -> None:
+    if not isinstance(structured, dict):
+        return
+    if 'compiled_experiment' in structured:
+        metadata['compiled_experiment'] = structured['compiled_experiment']
+    for source_key, target_key in _ARTICLE_METADATA_FIELDS.items():
+        if source_key in structured:
+            metadata[target_key] = structured[source_key]
+    for source_key, target_key in _ARTICLE_FRONTIER_FIELDS.items():
+        if source_key in structured:
+            metadata[target_key] = _frontier_metadata_value(structured[source_key], source_key, src)
+
 def _article_metadata(source: str, src: Path) -> dict:
     match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", source, re.DOTALL)
     if not match:
@@ -124,8 +163,7 @@ def _article_metadata(source: str, src: Path) -> dict:
         return mapping
     UniqueKeysLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, unique_mapping)
     structured = yaml.load(match.group(1), Loader=UniqueKeysLoader)
-    if isinstance(structured, dict) and 'compiled_experiment' in structured:
-        metadata['compiled_experiment'] = structured['compiled_experiment']
+    _copy_structured_article_metadata(metadata, structured, src)
     return metadata
 
 
@@ -408,6 +446,115 @@ def copy_article_math_assets(args: argparse.Namespace) -> None:
     shutil.copy2(source / 'LICENSE', destination / 'LICENSE')
 
 
+
+_MODEL_FOCUS_PARTS = {
+    'tokenization': 'tokenizer',
+    'architecture': 'representation',
+    'recurrent-state': 'representation',
+    'representation': 'representation',
+    'normalization': 'representation',
+    'consumer': 'consumer',
+    'output': 'output',
+    'full': 'all',
+}
+
+_ARTICLE_MODEL_CONTEXTS = (
+    (re.compile(r"\b(?:token\w*|word\w*|byte\w*|text\w*|input|source\w*|prompt|context\w*)\b", re.I), 'tokenizer'),
+    (re.compile(r"\b(?:consumer\w*|probe\w*|readout\w*|utiliz\w*|underus\w*|attention\w*|intervention\w*)\b", re.I), 'consumer'),
+    (re.compile(r"\b(?:output\w*|predict\w*|logit\w*|continuation\w*|benchmark\w*|evaluation\w*|task\w*|experiment\w*)\b", re.I), 'output'),
+    (re.compile(r"\b(?:represent\w*|geometr\w*|normaliz\w*|sphere\w*|state\w*|tangent\w*|coordinate\w*|invariance\w*|rank\w*|signal\w*)\b", re.I), 'representation'),
+)
+
+
+def annotate_article_model_context(article, metadata: dict) -> None:
+    """Attach generated context hints to headings without changing MyST sources."""
+    default = _MODEL_FOCUS_PARTS.get(str(metadata.get('modelFocus', 'full')), 'all')
+    for heading in article.find_all(('h2', 'h3')):
+        text = heading.get_text(' ', strip=True)
+        focus = next((part for pattern, part in _ARTICLE_MODEL_CONTEXTS if pattern.search(text)), default)
+        heading['data-model-context'] = focus
+
+
+def insert_article_model(article, model) -> None:
+    """Place the model after the opening context so later prose continues below it."""
+    headings = article.find_all('h2')
+    if len(headings) > 1:
+        headings[1].insert_before(model)
+        return
+    if headings:
+        headings[0].insert_before(model)
+        return
+    title = article.find('h1')
+    if title is None:
+        article.insert(0, model)
+        return
+    insertion = title
+    for sibling in title.next_siblings:
+        if getattr(sibling, 'name', None) in ('h1', 'h2', 'h3'):
+            break
+        if getattr(sibling, 'name', None):
+            insertion = sibling
+    insertion.insert_after(model)
+
+
+def render_article_model_machine(metadata: dict, slug: str) -> str:
+    focus = str(metadata.get('modelFocus', 'full'))
+    variant = str(metadata.get('modelVariant', 'baseline'))
+    part = _MODEL_FOCUS_PARTS.get(focus, 'all')
+    label = f'{focus} / {variant}'.upper()
+    prompt_id = f'machine-prompt-{slug}'
+    startup_status_id = f'model-startup-status-{slug}'
+    return f'''<section class="model-machine article-model-machine" data-pagefind-ignore
+      data-model-machine data-model-startup data-startup="idle"
+      data-topology-version="unit_hypersphere_depth3" data-style-version="leaf01-blue-horizontal-native-resolution"
+      data-model-focus="{html.escape(part, quote=True)}"
+      aria-labelledby="model-machine-{html.escape(slug, quote=True)}">
+      <header class="machine-heading"><div><p class="eyebrow">MODEL VIEW / {html.escape(label)}</p>
+      <h2 id="model-machine-{html.escape(slug, quote=True)}">Same machine. Different intervention.</h2></div>
+      <p>The lit subsystem is this article's intervention surface. Run text through the same teaching model used across the research.</p></header>
+      <div class="machine-stage" data-machine-stage>
+        <canvas class="machine-canvas" data-machine-canvas aria-hidden="true"></canvas>
+        <div class="machine-fallback" data-machine-fallback aria-hidden="true"><span>text</span><b>→</b><span>tokens</span><b>→</b><span>model</span><b>→</b><span>output</span></div>
+        <form class="machine-console machine-input" data-machine-form>
+          <label for="{html.escape(prompt_id, quote=True)}">Input</label>
+          <div><input id="{html.escape(prompt_id, quote=True)}" name="prompt" value="the model learned a useful distinction" autocomplete="off"><button type="submit">Run</button></div>
+          <div class="machine-token-readout" data-machine-token-readout role="group" aria-label="Tokenized input"></div>
+        </form>
+        <div class="machine-console machine-output"><span class="machine-console-label">Output</span><p data-machine-output aria-live="polite">waiting for input</p></div>
+        <p class="machine-status" data-machine-status role="status">machine ready</p>
+      </div>
+      <div class="article-model-startup" data-pagefind-ignore>
+        <button type="button" data-model-start aria-describedby="{startup_status_id}" hidden>Start interactive model</button>
+        <p id="{startup_status_id}" data-model-boot role="status" aria-live="polite">Static architecture display</p>
+      </div>
+    </section>'''
+
+def article_downloads(slug: str) -> dict[str, str]:
+    root = f"/article-exports/{slug}"
+    return {
+        "pdf": root + ".pdf",
+        "docx": root + ".docx",
+        "latex": root + "-latex.zip",
+        "jats": root + ".xml",
+    }
+
+
+def render_article_source_links(slug: str, source_url: str) -> str:
+    downloads = article_downloads(slug)
+    return (
+        '<nav class="article-source-links" aria-label="Article source and downloads">'
+        '<a href="/research/">← Research index</a>'
+        '<span aria-hidden="true"> / </span>'
+        f'<a href="{html.escape(source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a>'
+        '<span class="article-download-label">Download</span>'
+        f'<a href="{downloads["pdf"]}" download>PDF</a>'
+        f'<a href="{downloads["docx"]}" download>Word</a>'
+        f'<a href="{downloads["latex"]}" download>LaTeX source</a>'
+        f'<a href="{downloads["jats"]}" download>JATS XML</a>'
+        '</nav>'
+    )
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
@@ -421,6 +568,10 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     article = BeautifulSoup(str(article), "html.parser").article
     _normalize_article_heading(article, source_text, metadata["title"])
     _rewrite_myst_article_routes(article, ordered_sources)
+    annotate_article_model_context(article, metadata)
+    slug = src.stem
+    machine = BeautifulSoup(render_article_model_machine(metadata, slug), "html.parser")
+    insert_article_model(article, machine.section)
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
@@ -428,13 +579,13 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     if article.select_one('.katex'):
         copy_article_math_assets(args)
         math_style = '<link rel="stylesheet" href="/assets/katex/katex.min.css">'
-    slug = src.stem
     reader = args.output / "articles" / slug
     reader.mkdir(parents=True)
     article_source_url = (
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
+    source_links = render_article_source_links(slug, article_source_url)
     handoff = ''
     if 'compiled_experiment' in metadata:
         if args.compiler_projection_data is None:
@@ -443,7 +594,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}<p class="article-source-links"><a href="/research/">← Research index</a> · <a href="{html.escape(article_source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a></p></main><script src="/assets/site.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -458,9 +609,16 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         "renderedSha256": sha256(rendered_article),
         "assets": copied_assets,
         "browserExecution": has_executable,
+        "downloads": article_downloads(slug),
     }
     if 'compiled_experiment' in metadata:
         entry['compiled_experiment'] = metadata['compiled_experiment']
+    for key in (
+        'shortTitle', 'modelFocus', 'modelVariant', 'dependsOn', 'tags',
+        'frontierObserved', 'frontierOpen', 'frontierNext',
+    ):
+        if key in metadata:
+            entry[key] = metadata[key]
     return entry
 
 
@@ -647,7 +805,7 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         "https://github.com/pH34r-pH/research-notes/blob/" + args.research_notes_sha
         + "/" + quote(src.relative_to(args.research_notes).as_posix(), safe="/")
     )
-    page = f'''<!doctype html><html lang="en" data-palette="nacre"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/index.html?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/site.js"></script></body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" data-pagefind-body tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/search.js"></script><script src="/assets/site.js"></script></body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     entry = {
         "path": f"publication/notebooks/{src.name}",

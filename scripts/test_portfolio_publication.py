@@ -262,6 +262,8 @@ class ReaderPublicationTest(unittest.TestCase):
                                  "https://github.com/pH34r-pH/research-notes/blob/" + "a" * 40 +
                                  "/notebooks/illustrative_name.ipynb")
                 self.assertTrue(note.select_one("a[download]"))
+                self.assertEqual(page.select_one('a[href^="/lab/lab/"]')['href'],
+                                 '/lab/lab/?path=notebooks%2Fillustrative_name.ipynb')
                 self.assertEqual("Illustrative browser example" in text, kind == "illustrative")
                 if kind != "illustrative":
                     self.assertIn("execution status and scientific acceptance are not inferred", text)
@@ -321,6 +323,8 @@ class ReaderPublicationTest(unittest.TestCase):
                      research/'reference', research/'articles', research/'_build/html', theorem):
             path.mkdir(parents=True)
         (portfolio/'site/index.html').write_text('<!doctype html><h1>Portfolio</h1>')
+        for name in ('favicon.svg', 'favicon.ico'):
+            (portfolio/'site'/name).write_bytes((Path(__file__).parent.parent/'site'/name).read_bytes())
         (portfolio/'site/research/index.html').write_text('<header class="topbar"><nav>Research</nav></header>')
         (portfolio/'site/data/atlas-evidence.json').write_text('{}')
         (portfolio/'jupyter-lite.json').write_text('{}')
@@ -394,6 +398,27 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(len(manifest['notebooks']), 1)
             self.assertEqual(len(manifest['articles']), 2)
             self.assertEqual([article['sequence'] for article in manifest['articles']], [1, 2])
+            self.assertEqual(manifest['articles'][0]['downloads'], {
+                'pdf': '/article-exports/sample-article.pdf',
+                'docx': '/article-exports/sample-article.docx',
+                'latex': '/article-exports/sample-article-latex.zip',
+                'jats': '/article-exports/sample-article.xml',
+            })
+
+    def test_brand_favicon_assets_and_generated_reader_links(self):
+        site = Path(__file__).parent.parent/'site'
+        for page in site.rglob('*.html'):
+            with self.subTest(page=page):
+                self.assertEqual(BeautifulSoup(page.read_text(), 'html.parser').select_one('link[rel="icon"]')['href'], '/favicon.svg')
+        self.assertEqual((site/'favicon.ico').read_bytes()[:4], b'\x00\x00\x01\x00')
+        with tempfile.TemporaryDirectory() as directory:
+            args, _, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            self._build_fixture_bundle(args)
+            for name in ('favicon.svg', 'favicon.ico'):
+                self.assertEqual((bundle/name).read_bytes(), (site/name).read_bytes())
+            for route in ('articles/sample-article', 'notebooks/001_reader'):
+                document = BeautifulSoup((bundle/route/'index.html').read_text(), 'html.parser')
+                self.assertEqual(document.select_one('link[rel="icon"]')['href'], '/favicon.svg')
 
     def test_article_routes_preserve_accessible_tables_sources_and_assets(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -418,6 +443,10 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertEqual(table_region.get('tabindex'), '0')
             self.assertIn('src="/publication/article-assets/figure-hash.svg"', article_page)
             self.assertIn('research-notes/blob/' + revisions[1] + '/articles/sample-article.md', article_page)
+            self.assertIn('href="/article-exports/sample-article.pdf"', article_page)
+            self.assertIn('href="/article-exports/sample-article.docx"', article_page)
+            self.assertIn('href="/article-exports/sample-article-latex.zip"', article_page)
+            self.assertIn('href="/article-exports/sample-article.xml"', article_page)
             second_page = (bundle/'articles/sample-article-second/index.html').read_text()
             self.assertIn('<h1 id="second-article">Second article</h1>', second_page)
             self.assertNotIn('A static article body.', second_page)

@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "scope": "Browser-visible Portfolio interactions on the exact publication bundle; this is a test inventory, not a claim of physical-device qualification.",
+  "sourceUnderTest": {
+    "pullRequest": 91,
+    "commit": "f5c04c5cabbb4cbffd39901da622cc61326707ee",
+    "reviewStatus": "draft; not yet reviewed",
+    "policyBaseCommit": "910e50d86e4fb751fdb934c9b0fe54834e0ba906"
+  },
+  "testRunners": [
+    "scripts/interaction-audit.mjs",
+    "scripts/appearance-audit.mjs",
+    "scripts/2071-audit.mjs",
+    "scripts/homepage-digital-audit.mjs",
+    "scripts/model-startup-audit.mjs",
+    "scripts/model-glass-audit.mjs",
+    "scripts/model-machine-audit.mjs",
+    "scripts/test-model-replay.mjs",
+    "scripts/test-model-startup.mjs",
+    "scripts/test-article-runtime.mjs"
+  ],
+  "coverage": [
+    {
+      "id": "routes-and-content",
+      "surfaces": ["/", "/research/", "/about/", "/atlas/", "/articles/:slug/", "/notebooks/:slug/", "/reproduce/"],
+      "status": "automated",
+      "tests": ["interaction-audit.mjs", "appearance-audit.mjs", "2071-audit.mjs"],
+      "assertions": ["Published route titles and internal links resolve", "Atlas crosswalk destinations match", "Research article and notebook links use the rendered reader surface", "Legacy /reproduce/ redirect reaches the external catalog fixture"],
+      "limits": ["Article and notebook route coverage is conditional on publication.json being served by the finished bundle; source-only runs exercise the local static routes."]
+    },
+    {
+      "id": "navigation-search-history",
+      "surfaces": ["homepage chapter anchors", "site menu", "search dialog"],
+      "status": "automated-with-fixture-limit",
+      "tests": ["homepage-digital-audit.mjs", "interaction-audit.mjs", "2071-audit.mjs"],
+      "assertions": ["Chapter hash updates and browser Back restore route", "Finished-bundle article links and figure anchors check sticky-header clearance, Back/Forward route, hash and scroll restoration", "Search dialog Escape and touch Close are each exercised from a freshly opened dialog and restore focus", "Menu Escape closes and returns focus", "Skip link focuses main"],
+      "limits": ["The source-only run has no generated Pagefind index; the exact finished-bundle job builds the pinned production index and exercises these result states there."]
+    },
+    {
+      "id": "pagefind-search-results",
+      "surfaces": ["Pagefind query results", "no-result and clear states", "result navigation history"],
+      "status": "automated",
+      "tests": ["2071-audit.mjs"],
+      "assertions": ["The finished bundle builds Pagefind 1.5.2, then checks no-result, empty-query clear, a matching article result, navigation, Back and Forward against the real index."],
+      "limits": ["Source-served audit runs report this as unexercised when the generated Pagefind index is absent."]
+    },
+    {
+      "id": "appearance-accessibility-responsive",
+      "surfaces": ["source-served route/theme matrix", "finished-bundle navigation/menu/theme interactions", "mobile menu"],
+      "status": "automated",
+      "tests": ["appearance-audit.mjs", "interaction-audit.mjs", "ux-audit.mjs"],
+      "assertions": ["Source-served appearance audit checks Auto/light/dark selection and persistence", "Menu opens from keyboard, moves focus into its links, supports Tab/Shift+Tab, and Escape restores trigger focus", "Mobile menu and theme actions use touch at phone widths", "Axe WCAG checks, responsive overflow and target dimensions run on source-served routes; finished-bundle interaction audit checks representative routes", "Reduced-motion scroll behavior and forced-colors fallbacks"],
+      "limits": ["The exact finished-bundle job does not run the complete appearance matrix or denied-storage audit; those checks are source-served only."]
+    },
+    {
+      "id": "homepage-model-journey",
+      "surfaces": ["homepage model stage", "sticky visual and article panes", "chapter anchors"],
+      "status": "automated",
+      "tests": ["homepage-digital-audit.mjs", "homepage-lifecycle-audit.mjs", "model-machine-audit.mjs"],
+      "assertions": ["Native wheel/finger scroll moves the page without changing camera or replay", "Sticky stage remains aligned across chapter scroll and releases at journey end", "Chapter anchor navigation preserves history", "Desktop browser zoom does not change graph camera"]
+    },
+    {
+      "id": "model-startup-and-recovery",
+      "surfaces": ["homepage Start action", "machine loading and fallback states"],
+      "status": "automated",
+      "tests": ["model-startup-audit.mjs", "homepage-lifecycle-audit.mjs", "model-machine-audit.mjs"],
+      "assertions": ["No engine request before explicit intent", "Concurrent Start is deduplicated", "Ignition counts 1.8 seconds of active-visible time", "Started state survives session navigation and BFCache", "Startup timeout, failed imports and context loss retain state and permit retry", "Reduced-motion/no-script/WebGL failure keeps a usable static model"]
+    },
+    {
+      "id": "model-controls-and-input",
+      "surfaces": ["replay timeline", "play/pause/rewind", "inspection controls", "orbit/zoom/pan/reset", "token input"],
+      "status": "automated",
+      "tests": ["homepage-digital-audit.mjs", "model-machine-audit.mjs", "test-model-replay.mjs"],
+      "assertions": ["Keyboard and pointer replay state changes are checked", "Inspector selection reports selected node and route counts", "Camera controls preserve replay position and reset view", "Touch gestures cover orbit, pinch, pan and replay scrubbing", "Input selection and pointer text drag remain native without camera movement", "Replay and lighting are deterministic over all 361 frames"]
+    },
+    {
+      "id": "context-pane-state",
+      "surfaces": ["input/output/inspection panes", "mobile context tabs", "GPU glass backing"],
+      "status": "automated",
+      "tests": ["model-glass-audit.mjs"],
+      "assertions": ["Tab selection updates active pane", "Exiting panes become inert and aria-hidden immediately and relocate focus", "Reversal restores valid focusable tabs", "DOM pane and GPU backing easing remain synchronized", "Touch orbit preserves pane alignment", "Deep zoom remains finite and reset returns framing", "Reduced-motion context transitions, keyboard operation and axe checks"]
+    },
+    {
+      "id": "research-and-atlas-interactions",
+      "surfaces": ["research topology", "Atlas crosswalk", "article anchors"],
+      "status": "automated",
+      "tests": ["2071-audit.mjs", "interaction-audit.mjs"],
+      "assertions": ["On the phone viewport, Arrow/Home/End focus changes update aria-pressed/detail selection; touch selects a connected milestone, its Read article link navigates, and Back returns to the selected map", "Article links and Atlas destinations resolve", "Anchor scrolling and sticky index are visually/layout checked"]
+    },
+    {
+      "id": "myst-articles-and-browser-execution",
+      "surfaces": ["published MyST articles", "compiled evidence disclosures", "Load browser Python"],
+      "status": "automated-with-fixture-limit",
+      "tests": ["interaction-audit.mjs", "test-article-runtime.mjs", "model-startup-audit.mjs"],
+      "assertions": ["Finished articles expose executable cell/output structure and source revision", "Evidence disclosures open/close by pointer and keyboard", "On the finished MyST article, Playwright clicks Load browser Python, injects local asset failures, checks retry and duplicate-click behavior, then requires an attached browser kernel and executes a smoke cell or returns/logs a distinct blocked-runtime outcome with captured Pyodide network evidence", "Focused unit tests separately cover stubbed asset/kernel rejection and retry branches"],
+      "limits": ["Actual MyST execution depends on Pyodide network availability in the CI browser; a network-block result is recorded as blocked runtime, not successful execution."]
+    },
+    {
+      "id": "finished-bundle-exports",
+      "surfaces": ["article PDF/Word/LaTeX/JATS links", "preserved notebook download"],
+      "status": "automated-sampled-downloads",
+      "tests": [".github/workflows/ux-quality.yml", "interaction-audit.mjs"],
+      "assertions": ["Finished bundle requires links and validates every article's PDF/DOCX/LaTeX/JATS exports", "Playwright triggers actual PDF, Word, LaTeX ZIP and JATS XML downloads for a published article, checks the suggested filename, bytes and reader URL remains unchanged"],
+      "limits": ["Playwright exercises one representative article's browser download events; CI validates generated bytes and links for every published article."]
+    },
+    {
+      "id": "preserved-notebooks-and-downloads",
+      "surfaces": ["published notebook reader", "preserved .ipynb download", "Open in JupyterLite"],
+      "status": "automated-sampled-downloads",
+      "tests": ["test_portfolio_publication.py", "interaction-audit.mjs", ".github/workflows/ux-quality.yml"],
+      "assertions": ["Publication tests verify notebook bytes, generated reader/download routes and cross-notebook links", "Browser follows the real Open in JupyterLite link and checks active tabs and the exact selected path", "When JupyterLite exposes its contents model, the browser compares every cell id, type, and full source to the selected preserved .ipynb; otherwise it scrolls all detected notebook containers and verifies rendered cell sources", "Browser triggers a preserved .ipynb download and compares its SHA-256 to the publication manifest"],
+      "limits": ["JupyterLite bootstrap and cell loading are exercised; this route does not edit or execute a JupyterLite cell or validate workspace persistence."]
+    },
+    {
+      "id": "external-experiment-catalog",
+      "surfaces": ["external compiled experiment links", "external catalog download/export"],
+      "status": "automated-with-fixture-limit",
+      "tests": ["interaction-audit.mjs"],
+      "assertions": ["Exact compiled package link targets are checked in the article and evidence handoff", "Article-to-catalog navigation and Back are exercised against a locally intercepted fixture"],
+      "limits": ["The external catalog's actual package downloads/exports are not exercised; the test deliberately makes no live external transaction."]
+    },
+    {
+      "id": "live-notebook-kernel",
+      "surfaces": ["JupyterLite notebook route", "selected notebook model and rendered cells"],
+      "status": "automated-with-fixture-limit",
+      "tests": ["interaction-audit.mjs", "test_portfolio_publication.py"],
+      "assertions": ["Browser follows the actual selected notebook link, verifies its exact JupyterLite path, scrolls through the rendered notebook and counts every source cell by rendered cell content."],
+      "limits": ["JupyterLite cell editing/execution and workspace persistence are not tested; article browser-Python execution is a separate conditional surface."]
+    },
+    {
+      "id": "jupyterlite-cell-execution-and-persistence",
+      "surfaces": ["JupyterLite cell editing", "JupyterLite kernel execution", "workspace persistence"],
+      "status": "uncovered",
+      "tests": ["interaction-audit.mjs"],
+      "assertions": [],
+      "limits": ["The browser starts JupyterLite and loads the selected notebook, but it does not edit or execute a JupyterLite cell or validate workspace persistence."]
+    },
+    {
+      "id": "physical-device-and-assistive-technology",
+      "surfaces": ["physical GPU/driver", "physical phone/tablet touch", "screen readers and hardware keyboard"],
+      "status": "manual",
+      "tests": [],
+      "limits": ["Playwright Chromium emulation, injected WebGL loss, axe and synthetic touch do not substitute for physical-device, GPU-driver, or screen-reader testing."]
+    },
+    {
+      "id": "performance-qualification",
+      "surfaces": ["homepage Lighthouse flow", "GPU profiling"],
+      "status": "separate-owner",
+      "tests": ["lighthouserc.cjs", "homepage-digital-audit.mjs"],
+      "limits": ["Performance profile and score/byte budgets are maintained separately; they are not changed or conflated with deterministic interaction assertions."]
+    }
+  ]
+}
