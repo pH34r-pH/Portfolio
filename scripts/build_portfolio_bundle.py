@@ -454,6 +454,44 @@ _MODEL_FOCUS_PARTS = {
     'full': 'all',
 }
 
+_ARTICLE_MODEL_CONTEXTS = (
+    (re.compile(r"\b(?:token\w*|word\w*|byte\w*|text\w*|input|source\w*|prompt|context\w*)\b", re.I), 'tokenizer'),
+    (re.compile(r"\b(?:consumer\w*|probe\w*|readout\w*|utiliz\w*|underus\w*|attention\w*|intervention\w*)\b", re.I), 'consumer'),
+    (re.compile(r"\b(?:output\w*|predict\w*|logit\w*|continuation\w*|benchmark\w*|evaluation\w*|task\w*|experiment\w*)\b", re.I), 'output'),
+    (re.compile(r"\b(?:represent\w*|geometr\w*|normaliz\w*|sphere\w*|state\w*|tangent\w*|coordinate\w*|invariance\w*|rank\w*|signal\w*)\b", re.I), 'representation'),
+)
+
+
+def annotate_article_model_context(article, metadata: dict) -> None:
+    """Attach generated context hints to headings without changing MyST sources."""
+    default = _MODEL_FOCUS_PARTS.get(str(metadata.get('modelFocus', 'full')), 'all')
+    for heading in article.find_all(('h2', 'h3')):
+        text = heading.get_text(' ', strip=True)
+        focus = next((part for pattern, part in _ARTICLE_MODEL_CONTEXTS if pattern.search(text)), default)
+        heading['data-model-context'] = focus
+
+
+def insert_article_model(article, model) -> None:
+    """Place the model after the opening context so later prose continues below it."""
+    headings = article.find_all('h2')
+    if len(headings) > 1:
+        headings[1].insert_before(model)
+        return
+    if headings:
+        headings[0].insert_before(model)
+        return
+    title = article.find('h1')
+    if title is None:
+        article.insert(0, model)
+        return
+    insertion = title
+    for sibling in title.next_siblings:
+        if getattr(sibling, 'name', None) in ('h1', 'h2', 'h3'):
+            break
+        if getattr(sibling, 'name', None):
+            insertion = sibling
+    insertion.insert_after(model)
+
 
 def render_article_model_machine(metadata: dict, slug: str) -> str:
     focus = str(metadata.get('modelFocus', 'full'))
@@ -519,11 +557,10 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     article = BeautifulSoup(str(article), "html.parser").article
     _normalize_article_heading(article, source_text, metadata["title"])
     _rewrite_myst_article_routes(article, ordered_sources)
+    annotate_article_model_context(article, metadata)
     slug = src.stem
-    heading = article.find("h1")
-    if heading is not None:
-        machine = BeautifulSoup(render_article_model_machine(metadata, slug), "html.parser")
-        heading.insert_after(machine.section)
+    machine = BeautifulSoup(render_article_model_machine(metadata, slug), "html.parser")
+    insert_article_model(article, machine.section)
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
@@ -546,7 +583,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    f'https://tyharbin.com/articles/{slug}/', args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/model-machine.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title>{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/model-machine.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {

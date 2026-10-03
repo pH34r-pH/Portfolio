@@ -69,3 +69,63 @@ html[data-theme=dark] .model-machine-replay .machine-input button,html[data-them
 .model-machine-replay .machine-settings summary:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .model-machine-replay .machine-settings-content { display: grid; gap: 18px; padding: 16px; border-top: 1px solid var(--line); }
 .model-machine-replay .machine-legend > div { max-width: 50%; }
+
+/* Article models remain part of the reading flow. The viewer's stage (or its
+   spatial host while glass is active) sticks below the fixed navigation until
+   the finished MyST article ends. Flow mode flattens the host so native sticky
+   can anchor to the article rather than the short model wrapper. */
+.model-machine-replay.article-model-machine { display: contents; }
+.model-machine-replay.article-model-machine .machine-spatial-host[data-instruments="flow"] {
+  display: contents;
+  position: static;
+}
+.model-machine-replay.article-model-machine .machine-spatial-host[data-instruments="spatial"] {
+  position: sticky;
+  top: calc(var(--2071-header, 58px) + 8px);
+  z-index: 5;
+  align-self: start;
+  margin: 0 0 1.5rem;
+}
+.model-machine-replay.article-model-machine .machine-heading {
+  margin: clamp(34px, 6vh, 52px) 0 14px;
+}
+.model-machine-replay.article-model-machine .machine-heading h2 {
+  max-width: 13ch;
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+}
+.model-machine-replay.article-model-machine .machine-stage {
+  height: clamp(220px, 31svh, 300px);
+  min-height: 0;
+  margin: 0 0 1.5rem;
+  scroll-margin-top: calc(var(--2071-header, 58px) + 8px);
+}
+.model-machine-replay.article-model-machine [data-instruments="flow"] .machine-stage {
+  position: sticky;
+  top: calc(var(--2071-header, 58px) + 8px);
+  z-index: 5;
+  align-self: start;
+}
+.model-machine-replay.article-model-machine .machine-canvas {
+  inset: 48px 0 32px;
+  height: calc(100% - 80px);
+}
+.model-machine-replay.article-model-machine .machine-legend {
+  inset: 8px 10px auto;
+  gap: 6px;
+  font-size: 8px;
+  line-height: 1.25;
+}
+.model-machine-replay.article-model-machine .machine-legend span { font-size: 8px; }
+.model-machine-replay.article-model-machine .machine-axis-labels {
+  inset: auto 10px 7px;
+  font-size: 8px;
+}
+.model-machine-replay.article-model-machine .machine-fallback { inset: 48px 5% 32px; }
+.model-machine-replay.article-model-machine .machine-render-hint { top: 40px; left: 12px; }
+
+@media(max-width:720px) {
+  .model-machine-replay.article-model-machine .machine-stage { height: clamp(220px, 31svh, 300px); }
+  .model-machine-replay.article-model-machine .machine-legend { inset-inline: 8px; }
+  .model-machine-replay.article-model-machine .machine-axis-labels { inset-inline: 8px; }
+  .model-machine-replay.article-model-machine .machine-fallback { inset-inline: 4%; }
+}
