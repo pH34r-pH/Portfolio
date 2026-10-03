@@ -134,20 +134,6 @@ async function auditInitialArticle(page, view) {
   return initial;
 }
 
-async function catchStickyModel(page, view, initial) {
-  const headerBottom = await page.locator(".topbar").evaluate(node => node.getBoundingClientRect().bottom);
-  const stickyTop = headerBottom + 8;
-  await page.evaluate(({ top, stickyTop }) => scrollTo({ top: Math.max(0, top - stickyTop), behavior: "instant" }), {
-    top: initial.stageDocumentTop,
-    stickyTop,
-  });
-  await expect.poll(async () => (await snapshot(page)).targetTop).toBeGreaterThanOrEqual(headerBottom + 7);
-  await expect.poll(async () => (await snapshot(page)).targetTop).toBeLessThanOrEqual(headerBottom + 10);
-  const sticky = await snapshot(page);
-  assert.equal(sticky.targetPosition, "sticky", `${view.name}: the live article viewer must use native sticky positioning`);
-  return { headerBottom, stickyTop, sticky };
-}
-
 async function startModel(page, view) {
   const model = page.locator(".article-model-machine[data-model-machine]");
   const startButton = model.locator("[data-model-start]");
@@ -260,6 +246,21 @@ async function auditNativeResolution(page) {
   }
 }
 
+async function catchStickyModel(page, view, initial) {
+  const headerBottom = await page.locator(".topbar").evaluate(node => node.getBoundingClientRect().bottom);
+  const stickyTop = headerBottom + 8;
+  await page.evaluate(position => scrollTo(0, Math.max(0, position.top - position.stickyTop)), {
+    top: initial.stageDocumentTop,
+    stickyTop,
+  });
+  await expect.poll(async () => (await snapshot(page)).targetTop).toBeGreaterThanOrEqual(headerBottom + 7);
+  await expect.poll(async () => (await snapshot(page)).targetTop).toBeLessThanOrEqual(headerBottom + 10);
+  const sticky = await snapshot(page);
+  assert.equal(sticky.targetPosition, "sticky", "The live article viewer must use native sticky positioning");
+  return { headerBottom, stickyTop, sticky };
+}
+
+
 async function auditRetainedStart(page, model, startButton, lifecycle) {
   if (!lifecycle.ignitionComplete) return;
   await page.reload({ waitUntil: "networkidle" });
@@ -318,34 +319,6 @@ async function auditReleaseAtArticleEnd(page, view) {
   assert.ok(atEnd.targetTop < atEnd.headerBottom + 7,
     `${view.name}: the model must release with its article container, not stick past it`);
   return atEnd;
-}
-
-async function auditView(view) {
-  const context = await browser.newContext({
-    viewport: { width: view.width, height: view.height },
-    deviceScaleFactor: view.dpr,
-    isMobile: view.width < 600,
-    hasTouch: view.width < 900,
-  });
-  const page = await context.newPage();
-  const pageErrors = [];
-  page.on("pageerror", error => pageErrors.push(error.message));
-  try {
-    const initial = await auditInitialArticle(page, view);
-    const { stickyTop } = await catchStickyModel(page, view, initial);
-    const lifecycle = await startModel(page, view);
-    const articleContext = await inspectArticleContext(page, view, initial);
-    if (view.name === "phone-360") await auditPhoneNavigation(page, articleContext.benchmarkFocus, lifecycle);
-    const atEnd = await auditReleaseAtArticleEnd(page, view);
-    if (view.name === "phone-360" || view.name === "desktop") {
-      await page.locator(".article-sticky-reader").evaluate(node => scrollTo({ top: 0, behavior: "instant" }));
-      await auditAccessibility(page, `${view.name}: finished-article accessibility audit`);
-    }
-    assert.deepEqual(pageErrors, [], `${view.name}: browser runtime errors`);
-    recordViewEvidence(view, initial, stickyTop, lifecycle, articleContext, atEnd);
-  } finally {
-    await context.close();
-  }
 }
 
 function recordViewEvidence(view, initial, stickyTop, lifecycle, contextAudit, atEnd) {
@@ -418,10 +391,39 @@ async function auditReducedMotion() {
   }
 }
 
-try {
-  for (const view of views) await auditView(view);
-  await auditReducedMotion();
-  console.log(JSON.stringify({ article: article.slug, source: "finished publication bundle", views: evidence }, null, 2));
-} finally {
-  await browser.close();
+async function auditView(view) {
+  const context = await browser.newContext({
+    viewport: { width: view.width, height: view.height },
+    deviceScaleFactor: view.dpr,
+    isMobile: view.width < 600,
+    hasTouch: view.width < 900,
+  });
+  const page = await context.newPage();
+  const pageErrors = [];
+  page.on("pageerror", error => pageErrors.push(error.message));
+  const initial = await auditInitialArticle(page, view);
+  const { stickyTop } = await catchStickyModel(page, view, initial);
+  const lifecycle = await startModel(page, view);
+  const articleContext = await inspectArticleContext(page, view, initial);
+  if (view.name === "phone-360") await auditPhoneNavigation(page, articleContext.benchmarkFocus, lifecycle);
+  const atEnd = await auditReleaseAtArticleEnd(page, view);
+  if (view.name === "phone-360" || view.name === "desktop") {
+    await page.locator(".article-sticky-reader").evaluate(() => scrollTo(0, 0));
+    await auditAccessibility(page, `${view.name}: finished-article accessibility audit`);
+  }
+  assert.deepEqual(pageErrors, [], "Browser runtime errors in " + view.name);
+  recordViewEvidence(view, initial, stickyTop, lifecycle, articleContext, atEnd);
+  await context.close();
 }
+
+async function runAudit() {
+  try {
+    for (const view of views) await auditView(view);
+    await auditReducedMotion();
+    console.log(JSON.stringify({ article: article.slug, source: "finished publication bundle", views: evidence }, null, 2));
+  } finally {
+    await browser.close();
+  }
+}
+
+await runAudit();
