@@ -1,10 +1,10 @@
-// Homepage keeps all replay controls in native reading order, within a disclosure.
+// Reuse the shared replay controls beside the dedicated homepage viewer.
 export class HomepageInstruments {
   constructor(root, stage, io) {
-    this.root = root; this.host = root; this.layer = io; this.active = 'input';
+    this.root = root; this.host = stage; this.layer = io; this.active = 'input';
     const controls = root.querySelector('[data-homepage-controls]');
-    controls.append(root.querySelector('.machine-replay'), io, root.querySelector('.machine-disclosure'), root.querySelector('.machine-help'));
-    stage.tabIndex = -1; stage.removeAttribute('role'); stage.removeAttribute('aria-label');
+    controls.prepend(root.querySelector('.machine-replay'));
+    root.querySelector('.digital-replay-disclosure > div').append(io, root.querySelector('.machine-disclosure'), root.querySelector('.machine-help'));
     this.viewButton = document.createElement('button'); this.viewButton.hidden = true;
     this.qualityHint = document.createElement('p'); this.qualityHint.className = 'digital-quality-hint';
     controls.prepend(this.qualityHint); this.quality('auto');

@@ -32,3 +32,15 @@ startup.onQuietChange=quiet=>{
 
 if(startup.quiet){loadMachine().then(controller=>controller?.fallback('quiet-mode',true)).catch(()=>{});}
 else if(startup.started){startup.start({retained:true});}
+
+// A deliberate Start completes ignition before the first illustrative replay.
+// Retained starts restore the viewer with Play available, without restarting it.
+let replayStarted = startup.started;
+const readyObserver = new MutationObserver(() => {
+  if (!replayStarted && startup.phase === 'ready' && !startup.quiet) {
+    replayStarted = true;
+    root.machine?.play();
+  }
+});
+readyObserver.observe(root, {attributes:true, attributeFilter:['data-startup']});
+addEventListener('pagehide', event => { if (!event.persisted) readyObserver.disconnect(); });

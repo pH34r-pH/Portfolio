@@ -22,6 +22,8 @@ async function open(options,setup) {
   const quiet=options.reducedMotion==='reduce'||options.forcedColors==='active';
   if(!quiet)await page.getByRole('button',{name:'Start interactive model'}).click();
   await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  if (!quiet) await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup',/ready|fallback/,{timeout:30000});
+  await page.evaluate(()=>PortfolioModelMachine.pause());
   await settle(page);return {context,page,root:page.locator('[data-model-machine]').first(),errors};
 }
 async function readChecks(page) {
