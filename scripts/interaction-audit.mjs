@@ -442,6 +442,9 @@ async function auditLegacyExperimentsRedirect(browser) {
 async function auditRoute(page, context, width, path, manifest, errors) {
   await page.goto(base + path, { waitUntil: "networkidle" });
   assert.deepEqual(errors, [], `${width}${path}: page errors`);
+  // Overflow can move fixed controls outside a phone's visual viewport.
+  // Diagnose the responsible route before attempting its physical menu tap.
+  await auditOverflow(page, width, path);
   await auditMenuAndThemes(page, width);
   const reducedMotion = await page.evaluate(() => ({
     enabled: matchMedia("(prefers-reduced-motion: reduce)").matches,

@@ -16,6 +16,38 @@ async function pagefindAvailable(context) {
   return response.ok();
 }
 
+async function auditSearchMetadataMatches(browser) {
+  const context = await browser.newContext();
+  await context.route("**/pagefind/pagefind.js", route => route.fulfill({
+    contentType: "text/javascript",
+    body: `
+      export async function options() {}
+      export async function init() {}
+      export async function search() {
+        const item = (title, words, matchedMetaFields) => ({
+          words, matchedMetaFields,
+          data: async () => ({ url: "/research/", meta: { title }, excerpt: title })
+        });
+        return { results: [
+          ...Array.from({ length: 9 }, () => item("Image URL only", [], ["image"])),
+          item("Title-only match", [], ["title"]),
+          item("Body match with image metadata", [1], ["image"]),
+          item("Image description match", [], ["image_alt"])
+        ] };
+      }
+    `,
+  }));
+  const page = await context.newPage();
+  await page.goto(base + "/", { waitUntil: "domcontentloaded" });
+  await page.keyboard.press("Control+K");
+  await page.locator("#portfolio-search").fill("metadata fixture");
+  await expect(page.locator(".search-status")).toHaveText("3 results.");
+  await expect(page.locator(".search-results strong")).toHaveText([
+    "Title-only match", "Body match with image metadata", "Image description match",
+  ]);
+  await context.close();
+}
+
 async function auditSearchDialog(page, hasPagefind, manifest) {
   await page.keyboard.press("Control+K");
   const dialog = page.locator("dialog.search-dialog");
@@ -25,9 +57,13 @@ async function auditSearchDialog(page, hasPagefind, manifest) {
   if (hasPagefind) {
     const results = page.locator(".search-results");
     await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
-    await input.fill("portfolio-no-match-48271");
-    await expect(page.locator(".search-status")).toHaveText("No matching research.", { timeout: 10000 });
-    await expect(results.locator("li")).toHaveCount(0);
+    for (const query of ["portfolio-no-match-48271", "qzxvkjwbnm48271"]) {
+      await input.fill("");
+      await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
+      await input.fill(query);
+      await expect(page.locator(".search-status")).toHaveText("No matching research.", { timeout: 10000 });
+      await expect(results.locator("li")).toHaveCount(0);
+    }
     await input.fill("");
     await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
     await expect(results.locator("li")).toHaveCount(0);
@@ -35,7 +71,7 @@ async function auditSearchDialog(page, hasPagefind, manifest) {
     await expect(page.locator(".search-status")).toContainText(/result/i, { timeout: 10000 });
     const target = manifest?.articles?.find(article => article.slug === "005-unit-hypersphere-anomaly");
     const result = target
-      ? results.locator(`a[href="${target.url}"]`).first()
+      ? results.locator(`a[href="${target.url}?highlight=hypersphere"]`).first()
       : results.getByRole("link").first();
     await expect(result).toBeVisible();
     const destination = await result.getAttribute("href");
@@ -259,6 +295,7 @@ try {
   await context.close();
   await auditVisibleMachine(browser);
   await auditReducedMotionMachine(browser);
+  await auditSearchMetadataMatches(browser);
   console.log(`2071 audit passed${manifest ? " for exact publication bundle" : " for source surface"}.`);
 } finally {
   await browser.close();

@@ -22,6 +22,11 @@
   display: contents;
   position: static;
 }
+/* Inactive flow panes slide horizontally while remaining in layout. Contain
+   that paint overflow inside the pane grid, not the sticky stage or reader. */
+.article-model-machine [data-instruments="flow"] .machine-instruments {
+  overflow-x: clip;
+}
 .article-model-machine .machine-spatial-host[data-instruments="spatial"] {
   position: sticky;
   top: calc(var(--2071-header, 58px) + 8px);
@@ -89,6 +94,12 @@
   font: 600 10px/1.5 ui-monospace, monospace;
 }
 @media(max-width:720px) {
+  /* The narrow reader wraps the legend to five 10px lines. Keep its 58px
+     bottom plus a 6px gap above the canvas without growing the sticky stage. */
+  .article-model-machine .machine-canvas {
+    inset: 64px 0 32px;
+    height: calc(100% - 96px);
+  }
   .article-model-machine .machine-heading { margin: 34px 0 14px; }
   .article-model-machine .machine-legend { inset-inline: 8px; }
   .article-model-machine .machine-axis-labels { inset-inline: 8px; }

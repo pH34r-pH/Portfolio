@@ -39,7 +39,8 @@ if (triggers.length) {
 
   function loadPagefind() {
     pagefindPromise ??= import("/pagefind/pagefind.js").then(async (pagefind) => {
-      await pagefind.options({ baseUrl: "/", highlightParam: "highlight" });
+      // Image URLs (including notebook data URIs) are not searchable prose.
+      await pagefind.options({ baseUrl: "/", highlightParam: "highlight", ranking: { metaWeights: { image: 0 } } });
       await pagefind.init();
       return pagefind;
     });
@@ -74,10 +75,15 @@ if (triggers.length) {
     try {
       const pagefind = await loadPagefind();
       const response = await pagefind.search(term);
-      const data = await Promise.all(response.results.slice(0, 8).map((result) => result.data()));
+      // Pagefind 1.5 searches metadata and can return image-only matches even
+      // with zero image weight. Keep body and textual metadata matches.
+      const matches = response.results.filter((result) => result.words?.length
+        || !result.matchedMetaFields?.length
+        || result.matchedMetaFields.some((field) => field !== "image"));
+      const data = await Promise.all(matches.slice(0, 8).map((result) => result.data()));
       if (requestId !== sequence) return;
       results.replaceChildren(...data.map(resultItem));
-      status.textContent = data.length ? `${response.results.length} result${response.results.length === 1 ? "" : "s"}.` : "No matching research.";
+      status.textContent = data.length ? `${matches.length} result${matches.length === 1 ? "" : "s"}.` : "No matching research.";
     } catch (error) {
       if (requestId !== sequence) return;
       results.replaceChildren();

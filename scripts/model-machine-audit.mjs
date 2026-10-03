@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
-import {articleHost} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const host=await articleHost(base);
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
@@ -18,8 +18,9 @@ async function open(options={}, setup) {
   const initialEngine=[];page.on('request',request=>{if(request.url().includes('three@0.186.1'))initialEngine.push(request.url());});
   await page.goto(host.url, {waitUntil:'networkidle'});
   if(host.html)assert.equal(initialEngine.length,0,'Below-fold embedded viewer defers its engine');
-  const root=page.locator('[data-model-machine]').first(); await root.scrollIntoViewIfNeeded();
-  await expect(root).toHaveAttribute('data-render', /webgl|fallback/, {timeout:20000});
+  const root=page.locator('[data-model-machine]').first();
+  const startup=await prepareArticleModel(page,root,host);
+  if(host.manualStart&&startup.unstarted)assert.equal(initialEngine.length,0,'Quiet article defers its engine');
   return {context,page,root,errors};
 }
 async function snapshot(root) { return root.evaluate(node=>node.machine.snapshot()); }
@@ -51,40 +52,45 @@ async function auditResetFitAfterResize(page,root) {
   const canvas=root.locator('canvas'),camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
   await canvas.scrollIntoViewIfNeeded();
   const initial=await canvas.boundingBox();
-  assert.equal(Math.round(initial.width),338,'Reset regression starts at the reported 338px phone canvas');
-  assert.equal(Math.round(initial.height),358,'Reset regression starts at the reported 358px phone canvas');
-  const pointer={x:initial.x+70,y:initial.y+160};
+  if(host.html) {
+    assert.equal(Math.round(initial.width),338,'Source reset regression starts at the reported 338px phone canvas');
+    assert.equal(Math.round(initial.height),358,'Source reset regression starts at the reported 358px phone canvas');
+  }
+  assert.ok(initial.width>0&&initial.height>0,'Reset starts with a rendered article canvas');
+  const pointer={x:initial.x+70,y:initial.y+(host.html?160:initial.height*.65)};
   await page.mouse.move(pointer.x,pointer.y);await page.mouse.down();
   await page.mouse.move(pointer.x+1.2/.007,pointer.y-.38/.005,{steps:1});await page.mouse.up();
   const orbited=await camera();
   assert.ok(Math.abs(orbited.yaw-1.05)<1e-5,`Orbit reaches reproduction yaw 1.05 (${orbited.yaw})`);
   assert.ok(Math.abs(orbited.pitch)<1e-5,`Orbit reaches reproduction pitch 0 (${orbited.pitch})`);
   await page.setViewportSize({width:359,height:800});
-  await page.waitForFunction(()=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===337);
+  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===width,Math.round(initial.width)-1);
   const resized=await canvas.boundingBox();
-  assert.equal(Math.round(resized.width),337,'Viewport resize changes the reported canvas width');
-  assert.equal(Math.round(resized.height),358,'Viewport resize preserves the reported canvas height');
+  assert.equal(Math.round(resized.width),Math.round(initial.width)-1,'Genuine one-pixel viewport resize changes the article canvas width');
+  assert.equal(Math.round(resized.height),Math.round(initial.height),'Viewport resize preserves the article canvas height');
   const preReset=await root.evaluate(node=>node.machine.diagnostics());
-  assert.ok(Math.abs(preReset.camera.distance-17.270241)<1e-5,`Orbit-angle fit reproduces the pre-reset distance (${preReset.camera.distance})`);
-  assertFullGraphFit(preReset,'orbit after genuine 338×358 → 337×358 resize');
+  if(host.html)assert.ok(Math.abs(preReset.camera.distance-17.270241)<1e-5,`Orbit-angle fit reproduces the pre-reset distance (${preReset.camera.distance})`);
+  assertFullGraphFit(preReset,`orbit after genuine ${Math.round(initial.width)}×${Math.round(initial.height)} → ${Math.round(resized.width)}×${Math.round(resized.height)} resize`);
   await root.locator('[data-camera="reset"]').click();
   const reset=await root.evaluate(node=>node.machine.diagnostics());
   assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);
   assertFullGraphFit(reset,'reset after genuine resize');
   const fresh=await open({viewport:{width:359,height:800},deviceScaleFactor:3,isMobile:true,hasTouch:true});
   const baseline=await fresh.root.evaluate(node=>node.machine.diagnostics());
-  assert.ok(Math.abs(baseline.camera.distance-25.164833)<1e-5,`Fresh default distance matches reported fit (${baseline.camera.distance})`);
+  if(host.html)assert.ok(Math.abs(baseline.camera.distance-25.164833)<1e-5,`Fresh default distance matches reported fit (${baseline.camera.distance})`);
   assert.equal(reset.camera.distance,baseline.camera.distance,'Reset fit distance equals a fresh default article view');
   assert.deepEqual(reset.graphGeometryBounds,baseline.graphGeometryBounds,'Reset full-geometry framing equals fresh default article framing');
   await fresh.context.close();
   await page.setViewportSize({width:360,height:800});
-  await page.waitForFunction(()=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===338);
+  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===width,Math.round(initial.width));
   return {initialCanvas:{width:Math.round(initial.width),height:Math.round(initial.height)},orbited:{yaw:orbited.yaw,pitch:orbited.pitch},resizedCanvas:{width:Math.round(resized.width),height:Math.round(resized.height)},preReset:{distance:preReset.camera.distance,bounds:preReset.graphGeometryBounds},reset:{distance:reset.camera.distance,bounds:reset.graphGeometryBounds},freshDefault:{distance:baseline.camera.distance,bounds:baseline.graphGeometryBounds}};
 }
 async function auditTouch(page,root) {
   const canvas=root.locator('canvas');await canvas.scrollIntoViewIfNeeded();
   const box=await canvas.boundingBox(),client=await page.context().newCDPSession(page);
-  const p=(id,x,y)=>({id,x:box.x+x,y:box.y+y});
+  // Keep the source reproduction coordinates, scaled into the shorter sticky
+  // article canvas so every contact remains on the actual gesture target.
+  const p=(id,x,y)=>({id,x:box.x+x*(host.html?1:box.width/338),y:box.y+y*(host.html?1:box.height/358)});
   const touch=(type,points)=>client.send('Input.dispatchTouchEvent',{type,touchPoints:points});
   const camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
   await seek(root,145);
@@ -180,7 +186,7 @@ try {
     for (const theme of ['light','dark']) {
       await page.evaluate(value=>{document.documentElement.dataset.themeMode=value;document.documentElement.dataset.theme=value;},theme);
       await axe(page,`${name}/${theme}`);
-      await root.screenshot({style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${name}-${theme}.png`});
+      await screenshotModel(page,root,{style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${name}-${theme}.png`});
     }
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
     assert.ok(overflow<=1,`${name} overflow ${overflow}`);
@@ -218,14 +224,18 @@ try {
       if(mode==='webgl-unavailable')await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(kind,...args){return kind.startsWith('webgl')?null:original.call(this,kind,...args);};});
       if(mode==='engine-unavailable')await page.route('**/vendor/three@0.186.1/**',route=>route.abort());
     });
+    if(host.manualStart&&(mode==='reduced-motion'||mode==='forced-colors')) {
+      assert.equal(engineRequests,0,'Fresh quiet article makes no engine request');
+      await startThenQuietArticle(page,root,mode);
+    }
     await expect(root).toHaveAttribute('data-render','fallback');
     await seek(root,145); const first=await snapshot(root); await seek(root,360); await seek(root,145);
     assert.deepEqual(await snapshot(root),first);
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
     await root.locator('[data-machine-settings] summary').click();
     await root.locator('[data-probe-layer]').selectOption('7'); await expect(root.locator('[data-probe-readout]')).toContainText('16 incoming / 0 outgoing display routes');
-    if(mode==='reduced-motion'||mode==='forced-colors')assert.equal(engineRequests,0);
-    await axe(page,mode); await root.screenshot({style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${mode}.png`});
+    if(!host.manualStart&&(mode==='reduced-motion'||mode==='forced-colors'))assert.equal(engineRequests,0);
+    await axe(page,mode); await screenshotModel(page,root,{style:'.topbar,.skip-link{visibility:hidden !important;}',path:`${out}/${mode}.png`});
     assert.deepEqual(errors,[]); evidence.push({mode,engineRequests,errors}); await context.close();
   }
   // Context loss follows the same honest, inspectable fallback contract.

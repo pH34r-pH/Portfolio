@@ -3,7 +3,7 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {IGNITION_DURATION_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
-import {articleHost} from './model-audit-host.mjs';
+import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
@@ -412,40 +412,34 @@ async function directStartupFailure(mode) {
 
 async function articleIsolation() {
   const host=await articleHost(base),context=await browser.newContext({viewport:{width:1366,height:900}}),page=await context.newPage(),errors=[];
+  let engines=0;page.on('request',request=>{if(request.url().includes('three@0.186.1'))engines++;});
   page.on('pageerror',error=>errors.push(error.message));
   if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
   try {
     await page.goto(host.url,{waitUntil:'networkidle'});
     const root=page.locator('[data-model-machine]').first();await expect(root).toHaveCount(1);
     assert.equal(await root.getAttribute('data-digital-home'),null,'Article root has no Home marker');
-    assert.equal(await root.getAttribute('data-model-startup'),null,'Article lifecycle remains independent');
-    await expect(root.locator('[data-model-start]')).toHaveCount(0,'Home Start control is not attached to article roots');
+    let unstarted=null,started=null;
+    if(host.manualStart) {
+      unstarted=await assertUnstartedArticle(root);
+      assert.equal(engines,0,'Article imports no engine before explicit Start');
+      started=await startArticleModel(root);
+      await expect(root).toHaveAttribute('data-render','webgl');
+      assert.ok(engines>0,'Article user Start loads the engine');
+      assert.equal(await root.evaluate(node=>node.machine.diagnostics().nodes),1668);
+    } else {
+      assert.equal(await root.getAttribute('data-model-startup'),null,'Source fixture retains viewport-deferred startup');
+      await expect(root.locator('[data-model-start]')).toHaveCount(0);
+      assert.equal(await page.evaluate(()=>Boolean(window.PortfolioModelStartup)),false,'Source fixture does not install Home startup');
+    }
     assert.deepEqual(errors,[]);
     evidence.push({mode:'article-isolation',articleEvidence:host.kind,slug:host.slug||null,
-      homeMarker:false,homeStartControl:false,note:host.kind==='published-article'
-        ? 'Finished MyST article route used.' : 'Canonical source fixture used because no finished publication bundle is served.'});
+      homeMarker:false,homeStartup:false,articleManualStart:host.manualStart,unstarted,started,engines,errors,
+      note:host.kind==='published-article' ? 'Finished MyST article uses its own root-owned startup controller and user Start.'
+        : 'Canonical source fixture retains viewport-deferred startup because no finished publication bundle is served.'});
   } finally {await context.close();}
 }
 
-async function articleQuietModeRestore(mode,initial,cleared) {
-  const host=await articleHost(base),context=await browser.newContext({viewport:{width:1366,height:900},...initial}),page=await context.newPage(),errors=[];
-  let engines=0;page.on('pageerror',error=>errors.push(error.message));
-  page.on('request',request=>{if(request.url().includes('three@0.186.1'))engines++;});
-  if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
-  try {
-    await page.goto(host.url,{waitUntil:'networkidle'});
-    const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
-    await expect(root).toHaveAttribute('data-render','fallback');
-    assert.equal(await root.getAttribute('data-model-startup'),null,'Article retains independent startup ownership');
-    assert.equal(engines,0,`${mode} article remains static before the preference clears`);
-    await page.emulateMedia(cleared);
-    await expect(root).toHaveAttribute('data-render','webgl',{timeout:15000});
-    assert.equal(await root.getAttribute('data-model-startup'),null,'Preference restoration does not attach Home startup state');
-    assert.ok(engines>0,`${mode} article boots again when its visible quiet preference clears`);
-    assert.deepEqual(errors,[]);
-    evidence.push({mode:`article-${mode}-restoration`,articleEvidence:host.kind,engines,visibleRestore:true,errors});
-  } finally {await context.close();}
-}
 
 try {
   await startup('desktop',1440,1000);
@@ -465,8 +459,8 @@ try {
   await contextLossDuringIgnition();
   await contextLossRetry();
   await articleIsolation();
-  await articleQuietModeRestore('reduced-motion',{reducedMotion:'reduce'},{reducedMotion:'no-preference'});
-  await articleQuietModeRestore('forced-colors',{forcedColors:'active'},{forcedColors:'none'});
+  evidence.push(await auditArticleQuietModeRestore(browser,base,'reduced-motion',{reducedMotion:'reduce'},{reducedMotion:'no-preference'}));
+  evidence.push(await auditArticleQuietModeRestore(browser,base,'forced-colors',{forcedColors:'active'},{forcedColors:'none'}));
   console.log('Manual startup passed: no pre-intent engine request, deduplicated Start, 1.8s active-visible ignition, session restore, BFCache, retry, quiet/static fallback, NoJS and article isolation.');
 } catch(error) {
   evidence.push({failure:error.message});throw error;

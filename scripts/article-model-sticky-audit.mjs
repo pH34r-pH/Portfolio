@@ -65,6 +65,7 @@ async function snapshot(page) {
 async function scrollHeading(page, heading) {
   const data = await heading.evaluate(node => ({
     top: node.getBoundingClientRect().top + scrollY,
+    focus: node.dataset.modelContext,
   }));
   const targetHeight = await page.evaluate(() => {
     const model = document.querySelector(".article-model-machine");
@@ -77,13 +78,15 @@ async function scrollHeading(page, heading) {
     header: document.querySelector(".topbar")?.getBoundingClientRect().height || 58,
     spatial: document.querySelector(".machine-spatial-host")?.dataset.instruments === "spatial",
   }));
-  await page.evaluate(({ top, line }) => scrollTo({ top: Math.max(0, top - line), behavior: "instant" }), {
+  // Scroll positions are rounded to CSS pixels. Round toward the heading so a
+  // fractional layout cannot leave it just below the context activation line.
+  await page.evaluate(({ top, line }) => scrollTo({ top: Math.max(0, Math.ceil(top - line)), behavior: "instant" }), {
     top: data.top,
     line: Math.min(view.height - 3, view.header + targetHeight + (view.spatial ? 28 : 72)),
   });
-  const expected = await contextAtReadingLine(page);
-  await expect(page.locator(".article-model-machine")).toHaveAttribute("data-article-context", expected);
-  return expected;
+  await expect.poll(() => contextAtReadingLine(page)).toBe(data.focus);
+  await expect(page.locator(".article-model-machine")).toHaveAttribute("data-article-context", data.focus);
+  return data.focus;
 }
 
 async function contextAtReadingLine(page) {
@@ -272,6 +275,9 @@ async function auditRetainedStart(page, model, startButton, lifecycle) {
 }
 
 async function auditResizeAndOrientation(page, model) {
+  // Start inside the article: preserving a late hash position across a wider
+  // layout can reach the article boundary, where the model should release.
+  await scrollHeading(page, page.locator("[data-model-context]").filter({ hasText: "Building a benchmark that can fail" }).first());
   await page.setViewportSize({ width: 412, height: 915 });
   await page.waitForTimeout(100);
   const resized = await snapshot(page);

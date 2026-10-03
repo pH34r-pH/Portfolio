@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {articleHost} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
 const host=await articleHost(base);
@@ -14,8 +14,7 @@ async function open(options={},setup) {
   page.on('pageerror',error=>errors.push(error.message));if(setup)await setup(page);
   if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
   await page.goto(host.url,{waitUntil:'networkidle'});const root=page.locator('[data-model-machine]').first();
-  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
-  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  await prepareArticleModel(page,root,host);
   return {context,page,root,errors};
 }
 const diagnostics=root=>root.evaluate(node=>node.machine.diagnostics());
@@ -88,9 +87,7 @@ async function touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone) {
   for(const panel of before.panels){const next=panels.find(item=>item.id===panel.id);assert.ok(Math.abs(next.rect.x-panel.rect.x)<.6&&Math.abs(next.rect.y-panel.rect.y)<.6,`pane ${panel.id} moved during touch orbit`);}
   return after;
 }
-function contextTransitionAdvances(panel,previous) {
-  return panel.transitionOpacity>previous.transitionOpacity&&panel.transitionOffset.x<previous.transitionOffset.x;
-}
+
 async function contextExitWaitsForTransition(page,root,phone) {
   const input=root.locator('[data-glass-panel="input"]');
   await input.locator('input').focus();
@@ -117,6 +114,8 @@ async function contextExitWaitsForTransition(page,root,phone) {
     console.log(`Glass context state at exit sample timeout: ${JSON.stringify(state)}`);throw error;
   }
   const exiting=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
+  const exitingTranslation=await input.evaluate(panel=>parseFloat(getComputedStyle(panel).translate)||0);
+  assert.ok(exitingTranslation>0,'The exiting DOM pane translates in both spatial and flow layouts');
   assert.ok(exiting.transitionOpacity>0,'sample is inside the visible DOM transition');
   assert.equal(exiting.contextAnimating,true,'GPU transition remains active while the paused article replay is idle');
   assert.ok(exiting.transitionOpacity>0&&exiting.transitionOpacity<1,'pane backing opacity follows its eased DOM exit');
@@ -140,11 +139,14 @@ async function contextExitWaitsForTransition(page,root,phone) {
   assert.equal(await input.evaluate(panel=>panel.inert),false,'reversing the context transition restores pane focusability');
   await expect.poll(async()=>{
     const panel=(await diagnostics(root)).glass.panels.find(item=>item.id==='input');
-    return contextTransitionAdvances(panel,exiting);
+    const translation=await input.evaluate(node=>parseFloat(getComputedStyle(node).translate)||0);
+    return contextTransitionAdvances(panel,exiting)&&translation<exitingTranslation;
   },{timeout:5000}).toBe(true);
   const reversing=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
   assert.ok(reversing.transitionOpacity>exiting.transitionOpacity,'reversed easing moves the glass and DOM pane back toward their context pose');
-  assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
+  if(exiting.visible)assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
+  assert.ok(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).translate)||0)<exitingTranslation,
+    'reversed DOM translation returns in both spatial and flow layouts');
   await root.evaluate(node=>node.machine.focus('representation'));
   await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:12000}).toBe(false);
   await expect(input).toHaveAttribute('inert','');
@@ -181,7 +183,7 @@ async function contextReversalKeepsTabsValid(page,root,phone) {
   await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
   const state=await diagnostics(root);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.visible).length)
-    .toBe(phone&&state.glass.mode==='spatial'?1:phone?0:3);
+    .toBe(state.glass.mode==='spatial'?(phone?1:3):0);
   if(phone)await selectOutputOnPhone(root);
   await expect.poll(()=>input.evaluate(panel=>panel.inert)).toBe(false);
   await expect.poll(async()=>(await diagnostics(root)).glass.panels.filter(panel=>panel.contextVisible!==false).length).toBe(3);
@@ -481,6 +483,9 @@ try {
     const {context,page,root,errors}=await open(options,async page=>{
       if(mode==='webgl-unavailable')await page.addInitScript(()=>{const native=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...rest){return type.startsWith('webgl')?null:native.call(this,type,...rest);};});
     });
+    if(host.manualStart&&(mode==='reduced-motion'||mode==='forced-colors')) {
+      await startThenQuietArticle(page,root,mode);
+    }
     await expect(root).toHaveAttribute('data-render','fallback');await expect(root.locator('[data-instruments="flow"]')).toBeVisible();
     for(const panel of await root.locator('[data-glass-panel]').all())await expect(panel).toBeVisible();
     await root.evaluate(node=>node.machine.seek(145));await accessibility(page,root);
@@ -492,7 +497,7 @@ try {
       await root.evaluate(node=>node.machine.focus('all'));
       await expect(root.locator('[data-glass-panel="input"]')).toHaveAttribute('data-context-active','true');
     }
-    await root.screenshot({path:`${out}/${mode}.png`,style:'.topbar,.skip-link{visibility:hidden!important}'});
+    await screenshotModel(page,root,{path:`${out}/${mode}.png`,style:'.topbar,.skip-link{visibility:hidden!important}'});
     assert.deepEqual(errors,[]);evidence.push({mode,errors});await context.close();
   }
   console.log('Shared-glass audit passed: three viewports, aligned panes, camera-independent touch/orbit, context reversals, unbounded finite zoom/reset, reduced motion, keyboard, axe and fallbacks.');

@@ -63,8 +63,10 @@ function matchNotebookCells(expected, snapshots) {
     if (cell.type === "code") {
       return snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "code" && normalize(rendered.text).includes(source)));
     }
+    // Markdown quote markers allow at most three leading spaces. Escaped or
+    // indented literal greater-than content must remain part of the comparison.
     const firstHeading = cell.source.split(/\r?\n/).find(line => line.trim())
-      ?.replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
+      ?.replace(/^(?: {0,3}>[ \t]?)+/, "").replace(/^#{1,6}\s*/, "").replace(/[\\*_`]/g, "").trim() || "";
     return Boolean(firstHeading) && snapshots.some(snapshot => snapshot.some(rendered => rendered.type === "markdown" && normalize(rendered.text).includes(normalize(firstHeading))));
   });
 }

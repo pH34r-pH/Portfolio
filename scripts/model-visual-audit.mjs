@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
-import {articleHost} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,screenshotModel} from './model-audit-host.mjs';
 import {fileURLToPath} from 'node:url';
 
 const sourceBase=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:45937';
@@ -14,7 +14,7 @@ const viewports=[['phone-360-dpr1',360,800,1],['phone-412-dpr3',412,915,3],['des
 const root=fileURLToPath(new URL('../',import.meta.url));
 const sharedAssetFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js',
   'model-glass.js','model-hardware.js','model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js','model-machine.js','article-runtime.js',
-  'model-machine.css','model-glass.css','site.css','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
+  'model-startup.js','article-model-loader.js','article-model-sticky.css','model-machine.css','model-glass.css','site.css','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
 let publishedAssetIdentity=null;
 
 async function verifyPublishedAssetIdentity(articleBase) {
@@ -77,8 +77,11 @@ async function inspectHost(host,viewport) {
   page.on('pageerror',error=>errors.push(error.message));
   await installFixture(page,host);
   await page.goto(base+url,{waitUntil:'networkidle'});
-  const root=await scrollObservedStageIntoView(page);
-  if(kind==='home')await page.getByRole('button',{name:'Start interactive model'}).click();
+  const root=page.locator('[data-model-machine]').first();
+  if(kind==='home') {
+    await scrollObservedStageIntoView(page);
+    await page.getByRole('button',{name:'Start interactive model'}).click();
+  } else await prepareArticleModel(page,root,host);
   await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
   await expect(root).toHaveAttribute('data-render','webgl');
   await root.evaluate(node=>node.machine.seek(145));
@@ -108,7 +111,7 @@ async function inspectHost(host,viewport) {
   assert.equal(diagnostics.appearance.lightBlue,'165577');assert.equal(diagnostics.appearance.darkBlue,'447abb');assert.equal(diagnostics.appearance.activityBlue,'39baff');
   assert.deepEqual(errors,[]);
   const path=`${out}/${kind}-${name}.png`;
-  await root.screenshot({path});
+  await screenshotModel(page,root,{path});
   const themes=[];
   for(const theme of ['light','dark']) {
     await page.evaluate(value=>{document.documentElement.dataset.themeMode=value;document.documentElement.dataset.theme=value;},theme);
@@ -116,7 +119,7 @@ async function inspectHost(host,viewport) {
     const themed=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(themed.appearance.contourColor,theme==='dark'?'447abb':'165577');
     const themePath=`${out}/${kind}-${name}-${theme}.png`;
-    await root.screenshot({path:themePath});themes.push({theme,path:themePath,contourColor:themed.appearance.contourColor});
+    await screenshotModel(page,root,{path:themePath});themes.push({theme,path:themePath,contourColor:themed.appearance.contourColor});
   }
   await context.close();
   return {kind,viewport:{name,width,height,dpr},diagnostics,canvas,transmissivePanels,screenshot:path,themes,errors};
@@ -131,8 +134,12 @@ async function quietModes(host) {
     page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
     await installFixture(page,host);
     await page.goto(base+url,{waitUntil:'networkidle'});
-    const root=await scrollObservedStageIntoView(page);
-    await expect(root).toHaveAttribute('data-render','fallback');
+    const root=page.locator('[data-model-machine]').first();
+    if(host.manualStart)await prepareArticleModel(page,root,host);
+    else {
+      await scrollObservedStageIntoView(page);
+      await expect(root).toHaveAttribute('data-render','fallback');
+    }
     await expect(root.locator('[data-machine-fallback]')).toBeVisible();
     assert.equal(engineRequests,0,`${kind}/${mode} must perform zero Three.js loads`);
     const svg=await root.locator('[data-machine-fallback] svg').count();
@@ -141,7 +148,7 @@ async function quietModes(host) {
       const layers=await root.locator('[data-machine-fallback] [data-layer]').evaluateAll(nodes=>nodes.map(node=>Number(node.dataset.layer)));
       assert.equal(layers.length,1668);
     }
-    const path=`${out}/${kind}-${mode}.png`;await root.screenshot({path});
+    const path=`${out}/${kind}-${mode}.png`;await screenshotModel(page,root,{path});
     evidence.push({kind,mode,engineRequests,svgFallback:svg===1,screenshot:path});await context.close();
   }
 }
@@ -149,12 +156,12 @@ async function quietModes(host) {
 try {
   const hosts=[{kind:'home',base:sourceBase,url:'/'}];
   const sourceArticle=await articleHost(sourceBase);
-  hosts.push({kind:'article-fixture',base:sourceBase,url:sourceArticle.url.replace(sourceBase,''),html:sourceArticle.html});
+  hosts.push({...sourceArticle,kind:sourceArticle.manualStart?'published-article':'article-fixture',base:sourceBase,url:sourceArticle.url.replace(sourceBase,'')});
   if(publishedBase) {
     publishedAssetIdentity=await verifyPublishedAssetIdentity(publishedBase);
     const article=await articleHost(publishedBase);
     assert.equal(article.kind,'published-article','A fixture is not a finished MyST publication');
-    hosts.push({kind:'published-myst-article',base:publishedBase,url:article.url.replace(publishedBase,''),
+    hosts.push({kind:'published-myst-article',manualStart:article.manualStart,base:publishedBase,url:article.url.replace(publishedBase,''),
       slug:article.slug,publicationSources:article.publicationSources});
   }
   for(const host of hosts)for(const viewport of viewports)evidence.push(await inspectHost(host,viewport));
@@ -180,7 +187,7 @@ try {
     assert.deepEqual(d.camera.pan,{x:0,y:0});
     resize.push({width,rotation:'0,0,0',camera:d.camera,landmarks:d.landmarks,graphGeometryBounds:d.graphGeometryBounds});
   }
-  await root.screenshot({path:`${out}/home-resize-boundary.png`});
+  await screenshotModel(page,root,{path:`${out}/home-resize-boundary.png`});
   evidence.push({kind:'responsive-boundary',widths:resize,screenshot:`${out}/home-resize-boundary.png`});
   await context.close();
 

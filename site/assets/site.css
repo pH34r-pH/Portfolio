@@ -106,6 +106,10 @@ a:hover { text-decoration-color: var(--accent); }
   box-shadow: 0 0 0 1px var(--bg), 0 0 0 5px color-mix(in srgb, var(--accent) 25%, transparent) !important;
 }
 
+/* Long source identities must wrap without widening the mobile layout viewport.
+   Preformatted code keeps its existing horizontal scroller. */
+.myst-reader :not(pre) > code { overflow-wrap: anywhere; }
+
 /* Instrument shell */
 .topbar {
   height: var(--2071-header);
