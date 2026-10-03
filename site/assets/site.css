@@ -443,10 +443,6 @@ section {
   overflow: clip;
 }
 
-.notebook-content.myst-reader.article-sticky-reader {
-  overflow: visible;
-}
-
 .notebook-content::before {
   content: "";
   display: block;
