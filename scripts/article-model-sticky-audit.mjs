@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { observeArticleEndRelease } from "./article-release-observation.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 const articleSlug = "012-natural-source-distinctions";
@@ -58,6 +59,8 @@ async function snapshot(page) {
       // which is also the width used by viewport-relative fixed navigation.
       pageWidth: innerWidth,
       pageScrollWidth: document.documentElement.scrollWidth,
+      viewportHeight: innerHeight,
+      maxScrollY: Math.max(0, document.documentElement.scrollHeight - innerHeight),
     };
   });
 }
@@ -305,19 +308,14 @@ async function auditReleaseAtArticleEnd(page, view) {
     tail.style.cssText = "height:700px;clear:both";
     document.body.append(tail);
   });
-  await page.evaluate(() => {
-    const readerNode = document.querySelector(".article-sticky-reader");
-    const host = document.querySelector(".article-model-machine .machine-spatial-host");
-    const stageNode = document.querySelector(".article-model-machine [data-machine-stage]");
-    const target = host.dataset.instruments === "spatial" ? host : stageNode;
-    const bounds = readerNode.getBoundingClientRect();
-    const targetHeight = target.getBoundingClientRect().height;
-    const stickyTop = document.querySelector(".topbar").getBoundingClientRect().bottom + 8;
-    const articleBottom = bounds.bottom + scrollY;
-    scrollTo({ top: articleBottom - targetHeight - stickyTop + 40, behavior: "instant" });
-  });
-  await page.waitForTimeout(80);
-  const atEnd = await snapshot(page);
+  const atEnd = await observeArticleEndRelease({
+    snapshot: () => snapshot(page),
+    scrollTo: top => page.evaluate(y => {
+      scrollTo({ top: y, behavior: "instant" });
+      return scrollY;
+    }, top),
+    wait: () => page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => resolve()))),
+  }, { label: view.name });
   assert.ok(atEnd.readerBottom <= atEnd.headerBottom + atEnd.stageHeight + 50,
     `${view.name}: article container end must approach the viewport before release`);
   assert.ok(atEnd.targetBottom <= atEnd.readerBottom + 2,

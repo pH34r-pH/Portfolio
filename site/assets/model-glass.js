@@ -66,6 +66,8 @@ export class SharedGlass {
   }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
+    // The first fit after rotation must see the current context's phone pane.
+    this.instruments.setMode(this.instruments.mode, phone);
     this.pinnedToArticleContext = true;
     this.poseKey = null;
     this.instruments.host.dataset.instruments = 'spatial';

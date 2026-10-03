@@ -66,6 +66,9 @@ export class ModelInstruments {
   }
   setMode(mode, phone) {
     this.mode = mode; this.phone = phone; this.host.dataset.instruments = mode;
+    // Desktop context changes do not select a single pane. Reconcile that
+    // selection when returning to a phone before any pane can be hidden.
+    if (phone && this.relevant) this.active = this.relevant;
     this.nav.hidden = !phone || mode === 'flow'; if (this.viewButton) this.viewButton.hidden = this.root.dataset.render !== 'webgl';
     for (const panel of this.layer.children) {
       panel.hidden = mode === 'spatial' && phone && (panel.contextVisible === false
