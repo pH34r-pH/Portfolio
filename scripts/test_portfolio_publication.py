@@ -401,6 +401,14 @@ class ReaderPublicationTest(unittest.TestCase):
             self._build_fixture_bundle(args)
             article_page = (bundle/'articles/sample-article/index.html').read_text()
             article_document = BeautifulSoup(article_page, 'html.parser')
+            self.assertEqual(article_document.select_one('meta[name="author"]')['content'],
+                             'Tyler James Harbin-Giuntoli')
+            self.assertEqual(article_document.select_one('meta[name="citation_author"]')['content'],
+                             'Tyler James Harbin-Giuntoli')
+            self.assertEqual(article_document.select_one('meta[name="citation_author_orcid"]')['content'],
+                             'https://orcid.org/0009-0006-9153-2759')
+            self.assertEqual(article_document.select_one('link[rel="author"]')['href'],
+                             'https://orcid.org/0009-0006-9153-2759')
             self.assertIn('<h1 id="sample-article">Sample article</h1>', article_page)
             self.assertIn('href="/notebooks/001_reader/"', article_page)
             self.assertIn('href="/articles/sample-article-second/"', article_page)
