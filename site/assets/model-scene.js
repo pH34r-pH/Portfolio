@@ -379,7 +379,7 @@ export class MachineScene {
       pan:(dx,dy)=>this.panBy(-dx*.012,dy*.012),
       scrub:dx=>scrub(dx*360/Math.max(this.canvas.clientWidth,1)),
     });
-    if (this.digital) {
+    if (this.digital && !this.root.hasAttribute('data-homepage-viewer')) {
       window.visualViewport?.addEventListener('resize', () => this.render(), options);
       return; // Homepage gestures belong to native scrolling and browser zoom.
     }

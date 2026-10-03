@@ -254,10 +254,13 @@ class MachineController {
     const ns = "http://www.w3.org/2000/svg", svg = document.createElementNS(ns, "svg");
     svg.setAttribute("viewBox", "0 0 1200 550"); svg.setAttribute("aria-hidden", "true");
     svg.dataset.orientation = "input-to-output";
-    const position = node => [600 + node.position[0] * 112, 275 + (node.position[1] + node.position[2] * .28) * 80];
+    const home = this.root.hasAttribute('data-homepage-viewer');
+    const position = node => home
+      ? [600 + (node.position[0] * .88 + node.position[2] * .48) * 112, 275 + (node.position[1] - node.position[2] * .1) * 80]
+      : [600 + node.position[0] * 112, 275 + (node.position[1] + node.position[2] * .28) * 80];
     const paths = Array.from({ length: TOPOLOGY.widths.length }, () => "");
     GRAPH.edges.forEach(edge => { paths[edge.layer] += `M${position({position:edge.sourcePosition}).join(",")}L${position({position:edge.targetPosition}).join(",")}`; });
-    paths.forEach(data => { const path = document.createElementNS(ns, "path"); path.setAttribute("d", data); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", ".6"); path.setAttribute("opacity", ".13"); svg.append(path); });
+    paths.forEach(data => { const path = document.createElementNS(ns, "path"); path.setAttribute("d", data); path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor"); path.setAttribute("stroke-width", ".6"); path.setAttribute("opacity", home ? ".28" : ".13"); svg.append(path); });
     this.fallbackNodes = GRAPH.nodes.map(node => {
       const circle = document.createElementNS(ns, "circle"), [x, y] = position(node);
       circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", 2.8);

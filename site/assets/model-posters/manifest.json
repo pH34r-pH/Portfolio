@@ -4,10 +4,10 @@
   "capture": {
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
-    "sourceBase": "http://127.0.0.1:39091",
-    "sourceCommit": "cedc2a74578d2f3ff80a524e5cff2a234922fdcb",
-    "sourceTreeSha256": "5d2e58eab6b5aa80424b1715b48c22676493789317989bed7dd47825ec197a95",
-    "sourceWorkingTreeClean": true,
+    "sourceBase": "http://127.0.0.1:4173",
+    "sourceCommit": "917dbb9e98410a5abbb1fc1d28e959a165481ef3",
+    "sourceTreeSha256": "da9de85b61a3f08955df2ae97a017b9f581827df768d568e85d1c63be845444f",
+    "sourceWorkingTreeClean": false,
     "densityVariants": [
       1,
       2,
@@ -18,7 +18,7 @@
     "servedSourceHashes": {
       "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
       "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-      "model-scene.js": "1401898a7f4cfb69ea9b3d2822b734e863add7fba663bafd41466ce7d6030943",
+      "model-scene.js": "678a21e8fee3d3246442fa0389976e7afd1491d8924250a376a2f09324f547ee",
       "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
       "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
       "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",
@@ -69,7 +69,7 @@
   "sourceHashes": {
     "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
     "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-    "model-scene.js": "1401898a7f4cfb69ea9b3d2822b734e863add7fba663bafd41466ce7d6030943",
+    "model-scene.js": "678a21e8fee3d3246442fa0389976e7afd1491d8924250a376a2f09324f547ee",
     "model-quality.js": "11a5059458210ed8c954acb9b8b322814a5f6c73d45d00f704a4bf918dc7dcee",
     "model-topology.js": "8e28fdf11a4933031566c341b4748b619428b60dbf4907c2580aadb2ee744495",
     "model-digital.js": "e4c3d8af4490262f85a9c32ace907d9a125ac05e94cd033409ad6efbb41d5683",

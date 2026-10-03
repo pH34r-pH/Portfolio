@@ -32,3 +32,27 @@ startup.onQuietChange=quiet=>{
 
 if(startup.quiet){loadMachine().then(controller=>controller?.fallback('quiet-mode',true)).catch(()=>{});}
 else if(startup.started){startup.start({retained:true});}
+
+// A deliberate Start completes ignition before the first illustrative replay.
+// Retained starts restore the viewer with Play available, without restarting it.
+let replayStarted = startup.started;
+const transport = '[data-replay-play],[data-replay-rewind],[data-replay-step],[data-replay-timeline],[data-machine-form]';
+function claimReplay(event) {
+  const keyboard = event.type === 'keydown';
+  const replayKey = [' ', 'k', 'arrowleft', 'arrowright', 'home', 'end'].includes(event.key?.toLowerCase());
+  const viewerPointer = event.type === 'pointerdown' && event.target.closest('[data-machine-stage]');
+  const ownsTransport = keyboard
+    ? event.target.matches('[data-machine-stage]') && replayKey
+    : viewerPointer || event.target.closest(transport);
+  // Explicit viewer/transport intent during loading/ignition wins over the first replay.
+  if (ownsTransport) replayStarted = true;
+}
+for (const type of ['click', 'input', 'submit', 'keydown', 'pointerdown']) root.addEventListener(type, claimReplay, true);
+const readyObserver = new MutationObserver(() => {
+  if (!replayStarted && startup.phase === 'ready' && !startup.quiet) {
+    replayStarted = true;
+    root.machine?.play();
+  }
+});
+readyObserver.observe(root, {attributes:true, attributeFilter:['data-startup']});
+addEventListener('pagehide', event => { if (!event.persisted) readyObserver.disconnect(); });
