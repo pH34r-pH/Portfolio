@@ -1,6 +1,29 @@
 import assert from "node:assert/strict";
 import { expect } from "@playwright/test";
 
+async function withDeadline(operation, timeoutMs, label) {
+  let timer;
+  try {
+    return await Promise.race([operation, new Promise((resolve, reject) => {
+      timer = setTimeout(() => reject(new Error(`${label} timed out after ${timeoutMs}ms`)), timeoutMs);
+    })]);
+  } finally { clearTimeout(timer); }
+}
+
+async function withBrowserDiagnostics(page, operation, networkFailures) {
+  try {
+    return await operation;
+  } catch (error) {
+    const actualUi = await withDeadline(page.evaluate(() => ({
+      button: document.querySelector("[data-load-browser-runtime]")?.textContent,
+      status: document.querySelector("[data-runtime-status]")?.textContent,
+      output: document.querySelector("[data-output]")?.textContent,
+    })), 5000, "published browser UI diagnostics").catch(diagnosticError => ({ unavailable: diagnosticError.message }));
+    throw new Error(`${error.message}; published browser Python diagnostics: ${JSON.stringify({ actualUi, networkFailures })}`,
+      { cause: error });
+  }
+}
+
 export async function auditArticleProjection(page, path) {
   const figure = page.locator("article.myst-reader #unit-circle-readout");
   await expect(figure, `${path}: published article includes its synthetic projection figure`).toHaveCount(1);
@@ -17,7 +40,7 @@ export async function auditArticleProjection(page, path) {
   await expect(page.locator("#projection-value")).toContainText("Angle 0°. Synthetic projection: 1.00.");
 }
 
-async function auditAttachedBrowserKernel(page) {
+async function auditAttachedBrowserKernel(page, executionTimeoutMs) {
   const state = await page.evaluate(() => ({
     label: document.querySelector("[data-load-browser-runtime]")?.textContent,
     status: document.querySelector("[data-runtime-status]")?.textContent,
@@ -30,18 +53,19 @@ async function auditAttachedBrowserKernel(page) {
   assert.ok(state.hasKernel, "published article runtime reports ready only with an attached browser kernel");
   assert.ok(state.codeCells > 0, "published article attached executable MyST cells to the kernel");
   const marker = "portfolio-browser-kernel-smoke-7d51";
-  const result = await page.evaluate(async markerValue => {
+  const result = await withDeadline(page.evaluate(async markerValue => {
     const cell = window.thebe.notebook.code[0];
     cell.source = `print('${markerValue}')`;
     return cell.execute(cell.source);
-  }, marker);
+  }, marker), executionTimeoutMs, "published browser kernel execution");
   assert.ok(result && !result.error, `real browser kernel execution completes: ${JSON.stringify(result)}`);
   await expect(page.locator("[data-output]")).toContainText(marker, { timeout: 15000 });
   return { outcome: "executed", marker };
 }
 
-export async function auditPublishedBrowserPython(page) {
-  const button = page.getByRole("button", { name: "Load browser Python", exact: true });
+export async function auditPublishedBrowserPython(page, { coreTimeoutMs = 30000, executionTimeoutMs = 90000 } = {}) {
+  const button = page.locator("[data-load-browser-runtime]");
+  await expect(button).toHaveAccessibleName("Load browser Python");
   const status = page.locator("[data-runtime-status]");
   let liteAttempts = 0;
   let coreAttempts = 0;
@@ -73,7 +97,8 @@ export async function auditPublishedBrowserPython(page) {
   await expect(button).toHaveText("Try browser Python again");
   await expect(status).toContainText("could not start");
   await button.click();
-  await coreStarted;
+  await withBrowserDiagnostics(page,
+    withDeadline(coreStarted, coreTimeoutMs, "published browser core request"), externalFailures);
   await expect(button).toBeDisabled();
   await expect(button).toHaveText("Starting browser Python…");
   await button.evaluate(element => element.dispatchEvent(new MouseEvent("click", { bubbles: true })));
@@ -92,7 +117,8 @@ export async function auditPublishedBrowserPython(page) {
     const button = document.querySelector("[data-load-browser-runtime]");
     return button?.textContent === "Browser Python ready" || button?.textContent === "Try browser Python again";
   }, undefined, { timeout: 90000 });
-  const outcome = await auditAttachedBrowserKernel(page);
+  const outcome = await withBrowserDiagnostics(page,
+    auditAttachedBrowserKernel(page, executionTimeoutMs), externalFailures);
   if (outcome.outcome === "executed") return outcome;
   assert.match(outcome.status || "", /could not start/i, "blocked runtime is reported to the actual article user");
   assert.ok(externalFailures.length > 0,

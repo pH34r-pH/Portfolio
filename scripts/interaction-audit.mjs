@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { auditArticleProjection, auditPublishedBrowserPython } from "./article-browser-audit.mjs";
+import { auditCompiledCatalogNavigation } from "./compiled-catalog-audit.mjs";
 import { collectNotebookCellCoverage } from "./jupyterlite-notebook-audit.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
@@ -210,35 +211,6 @@ async function auditPublishedArticleHistory(page, manifest) {
   assert.ok(await page.evaluate(() => scrollY > 0), `${article.url}${hashHref}: Forward restores anchor scroll position`);
 }
 
-async function auditCompiledCatalogNavigation(page, context, article, path) {
-  const packagePath = `/experiments/${article.compiled_experiment.ref}/`;
-  const externalUrl = `https://experiments.tyharbin.com${packagePath}`;
-  const contentLink = page.locator(`article.myst-reader a[href="${externalUrl}"]`).first();
-  await expect(contentLink).toHaveCount(1);
-  await expect(page.locator(`aside[aria-label="Compiled experiment reference"] a[href="${externalUrl}"]`)).toHaveCount(1);
-  let intercepted = false;
-  const handler = async route => {
-    intercepted = route.request().url() === externalUrl;
-    await route.fulfill({
-      status: 200,
-      contentType: "text/html",
-      body: "<!doctype html><html lang=\"en\"><title>Compiler destination fixture</title><body><h1>Compiler destination fixture</h1></body></html>",
-    });
-  };
-  await context.route("https://experiments.tyharbin.com/experiments/**", handler);
-  try {
-    await contentLink.click();
-    await expect(page).toHaveURL(externalUrl);
-    await expect(page.getByRole("heading", { name: "Compiler destination fixture" })).toBeVisible();
-    assert.equal(intercepted, true, "catalog navigation is served from the explicit local fixture");
-    await page.goBack();
-    await expect(page).toHaveURL(base + path);
-    await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
-  } finally {
-    await context.unroute("https://experiments.tyharbin.com/experiments/**", handler);
-  }
-}
-
 async function auditWorklogDisclosures(page, width, path) {
   const evidence = page.locator(".compiled-experiment-evidence");
   if (!(await evidence.count())) return;
@@ -306,7 +278,7 @@ async function auditArticle(page, context, manifest, path, width) {
     await expect(page.locator('article.myst-reader').locator(packageLink)).toHaveCount(1);
     await expect(page.locator('aside[aria-label="Compiled experiment reference"]').locator(packageLink)).toHaveCount(1);
     if (width === 1366 && article.compiled_experiment?.ref) {
-      await auditCompiledCatalogNavigation(page, context, article, path);
+      await auditCompiledCatalogNavigation(page, context, article, path, base);
     }
   }
   if (article.slug === "accessible-does-not-imply-used") {
