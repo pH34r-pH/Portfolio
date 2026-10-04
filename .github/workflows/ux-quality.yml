@@ -29,6 +29,8 @@ jobs:
           node-version: '22'
       - name: Install locked audit tooling
         run: npm ci
+      - name: Render pre-built homepage model loop
+        run: node scripts/build-homepage-loop.mjs
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
       - name: Check UX environment
@@ -37,7 +39,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for asset in site appearance article-runtime model-machine model-scene model-topology model-light model-gestures research-topology search; do
+          node --check scripts/build-homepage-loop.mjs
+          for asset in site appearance article-runtime model-machine model-scene model-topology model-light model-gestures homepage-background homepage-model-loader homepage-digital research-topology search; do
             node --check "site/assets/$asset.js"
           done
           node scripts/test-model-replay.mjs
@@ -270,6 +273,8 @@ jobs:
           sudo apt-get install -y inkscape
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
+      - name: Render pre-built homepage model loop
+        run: node Portfolio/scripts/build-homepage-loop.mjs
       - name: Prepare isolated article export sources
         run: |
           python3 Portfolio/scripts/prepare_article_exports.py \
