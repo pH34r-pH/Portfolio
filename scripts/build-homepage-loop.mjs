@@ -10,7 +10,7 @@ import {GRAPH,TOPOLOGY} from '../site/assets/model-topology.js';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const assets=join(root,'site','assets');
 const work=join(tmpdir(),'portfolio-homepage-loop');
-const width=576,height=576,fps=10,duration=8.4,loopStart=1.8;
+const width=480,height=480,fps=10,duration=8.4,loopStart=1.8;
 const frames=Math.round(duration*fps);
 const output=join(assets,'homepage-model-loop.webm');
 const poster=join(assets,'homepage-model-loop-poster.webp');
@@ -72,12 +72,12 @@ async function renderFrame(index) {
 async function main() {
   await rm(work,{recursive:true,force:true});await mkdir(work,{recursive:true});await mkdir(assets,{recursive:true});
   for(let start=0;start<frames;start+=6)await Promise.all(Array.from({length:Math.min(6,frames-start)},(_,offset)=>renderFrame(start+offset)));
-  const encoded=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-framerate',String(fps),'-i',join(work,'%04d.png'),'-an','-c:v','libvpx-vp9','-pix_fmt','yuv420p','-b:v','0','-crf','54','-deadline','good','-cpu-used','4','-row-mt','1',output],{encoding:'utf8'});
+  const encoded=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-framerate',String(fps),'-i',join(work,'%04d.png'),'-an','-c:v','libvpx-vp9','-pix_fmt','yuv420p','-b:v','0','-crf','60','-deadline','good','-cpu-used','4','-row-mt','1',output],{encoding:'utf8'});
   if(encoded.error)throw new Error(`ffmpeg unavailable: ${encoded.error.message}`);
   if(encoded.status!==0)throw new Error(`ffmpeg failed: ${encoded.stderr.trim()}`);
   await sharp(Buffer.from(svgFrame(Math.round(loopStart*fps))),{density:96}).webp({quality:72,effort:6}).toFile(poster);
   const bytes=await readFile(output),posterBytes=await readFile(poster);
-  if(bytes.length>300000)throw new Error(`Homepage loop is ${bytes.length} bytes; keep the pre-rendered background under 300000 bytes`);
+  if(bytes.length>220000)throw new Error(`Homepage loop is ${bytes.length} bytes; keep the pre-rendered background under 220000 bytes`);
   await writeFile(manifest,JSON.stringify({
     schemaVersion:1,topology:TOPOLOGY.id,nodes:GRAPH.nodes.length,displayRoutes:GRAPH.edges.length,
     width,height,fps,durationSeconds:duration,loopStartSeconds:loopStart,prompt,result,codec:'VP9/WebM',
