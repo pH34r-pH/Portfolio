@@ -154,7 +154,7 @@ async function quietModes(host) {
 }
 
 try {
-  const hosts=[{kind:'home',base:sourceBase,url:'/'}];
+  const hosts=[{kind:'home',base:sourceBase,url:'/?model-audit=1'}];
   const sourceArticle=await articleHost(sourceBase);
   hosts.push({...sourceArticle,kind:sourceArticle.manualStart?'published-article':'article-fixture',base:sourceBase,url:sourceArticle.url.replace(sourceBase,'')});
   if(publishedBase) {
@@ -169,7 +169,7 @@ try {
 
   // A genuine responsive boundary crossing keeps graph landmarks horizontal.
   const context=await browser.newContext({viewport:{width:721,height:900},deviceScaleFactor:2});
-  const page=await context.newPage();await page.goto(sourceBase+'/',{waitUntil:'networkidle'});
+  const page=await context.newPage();await page.goto(sourceBase+'/?model-audit=1',{waitUntil:'networkidle'});
   const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
   await page.getByRole('button',{name:'Start interactive model'}).click();await expect(root).toHaveAttribute('data-render','webgl');
   const resize=[],canonicalHomeViews={};
@@ -206,13 +206,12 @@ try {
       if(route.request().resourceType()==='script')return route.abort();
       return route.continue();
     });
-    const page=await context.newPage();await page.goto(sourceBase+'/',{waitUntil:'networkidle'});
-    const poster=page.locator('.machine-poster');await expect(poster).toBeVisible();
-    const style=await poster.evaluate(node=>getComputedStyle(node).backgroundImage);
-    assert.match(style,/powered-down-(phone|desktop)/);
-    assert.match(style,new RegExp(width<=720?'powered-down-phone':'powered-down-desktop'));
+    const page=await context.newPage();await page.goto(sourceBase+'/?model-audit=1',{waitUntil:'networkidle'});
+    const poster=page.locator('.digital-model-loop-poster');await expect(poster).toBeVisible();
+    await expect(page.locator('.digital-machine-audit-surface')).toBeHidden();
+    const source=await poster.getAttribute('src');assert.equal(source,'/assets/homepage-model-loop-poster.webp');
     const path=`${out}/home-nojs-${name}.png`;await page.screenshot({path,fullPage:false});
-    evidence.push({kind:'nojs-home-poster',viewport:{name,width,height,dpr},backgroundImage:style,screenshot:path});await context.close();
+    evidence.push({kind:'nojs-home-cinematic-poster',viewport:{name,width,height,dpr},source,screenshot:path});await context.close();
   }
   const result={schemaVersion:1,environment:{browser:'headless Chromium with SwiftShader software rendering',sourceBase,
     publishedBase:publishedBase||null,publishedArticleObserved:hosts.some(host=>host.kind==='published-myst-article'),
