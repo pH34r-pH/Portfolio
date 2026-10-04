@@ -85,7 +85,7 @@ async function normalProfile(name,viewport) {
   try {
     const manifest=await (await page.request.get(base+'/assets/homepage-model-loop.json')).json();
     assert.equal(manifest.topology,'unit_hypersphere_depth3');assert.equal(manifest.nodes,1668);assert.equal(manifest.displayRoutes,3601);
-    assert.equal(manifest.loopStartSeconds,1.8);assert.equal(manifest.durationSeconds,8.4);assert.ok(manifest.bytes<=300000);
+    assert.equal(manifest.loopStartSeconds,1.8);assert.equal(manifest.durationSeconds,8.4);assert.ok(manifest.bytes<=220000);
     await cinematic(page);const colors=await palette(page);await accessibility(page);
     const navigation=await scrollAndNavigate(page);assert.equal(engineRequests(),0,'normal homepage never requests Three.js');
     await page.goto(base,{waitUntil:'networkidle'});await page.screenshot({path:`${out}/${name}.png`,fullPage:false});
