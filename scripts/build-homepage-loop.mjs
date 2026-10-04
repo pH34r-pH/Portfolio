@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import {dirname,join,resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import sharp from 'sharp';
-import {GRAPH,TOPOLOGY,layerX} from '../site/assets/model-topology.js';
+import {GRAPH,TOPOLOGY} from '../site/assets/model-topology.js';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const assets=join(root,'site','assets');
@@ -32,7 +32,7 @@ function layerEnergy(time,layer) {
   const center=.25+.43*(layer/7);
   return Math.exp(-Math.pow((phase-center)/.09,2));
 }
-function edgePath(time,yaw,layer) {
+function edgePath(yaw,layer) {
   return GRAPH.edges.filter(edge=>edge.layer===layer).map(edge=>{
     const a=project(edge.sourcePosition,yaw),b=project(edge.targetPosition,yaw);
     return `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
@@ -51,7 +51,7 @@ function svgFrame(frame) {
   const layers=Array.from({length:8},(_,layer)=>{
     const energy=layerEnergy(time,layer),edgeOpacity=(.12+.48*energy).toFixed(3),nodeOpacity=(.34+.62*energy).toFixed(3);
     const edgeColor=layer===6?'#9b78cf':'#31a8ff';
-    return `<path d="${edgePath(time,yaw,layer)}" fill="none" stroke="${edgeColor}" stroke-width="${energy>.55?1.35:.72}" stroke-opacity="${edgeOpacity}"/><path d="${nodePath(yaw,layer)}" fill="#69c6ff" fill-opacity="${nodeOpacity}"/>`;
+    return `<path d="${edgePath(yaw,layer)}" fill="none" stroke="${edgeColor}" stroke-width="${energy>.55?1.35:.72}" stroke-opacity="${edgeOpacity}"/><path d="${nodePath(yaw,layer)}" fill="#69c6ff" fill-opacity="${nodeOpacity}"/>`;
   }).join('');
   let telemetry='';
   if(time>=loopStart) {
