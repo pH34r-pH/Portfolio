@@ -329,7 +329,7 @@ async function bfcache() {
   // policy. Use full Chromium's new headless mode and remove only that switch.
   const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new'],
     ignoreDefaultArgs:['--disable-back-forward-cache']});
-  const {context,page,errors}=await open({},holdPartialIgnitionFrame,'',cacheBrowser);
+  const {context,page,errors}=await open({},holdPartialIgnitionFrame,homePath,cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
