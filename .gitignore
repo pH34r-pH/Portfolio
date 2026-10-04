@@ -10,3 +10,6 @@ __pycache__/
 *.egg-info/
 ux-screenshots/
 lhci-server.log
+site/assets/homepage-model-loop.webm
+site/assets/homepage-model-loop-poster.webp
+site/assets/homepage-model-loop.json
