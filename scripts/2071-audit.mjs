@@ -115,7 +115,7 @@ async function auditVisibleMachine(browser) {
   page.on("request", request => {
     if (request.url().includes("three@0.186.1")) engineRequests.push(request.url());
   });
-  await page.goto(base + "/", { waitUntil: "networkidle" });
+  await page.goto(base + "/?model-audit=1", { waitUntil: "networkidle" });
   const machine = page.locator("[data-model-machine]").first();
   await expect(machine).toBeVisible();
   if (await machine.getAttribute('data-digital-home') === null) {
