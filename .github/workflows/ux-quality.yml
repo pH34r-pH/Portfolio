@@ -29,6 +29,10 @@ jobs:
           node-version: '22'
       - name: Install locked audit tooling
         run: npm ci
+      - name: Install homepage media renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
       - name: Render pre-built homepage model loop
         run: node scripts/build-homepage-loop.mjs
       - name: Install Chromium
@@ -270,7 +274,7 @@ jobs:
       - name: Install document export image conversion
         run: |
           sudo apt-get update
-          sudo apt-get install -y inkscape
+          sudo apt-get install -y inkscape ffmpeg
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
       - name: Render pre-built homepage model loop
