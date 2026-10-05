@@ -7,6 +7,12 @@ Portfolio is the publicly shareable portion of my ongoing research project. Its 
 Each published version of Portfolio is an immutable snapshot of the selected articles, notebooks, and assets, including the exact source revisions used to build it. This keeps published results reproducible as the underlying research continues to change, while allowing new work to be added without modifying previous releases. The public research site at `tyharbin.com` and static experiment catalog at `experiments.tyharbin.com` follow the cross-site publication contract in [`design/cross-site-contract.md`](design/cross-site-contract.md).
 
 
+### Archival experiment citations
+
+The public research experience separates **reproduction** from **archival citation**. Articles continue to hand readers to an exact experiment detail route at `experiments.tyharbin.com`, which is derived by Experiment Compiler. A source-owner-approved finalized artifact may also have an immutable release in [pH34r-pH/compiled-experiments](https://github.com/pH34r-pH/compiled-experiments), followed by a Zenodo DOI after the explicit human release step.
+
+Portfolio may render an exact archival GitHub Release/DOI relation when authoritative experiment metadata provides it. It does not maintain a second archive/DOI registry, resolve mutable `latest` releases, or interpret DOI presence as scientific acceptance or independent reproduction. See [compiled-experiments#1](https://github.com/pH34r-pH/compiled-experiments/issues/1).
+
 ## Fleet publication handoff
 
 Private [long-haul-fleet](https://github.com/pH34r-pH/long-haul-fleet) selects a full 40-character Portfolio commit SHA on the trusted `main` history. The `Portfolio UX quality` workflow runs on every main push and PR on free public GitHub-hosted runners with `contents: read`; its stable source gate is job `ux`. Fleet requires a completed successful **main push** `ux` run on the exact SHA it stages. Pending, failed, missing, canceled, PR-only, or different-SHA runs cannot authorize publication. UX screenshots are short-lived review evidence, not the deployable package or a passing gate by themselves.
