@@ -21,6 +21,7 @@ class GitHubPagesPreparationTests(unittest.TestCase):
     def test_rewrites_internal_urls_and_preserves_external_urls(self) -> None:
         source = """<a href="/articles/a/">Article</a><img src=/assets/a.png>
 <script>fetch('/publication.json');const origin='https://tyharbin.com/about/';const cdn='//cdn.example/a.js';</script>
+<link rel="canonical" href="https://tyharbin.com/articles/a/">
 <style>.x{background:url('/assets/bg.svg')} .y{mask:url(/assets/mask.svg)}</style>
 <img srcset="/assets/one.webp 1x, /assets/two.webp 2x">
 """
@@ -29,6 +30,7 @@ class GitHubPagesPreparationTests(unittest.TestCase):
         self.assertIn('src=/Portfolio/assets/a.png', actual)
         self.assertIn("fetch('/Portfolio/publication.json')", actual)
         self.assertIn("https://tyharbin.com/about/", actual)
+        self.assertIn('href="https://tyharbin.com/articles/a/"', actual)
         self.assertIn("//cdn.example/a.js", actual)
         self.assertIn("url('/Portfolio/assets/bg.svg')", actual)
         self.assertIn("url(/Portfolio/assets/mask.svg)", actual)

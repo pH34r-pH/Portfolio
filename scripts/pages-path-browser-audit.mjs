@@ -62,7 +62,10 @@ try {
   await home.goto(new URL(article.url, base.origin).href, { waitUntil: 'networkidle' });
   await expect(home.locator('article.myst-reader h1')).toHaveText(article.title);
   const canonical = await home.locator('link[rel="canonical"]').getAttribute('href');
-  assert.ok(canonical?.startsWith('https://tyharbin.com/'), `Canonical URL remains on the current domain: ${canonical}`);
+  const canonicalPath = article.url.slice(basePath.length);
+  const expectedCanonical = new URL(canonicalPath, 'https://tyharbin.com').href;
+  assert.equal(canonical, expectedCanonical,
+    `Pages article canonical URL remains on the current domain and route: ${expectedCanonical}`);
   for (const asset of await home.locator('article.myst-reader img[src], article.myst-reader source[src]').evaluateAll(
     nodes => nodes.map(node => node.getAttribute('src')).filter(Boolean))) {
     assert.ok(asset.startsWith(`${basePath}/`) || /^https?:\/\//.test(asset),
