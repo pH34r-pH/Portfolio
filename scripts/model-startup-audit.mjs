@@ -6,6 +6,7 @@ import {IGNITION_DURATION_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../
 import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
+const homePath='/?model-audit=1',homeUrl=base+homePath;
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
@@ -20,7 +21,7 @@ const startupState=state=>({schemaVersion:STARTUP_SCHEMA_VERSION,started:state.s
   ignitionComplete:state.ignitionComplete,elapsedActiveMs:state.elapsedActiveMs,
   topologyVersion:'unit_hypersphere_depth3',styleVersion:'leaf01-blue-horizontal-native-resolution'});
 
-async function open(options={},setup,path='',browserInstance=browser) {
+async function open(options={},setup,path=homePath,browserInstance=browser) {
   const context=await browserInstance.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},...options});
   const page=await context.newPage(),errors=[];
   await page.addInitScript(()=>{
@@ -224,14 +225,13 @@ async function noScript() {
     page.on('request',request=>{if(request.url().includes('three@0.186.1'))engines++;});
   });
   try {
-    await expect(page.locator('.machine-poster')).toBeVisible();
-    await expect(page.locator('[data-model-boot]')).toBeHidden();
-    await expect(page.locator('.digital-startup-static')).toBeVisible();
+    await expect(page.locator('.digital-model-loop-poster')).toBeVisible();
+    await expect(page.locator('.digital-machine-audit-surface')).toBeHidden();
     await expect(page.getByRole('button',{name:'Start interactive model'})).toBeHidden();
     await page.locator('.digital-replay-disclosure summary').click();
     await expect(page.getByRole('link',{name:'Architecture and aggregation map',exact:true})).toHaveAttribute('href',/model-architecture/);
     assert.equal(engines,0);assert.deepEqual(errors,[]);
-    evidence.push({mode:'no-script',posterVisible:true,staticDescription:true,engines,errors});
+    evidence.push({mode:'no-script',cinematicPosterVisible:true,auditSurfaceHidden:true,engines,errors});
   } finally {await context.close();}
 }
 
@@ -296,7 +296,7 @@ async function restoredVisit() {
     assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1');
 
     await page.goto(base+'/about/',{waitUntil:'domcontentloaded'});
-    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+    await page.goto(homeUrl,{waitUntil:'domcontentloaded'});
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:20000}).toBe('ready');
     const second=await snapshot(page);
     assert.equal(second.started,true);assert.equal(second.ignitionComplete,true);
@@ -329,7 +329,7 @@ async function bfcache() {
   // policy. Use full Chromium's new headless mode and remove only that switch.
   const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new'],
     ignoreDefaultArgs:['--disable-back-forward-cache']});
-  const {context,page,errors}=await open({},holdPartialIgnitionFrame,'',cacheBrowser);
+  const {context,page,errors}=await open({},holdPartialIgnitionFrame,homePath,cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
@@ -341,7 +341,7 @@ async function bfcache() {
     await page.getByRole('link',{name:'About',exact:true}).first().click();
     await expect(page).toHaveURL(/\/about\/$/);
     await page.waitForTimeout(16000);
-    await page.goBack({waitUntil:'commit'});await expect(page).toHaveURL(base+'/');
+    await page.goBack({waitUntil:'commit'});await expect(page).toHaveURL(homeUrl);
     await page.evaluate(()=>window.releaseStartup());
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
     const persisted=await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditPageShowPersisted'));

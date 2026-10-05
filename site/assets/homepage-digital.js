@@ -32,5 +32,5 @@ visualViewport?.addEventListener('resize',schedule,{passive:true});
 reduced.addEventListener('change',schedule);forced.addEventListener('change',schedule); narrow.addEventListener('change',schedule);
 new ResizeObserver(schedule).observe(journey);
 document.addEventListener('visibilitychange',schedule);
-window.PortfolioHomepage = {snapshot:() => ({mode:journey.dataset.reading,chapter:journey.dataset.chapter,panes:chapters.map(node=>({id:node.id,state:node.dataset.paneState,transform:node.querySelector('[data-digital-pane]').style.transform})),model:journey.machine?.diagnostics()})};
+window.PortfolioHomepage = {snapshot:() => ({mode:journey.dataset.reading,chapter:journey.dataset.chapter,panes:chapters.map(node=>({id:node.id,state:node.dataset.paneState,transform:node.querySelector('[data-digital-pane]').style.transform})),background:window.PortfolioHomepageBackground?.snapshot?.()??null,model:journey.machine?.diagnostics?.()??null})};
 update();
