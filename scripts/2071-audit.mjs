@@ -151,9 +151,11 @@ async function auditReducedMotionMachine(browser) {
   });
   await page.goto(base + "/", { waitUntil: "networkidle" });
   const machine = page.locator("[data-model-machine]").first();
-  await machine.scrollIntoViewIfNeeded();
-  await expect(machine).toHaveAttribute("data-render", "fallback", { timeout: 5000 });
-  await expect(machine.locator("[data-machine-fallback]")).toBeVisible();
+  await expect(machine).toHaveAttribute("data-background-motion", "static");
+  await expect(page.locator(".digital-model-loop-poster")).toBeVisible();
+  await expect(page.locator(".digital-machine-audit-surface")).toBeHidden();
+  assert.equal(await page.evaluate(() => Boolean(window.PortfolioModelStartup)), false,
+    "Normal reduced-motion homepage does not initialize the audit-only renderer");
   assert.equal(engineRequested, false, "Reduced motion must not load the 3D engine");
   await context.close();
 }
