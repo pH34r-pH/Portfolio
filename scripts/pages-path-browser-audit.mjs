@@ -31,7 +31,7 @@ function collectNetworkFailures(page) {
 }
 
 const manifestResponse = await fetch(new URL('publication.json', projectBase));
-assert.ok(manifestResponse.ok, `Pages publication manifest returned ${manifestResponse.status()}`);
+assert.ok(manifestResponse.ok, `Pages publication manifest returned ${manifestResponse.status}`);
 const manifest = await manifestResponse.json();
 assert.ok(manifest.articles?.length, 'Prepared Pages manifest must include article routes');
 assert.ok(manifest.notebooks?.length, 'Prepared Pages manifest must include notebook routes');
