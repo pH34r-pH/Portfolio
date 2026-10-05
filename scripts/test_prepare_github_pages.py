@@ -74,11 +74,20 @@ class GitHubPagesPreparationTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "cannot contain symlinks"):
                 prepare(source, root / "out", "/Portfolio")
 
-    def test_rejects_project_escape(self) -> None:
-        with self.assertRaisesRegex(ValueError, "escapes the Pages project path"):
-            rewrite_urls("<a href=\"/../../private/\">bad</a>", "/Portfolio")
-        with self.assertRaisesRegex(ValueError, "escapes the Pages project path"):
-            rewrite_urls("<a href=\"/%2e%2e/private/\">bad</a>", "/Portfolio")
+    def test_normalizes_root_traversal_without_leaving_project_path(self) -> None:
+        actual = rewrite_urls(
+            '<a href="/..">root</a><a href="/../../private/">literal</a>'
+            '<a href="/%2e%2e/private/?view=full#part">encoded</a>'
+            '<a href="/Portfolio/../articles/">already prefixed</a>',
+            "/Portfolio",
+        )
+        self.assertEqual(
+            actual,
+            '<a href="/Portfolio/">root</a><a href="/Portfolio/private/">literal</a>'
+            '<a href="/Portfolio/private/?view=full#part">encoded</a>'
+            '<a href="/Portfolio/articles/">already prefixed</a>',
+        )
+        self.assertNotIn("/Portfolio/..", actual)
 
     def test_refuses_custom_domain_binding_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -38,14 +38,28 @@ def normalized_base_path(value: str) -> str:
 
 
 def prefixed_url(base_path: str, path: str) -> str:
-    decoded_parts = unquote(path).split("/")
-    if any(part == ".." for part in decoded_parts):
-        raise ValueError(f"Root-relative URL escapes the Pages project path: /{path}")
-    relative = path.lstrip("/")
+    # Resolve dot segments as a browser does for a root-relative URL before
+    # applying the project prefix. Traversal above the origin root clamps to
+    # that root, then the project prefix keeps the resulting URL within Pages.
+    raw_path = path if path.startswith("/") else "/" + path
+    parsed = urlsplit(raw_path)
+    segments: list[str] = []
+    for segment in parsed.path.split("/")[1:]:
+        decoded = unquote(segment)
+        if decoded == ".":
+            continue
+        if decoded == "..":
+            if segments:
+                segments.pop()
+            continue
+        segments.append(segment)
+    normalized_path = "/" + "/".join(segments)
+    suffix = raw_path[len(parsed.path):]
+    relative = normalized_path.lstrip("/")
     base_segment = base_path.lstrip("/")
     if relative == base_segment or relative.startswith(base_segment + "/"):
-        return "/" + relative
-    return base_path + "/" + relative
+        return normalized_path + suffix
+    return base_path + "/" + relative + suffix
 
 
 def rewrite_urls(content: str, base_path: str) -> str:
