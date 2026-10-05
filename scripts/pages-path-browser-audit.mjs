@@ -92,21 +92,37 @@ try {
   await home.goto(labUrl.href, { waitUntil: 'domcontentloaded' });
   await expect(home.locator('#jupyter-config-data')).toHaveCount(1);
   await expect(home.locator('.jp-NotebookPanel')).toBeVisible({ timeout: 90000 });
+  const kernelDialog = home.getByRole('dialog');
+  if (await kernelDialog.isVisible().catch(() => false)) {
+    await expect(kernelDialog).toContainText('Select Kernel');
+    await kernelDialog.locator('select').selectOption({ label: 'Python (Pyodide)' });
+    await kernelDialog.getByRole('button', { name: 'Select Kernel' }).click();
+  }
   const labIdentity = await home.evaluate(async selectedPath => {
-    const config = JSON.parse(document.querySelector('#jupyter-config-data')?.textContent || '{}');
-    const baseUrl = config.baseUrl || '/lab/';
-    const apiUrl = new URL(`api/contents/${selectedPath}`, new URL(baseUrl, location.origin));
+    const configNode = document.querySelector('#jupyter-config-data');
+    const liteRoot = new URL(configNode?.dataset.jupyterLiteRoot || '.', location.href);
+    const parentPath = selectedPath.includes('/') ? selectedPath.slice(0, selectedPath.lastIndexOf('/')) : '';
+    const apiUrl = new URL(`api/contents/${parentPath ? `${parentPath}/` : ''}all.json`, liteRoot);
     const response = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-    const data = response.ok ? await response.json() : null;
+    const listing = response.ok ? await response.json() : null;
+    const notebookUrl = new URL(`files/${selectedPath}`, liteRoot);
+    const notebookResponse = await fetch(notebookUrl, { headers: { Accept: 'application/json' } });
+    const data = notebookResponse.ok ? await notebookResponse.json() : null;
     await Promise.race([navigator.serviceWorker.ready, new Promise(resolve => setTimeout(resolve, 30000))]);
     const registrations = await navigator.serviceWorker.getRegistrations();
-    return { apiPath: apiUrl.pathname, status: response.status, data,
+    return { apiPath: apiUrl.pathname, status: response.status,
+      listedNotebook: listing?.content?.some(item => item.path === selectedPath),
+      notebookPath: notebookUrl.pathname, notebookStatus: notebookResponse.status, data,
       crossOriginIsolated: globalThis.crossOriginIsolated,
       serviceWorkers: registrations.map(registration => registration.scope) };
   }, selectedJupyterPath);
   assert.ok(labIdentity.apiPath.startsWith(`${basePath}/`),
     `JupyterLite API remains within the project path: ${labIdentity.apiPath}`);
-  assert.equal(labIdentity.status, 200, `JupyterLite can read its selected notebook through its contents API`);
+  assert.equal(labIdentity.status, 200, `JupyterLite contents index resolves under the project path`);
+  assert.ok(labIdentity.listedNotebook, `JupyterLite contents index lists the selected notebook`);
+  assert.ok(labIdentity.notebookPath.startsWith(`${basePath}/`),
+    `JupyterLite notebook file remains within the project path: ${labIdentity.notebookPath}`);
+  assert.equal(labIdentity.notebookStatus, 200, `JupyterLite can read the selected notebook file`);
   assert.deepEqual(labIdentity.data.content.cells?.map(cell => ({
     id: cell.id || '',
     type: cell.cell_type,
@@ -123,9 +139,8 @@ try {
   const codeEditor = home.locator('.jp-CodeCell .cm-content').first();
   await expect(codeEditor).toBeVisible({ timeout: 30000 });
   const smokeMarker = 'portfolio-pages-browser-kernel-smoke-2026';
-  await codeEditor.click();
-  await home.keyboard.press('Control+A');
-  await home.keyboard.insertText(`print('${smokeMarker}')`);
+  await codeEditor.fill(`print('${smokeMarker}')`);
+  await expect(codeEditor).toContainText(smokeMarker);
   await home.keyboard.press('Shift+Enter');
   await expect(home.locator('.jp-CodeCell').first().locator('.jp-OutputArea-output'))
     .toContainText(smokeMarker, { timeout: 120000 });
