@@ -43,7 +43,7 @@ try {
   const desktop = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const home = await desktop.newPage();
   collectNetworkFailures(home);
-  await home.goto(new URL('?model-audit=1', projectBase), { waitUntil: 'networkidle' });
+  await home.goto(new URL('?model-audit=1', projectBase).href, { waitUntil: 'networkidle' });
   await expect(home.locator('main h1')).toBeVisible();
   await expect(home.locator('.digital-model-loop')).toBeAttached();
   const hasPrefixedNavigation = await home.locator('.topbar a[href]').evaluateAll((links, prefix) =>
@@ -59,7 +59,7 @@ try {
     undefined, { timeout: 30000 });
 
   const article = manifest.articles[0];
-  await home.goto(new URL(article.url, base.origin), { waitUntil: 'networkidle' });
+  await home.goto(new URL(article.url, base.origin).href, { waitUntil: 'networkidle' });
   await expect(home.locator('article.myst-reader h1')).toHaveText(article.title);
   const canonical = await home.locator('link[rel="canonical"]').getAttribute('href');
   assert.ok(canonical?.startsWith('https://tyharbin.com/'), `Canonical URL remains on the current domain: ${canonical}`);
@@ -70,7 +70,7 @@ try {
   }
   const pdfPath = article.downloads?.pdf;
   assert.ok(pdfPath?.startsWith(`${basePath}/`), `PDF link includes the project path: ${pdfPath}`);
-  const pdfResponse = await home.request.get(new URL(pdfPath, base.origin));
+  const pdfResponse = await home.request.get(new URL(pdfPath, base.origin).href);
   assert.ok(pdfResponse.ok(), `Article PDF resolves under the Pages path (${pdfResponse.status()})`);
   assert.ok((await pdfResponse.body()).subarray(0, 5).toString('ascii') === '%PDF-', 'Article PDF has a valid PDF signature');
 
@@ -86,7 +86,7 @@ try {
   const selectedJupyterPath = notebook.jupyterPath || notebookPath.replace(/^publication\//, '');
   const labUrl = new URL('lab/lab/', projectBase);
   labUrl.searchParams.set('path', selectedJupyterPath);
-  await home.goto(labUrl, { waitUntil: 'domcontentloaded' });
+  await home.goto(labUrl.href, { waitUntil: 'domcontentloaded' });
   await expect(home.locator('#jupyter-config-data')).toHaveCount(1);
   await expect(home.locator('.jp-NotebookPanel')).toBeVisible({ timeout: 90000 });
   const labIdentity = await home.evaluate(async selectedPath => {
@@ -134,7 +134,7 @@ try {
   });
   const mobile = await mobileContext.newPage();
   collectNetworkFailures(mobile);
-  await mobile.goto(projectBase, { waitUntil: 'networkidle' });
+  await mobile.goto(projectBase.href, { waitUntil: 'networkidle' });
   const dimensions = await mobile.evaluate(() => ({
     document: document.documentElement.scrollWidth,
     viewport: document.documentElement.clientWidth,
@@ -157,7 +157,7 @@ try {
   });
   const reduced = await reducedContext.newPage();
   collectNetworkFailures(reduced);
-  await reduced.goto(projectBase, { waitUntil: 'networkidle' });
+  await reduced.goto(projectBase.href, { waitUntil: 'networkidle' });
   const reducedState = await reduced.evaluate(() => ({
     preference: matchMedia('(prefers-reduced-motion: reduce)').matches,
     motion: window.PortfolioHomepageBackground?.snapshot(),
