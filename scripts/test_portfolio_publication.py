@@ -434,6 +434,8 @@ class ReaderPublicationTest(unittest.TestCase):
                              'https://orcid.org/0009-0006-9153-2759')
             self.assertEqual(article_document.select_one('link[rel="author"]')['href'],
                              'https://orcid.org/0009-0006-9153-2759')
+            self.assertEqual(article_document.select_one('link[rel="canonical"]')['href'],
+                             'https://tyharbin.com/articles/sample-article/')
             self.assertIn('<h1 id="sample-article">Sample article</h1>', article_page)
             self.assertIn('href="/notebooks/001_reader/"', article_page)
             self.assertIn('href="/articles/sample-article-second/"', article_page)

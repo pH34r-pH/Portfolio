@@ -19,6 +19,16 @@ After a passing `ux` job on main, the same workflow's `Public publication candid
 
 The [Fleet workflow and deployed-surface map](https://github.com/pH34r-pH/long-haul-fleet/blob/main/docs/workflow-and-surface-map.md) records the protected path. Portfolio produces a public candidate; Fleet verifies the exact source checks, pinned dependency revisions, candidate manifest, and whole-tree digest before a separate protected production promotion. The latest protected receipt is the source of truth for deployed revisions, artifact ID, digest, and domain probes, so this README does not duplicate those changing values. A public source pass alone never publishes production.
 
+## GitHub Pages review and deployment
+
+The GitHub Pages build starts from the same qualified public bundle as Fleet. A Pages-only copy rewrites root-relative site URLs for the repository project path (`/Portfolio/`); the immutable Fleet candidate is not rewritten. Published notebook source files keep their recorded bytes and digests. Canonical URLs continue to use `tyharbin.com`, external experiment links continue to use `experiments.tyharbin.com`, and the Pages copy contains no `CNAME` file.
+
+Every pull request builds and browser-checks that project-path copy, then uploads it as a short-lived `portfolio-pages-Portfolio-*` review artifact. The check covers deep article links, a PDF export, internal asset loading, the interactive model, mobile navigation, reduced motion, JupyterLite notebook file access, and in-browser Python execution without cross-origin isolation headers. The existing accessibility, interaction, and Lighthouse transfer budgets remain in force.
+
+After reviewing the artifact and merging the change, run **Portfolio UX quality** manually on `main`. Leave the `deploy_pages` input unchecked to build another review artifact. Check it only when ready to publish. The deployment job uses the same run's tested artifact and refuses to deploy unless GitHub reports the default `github.io/Portfolio` URL and `/Portfolio` path. If Pages is not already configured for GitHub Actions, set that publishing source in repository Pages settings first. No custom domain or DNS change is part of this workflow.
+
+GitHub documents a 1 GB maximum for a published Pages site and a 10 GB maximum for the uploaded Pages tar artifact. The preparation step enforces the documented published-site ceiling; the existing Lighthouse transfer thresholds remain 500,000 bytes pass, 500,001–750,000 bytes warn, and above 750,000 bytes block.
+
 ## Article and notebook execution
 
 Articles are the primary reading experience. Their explanatory cells are illustrative and carry explicit activation before code runs. Published notebooks use JupyterLite to run Python directly in the browser, without requiring a local development environment or remote compute. Browser execution has some limitations compared with a conventional Python environment, so notebooks are tested for compatibility before publication; the preserved notebooks remain available to inspect, modify, and rerun.

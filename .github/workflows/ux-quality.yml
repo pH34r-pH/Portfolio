@@ -4,6 +4,13 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_pages:
+        description: Deploy Pages after the qualified project-path build
+        required: true
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -271,15 +278,19 @@ jobs:
               echo '- Gate: Portfolio UX quality / ux passed for this exact main SHA.'
               echo "- Private publication: Fleet verifies this run and all pinned research inputs, then records a separate deployment receipt."
             } >> "$GITHUB_STEP_SUMMARY"
-          else
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
             echo "PR UX result is review evidence; Fleet requires a separate passing main SHA." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Manual Pages build is review evidence; it does not qualify a Fleet publication candidate." >> "$GITHUB_STEP_SUMMARY"
           fi
 
   bundle:
     name: Public publication candidate
     needs: ux
-    # Scoped route/profile PRs need only the fast UX contract. Main always builds the exact deployable candidate.
-    if: ${{ !cancelled() && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true')) }}
+    outputs:
+      pages_artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
+    # Scoped route/profile PRs need only the fast UX contract. Main and manual Pages builds use the exact candidate.
+    if: ${{ !cancelled() && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
@@ -387,8 +398,10 @@ jobs:
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/preflight_env.py publication
       - name: Check reader and publication code
         run: |
-          uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py Portfolio/scripts/compiler_projection_input.py
+          node --check Portfolio/scripts/rewrite_javascript_urls.mjs
+          uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py Portfolio/scripts/compiler_projection_input.py Portfolio/scripts/prepare_github_pages.py
           uv run --project Portfolio --no-sync python Portfolio/scripts/test_portfolio_publication.py
+          uv run --project Portfolio --no-sync python Portfolio/scripts/test_prepare_github_pages.py
       - name: Generate the pinned Compiler public static projection
         run: python3 experiment-compiler/scripts/build_pages_site.py --output compiler-public
       - name: Assemble immutable public inputs
@@ -567,6 +580,43 @@ jobs:
           path: Portfolio/ux-screenshots/
           if-no-files-found: error
           retention-days: 3
+      - name: Prepare and test the project-path Pages copy
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        id: pages_preview
+        shell: bash
+        env:
+          PORTFOLIO_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          repository_name="${PORTFOLIO_REPOSITORY#*/}"
+          base_path="/$repository_name"
+          uv run --project Portfolio --no-sync python Portfolio/scripts/prepare_github_pages.py \
+            bundle pages-site --base-path "$base_path"
+          preview_root="$RUNNER_TEMP/portfolio-pages-preview"
+          mkdir -p "$preview_root/$repository_name"
+          cp -a pages-site/. "$preview_root/$repository_name/"
+          artifact_name="portfolio-pages-$repository_name-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          echo "artifact_name=$artifact_name" >> "$GITHUB_OUTPUT"
+          Portfolio/node_modules/.bin/serve "$preview_root" -l tcp://127.0.0.1:4174 > /tmp/portfolio-pages-preview.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
+          for _ in {1..30}; do
+            if curl -fsS "http://127.0.0.1:4174$base_path/" >/dev/null; then break; fi
+            sleep 1
+          done
+          kill -0 "$server_pid"
+          curl -fsS "http://127.0.0.1:4174$base_path/publication.json" >/dev/null
+          export PORTFOLIO_PAGES_AUDIT_URL="http://127.0.0.1:4174$base_path/"
+          node Portfolio/scripts/pages-path-browser-audit.mjs
+      - name: Upload the reviewable Pages copy
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.pages_preview.outputs.artifact_name }}
+          path: pages-site/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
       - name: Hash exact upload bytes
         if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
         id: digest
@@ -609,3 +659,51 @@ jobs:
             echo "- Public source and producer run/attempt: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
             echo '- Private Fleet must recheck all source gates and the downloaded bundle digest before publication.'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy-pages:
+    name: Deploy reviewed Pages build
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_pages }}
+    needs: bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Refuse custom domains or unexpected project paths
+        shell: bash
+        env:
+          PAGES_BASE_URL: ${{ steps.pages.outputs.base_url }}
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          set -euo pipefail
+          repository_name="${GITHUB_REPOSITORY#*/}"
+          expected_base_url="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/$repository_name"
+          actual_base_url="${PAGES_BASE_URL%/}"
+          if [[ "${actual_base_url,,}" != "${expected_base_url,,}" || "$PAGES_BASE_PATH" != "/$repository_name" ]]; then
+            echo "Refusing deployment: expected $expected_base_url at /$repository_name; Pages reports $PAGES_BASE_URL at $PAGES_BASE_PATH. Check Pages settings before publishing." >&2
+            exit 1
+          fi
+      - name: Download the exact Pages copy from the build job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.bundle.outputs.pages_artifact_name }}
+          path: pages-site
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: pages-site
+      - name: Deploy GitHub Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Record deployed Pages URL
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: echo "Published the reviewed Pages artifact at $PAGE_URL" >> "$GITHUB_STEP_SUMMARY"
