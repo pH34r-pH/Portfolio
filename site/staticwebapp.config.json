@@ -1,0 +1,20 @@
+{
+  "routes": [
+    {
+      "route": "/card",
+      "rewrite": "/card.md",
+      "headers": {
+        "Content-Disposition": "inline"
+      }
+    },
+    {
+      "route": "/card.md",
+      "headers": {
+        "Content-Disposition": "inline"
+      }
+    }
+  ],
+  "mimeTypes": {
+    ".md": "text/plain; charset=utf-8"
+  }
+}

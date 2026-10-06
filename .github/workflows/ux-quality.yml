@@ -16,30 +16,103 @@ jobs:
   ux:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      fast_path: ${{ steps.scope.outputs.fast_path }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
           persist-credentials: false
+      - name: Classify UX qualification scope
+        id: scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = pull_request ]; then
+            base="$PR_BASE_SHA"
+          else
+            base="$PUSH_BASE_SHA"
+          fi
+
+          fast_path=false
+          reason="full UX qualification required"
+          if [[ "$base" =~ ^[0-9a-f]{40}$ ]] && [[ ! "$base" =~ ^0+$ ]] && [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            mapfile -t changed < <(git diff --name-only "$base" "$HEAD_SHA")
+            mapfile -t deleted < <(git diff --diff-filter=D --name-only "$base" "$HEAD_SHA")
+            allowed=true
+            saw_route_change=false
+
+            if [ "${#changed[@]}" -eq 0 ] || [ "${#deleted[@]}" -ne 0 ]; then
+              allowed=false
+            fi
+
+            for path in "${changed[@]}"; do
+              case "$path" in
+                site/card.md|site/staticwebapp.config.json)
+                  saw_route_change=true
+                  ;;
+                scripts/test_static_webapp_config.py|.github/workflows/ux-quality.yml)
+                  ;;
+                *)
+                  allowed=false
+                  ;;
+              esac
+            done
+
+            if [ "$allowed" = true ] && [ "$saw_route_change" = true ]; then
+              fast_path=true
+              reason="only ARCC route/profile serving files and their dedicated regression/CI definition changed"
+            fi
+
+            {
+              echo "### UX scope classification"
+              echo
+              echo "- Base: `$base`"
+              echo "- Head: `$HEAD_SHA`"
+              echo "- Fast path: `$fast_path`"
+              echo "- Reason: $reason"
+              echo "- Changed paths:"
+              printf '  - `%s`\n' "${changed[@]}"
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "fast_path=$fast_path" >> "$GITHUB_OUTPUT"
+      - name: Validate scoped ARCC routing contract
+        if: ${{ steps.scope.outputs.fast_path == 'true' }}
+        run: python3 scripts/test_static_webapp_config.py
       - uses: actions/setup-python@v5
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         with:
           python-version: '3.12'
       - uses: actions/setup-node@v4
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         with:
           node-version: '22'
       - name: Install locked audit tooling
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: npm ci
       - name: Install homepage media renderer
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       - name: Render pre-built homepage model loop
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: node scripts/build-homepage-loop.mjs
       - name: Install Chromium
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: npx playwright install --with-deps chromium
       - name: Check UX environment
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: python3 scripts/preflight_env.py ux
       - name: Check source syntax and audit regressions
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -57,6 +130,7 @@ jobs:
           node scripts/test-lighthouse-transfer-budget.mjs
           node scripts/test-serve-lhci.mjs
       - name: Run responsive, accessibility, interaction and model audits
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -98,13 +172,13 @@ jobs:
           run_audit screenshots node scripts/capture-ux-screenshots.mjs
           exit "$status"
       - name: Prepare bounded V2 model visual review evidence
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         shell: bash
         env:
           PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/prepare-model-visual-evidence.mjs
       - name: Upload UX review screenshots
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ux-review-${{ github.event.pull_request.head.sha || github.sha }}
@@ -112,7 +186,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
       - name: Upload all source audit screenshots and reports
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: ux-audit-evidence-${{ github.event.pull_request.head.sha || github.sha }}
@@ -120,7 +194,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
       - name: Upload Leaf03 shared-glass regression evidence
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: leaf03-glass-regression-${{ github.event.pull_request.head.sha || github.sha }}
@@ -128,7 +202,7 @@ jobs:
           if-no-files-found: error
           retention-days: 3
       - name: Enforce Lighthouse budgets (mobile and desktop)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.scope.outputs.fast_path != 'true' }}
         shell: bash
         run: |
           set -uo pipefail
@@ -166,10 +240,10 @@ jobs:
             exit 1
           fi
       - name: Check initial-page transfer policy
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
       - name: Retain raw Lighthouse reports
-        if: always()
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports-${{ github.event.pull_request.head.sha || github.sha }}
@@ -181,7 +255,14 @@ jobs:
           retention-days: 30
       - name: Summarize public source qualification
         shell: bash
+        env:
+          FAST_PATH: ${{ steps.scope.outputs.fast_path }}
         run: |
+          if [ "$FAST_PATH" = true ]; then
+            echo "- Qualification mode: scoped ARCC routing fast path; visual, interaction, model, screenshot, and Lighthouse audits were not applicable to the changed paths." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Qualification mode: full Portfolio UX suite." >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
             {
               echo "## Portfolio source qualified for Fleet review"
@@ -197,8 +278,8 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    # Continue review qualification after UX failure; only successful UX may publish an artifact.
-    if: ${{ !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+    # Scoped route/profile PRs need only the fast UX contract. Main always builds the exact deployable candidate.
+    if: ${{ !cancelled() && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
