@@ -317,6 +317,7 @@ jobs:
         run: uv run --project Portfolio --no-sync python Portfolio/scripts/preflight_env.py publication
       - name: Check reader and publication code
         run: |
+          node --check Portfolio/scripts/rewrite_javascript_urls.mjs
           uv run --project Portfolio --no-sync python -m py_compile Portfolio/scripts/build_portfolio_bundle.py Portfolio/scripts/finish_portfolio_lab.py Portfolio/scripts/digest_bundle.py Portfolio/scripts/compiler_projection_input.py Portfolio/scripts/prepare_github_pages.py
           uv run --project Portfolio --no-sync python Portfolio/scripts/test_portfolio_publication.py
           uv run --project Portfolio --no-sync python Portfolio/scripts/test_prepare_github_pages.py

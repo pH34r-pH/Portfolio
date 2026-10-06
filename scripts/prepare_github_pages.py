@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import shutil
+import subprocess
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
@@ -160,31 +161,14 @@ def rewrite_html_urls(content: str, base_path: str, *, jupyter_base_path: str | 
     return rewritten
 
 
-JS_URL_ARGUMENT = re.compile(r"\b(?:fetch|import|URL|register)\s*\(\s*$", re.IGNORECASE)
-JS_URL_PROPERTY = re.compile(
-    r"\b(?:href|src|url|uri|endpoint|baseUrl|baseURL|publicPath|serviceWorkerUrl)\s*[:=]\s*$",
-    re.IGNORECASE,
-)
-JS_LOCATION_ASSIGNMENT = re.compile(r"\b(?:window\.)?location(?:\.href)?\s*=\s*$", re.IGNORECASE)
+JAVASCRIPT_REWRITER = Path(__file__).with_name("rewrite_javascript_urls.mjs")
 
 
-def _rewrite_javascript_literal(
-    value: str,
-    base_path: str,
-    *,
-    is_url: bool = False,
-    jupyter_base_path: str | None = None,
-) -> str:
-    """Rewrite URL-like text inside one JS string/template chunk, never JS syntax."""
-    rewritten = rewrite_urls(value, base_path)
-    # A common fetch/import URL is the whole string literal. Only use the site
-    # prefix when the surrounding JS indicates a URL; otherwise `"/"` is often
-    # just a path separator in generated bundles.
-    if value == "/api/service-worker-heartbeat" and jupyter_base_path:
-        return prefixed_url(jupyter_base_path, value)
-    if is_url and rewritten.startswith("/") and not rewritten.startswith("//"):
-        return prefixed_url(base_path, rewritten)
-    return rewritten
+def _javascript_rewriter_args(base_path: str, jupyter_base_path: str | None = None) -> list[str]:
+    args = ["node", str(JAVASCRIPT_REWRITER), "--base-path", base_path]
+    if jupyter_base_path:
+        args.extend(["--jupyter-base-path", jupyter_base_path])
+    return args
 
 
 def rewrite_javascript_urls(
@@ -193,172 +177,32 @@ def rewrite_javascript_urls(
     *,
     jupyter_base_path: str | None = None,
 ) -> str:
-    """Rewrite root URLs in JS string tokens while leaving regexes/comments alone.
+    """Use Acorn tokens so JS regexes and comments are never treated as URLs."""
+    result = subprocess.run(
+        [*_javascript_rewriter_args(base_path, jupyter_base_path), "--stdin"],
+        input=source,
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return result.stdout
 
-    Generated JupyterLite bundles contain many regular expressions with quoted
-    fragments. Applying the markup URL regex to the complete JS file changes
-    regex syntax and can also rewrite ordinary path-separator strings. This
-    small lexer limits URL rewriting to string literals and template chunks.
-    """
-    expression_prefix_keywords = {
-        "await", "case", "delete", "do", "else", "in", "instanceof", "new",
-        "of", "return", "throw", "typeof", "void", "yield",
-    }
 
-    def skip_regex(index: int) -> int:
-        index += 1
-        in_class = False
-        escaped = False
-        while index < len(source):
-            char = source[index]
-            if escaped:
-                escaped = False
-            elif char == "\\":
-                escaped = True
-            elif char == "[":
-                in_class = True
-            elif char == "]":
-                in_class = False
-            elif char == "/" and not in_class:
-                index += 1
-                while index < len(source) and source[index].isalpha():
-                    index += 1
-                return index
-            elif char in "\r\n":
-                return index
-            index += 1
-        return index
-
-    def rewrite_code(index: int, stop_at_template_brace: bool = False) -> tuple[str, int]:
-        output: list[str] = []
-        previous: tuple[str, str] | None = None
-        brace_depth = 0
-        while index < len(source):
-            char = source[index]
-            if char.isspace():
-                output.append(char)
-                index += 1
-                continue
-            if source.startswith("//", index):
-                end = source.find("\n", index + 2)
-                if end < 0:
-                    output.append(source[index:])
-                    return "".join(output), len(source)
-                output.append(source[index:end])
-                index = end
-                continue
-            if source.startswith("/*", index):
-                end = source.find("*/", index + 2)
-                end = len(source) if end < 0 else end + 2
-                output.append(source[index:end])
-                index = end
-                continue
-            if stop_at_template_brace and char == "}" and brace_depth == 0:
-                return "".join(output), index
-            if char in "\"'":
-                prefix = source[max(0, index - 160) : index]
-                is_url = any(pattern.search(prefix) for pattern in (JS_URL_ARGUMENT, JS_URL_PROPERTY, JS_LOCATION_ASSIGNMENT))
-                end = index + 1
-                while end < len(source):
-                    if source[end] == "\\":
-                        end += 2
-                    elif source[end] == char:
-                        end += 1
-                        break
-                    else:
-                        end += 1
-                raw = source[index + 1 : end - 1] if end <= len(source) and source[end - 1 : end] == char else source[index + 1 : end]
-                output.extend((char, _rewrite_javascript_literal(
-                    raw, base_path, is_url=is_url, jupyter_base_path=jupyter_base_path
-                ), char if end <= len(source) and source[end - 1 : end] == char else ""))
-                index = end
-                previous = ("value", "string")
-                continue
-            if char == "`":
-                prefix = source[max(0, index - 160) : index]
-                is_url = any(pattern.search(prefix) for pattern in (JS_URL_ARGUMENT, JS_URL_PROPERTY, JS_LOCATION_ASSIGNMENT))
-                output.append(char)
-                index += 1
-                chunk_start = index
-                while index < len(source):
-                    if source[index] == "\\":
-                        index += 2
-                        continue
-                    if source.startswith("${", index):
-                        output.append(_rewrite_javascript_literal(
-                            source[chunk_start:index], base_path, is_url=is_url,
-                            jupyter_base_path=jupyter_base_path,
-                        ))
-                        output.append("${")
-                        expression, index = rewrite_code(index + 2, stop_at_template_brace=True)
-                        output.append(expression)
-                        if index < len(source) and source[index] == "}":
-                            output.append("}")
-                            index += 1
-                        chunk_start = index
-                        continue
-                    if source[index] == "`":
-                        output.append(_rewrite_javascript_literal(
-                            source[chunk_start:index], base_path, is_url=is_url,
-                            jupyter_base_path=jupyter_base_path,
-                        ))
-                        output.append("`")
-                        index += 1
-                        break
-                    index += 1
-                previous = ("value", "template")
-                continue
-            if char == "/":
-                can_start_regex = previous is None or previous[0] == "operator" or previous[0] == "open"
-                if previous and previous[0] == "keyword" and previous[1] in expression_prefix_keywords:
-                    can_start_regex = True
-                if can_start_regex:
-                    end = skip_regex(index)
-                    output.append(source[index:end])
-                    index = end
-                    previous = ("value", "regexp")
-                else:
-                    output.append(char)
-                    index += 1
-                    previous = ("operator", char)
-                continue
-            if char.isalpha() or char in "_$":
-                end = index + 1
-                while end < len(source) and (source[end].isalnum() or source[end] in "_$"):
-                    end += 1
-                word = source[index:end]
-                output.append(word)
-                previous = ("keyword", word) if word in expression_prefix_keywords else ("value", word)
-                index = end
-                continue
-            if char.isdigit():
-                end = index + 1
-                while end < len(source) and (source[end].isalnum() or source[end] in "._"):
-                    end += 1
-                output.append(source[index:end])
-                previous = ("value", "number")
-                index = end
-                continue
-
-            punct = next((item for item in ("===", "!==", ">>>", "**=", "=>", "==", "!=", "<=", ">=", "++", "--", "&&", "||", "??", "?.", "**", "+=", "-=", "*=", "/=", "...", "<<", ">>") if source.startswith(item, index)), char)
-            output.append(punct)
-            index += len(punct)
-            if stop_at_template_brace:
-                if punct == "{":
-                    brace_depth += 1
-                elif punct == "}":
-                    brace_depth -= 1
-            if punct in {")", "]", "}", "++", "--"}:
-                previous = ("value", punct)
-            elif punct in "([{,;:?=!*%&|^~<>+-" or punct in {"=>", "...", "/=", "**", "&&", "||", "??"}:
-                previous = ("open" if punct in "([{" else "operator", punct)
-            elif punct == "." or punct == "?.":
-                previous = ("member", punct)
-            else:
-                previous = ("operator", punct)
-        return "".join(output), index
-
-    return rewrite_code(0)[0]
+def rewrite_javascript_files(
+    paths: list[Path],
+    base_path: str,
+    *,
+    jupyter_base_path: str | None = None,
+) -> int:
+    if not paths:
+        return 0
+    result = subprocess.run(
+        [*_javascript_rewriter_args(base_path, jupyter_base_path), "--files", *(str(path) for path in paths)],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return int(result.stdout.strip())
 
 
 def tree_bytes(root: Path) -> int:
@@ -371,8 +215,7 @@ def tree_bytes(root: Path) -> int:
     return total
 
 
-def prepare(source: Path, destination: Path, base_path: str) -> int:
-    base_path = normalized_base_path(base_path)
+def validate_source_bundle(source: Path, destination: Path) -> Path:
     if not source.is_dir() or source.is_symlink():
         raise ValueError("Source bundle must be a real directory")
     source = source.resolve()
@@ -387,22 +230,26 @@ def prepare(source: Path, destination: Path, base_path: str) -> int:
             raise ValueError(f"GitHub Pages project-path build must not contain a CNAME file: {path}")
     if not (source / "publication.json").is_file():
         raise ValueError("Source must be a complete qualified Portfolio bundle with publication.json")
-    shutil.copytree(source, destination, copy_function=shutil.copy2)
+    return source
 
+
+def rewrite_text_files(destination: Path, base_path: str) -> int:
     changed = 0
+    javascript: dict[str | None, list[Path]] = {}
     for path in destination.rglob("*"):
         if not path.is_file() or path.suffix.lower() not in TEXT_SUFFIXES:
-            continue
-        try:
-            original = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
             continue
         suffix = path.suffix.lower()
         relative_path = path.relative_to(destination)
         jupyter_base_path = base_path + "/lab" if relative_path.parts[0] == "lab" else None
         if suffix in {".js", ".mjs"}:
-            updated = rewrite_javascript_urls(original, base_path, jupyter_base_path=jupyter_base_path)
-        elif suffix == ".html":
+            javascript.setdefault(jupyter_base_path, []).append(path)
+            continue
+        try:
+            original = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        if suffix == ".html":
             updated = rewrite_html_urls(original, base_path, jupyter_base_path=jupyter_base_path)
         elif suffix in {".json", ".webmanifest"}:
             updated = rewrite_json_text(original, base_path)
@@ -411,7 +258,16 @@ def prepare(source: Path, destination: Path, base_path: str) -> int:
         if updated != original:
             path.write_text(updated, encoding="utf-8", newline="")
             changed += 1
+    for jupyter_base_path, paths in javascript.items():
+        changed += rewrite_javascript_files(paths, base_path, jupyter_base_path=jupyter_base_path)
+    return changed
 
+
+def prepare(source: Path, destination: Path, base_path: str) -> int:
+    base_path = normalized_base_path(base_path)
+    source = validate_source_bundle(source, destination)
+    shutil.copytree(source, destination, copy_function=shutil.copy2)
+    changed = rewrite_text_files(destination, base_path)
     (destination / ".nojekyll").write_text("", encoding="utf-8")
     size = tree_bytes(destination)
     if size > MAX_PUBLISHED_BYTES:

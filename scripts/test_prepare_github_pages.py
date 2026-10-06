@@ -43,7 +43,7 @@ class GitHubPagesPreparationTests(unittest.TestCase):
         source = '''<html><script>fetch('/publication.json');const re=/"theme"\\s*:\\s*"([^"]+)"/g;const external='https://tyharbin.com/about/';</script>
 <svg><path d="M0 0"/></svg><img src="/assets/logo.svg"></html>'''
         actual = rewrite_html_urls(source, "/Portfolio")
-        self.assertIn("fetch('/Portfolio/publication.json')", actual)
+        self.assertIn('fetch("/Portfolio/publication.json")', actual)
         self.assertIn(r're=/"theme"\s*:\s*"([^"]+)"/g', actual)
         self.assertIn("https://tyharbin.com/about/", actual)
         self.assertIn('<path d="M0 0"/>', actual)
