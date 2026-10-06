@@ -49,6 +49,13 @@ class GitHubPagesPreparationTests(unittest.TestCase):
         self.assertIn('<path d="M0 0"/>', actual)
         self.assertIn('src="/Portfolio/assets/logo.svg"', actual)
 
+    def test_html_rewrites_external_script_source_attributes(self) -> None:
+        source = '<script type="module" src="/assets/homepage-background.js"></script>'
+
+        actual = rewrite_html_urls(source, "/Portfolio")
+
+        self.assertIn('src="/Portfolio/assets/homepage-background.js"', actual)
+
     def test_json_paths_rewrite_without_reformatting_unaffected_documents(self) -> None:
         self.assertEqual(rewrite_json_text('{"assets":["/img/a.svg","https://cdn.example/a"]}', "/Portfolio"),
                          '{"assets":["/Portfolio/img/a.svg","https://cdn.example/a"]}')

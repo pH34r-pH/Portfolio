@@ -146,7 +146,12 @@ def rewrite_html_urls(content: str, base_path: str, *, jupyter_base_path: str | 
             body = rewrite_javascript_urls(
                 match.group("body"), base_path, jupyter_base_path=jupyter_base_path
             )
-        return preserve(match.group("open") + body + match.group("close"))
+        # Script blocks are preserved during the outer HTML rewrite so URL-like
+        # strings and regular expressions in JavaScript are not mistaken for
+        # markup. Rewrite the opening tag separately so its src still gets
+        # the project prefix.
+        opening = rewrite_urls(match.group("open"), base_path)
+        return preserve(opening + body + match.group("close"))
 
     def replace_style(match: re.Match[str]) -> str:
         return preserve(match.group("open") + rewrite_urls(match.group("body"), base_path) + match.group("close"))
