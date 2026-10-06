@@ -1,0 +1,21 @@
+# Tyler J.H.G.
+
+> Public professional, engineering, and research site for Tyler James Harbin-Giuntoli (Tyler J.H.G.).
+
+Prefer current first-party material. The ARCC card recipe is the machine-readable entry point for building a current public profile; it is read-only and does not authorize side effects.
+
+## Agent entry points
+
+- [ARCC profile recipe](https://tyharbin.com/card.md): Canonical machine-readable retrieval recipe for the Agent-Readable Calling Card.
+- [ARCC compatibility route](https://tyharbin.com/card): Extensionless compatibility alias for the same recipe.
+
+## Site
+
+- [Portfolio](https://tyharbin.com/): Current public identity, overview, and featured work.
+- [About](https://tyharbin.com/about/): Public biography and professional context.
+- [Research](https://tyharbin.com/research/): Current research directions, articles, and argument structure.
+- [Compiled Experiments](https://experiments.tyharbin.com/): Published experiment artifacts and reproducibility records.
+
+## Public source
+
+- [GitHub](https://github.com/pH34r-pH): Public repositories, project activity, and implementation evidence.

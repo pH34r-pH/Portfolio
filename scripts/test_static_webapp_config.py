@@ -17,5 +17,18 @@ class StaticWebAppConfigTest(unittest.TestCase):
         self.assertTrue((root / "site/card.md").read_text().startswith("# ARCC profile recipe"))
 
 
+    def test_agent_discovery_files_explicitly_allow_supported_retrieval(self):
+        root = Path(__file__).parents[1]
+        robots = (root / "site/robots.txt").read_text()
+        for agent in ("OAI-SearchBot", "ChatGPT-User", "ClaudeBot", "Claude-User", "Claude-SearchBot"):
+            self.assertIn(f"User-agent: {agent}\nAllow: /", robots)
+        self.assertIn("User-agent: *\nAllow: /", robots)
+
+        llms = (root / "site/llms.txt").read_text()
+        self.assertTrue(llms.startswith("# Tyler J.H.G."))
+        self.assertIn("https://tyharbin.com/card.md", llms)
+        self.assertIn("https://tyharbin.com/card", llms)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -54,7 +54,7 @@ jobs:
 
             for path in "${changed[@]}"; do
               case "$path" in
-                site/card.md|site/staticwebapp.config.json)
+                site/card.md|site/staticwebapp.config.json|site/robots.txt|site/llms.txt)
                   saw_route_change=true
                   ;;
                 scripts/test_static_webapp_config.py|.github/workflows/ux-quality.yml)
@@ -67,7 +67,7 @@ jobs:
 
             if [ "$allowed" = true ] && [ "$saw_route_change" = true ]; then
               fast_path=true
-              reason="only ARCC route/profile serving files and their dedicated regression/CI definition changed"
+              reason="only ARCC route/profile/discovery files and their dedicated regression/CI definition changed"
             fi
 
             {
