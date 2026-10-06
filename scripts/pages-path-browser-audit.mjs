@@ -165,16 +165,24 @@ try {
   const codeEditor = codeCell.locator('.cm-content').first();
   await expect(codeEditor).toBeVisible({ timeout: 30000 });
   const smokeMarker = 'portfolio-pages-browser-kernel-smoke-2026';
+  await codeEditor.click();
   await codeEditor.fill(`print('${smokeMarker}')`);
   await expect(codeEditor).toContainText(smokeMarker);
-  await home.keyboard.press('Shift+Enter');
+  await codeEditor.press('Shift+Enter');
   try {
-    await expect(codeCell.locator('.jp-OutputArea-output')).toContainText(smokeMarker, { timeout: 120000 });
+    const smokeOutput = home
+      .locator('.jp-NotebookPanel .jp-CodeCell .jp-OutputArea-output')
+      .filter({ hasText: smokeMarker })
+      .first();
+    await expect(smokeOutput).toBeVisible({ timeout: 120000 });
   } catch (error) {
     const kernelState = await home.evaluate(() => ({
       url: location.href,
       kernelStatus: document.querySelector('.jp-NotebookPanel-toolbar')?.innerText || '',
-      cellText: document.querySelector('.jp-CodeCell')?.innerText || '',
+      cells: [...document.querySelectorAll('.jp-NotebookPanel .jp-CodeCell')].map(cell => ({
+        text: cell.innerText,
+        outputs: [...cell.querySelectorAll('.jp-OutputArea-output')].map(output => output.innerText),
+      })),
       crossOriginIsolated: globalThis.crossOriginIsolated,
     }));
     console.error('JupyterLite Pages-path execution diagnostics:', JSON.stringify({
