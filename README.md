@@ -6,7 +6,6 @@ Portfolio is the publicly shareable portion of my ongoing research project. Its 
 
 Each published version of Portfolio is an immutable snapshot of the selected articles, notebooks, and assets, including the exact source revisions used to build it. This keeps published results reproducible as the underlying research continues to change, while allowing new work to be added without modifying previous releases. The public research site at `tyharbin.com` and static experiment catalog at `experiments.tyharbin.com` follow the cross-site publication contract in [`design/cross-site-contract.md`](design/cross-site-contract.md).
 
-
 ## Fleet publication handoff
 
 Private [long-haul-fleet](https://github.com/pH34r-pH/long-haul-fleet) selects a full 40-character Portfolio commit SHA on the trusted `main` history. The `Portfolio UX quality` workflow runs on every main push and PR on free public GitHub-hosted runners with `contents: read`; its stable source gate is job `ux`. Fleet requires a completed successful **main push** `ux` run on the exact SHA it stages. Pending, failed, missing, canceled, PR-only, or different-SHA runs cannot authorize publication. UX screenshots are short-lived review evidence, not the deployable package or a passing gate by themselves.
@@ -47,7 +46,13 @@ For a local publication environment, run `uv sync --locked --no-dev` and `uv run
 - `jupyter-lite.json` configures browser-side notebook execution.
 - `publication.schema.json` defines v1 legacy and v2 public candidate metadata.
 - `scripts/build_portfolio_bundle.py`, `scripts/finish_portfolio_lab.py` and `scripts/digest_bundle.py` assemble and hash a candidate from three pinned public source checkouts.
-- `publication/` contains the generated publication bundle, including notebooks selected for that release.
+- `publication/` contains committed publication-boundary inputs. Generated notebooks, `publication.json`, and candidate bundles are ignored outputs assembled from pinned source and projection inputs.
+
+## Repository maps and documentation status
+
+The current source/process map is [`docs/portfolio-architecture.md`](docs/portfolio-architecture.md), with navigation and trust-boundary details in the root [`AGENTS.md`](AGENTS.md). Scoped maps cover [`publication/`](publication/AGENTS.md), [`scripts/`](scripts/AGENTS.md), [`site/`](site/AGENTS.md), and [`design/`](design/AGENTS.md). These maps describe `main` and preserve the distinction between authoritative source, active review evidence, generated products, immutable records, and Fleet-owned deployment receipts.
+
+The additive `Documentation and artifact hygiene` workflow checks changed documentation only: pinned markdownlint-cli2 style, offline lychee local links, descriptive names for new living documents, and unapproved temporary/build artifacts. Existing historical records and intentional generated/evidence boundaries remain exceptions; this is a changed-file ratchet, not a repository-wide rewrite.
 
 ### Exact article experiment references
 
@@ -99,8 +104,6 @@ republished as a second catalog. Legacy/local builds without either Compiler
 input remain supported for articles without references. Existing unreferenced
 article bytes stay unchanged. The receipt records input identity, not scientific
 qualification, independent reproduction or deployment authorization.
-
-
 The article handoff also presents a compact evidence block from that same
 verified public record: exact package and scientific-source identity, declared
 question/method, execution attempts and retained result member references,
