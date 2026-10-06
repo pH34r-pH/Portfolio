@@ -9,7 +9,9 @@ const basePath = base.pathname.replace(/\/$/, '');
 assert.ok(basePath.startsWith('/') && basePath.length > 1, `Expected a project path, got ${base.pathname}`);
 const projectBase = new URL(`${basePath}/`, base.origin);
 const localFailures = [];
+const externalFailures = [];
 const pageErrors = [];
+const browserErrors = [];
 
 function pageUrl(route) {
   const normalized = route.startsWith('/') ? route : `/${route}`;
@@ -19,15 +21,22 @@ function pageUrl(route) {
 function collectNetworkFailures(page) {
   page.on('requestfailed', request => {
     const url = new URL(request.url());
-    if (url.origin === base.origin) localFailures.push(`${url.pathname}: ${request.failure()?.errorText || 'request failed'}`);
+    const failure = `${url.href}: ${request.failure()?.errorText || 'request failed'}`;
+    if (url.origin === base.origin) localFailures.push(failure);
+    else externalFailures.push(failure);
   });
   page.on('response', response => {
     const url = new URL(response.url());
     if (url.origin === base.origin && response.status() >= 400) {
       localFailures.push(`${url.pathname}: HTTP ${response.status()}`);
+    } else if (response.status() >= 400) {
+      externalFailures.push(`${url.href}: HTTP ${response.status()}`);
     }
   });
   page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error') browserErrors.push(`${message.location().url}: ${message.text()}`);
+  });
 }
 
 const manifestResponse = await fetch(new URL('publication.json', projectBase));
@@ -137,14 +146,42 @@ try {
     'Pages path works without cross-origin isolation headers');
   assert.ok(labIdentity.serviceWorkers.some(scope => new URL(scope).pathname.startsWith(`${basePath}/`)),
     `JupyterLite service worker is scoped inside the project path: ${JSON.stringify(labIdentity.serviceWorkers)}`);
-  const codeEditor = home.locator('.jp-CodeCell .cm-content').first();
+  const codeCell = home.locator('.jp-NotebookPanel .jp-CodeCell').first();
+  assert.ok(await codeCell.count(), 'The selected notebook contains a code cell');
+  const notebookScroller = home.locator('.jp-NotebookPanel .jp-WindowedPanel-outer').last();
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if (await codeCell.isVisible().catch(() => false)) break;
+    const scrollState = await notebookScroller.evaluate(element => {
+      const maximum = Math.max(0, element.scrollHeight - element.clientHeight);
+      const next = Math.min(maximum, element.scrollTop + Math.max(1, Math.floor(element.clientHeight * 0.8)));
+      element.scrollTop = next;
+      // JupyterLite's windowed list listens for scroll events to mount off-screen cells.
+      element.dispatchEvent(new Event('scroll', { bubbles: true }));
+      return { next, maximum };
+    });
+    if (scrollState.next >= scrollState.maximum) break;
+    await home.waitForTimeout(50);
+  }
+  const codeEditor = codeCell.locator('.cm-content').first();
   await expect(codeEditor).toBeVisible({ timeout: 30000 });
   const smokeMarker = 'portfolio-pages-browser-kernel-smoke-2026';
   await codeEditor.fill(`print('${smokeMarker}')`);
   await expect(codeEditor).toContainText(smokeMarker);
   await home.keyboard.press('Shift+Enter');
-  await expect(home.locator('.jp-CodeCell').first().locator('.jp-OutputArea-output'))
-    .toContainText(smokeMarker, { timeout: 120000 });
+  try {
+    await expect(codeCell.locator('.jp-OutputArea-output')).toContainText(smokeMarker, { timeout: 120000 });
+  } catch (error) {
+    const kernelState = await home.evaluate(() => ({
+      url: location.href,
+      kernelStatus: document.querySelector('.jp-NotebookPanel-toolbar')?.innerText || '',
+      cellText: document.querySelector('.jp-CodeCell')?.innerText || '',
+      crossOriginIsolated: globalThis.crossOriginIsolated,
+    }));
+    console.error('JupyterLite Pages-path execution diagnostics:', JSON.stringify({
+      kernelState, externalFailures, localFailures, pageErrors, browserErrors,
+    }, null, 2));
+    throw error;
+  }
 
   const mobileContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
