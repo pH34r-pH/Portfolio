@@ -9,7 +9,7 @@ const cssImport = /(@import\s+)(["'])\/(?!\/)([^"']*)/gi;
 const srcset = /(\bsrcset\s*=\s*)(["'])(.*?)(\2)/gis;
 const rootInSrcset = /(^|,\s*)\/(?!\/)([^\s,]+)/g;
 const urlArgument = /\b(?:fetch|import|URL|register)\s*\(\s*$/i;
-const urlProperty = /\b(?:href|src|url|uri|endpoint|baseUrl|baseURL|publicPath|serviceWorkerUrl)\s*[:=]\s*$/i;
+const urlProperty = /\b(?:href|src|url|uri|endpoint|baseUrl|baseURL|publicPath|serviceWorkerUrl|[A-Z][A-Z0-9_]*_URL)\s*[:=]\s*$/i;
 const locationAssignment = /\b(?:window\.)?location(?:\.href)?\s*=\s*$/i;
 
 function prefixUrl(basePath, value) {

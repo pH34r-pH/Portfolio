@@ -54,9 +54,9 @@ try {
   await expect(home.locator('[data-model-start]')).toBeVisible({ timeout: 30000 });
   await home.locator('[data-model-start]').click();
   await expect(home.locator('[data-model-start]')).toHaveJSProperty('hidden', true, { timeout: 30000 });
-  await expect(home.locator('[data-machine-canvas]')).toBeVisible({ timeout: 30000 });
-  await home.waitForFunction(() => document.querySelector('[data-startup]')?.dataset.startup === 'ready',
-    undefined, { timeout: 30000 });
+  await expect(home.locator('[data-startup]')).toHaveAttribute('data-startup', 'ready', { timeout: 30000 });
+  await expect(home.locator('[data-model-machine]')).toHaveAttribute('data-render', 'webgl');
+  await expect(home.locator('[data-machine-canvas]')).toBeVisible();
 
   const article = manifest.articles[0];
   await home.goto(new URL(article.url, base.origin).href, { waitUntil: 'networkidle' });

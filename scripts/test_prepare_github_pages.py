@@ -70,6 +70,7 @@ class GitHubPagesPreparationTests(unittest.TestCase):
 
     def test_javascript_rewrite_touches_strings_but_preserves_regexes_and_separators(self) -> None:
         source = r'''const entry={url:"/assets/app.js"};
+const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
 const separator="/";
 const request=fetch("/publication.json");
 const rootRequest=fetch("/");
@@ -82,6 +83,7 @@ const markup=`<img src="/assets/logo.svg"><svg><circle cx="1"/></svg> ${fetch("/
 '''
         actual = rewrite_javascript_urls(source, "/Portfolio")
         self.assertIn('url:"/Portfolio/assets/app.js"', actual)
+        self.assertIn('THREE_URL = "/Portfolio/assets/vendor/three@0.186.1/three.module.js"', actual)
         self.assertIn('separator="/"', actual)
         self.assertIn('fetch("/Portfolio/publication.json")', actual)
         self.assertIn('fetch("/Portfolio/")', actual)
