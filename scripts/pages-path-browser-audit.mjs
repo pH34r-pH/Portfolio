@@ -123,7 +123,8 @@ try {
   assert.ok(labIdentity.notebookPath.startsWith(`${basePath}/`),
     `JupyterLite notebook file remains within the project path: ${labIdentity.notebookPath}`);
   assert.equal(labIdentity.notebookStatus, 200, `JupyterLite can read the selected notebook file`);
-  assert.deepEqual(labIdentity.data.content.cells?.map(cell => ({
+  assert.ok(Array.isArray(labIdentity.data?.cells), 'JupyterLite file access returns a notebook document');
+  assert.deepEqual(labIdentity.data.cells.map(cell => ({
     id: cell.id || '',
     type: cell.cell_type,
     source: Array.isArray(cell.source) ? cell.source.join('') : cell.source,
