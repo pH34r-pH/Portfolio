@@ -101,12 +101,6 @@ try {
   await home.goto(labUrl.href, { waitUntil: 'domcontentloaded' });
   await expect(home.locator('#jupyter-config-data')).toHaveCount(1);
   await expect(home.locator('.jp-NotebookPanel')).toBeVisible({ timeout: 90000 });
-  const kernelDialog = home.getByRole('dialog');
-  if (await kernelDialog.isVisible().catch(() => false)) {
-    await expect(kernelDialog).toContainText('Select Kernel');
-    await kernelDialog.locator('select').selectOption({ label: 'Python (Pyodide)' });
-    await kernelDialog.getByRole('button', { name: 'Select Kernel' }).click();
-  }
   const labIdentity = await home.evaluate(async selectedPath => {
     const configNode = document.querySelector('#jupyter-config-data');
     const liteRoot = new URL(configNode?.dataset.jupyterLiteRoot || '.', location.href);
@@ -146,6 +140,27 @@ try {
     'Pages path works without cross-origin isolation headers');
   assert.ok(labIdentity.serviceWorkers.some(scope => new URL(scope).pathname.startsWith(`${basePath}/`)),
     `JupyterLite service worker is scoped inside the project path: ${JSON.stringify(labIdentity.serviceWorkers)}`);
+  const kernelDialog = home.getByRole('dialog');
+  const kernelButton = home.locator('.jp-NotebookPanel .jp-Toolbar-kernelName');
+  let kernelLabel = await kernelButton.getAttribute('aria-label');
+  let kernelDialogVisible = await kernelDialog.isVisible().catch(() => false);
+  if (kernelDialogVisible || kernelLabel === 'No Kernel') {
+    // The no-kernel dialog appears asynchronously after the notebook panel mounts.
+    await expect(kernelDialog).toBeVisible({ timeout: 30000 });
+    kernelDialogVisible = true;
+  } else if (kernelLabel !== 'Python (Pyodide)') {
+    await kernelButton.click();
+    await expect(kernelDialog).toBeVisible({ timeout: 30000 });
+    kernelDialogVisible = true;
+  }
+  if (kernelDialogVisible) {
+    await expect(kernelDialog).toContainText('Python (Pyodide)');
+    await kernelDialog.locator('select').selectOption({ label: 'Python (Pyodide)' });
+    await kernelDialog.getByRole('button', { name: 'Select Kernel' }).click();
+  }
+  await expect(kernelButton).toHaveAttribute('aria-label', 'Python (Pyodide)', { timeout: 30000 });
+  // Wait for JupyterLite's kernel startup indicator to report ready before running the edited cell.
+  await expect(home.locator('.jp-KernelStatus .jp-KernelStatus-success')).toBeVisible({ timeout: 120000 });
   const codeCell = home.locator('.jp-NotebookPanel .jp-CodeCell').first();
   assert.ok(await codeCell.count(), 'The selected notebook contains a code cell');
   const notebookScroller = home.locator('.jp-NotebookPanel .jp-WindowedPanel-outer').last();
@@ -170,19 +185,16 @@ try {
   await expect(codeEditor).toContainText(smokeMarker);
   await codeEditor.press('Shift+Enter');
   try {
-    const smokeOutput = home
-      .locator('.jp-NotebookPanel .jp-CodeCell .jp-OutputArea-output')
-      .filter({ hasText: smokeMarker })
-      .first();
-    await expect(smokeOutput).toBeVisible({ timeout: 120000 });
+    await expect(codeCell.locator('.jp-OutputArea-output')).toContainText(smokeMarker, { timeout: 120000 });
   } catch (error) {
     const kernelState = await home.evaluate(() => ({
       url: location.href,
-      kernelStatus: document.querySelector('.jp-NotebookPanel-toolbar')?.innerText || '',
-      cells: [...document.querySelectorAll('.jp-NotebookPanel .jp-CodeCell')].map(cell => ({
-        text: cell.innerText,
-        outputs: [...cell.querySelectorAll('.jp-OutputArea-output')].map(output => output.innerText),
-      })),
+      kernel: {
+        selected: document.querySelector('.jp-Toolbar-kernelName')?.getAttribute('aria-label') || '',
+        status: document.querySelector('.jp-KernelStatus-icon-container')?.firstElementChild?.className || '',
+        dialog: document.querySelector('[role="dialog"]')?.innerText || '',
+      },
+      cellText: document.querySelector('.jp-NotebookPanel .jp-CodeCell')?.innerText || '',
       crossOriginIsolated: globalThis.crossOriginIsolated,
     }));
     console.error('JupyterLite Pages-path execution diagnostics:', JSON.stringify({
