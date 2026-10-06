@@ -16,6 +16,8 @@ jobs:
   ux:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    outputs:
+      fast_path: ${{ steps.scope.outputs.fast_path }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -276,8 +278,8 @@ jobs:
   bundle:
     name: Public publication candidate
     needs: ux
-    # Continue review qualification after UX failure; only successful UX may publish an artifact.
-    if: ${{ !cancelled() && (github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+    # Scoped route/profile PRs need only the fast UX contract. Main always builds the exact deployable candidate.
+    if: ${{ !cancelled() && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 90
     permissions:
