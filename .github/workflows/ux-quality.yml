@@ -235,7 +235,7 @@ jobs:
         if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
         run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
       - name: Retain raw Lighthouse reports
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && (failure() || (github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence)) }}
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports-${{ github.event.pull_request.head.sha || github.sha }}
@@ -698,7 +698,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
       - name: Upload detailed finished-bundle audit diagnostics on failure or manual review
-        if: ${{ always() && (failure() || (github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence)) }}
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: bundle-ux-review-${{ github.event.pull_request.head.sha || github.sha }}
