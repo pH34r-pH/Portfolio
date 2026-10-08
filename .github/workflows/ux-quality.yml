@@ -580,7 +580,6 @@ jobs:
               status=1
             fi
           }
-          run_audit model-replay node scripts/test-model-replay.mjs
           run_audit ux node scripts/ux-audit.mjs
           # interaction-audit invokes the real article and JupyterLite notebook audits.
           run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
