@@ -21,6 +21,42 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def write_references(root, model, frontend, rms, manifest, freeze_spectral_precomposition_state, log_polar_features):
+    references = []
+    torch.set_num_threads(1)
+    for text in ["", "the model", "A useful representation", "Résumé ☀"]:
+        token_ids = torch.tensor([[0] + [b + 1 for b in text.encode("utf-8")]])
+        valid = torch.ones_like(token_ids, dtype=torch.bool)
+        with torch.no_grad():
+            raw = freeze_spectral_precomposition_state(frontend, token_ids).current_symbols
+            polar, _ = log_polar_features(raw, valid & token_ids.ne(0))
+            states = polar / rms
+            output, details = model._forward_topology(states, valid, collect=True)
+            records = []
+            for record in details["steps"]:
+                before = record["input"]
+                layer = model.blocks[0]
+                qkv = F.linear(before, layer.self_attn.in_proj_weight, layer.self_attn.in_proj_bias)
+                value = qkv.chunk(3, dim=-1)[2].reshape(1, -1, 4, 32).transpose(1, 2)
+                contexts = record["attention"]["attention_weights"] @ value
+                post = record["attention"]["post_attention"]
+                ffn = F.relu(layer.linear1(post))
+                vectors = [before[0, -1], qkv[0, -1], contexts[0, :, -1].square().mean(-1).sqrt(), post[0, -1], ffn[0, -1], record["proposal"][0, -1], record["output"][0, -1]]
+                records.extend({"pass": record["step"], "layer": i, "values": vector.tolist()} for i, vector in enumerate(vectors))
+            records.append({"pass": 3, "layer": 7, "values": output.logits[0, -1].tolist()})
+            references.append({"prompt": text, "nextByte": int(output.logits[0, -1].argmax()), "logits": output.logits[0, -1].tolist(), "observations": records})
+    (root / "scripts/fixtures/lm-reference.json").write_text(json.dumps({"weightsSha256": manifest["sha256"], "references": references}, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
+def validate_checkpoint(checkpoint, historical):
+    condition, seed, step = checkpoint['condition'], checkpoint['seed'], checkpoint['step']
+    if condition != 'unit_hypersphere_depth3' or step != 128:
+        raise ValueError('The browser export requires the retained trained hypersphere checkpoint')
+    matches = [c for c in historical['cells'] if c['condition'] == condition and c['seed'] == seed]
+    if len(matches) != 1 or matches[0]['final_model_state_sha256'] != checkpoint['model_state_sha256']:
+        raise ValueError("Checkpoint is not the historical result's exact trained model")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--checkpoint", type=Path, required=True)
@@ -46,11 +82,7 @@ def main() -> None:
     frontend_checkpoint = torch.load(args.frontend, map_location="cpu", weights_only=True)
     historical = json.loads(args.historical_result.read_text())
     condition, seed, step = checkpoint["condition"], checkpoint["seed"], checkpoint["step"]
-    if condition != "unit_hypersphere_depth3" or step != 128:
-        raise ValueError("The browser export requires the retained trained hypersphere checkpoint")
-    matches = [c for c in historical["cells"] if c["condition"] == condition and c["seed"] == seed]
-    if len(matches) != 1 or matches[0]["final_model_state_sha256"] != checkpoint["model_state_sha256"]:
-        raise ValueError("Checkpoint is not the historical result's exact trained model")
+    validate_checkpoint(checkpoint, historical)
     model = TopologyTransformer(condition).eval()
     model.load_state_dict(checkpoint["model_state_dict"], strict=True)
     if module_state_fingerprint(model) != checkpoint["model_state_sha256"]:
@@ -93,30 +125,7 @@ def main() -> None:
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
-    references = []
-    torch.set_num_threads(1)
-    for text in ["", "the model", "A useful representation", "Résumé ☀"]:
-        token_ids = torch.tensor([[0] + [b + 1 for b in text.encode("utf-8")]])
-        valid = torch.ones_like(token_ids, dtype=torch.bool)
-        with torch.no_grad():
-            raw = freeze_spectral_precomposition_state(frontend, token_ids).current_symbols
-            polar, _ = log_polar_features(raw, valid & token_ids.ne(0))
-            states = polar / rms
-            output, details = model._forward_topology(states, valid, collect=True)
-            records = []
-            for record in details["steps"]:
-                before = record["input"]
-                layer = model.blocks[0]
-                qkv = F.linear(before, layer.self_attn.in_proj_weight, layer.self_attn.in_proj_bias)
-                value = qkv.chunk(3, dim=-1)[2].reshape(1, -1, 4, 32).transpose(1, 2)
-                contexts = record["attention"]["attention_weights"] @ value
-                post = record["attention"]["post_attention"]
-                ffn = F.relu(layer.linear1(post))
-                vectors = [before[0, -1], qkv[0, -1], contexts[0, :, -1].square().mean(-1).sqrt(), post[0, -1], ffn[0, -1], record["proposal"][0, -1], record["output"][0, -1]]
-                records.extend({"pass": record["step"], "layer": i, "values": vector.tolist()} for i, vector in enumerate(vectors))
-            records.append({"pass": 3, "layer": 7, "values": output.logits[0, -1].tolist()})
-            references.append({"prompt": text, "nextByte": int(output.logits[0, -1].argmax()), "logits": output.logits[0, -1].tolist(), "observations": records})
-    (root / "scripts/fixtures/lm-reference.json").write_text(json.dumps({"weightsSha256": manifest["sha256"], "references": references}, separators=(",", ":")) + "\n", encoding="utf-8")
+    write_references(root, model, frontend, rms, manifest, freeze_spectral_precomposition_state, log_polar_features)
     print(f"Exported {len(binary):,} bytes; trained state {checkpoint['model_state_sha256']}")
 
 

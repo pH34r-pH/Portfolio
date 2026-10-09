@@ -24,12 +24,25 @@ function populate(select, entries) {
 function renderTokens(container, tokens) {
   container.replaceChildren(...tokens.map(token => element("span", "", token)));
 }
+const isTrainedArticle = root => root.classList.contains('article-model-machine')&&!root.hasAttribute('data-illustration-fixture');
+const initialRunData = (trained,text) => trained?createInferenceRun(text):createReplay(text);
+
+function machineAPI(controller) {
+  return {
+    run:controller.run.bind(controller),focus:controller.focusFromAPI.bind(controller),
+    seek:controller.seek.bind(controller),pause:controller.pause.bind(controller),play:controller.play.bind(controller),
+    inspect:controller.inspectById.bind(controller),snapshot:controller.snapshotState.bind(controller),
+    light:controller.lightState.bind(controller),clock:controller.clockState.bind(controller),
+    diagnostics:controller.diagnosticsState.bind(controller),startup:controller.startupState.bind(controller),
+    requestStartup:controller.requestStartupFromAPI.bind(controller),
+  };
+}
 
 class MachineController {
   constructor(root) {
     this.root = root; this.stage = root.querySelector("[data-machine-stage]");
-    this.trainedArticle=root.classList.contains('article-model-machine')&&!root.hasAttribute('data-illustration-fixture');
-    this.startup=root.modelStartup;if(this.startup){this.startup.onFailure=reason=>this.fallback(reason,true);this.startup.onHandoff=()=>this.setCameraEnabled(true);}
+    this.trainedArticle=isTrainedArticle(root);
+    this.attachStartup(root);
     this.form = root.querySelector("[data-machine-form]"); this.input = this.form?.querySelector("input");
     this.tokenReadout = root.querySelector("[data-machine-token-readout]");
     this.output = root.querySelector("[data-machine-output]"); this.status = root.querySelector("[data-machine-status]");
@@ -37,25 +50,27 @@ class MachineController {
     this.scene = null; this.frame = 0; this.raf = 0; this.playing = false; this.visible = false; this.clockTicks = 0;
     this.bootGeneration=0;this.terminalDisposed=false;this.canvasNeedsReplacement=false;this.wasPlayingBeforePagehide=false;
     this.viewport = matchMedia("(max-width:720px)");
-    this.selected = GRAPH.layers[6][0]; this.runData = this.trainedArticle?createInferenceRun(this.input.value):createReplay(this.input.value);
+    this.selected = GRAPH.layers[6][0]; this.runData = initialRunData(this.trainedArticle,this.input.value);
     this.focus = root.dataset.modelFocus || "all"; this.light = new ModelLightPublisher(root);
     this.buildControls(); this.bindControls();this.setCameraEnabled(false); this.observe(); this.draw();
-    const api = {
-      run: text => this.run(text), focus: part => this.setFocus(part || "all"),
-      seek: frame => this.seek(frame), pause: () => this.pause(), play: () => this.play(),
-      inspect: id => { const index = GRAPH.nodes.findIndex(node => node.id === id); if (index >= 0) this.select(index); },
-      snapshot: () => ({ ...sampleReplay(this.runData, this.frame), selected: GRAPH.nodes[this.selected].id, playing: this.playing, rendering: root.dataset.render }),
-      light: () => window.PortfolioModelLight,
-      clock: () => ({ playing: this.playing, visible: this.visible, hidden: document.hidden, scheduled: Boolean(this.raf), ticks: this.clockTicks, lastTime: this.lastTime ?? null }),
-      diagnostics: () => this.scene?.diagnostics() || { nodes: GRAPH.nodes.length, edges: GRAPH.edges.length, frame: this.frame, rendering: "fallback" },
-      startup:()=>this.startup?.snapshot(),
-      requestStartup:()=>this.startup?.start(),
-    };
+    const api = machineAPI(this);
     root.machine = api; window.PortfolioModelMachine ??= api;
     root.addEventListener("portfolio:model-focus", event => this.setFocus(event.detail?.part || "all",event.detail));
     root.addEventListener("portfolio:reading", event => this.scene?.reading(event.detail));
     root.machineController=this;
     if(this.startup?.quiet)this.fallback("quiet-mode",true);
+  }
+  focusFromAPI(part) {return this.setFocus(part||'all');}
+  inspectById(id) {const index=GRAPH.nodes.findIndex(node=>node.id===id);if(index>=0)this.select(index);}
+  snapshotState() {return Object.assign({},sampleReplay(this.runData,this.frame),{selected:GRAPH.nodes[this.selected].id,playing:this.playing,rendering:this.root.dataset.render});}
+  lightState() {return window.PortfolioModelLight;}
+  clockState() {return {playing:this.playing,visible:this.visible,hidden:document.hidden,scheduled:Boolean(this.raf),ticks:this.clockTicks,lastTime:this.lastTime??null};}
+  diagnosticsState() {return this.scene?.diagnostics()||{nodes:GRAPH.nodes.length,edges:GRAPH.edges.length,frame:this.frame,rendering:'fallback'};}
+  startupState() {return this.startup?.snapshot();}
+  requestStartupFromAPI() {return this.startup?.start();}
+  attachStartup(root) {
+    this.startup=root.modelStartup;
+    if(this.startup){this.startup.onFailure=reason=>this.fallback(reason,true);this.startup.onHandoff=()=>this.setCameraEnabled(true);}
   }
   buildControls() {
     this.root.classList.add("model-machine-replay");
@@ -326,7 +341,13 @@ class MachineController {
     if (this.status.textContent !== status) this.status.textContent = status;
     this.output.textContent = state.emitted.length ? joinTokens(state.emitted) : state.measured?'No generated bytes at this recorded observation.':'Waiting for scripted echo (frame 252).';
     const value=state.measured?(state.capturedLayers.includes(node.layer)?`raw value ${state.rawActivations[this.selected].toPrecision(6)}`:'not computed in this observation'):`illustrative signal ${state.activations[this.selected].toFixed(3)}`;
-    if(state.measured) {
+    if(state.measured)this.drawMeasurement(state,node,value);
+    this.probe.replaceChildren(document.createTextNode(`${node.id} · ${node.label} · ${value}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing display routes (bundled) · ${state.stage}`));
+    if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
+    this.scene?.applyFrame(this.runData, state); this.publishLight();
+    this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 4.9 : 2.8); });
+  }
+  drawMeasurement(state,node,value) {
       this.instruments.selection.textContent=`${node.id} · ${value} · ${state.stage}`;
       const distribution=this.root.querySelector('[data-lm-probabilities]');
       if(distribution) {
@@ -337,11 +358,6 @@ class MachineController {
           distribution.textContent='Top model probabilities: '+top.map(({byte,probability})=>`0x${byte.toString(16).padStart(2,'0')} ${(probability*100).toFixed(1)}%`).join(' · ');
         }
       }
-    }
-    this.probe.replaceChildren(document.createTextNode(`${node.id} · ${node.label} · ${value}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing display routes (bundled) · ${state.stage}`));
-    if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
-    this.scene?.applyFrame(this.runData, state); this.publishLight();
-    this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 4.9 : 2.8); });
   }
 }
 document.querySelectorAll("[data-model-machine]").forEach(root => new MachineController(root));
