@@ -119,7 +119,11 @@ class MachineController {
     choice.setAttribute('aria-label', 'Glass quality'); populate(choice, [['auto','Automatic'], ['refraction','Clear refraction'], ['lightweight','Lightweight']]);
     choice.addEventListener('change', () => this.scene?.setQuality(choice.value)); quality.append(choice);
     this.root.querySelector('.machine-settings-content').append(quality);
-    if(this.trainedArticle&&this.root.querySelector('.article-model-toolbar')){this.root.querySelector('.machine-settings-content').append(this.instruments.viewButton);this.root.querySelector('.article-model-toolbar [data-viewer-context]').before(this.root.querySelector('[data-machine-settings]'));}
+    if(this.trainedArticle&&this.root.querySelector('.article-model-toolbar')){
+      const settings=this.root.querySelector('[data-machine-settings]'),content=settings.querySelector('.machine-settings-content');
+      this.root.querySelector('.article-model-toolbar [data-viewer-context]').before(settings);
+      content.prepend(replay);content.append(this.instruments.viewButton);this.stage.append(this.status);
+    }
     this.root.dataset.topology = TOPOLOGY.id;
   }
   bindControls() {

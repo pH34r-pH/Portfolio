@@ -33,6 +33,7 @@
 .article-model-machine[data-model-reader-layout=true] .machine-glass-panel h3 { font:600 16px/1.3 sans-serif; margin:0 0 8px; }
 .article-model-machine[data-model-reader-layout=true] .machine-article-summary { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:0 0 8px; font:400 12px/1.5 sans-serif; }
 .article-model-machine[data-model-reader-layout=true] .machine-glass-selection { margin-bottom:8px; font:500 12px/1.5 ui-monospace,monospace; }
+.article-model-machine[data-model-reader-layout=true] .machine-stage .machine-status { position:absolute; bottom:8px; left:8px; right:8px; z-index:6; margin:0; font:500 10px/1.4 ui-monospace,monospace; pointer-events:none; background:var(--bg); }
 .article-model-machine[data-model-reader-layout=true][data-viewer-pinned=false] .machine-spatial-host[data-instruments=flow] { position:relative; top:auto; }
 @media(max-width:720px) {
  .article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] { grid-template-columns:minmax(0,1fr); }
