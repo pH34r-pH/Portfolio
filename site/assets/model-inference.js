@@ -181,7 +181,7 @@ function headContextRMS(context, n) {
   });
 }
 
-export function forwardBytes(inputBytes, model) {
+function* forwardProgram(inputBytes, model) {
   const bytes = Array.from(inputBytes).slice(-model.manifest.contextBytes),
     n = bytes.length + 1;
   let current = frontend(bytes, model);
@@ -192,26 +192,42 @@ export function forwardBytes(inputBytes, model) {
   const last = (x, width) => x.slice((n - 1) * width, n * width);
   for (let pass = 1; pass <= 3; pass++) {
     snapshot(pass, 0, last(current, D));
-    const qkv = linear(current, n, D, D * 3, w[block + "self_attn.in_proj_weight"], w[block + "self_attn.in_proj_bias"]);
+    const qkv = yield [current, n, D, D * 3, w[block + "self_attn.in_proj_weight"], w[block + "self_attn.in_proj_bias"]];
     snapshot(pass, 1, last(qkv, D * 3));
     const scoreQK = normalizedPhaseQK(qkv, n, model.manifest.geometryEpsilon);
     const { context, attentionWeights } = causalAttention(qkv, scoreQK, n);
     snapshot(pass, 2, headContextRMS(context, n), { attentionWeights });
-    const delta = linear(context, n, D, D, w[block + "self_attn.out_proj.weight"], w[block + "self_attn.out_proj.bias"]);
+    const delta = yield [context, n, D, D, w[block + "self_attn.out_proj.weight"], w[block + "self_attn.out_proj.bias"]];
     const post = residualNorm(current, delta, n, w[block + "norm1.weight"], w[block + "norm1.bias"], model.manifest.normalizationEpsilon);
     snapshot(pass, 3, last(post, D));
-    const ffn = linear(post, n, D, FF, w[block + "linear1.weight"], w[block + "linear1.bias"]);
+    const ffn = yield [post, n, D, FF, w[block + "linear1.weight"], w[block + "linear1.bias"]];
     for (let i = 0; i < ffn.length; i++) ffn[i] = Math.max(0, ffn[i]);
     snapshot(pass, 4, last(ffn, FF));
-    const returned = linear(ffn, n, FF, D, w[block + "linear2.weight"], w[block + "linear2.bias"]);
+    const returned = yield [ffn, n, FF, D, w[block + "linear2.weight"], w[block + "linear2.bias"]];
     const proposal = residualNorm(post, returned, n, w[block + "norm2.weight"], w[block + "norm2.bias"], model.manifest.normalizationEpsilon);
     snapshot(pass, 5, last(proposal, D));
     current = sphereUpdate(current, proposal, n, model.manifest.geometryEpsilon);
     snapshot(pass, 6, last(current, D));
   }
-  const logits = linear(last(current, D), 1, D, 256, w["head.weight"], w["head.bias"]);
+  const logits = yield [last(current, D), 1, D, 256, w["head.weight"], w["head.bias"]];
   snapshot(3, 7, logits);
   return { logits: Array.from(logits), observations, contextBytes: bytes.length };
+}
+
+export const cpuLinear = linear;
+
+export function forwardBytes(inputBytes, model) {
+  const program = forwardProgram(inputBytes, model);
+  let step = program.next();
+  while (!step.done) step = program.next(linear(...step.value));
+  return step.value;
+}
+
+export async function forwardBytesAsync(inputBytes, model, executeLinear) {
+  const program = forwardProgram(inputBytes, model);
+  let step = program.next();
+  while (!step.done) step = program.next(await executeLinear(...step.value));
+  return step.value;
 }
 
 export function sampleByte(logits, temperature, random) {

@@ -55,8 +55,8 @@ export class SharedGlass {
   }
   setQuality(mode) {
     const low = mode === 'lightweight'; this.quality = mode;
-    if (!low && !this.environment) this.environment = environment(this.T, this.renderer);
-    this.scene.environment = low ? null : this.environment.texture;
+    if (!low && !this.instruments.article && !this.environment) this.environment = environment(this.T, this.renderer);
+    this.scene.environment = low ? null : this.environment?.texture || null;
     this.material.transmission = low ? 0 : .99; this.material.opacity = low ? .07 : 1;
     this.material.transparent = low; this.material.roughness = low ? .16 : .025;
     this.material.needsUpdate = true;

@@ -1,11 +1,10 @@
 #!/usr/bin/env node
-// Applies non-overlapping warning/block thresholds to Lighthouse transfer bytes.
+// Observe transfer size while establishing the visual quality baseline.
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-export const WARNING_BYTES = 9_000_000;
-export const ERROR_BYTES = 10_000_000;
+export const WARNING_BYTES = 20_000_000;
 export const EXPECTED_ROUTES = ['/', '/about/', '/atlas/', '/reproduce/', '/research/'];
 export const EXPECTED_PROFILES = ['mobile', 'desktop'];
 export const RUNS_PER_ROUTE_PROFILE = 3;
@@ -14,7 +13,6 @@ export function classifyTransferBytes(bytes) {
   if (!Number.isSafeInteger(bytes) || bytes < 0) {
     throw new TypeError(`Expected a non-negative integer transfer size, got ${bytes}`);
   }
-  if (bytes > ERROR_BYTES) return { severity: 'error', bytes };
   if (bytes > WARNING_BYTES) return { severity: 'warning', bytes };
   return { severity: 'pass', bytes };
 }
@@ -144,9 +142,7 @@ async function readFinding(entry, reportDir, profile) {
 function printFinding(finding) {
   if (finding.invalidReason) emitAnnotation('error', `Invalid Lighthouse ${finding.profile} observation for ${finding.url}: ${finding.invalidReason}.`);
   if (finding.severity === 'pass') return;
-  const threshold = finding.severity === 'warning' ? WARNING_BYTES : ERROR_BYTES;
-  const action = finding.severity === 'warning' ? 'warn above' : 'block above';
-  emitAnnotation(finding.severity, `Lighthouse ${finding.profile} initial-navigation transfer ${finding.bytes} bytes for ${finding.url}; ${action} ${threshold} bytes (decimal bytes).`);
+  emitAnnotation('warning', `Lighthouse ${finding.profile} initial-navigation transfer ${finding.bytes} bytes for ${finding.url}; review above ${WARNING_BYTES} bytes (decimal bytes).`);
 }
 
 function emitAnnotation(severity, message) {

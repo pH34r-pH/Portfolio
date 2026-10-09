@@ -13,6 +13,13 @@ html[data-theme=dark] .digital-home { --bg:#00070d; --panel:rgba(1,17,29,.78); -
 .digital-model-loop,.digital-model-loop-poster { grid-area:1/1; width:min(100%,100svh); height:min(100vw,100svh); max-width:100%; object-fit:contain; mix-blend-mode:screen; pointer-events:none; }
 .digital-model-loop { z-index:1; opacity:.46; }
 .digital-model-loop-poster { z-index:0; opacity:.25; }
+.digital-native-model { position:absolute; inset:0; width:100%; height:100%; z-index:1; opacity:.60; mix-blend-mode:screen; visibility:hidden; }
+.digital-native-model canvas { display:block; width:100%; height:100%; }
+html[data-theme=dark] .digital-native-model { opacity:.90; }
+[data-background-backend=native] .digital-native-model { visibility:visible; }
+[data-background-backend=native] :is(.digital-model-loop,.digital-model-loop-poster) { visibility:hidden; }
+[data-background-motion=static] .digital-native-model { visibility:hidden; }
+[data-background-motion=static] .digital-model-loop-poster { visibility:visible; }
 html[data-theme=dark] .digital-model-loop { opacity:.72; }
 html[data-theme=dark] .digital-model-loop-poster { opacity:.36; }
 [data-background-motion=playing] .digital-model-loop-poster { opacity:.10; }

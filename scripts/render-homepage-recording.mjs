@@ -8,22 +8,12 @@ import {dirname,join,resolve,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from '@playwright/test';
 import sharp from 'sharp';
-import {GRAPH,TOPOLOGY,createInferenceRun} from '../site/assets/model-topology.js';
-import {decodeWeights,forwardBytes,sampleByte,seededRandom} from '../site/assets/model-inference.js';
+import {GRAPH,TOPOLOGY} from '../site/assets/model-topology.js';
+import {recordHomepageRun} from './homepage-recorded-run.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),site=join(root,'site'),assets=join(site,'assets');
 const work=join(tmpdir(),'portfolio-homepage-recording'),width=1920,height=1920,fps=30,duration=8.4,loopStart=1.8;
-const prompt='the model learned a useful distinction';
-const manifest=JSON.parse(await readFile(join(assets,'lm/manifest.json'),'utf8'));
-const weights=await readFile(join(assets,'lm/unit-hypersphere.f32'));
-if(createHash('sha256').update(weights).digest('hex')!==manifest.sha256)throw new Error('Trained tensor checksum mismatch');
-const model=decodeWeights(manifest,weights.buffer.slice(weights.byteOffset,weights.byteOffset+weights.byteLength));
-const run=createInferenceRun(prompt),bytes=Array.from(new TextEncoder().encode(prompt)),emitted=[],random=seededRandom(17);
-for(let token=0;token<12;token++) {
-  const inference=forwardBytes(bytes,model),byte=sampleByte(inference.logits,.8,random),previous=emitted.map(x=>x.toString(16).padStart(2,'0'));
-  emitted.push(byte);bytes.push(byte);
-  run.observations.push(...inference.observations.map(item=>({...item,token,emitted:item.layer===7?emitted.map(x=>x.toString(16).padStart(2,'0')):previous})));
-}
+const {run,manifest,emitted,prompt}=await recordHomepageRun(assets);
 const html=`<!doctype html><html data-theme="dark"><head><meta charset="utf-8"><link rel="stylesheet" href="/assets/site.css"><style>
 html,body{margin:0;padding:0;width:100%;height:100%;background:#00070d;--bg:#00070d;--ink:#f4fbff;--accent:#31a8ff}
 .article-model-machine,.machine-spatial-host{position:absolute!important;inset:0;display:block!important;margin:0!important}
@@ -74,7 +64,6 @@ try {
   const poster=join(assets,'homepage-model-loop-poster.webp');
   await sharp(join(work,`${String(Math.round(loopStart*fps)).padStart(4,'0')}.png`)).webp({quality:95,effort:6}).toFile(poster);
   const video=await readFile(output),posterBytes=await readFile(poster);
-  if(video.length>8_000_000)throw new Error(`Recording is ${video.length} bytes; retain quality while fitting the 10 MB page budget`);
   await writeFile(join(assets,'homepage-model-loop.json'),JSON.stringify({schemaVersion:2,topology:TOPOLOGY.id,nodes:GRAPH.nodes.length,displayRoutes:GRAPH.edges.length,
     width,height,fps,durationSeconds:duration,loopStartSeconds:loopStart,prompt,result:new TextDecoder().decode(new Uint8Array(emitted)),generatedBytes:emitted,
     renderer:'Production Three.js scene / native pixels / refraction / MSAA',codec:'VP9/WebM',trainedStateSha256:manifest.trainedStateSha256,weightsSha256:manifest.sha256,

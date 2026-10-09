@@ -129,7 +129,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/build-homepage-loop.mjs
-          for asset in site appearance article-runtime article-model-loader article-model-context article-model-presentation article-lm-session model-context model-inference model-lm-worker model-machine model-scene model-topology model-light model-gestures homepage-background homepage-model-loader homepage-digital research-topology search; do
+          for asset in site appearance article-runtime article-model-loader article-model-context article-model-presentation article-lm-session model-context model-inference model-inference-backend model-presentation-sampling model-linear-webnn model-linear-webgpu model-lm-worker model-machine model-scene model-renderer model-background-glass model-topology model-light model-gestures homepage-background homepage-native-model homepage-model-loader homepage-digital research-topology search; do
             node --check "site/assets/$asset.js"
           done
           node scripts/test-model-replay.mjs

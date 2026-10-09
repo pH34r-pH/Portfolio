@@ -27,7 +27,7 @@ Every pull request builds and browser-checks that project-path copy, then upload
 
 After reviewing the artifact and merging the change, run **Portfolio UX quality** manually on `main`. Leave the `deploy_pages` input unchecked to build another review artifact. Check it only when ready to publish. The deployment job uses the same run's tested artifact and refuses to deploy unless GitHub reports the default `github.io/Portfolio` URL and `/Portfolio` path. If Pages is not already configured for GitHub Actions, set that publishing source in repository Pages settings first. No custom domain or DNS change is part of this workflow.
 
-GitHub documents a 1 GB maximum for a published Pages site and a 10 GB maximum for the uploaded Pages tar artifact. The preparation step enforces the documented published-site ceiling. The page transfer budget is 10 MB: up to 9,000,000 bytes passes, 9,000,001–10,000,000 bytes warns, and more than 10,000,000 bytes blocks. Performance scores and timing are observations while the visual quality bar is established; accessibility and layout stability remain required.
+GitHub documents a 1 GB maximum for a published Pages site and a 10 GB maximum for the uploaded Pages tar artifact. The preparation step enforces the documented published-site ceiling. Transfer size is observational while peak quality is measured: above 20,000,000 bytes warns, with no hard page byte cap. Performance scores and timing are observations while the visual quality bar is established; accessibility and layout stability remain required.
 
 ## Article and notebook execution
 
@@ -84,14 +84,35 @@ its public historical-result fingerprint is the provenance check. Existing
 repository licensing applies to owner code; no third-party weight license is
 reassigned.
 
-The homepage uses `scripts/build-homepage-loop.mjs` to render the same production
-Three.js scene from this verified kernel into a 1920 × 1920, 30 fps VP9 recording
-and high-quality poster. Install locked npm tooling, Chromium, and ffmpeg first.
-The homepage performs no inference and loads no Three.js runtime. Recording
-metadata distinguishes real tensors from retimed presentation. Background
-playback can be paused; quiet preferences retain the poster. The bounded grid
-keeps its background above contact/footer. The page budget is 10 MB; media has
-an 8 MB cap to reserve room for other page assets.
+The homepage uses `node scripts/build-homepage-trace.mjs` to record 264 real
+observations from the verified trained model into a 215,616-byte float32 payload.
+The production scene draws these recorded tensors at native device resolution
+with WebGPU preferred and WebGL2 as fallback. Display presentation follows
+requestAnimationFrame without a 30/60 fps ceiling; observation playback remains
+time based. Displayed brightness/point size interpolate between observations;
+raw model values are retained. The homepage performs no live inference.
+
+`scripts/build-homepage-loop.mjs` retains a 1920 × 1920, 30 fps VP9 fallback and
+high-quality poster; generating those requires locked npm tooling, Chromium
+and ffmpeg. The video downloads only when native rendering fails. Background
+playback can be paused; quiet preferences retain the poster without an engine
+request. The bounded grid keeps its background above contact/footer.
+
+Article inference independently qualifies WebNN and WebGPU dense projections
+against the CPU worker at every captured stage on four calibration contexts.
+The custom spectral, Hermitian attention and spherical geometry stay in the
+verified CPU kernel. A candidate is selected only if absolute error is below
+1e-4 and the measured calibration is at least 10% faster; unsupported, slower
+or lost devices use the CPU worker. Settings/diagnostics retain the selection,
+parity and timing evidence. No API-presence-only claim of acceleration is made.
+
+Transfer bytes and render timing are observations during the quality phase.
+Above 20 MB produces a warning; there is no hard 10 MB page or 8 MB media cap.
+Accessibility, layout stability, source identity and scientific checks remain
+required. Transfer size, framebuffer/VRAM use, CPU submission time, GPU time,
+and the physical display's refresh rate are distinct measurements.
+See [native rendering observations](docs/native-rendering-quality.md) for hardware,
+backend selection, payload measurements and reproduction instructions.
 
 `test-model-inference.mjs` compares logits and every observed stage with the
 frozen original PyTorch implementation. `article-model-sticky-audit.mjs` tests

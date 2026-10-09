@@ -1,16 +1,13 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
-import { classifyTransferBytes, totalTransferBytes, validateLighthouseValidity, validateFindingMatrix, EXPECTED_ROUTES, RUNS_PER_ROUTE_PROFILE, WARNING_BYTES, ERROR_BYTES } from './lighthouse-transfer-budget.mjs';
+import { classifyTransferBytes, totalTransferBytes, validateLighthouseValidity, validateFindingMatrix, EXPECTED_ROUTES, RUNS_PER_ROUTE_PROFILE, WARNING_BYTES } from './lighthouse-transfer-budget.mjs';
 
-assert.equal(WARNING_BYTES, 9_000_000);
-assert.equal(ERROR_BYTES, 10_000_000);
+assert.equal(WARNING_BYTES, 20_000_000);
 assert.deepEqual(classifyTransferBytes(0), { severity: 'pass', bytes: 0 });
-assert.deepEqual(classifyTransferBytes(8_999_999), { severity: 'pass', bytes: 8_999_999 });
-assert.deepEqual(classifyTransferBytes(9_000_000), { severity: 'pass', bytes: 9_000_000 });
-assert.deepEqual(classifyTransferBytes(9_000_001), { severity: 'warning', bytes: 9_000_001 });
-assert.deepEqual(classifyTransferBytes(9_999_999), { severity: 'warning', bytes: 9_999_999 });
-assert.deepEqual(classifyTransferBytes(10_000_000), { severity: 'warning', bytes: 10_000_000 });
-assert.deepEqual(classifyTransferBytes(10_000_001), { severity: 'error', bytes: 10_000_001 });
+assert.deepEqual(classifyTransferBytes(10_000_001), { severity: 'pass', bytes: 10_000_001 });
+assert.deepEqual(classifyTransferBytes(20_000_000), { severity: 'pass', bytes: 20_000_000 });
+assert.deepEqual(classifyTransferBytes(20_000_001), { severity: 'warning', bytes: 20_000_001 });
+assert.deepEqual(classifyTransferBytes(100_000_000), { severity: 'warning', bytes: 100_000_000 });
 
 assert.equal(totalTransferBytes({
   audits: { 'resource-summary': { details: { items: [

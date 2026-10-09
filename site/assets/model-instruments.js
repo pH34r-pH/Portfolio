@@ -77,7 +77,7 @@ export class ModelInstruments {
     // Desktop context changes do not select a single pane. Reconcile that
     // selection when returning to a phone before any pane can be hidden.
     if (phone && this.relevant) this.active = this.relevant;
-    this.nav.hidden = !this.article&&(!phone || mode === 'flow'); if (this.viewButton) this.viewButton.hidden = this.root.dataset.render !== 'webgl';
+    this.nav.hidden = !this.article&&(!phone || mode === 'flow'); if (this.viewButton) this.viewButton.hidden = !['webgl','webgpu'].includes(this.root.dataset.render);
     for (const panel of this.layer.children) {
       panel.hidden = this.article ? panel.dataset.glassPanel!==this.active : mode === 'spatial' && phone && (panel.contextVisible === false
         || (panel.dataset.contextActive !== 'false' && panel.dataset.glassPanel !== this.active));

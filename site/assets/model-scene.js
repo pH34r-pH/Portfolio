@@ -3,7 +3,8 @@ import { GRAPH, TOPOLOGY, clamp, hashText, layerX } from "./model-topology.js";
 import { ModelGestures } from "./model-gestures.js";
 import { SharedGlass } from "./model-glass.js";
 import { RenderMetrics } from "./model-render-metrics.js";
-import { ModelQuality } from "./model-quality.js";
+import { webGLRendering } from './model-renderer.js';
+import { BackgroundGlass } from './model-background-glass.js';
 import { buildMachineHardware } from "./model-hardware.js";
 import { digitalContours } from './model-digital.js';
 import { HomepageScreens } from './homepage-screens.js';
@@ -13,20 +14,19 @@ import {modelContext} from './model-context.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
-  constructor(T, root, selectNode, fail, scrub, instruments, animationActive=()=>!document.hidden) {
+  constructor(T, root, selectNode, fail, scrub, instruments, options={}) {
+    const {animationActive=()=>!document.hidden, rendering=null}=options;
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
     this.animationActive=animationActive;
     this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
-    const options = { alpha: true, antialias: true, powerPreference: "low-power" };
-    const context = this.canvas.getContext("webgl2", options);
-    if (!context) {throw new Error("WebGL2 unavailable");}
-    this.quality = new ModelQuality(context);
-    this.renderer = new T.WebGLRenderer({ canvas: this.canvas, context, ...options });
+    const prepared = rendering || webGLRendering(T, this.canvas);
+    const context = prepared.context;
+    this.quality = prepared.quality; this.renderer = prepared.renderer; this.backend = prepared.backend; this.fallbackReasons = prepared.fallbackReasons;
     this.transmissionTarget = null;
     const setRenderTarget = this.renderer.setRenderTarget.bind(this.renderer);
     this.renderer.setRenderTarget = (target, ...args) => {
       const result = setRenderTarget(target, ...args);
-      if (target && target.samples && Math.abs(target.width-this.canvas.width)<=1 && Math.abs(target.height-this.canvas.height)<=1) {
+      if (this.backend==='webgl2' && target && target.samples && Math.abs(target.width-this.canvas.width)<=1 && Math.abs(target.height-this.canvas.height)<=1) {
         this.transmissionTarget = {width:target.width, height:target.height, samples:target.samples,
           activeSamples:context.getParameter(context.SAMPLES),viewport:Array.from(context.getParameter(context.VIEWPORT))};
       }
@@ -56,12 +56,13 @@ export class MachineScene {
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
     const Screens = this.digital ? HomepageScreens : SharedGlass;
-    this.glass = new Screens(T, this.scene, this.renderer, instruments);
+    this.glass = root.hasAttribute('data-native-background') ? new BackgroundGlass(instruments) : new Screens(T, this.scene, this.renderer, instruments);
     this.glass.setQuality(this.quality.effective); instruments.quality(this.quality.effective);
     this.fitGeometry = this.collectFitGeometry();
     this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
     this.canvas.addEventListener("webglcontextlost", this.contextLost);
+    if(this.backend==='webgpu')this.renderer.onDeviceLost=()=>fail('webgpu-device-lost');
     this.resizeObserver = new ResizeObserver(() => this.resize()); this.resizeObserver.observe(this.canvas);
     this.themeObserver = new MutationObserver(() => this.refreshTheme());
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -101,7 +102,7 @@ export class MachineScene {
   }
   buildHardware() {
     if (!this.digital) this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
-    this.contours = digitalContours(this.T); this.machine.add(this.contours);
+    this.contours = digitalContours(this.T,this.root.hasAttribute('data-native-background')?512:64); this.machine.add(this.contours);
   }
   addLights() {
     const T = this.T;
@@ -453,11 +454,11 @@ export class MachineScene {
   diagnostics() {
     const bounds=this.canvas.getBoundingClientRect(),context=this.renderer.getContext(),view=this.powerView();
     const graphBounds=view.geometryBounds.all;
-    return {nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
-      drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
+    return {backend:this.backend,fallbackReasons:this.fallbackReasons,nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
+      drawCalls:this.renderer.info.render.drawCalls??this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
       transmissionScale:this.renderer.transmissionResolutionScale,resolution:{cssWidth:bounds.width,cssHeight:bounds.height,
         nativeDPR:window.devicePixelRatio||1,effectiveDPR:this.renderer.getPixelRatio(),canvasWidth:this.canvas.width,canvasHeight:this.canvas.height,
-        drawingBufferWidth:context.drawingBufferWidth,drawingBufferHeight:context.drawingBufferHeight,
+        drawingBufferWidth:context.drawingBufferWidth??this.canvas.width,drawingBufferHeight:context.drawingBufferHeight??this.canvas.height,
         limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
         lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},

@@ -1,30 +1,34 @@
 # Page transfer budget policy
 
-This policy defines an initial-navigation transfer warning and blocking
-threshold for every Lighthouse-audited route and profile. Transfer size is
-Lighthouse's `resource-summary` total `transferSize` in decimal bytes for that
-page load.
+Page transfer size is observational while the owner establishes peak visual
+quality. A 20 MB warning prompts review; it does not reduce quality or block a
+candidate. The earlier 10 MB hard page cap and 8 MB recording cap are removed.
 
 | Observed bytes | Result |
 |---:|---|
-| 0–9,000,000 | Pass |
-| 9,000,001–10,000,000 | Warning |
-| 10,000,001 and above | Blocking error |
+| 0–20,000,000 | Pass |
+| 20,000,001 and above | Warning |
 
-Boundaries are strict: exactly 9,000,000 bytes passes, and exactly 10,000,000 bytes
-warns without blocking. It applies equally to homepage, research, about, atlas,
-reproduce, article, and other routes whenever included in an audit manifest.
-No page class receives a separate total cap.
+Exactly 20,000,000 bytes passes. The same policy applies to every audited route.
+Invalid reports still fail. Lighthouse resource-summary measures encoded bytes
+for a particular initial navigation; activated article and homepage observations
+also count complete lazy/worker payloads. A video fallback's complete file size
+must be reported separately from its first buffered range.
 
 ## Rationale and limits
 
-The owner requested a quality-first 10 MB budget on October 9, 2026. The prior
-500 KB target encouraged low-resolution, low-frame-rate media and an
-illustrative model substitute. Native image quality and actual local inference
-now take priority; later optimization must preserve the accepted experience.
-The 9 MB warning leaves 1 MB of headroom. This is a product budget, not a claim
-about network speed or load time. The activated article audit also counts
-observed worker payloads and trained tensor bytes across startup/restoration.
+On October 9, 2026 the owner asked to push crystal-clear native 4K/8K rendering
+at high refresh rates, measure the resulting size, and optimize only after
+accepting quality. The prior 500 KB and then 10 MB caps are historical targets.
+The replacement homepage replays actual tensors with WebGPU/WebGL2 and draws
+at native device DPR; the 30 fps recording is a failure fallback. Article model
+inference selects supported, numerically qualified computation independently.
+
+Downloaded bytes are not runtime memory. A single RGBA8 8K buffer alone uses
+132,710,400 bytes before depth/MSAA/other resources. CPU submission time is not
+GPU completion time or proof of physical 120/144 Hz. Evidence must name the
+actual browser/adapter/backend, buffer size, timer availability, and whether
+refresh was physically measured or only a configured rendering target.
 
 The comparison point is Dennis Snellenberg's portfolio homepage, with three Lighthouse
 cold runs per profile: mobile median 493,673 bytes (487,840–493,673), desktop
@@ -44,7 +48,7 @@ qualify the repaired site. They remain historical evidence in the study.
 ## Independent quality gates
 
 Performance scores, LCP and TBT now produce observations/warnings while the
-quality bar is established. Transfer, accessibility, best-practices, SEO, and
+quality bar is established. Accessibility, best-practices, SEO, and
 CLS remain blocking gates. Automated
 accessibility must remain 1.00, alongside keyboard, focus, touch, and semantic
 interaction checks. SEO must remain at least 0.95. The expanded CI matrix

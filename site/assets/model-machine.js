@@ -2,7 +2,8 @@ import { GRAPH, TOPOLOGY, LAST_FRAME, FPS, clamp, createReplay, createInferenceR
 import { ModelLightPublisher } from "./model-light.js";
 import { ModelInstruments } from "./model-instruments.js";
 import { HomepageInstruments } from "./homepage-instruments.js";
-const THREE_URL = "/assets/vendor/three@0.186.1/three.module.js";
+import { createRendering } from './model-renderer.js';
+import {samplePresentation} from './model-presentation-sampling.js';
 const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const forcedColors = matchMedia("(forced-colors: active)");
 if (!document.querySelector('link[data-machine-style]')) {
@@ -235,17 +236,18 @@ class MachineController {
     const generation=++this.bootGeneration;
     const current=()=>generation===this.bootGeneration&&!this.terminalDisposed&&this.root.isConnected&&!this.startup?.terminal;
     const task=(async()=>{
-      const [T,{MachineScene}]=await Promise.all([import(THREE_URL),import("./model-scene.js")]);
-      if(!current())return null;
-      if(reduceMotion.matches||forcedColors.matches){this.fallback("motion-or-colors",true);return null;}
-      if(this.startup&&!this.startup.canPrepare())return null;
       if(this.canvasNeedsReplacement)this.replaceCanvasForRetry();
-      const scene=new MachineScene(T,this.root,index=>{this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.select(index);},reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments,()=>this.visible&&!document.hidden);
+      const [rendering,{MachineScene}]=await Promise.all([createRendering(this.root,{current}),import("./model-scene.js")]);
+      if(!rendering)return null;
+      const {T}=rendering;
+      if(!current()){rendering.renderer.dispose();return null;}
+      if(reduceMotion.matches||forcedColors.matches){rendering.renderer.dispose();this.fallback("motion-or-colors",true);return null;}
+      if(this.startup&&!this.startup.canPrepare()){rendering.renderer.dispose();return null;}
+      const scene=new MachineScene(T,this.root,index=>{this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.select(index);},reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments,{animationActive:()=>this.visible&&!document.hidden,rendering});
       this.scene=scene;
       if(this.startup&&!(await this.startup.accept(scene))){scene.dispose();if(this.scene===scene)this.scene=null;return null;}
       if(!current()||this.scene!==scene||scene.disposed)return null;
-      this.root.dataset.render="webgl";this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden","true");
-      this.setCameraEnabled(!this.startup||this.startup.handoffs>0||this.startup.phase==="ready");this.setFocus(this.focus);this.draw();return this.scene;
+      this.sceneReady(scene);return this.scene;
     })().catch(error=>{
       if(!current())return null;
       this.fallback("webgl-unavailable");console.warn("Architecture viewer uses static fallback:",error.message);return null;
@@ -253,6 +255,10 @@ class MachineController {
     this.bootPromise=task;
     task.finally(()=>{if(this.bootPromise===task)this.bootPromise=null;});
     return task;
+  }
+  sceneReady(scene) {
+    this.root.dataset.render=scene.backend==='webgpu'?'webgpu':'webgl';this.root.querySelector("[data-machine-fallback]").setAttribute("aria-hidden","true");
+    this.setCameraEnabled(!this.startup||this.startup.handoffs>0||this.startup.phase==='ready');this.setFocus(this.focus);this.draw();
   }
   replaceCanvasForRetry() {
     const old=this.root.querySelector("[data-machine-canvas]"),fresh=old.cloneNode(false);
@@ -263,7 +269,7 @@ class MachineController {
   }
   fallback(reason,startupHandled=false) {
     if(this.startup&&!startupHandled&&!this.startup.quiet){this.startup.fail(reason);return;}
-    if(reason==="webgl-context-lost")this.canvasNeedsReplacement=true;
+    if(reason==="webgl-context-lost"||reason==="webgpu-device-lost")this.canvasNeedsReplacement=true;
     this.bootGeneration++;
     this.bootPromise=null;
     this.scene?.dispose(); this.scene = null; this.root.dataset.render = "fallback"; this.root.dataset.fallbackReason = reason;
@@ -316,9 +322,8 @@ class MachineController {
     if (!this.playing || !this.visible || document.hidden) { this.lastTime = null; return; }
     if (this.lastTime === null) this.lastTime = time;
     const delta = time - this.lastTime;
-    // Mobile renders at <=30fps; each displayed state still comes from the 60fps replay table.
-    const interval = matchMedia("(max-width:720px)").matches ? 1000 / 30 : 1000 / FPS;
-    if (delta >= interval - .5) {
+    // Presentation follows display rAF; the observation timeline retains its speed.
+    if (delta > 0) {
       this.fraction = (this.fraction || 0) + delta * FPS / 1000;
       const advance = Math.floor(this.fraction); this.fraction -= advance;
       this.frame = Math.min(this.lastFrame(), this.frame + advance); this.lastTime = time;
@@ -344,8 +349,12 @@ class MachineController {
     if(state.measured)this.drawMeasurement(state,node,value);
     this.probe.replaceChildren(document.createTextNode(`${node.id} · ${node.label} · ${value}`), element("span", "", `${node.incoming.length} incoming / ${node.outgoing.length} outgoing display routes (bundled) · ${state.stage}`));
     if (!this.tokenReadout.childElementCount) renderTokens(this.tokenReadout, this.runData.tokens);
-    this.scene?.applyFrame(this.runData, state); this.publishLight();
+    this.scene?.applyFrame(this.runData, this.presentationState(state)); this.publishLight();
     this.fallbackNodes?.forEach((circle, index) => { circle.classList.toggle("is-active", state.activations[index] > .15); circle.setAttribute("r", index === this.selected ? 4.9 : 2.8); });
+  }
+  presentationState(state) {
+    if(this.trainedArticle&&this.playing)return samplePresentation(this.runData,this.frame+(this.fraction||0));
+    return state;
   }
   drawMeasurement(state,node,value) {
       this.instruments.selection.textContent=`${node.id} · ${value} · ${state.stage}`;

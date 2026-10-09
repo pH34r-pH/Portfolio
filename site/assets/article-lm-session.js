@@ -21,6 +21,8 @@ export class ArticleLMSession {
     settings.innerHTML =
       '<label>New bytes<input type="number" min="1" max="128" value="32" data-lm-count></label><label>Temperature<input type="number" min="0" max="2" step="0.1" value="0.8" data-lm-temperature></label><label>Seed<input type="number" min="0" max="4294967295" value="17" data-lm-seed></label><button type="button" data-lm-stop disabled>Stop generation</button><p data-lm-status role="status">Loading trained model…</p>';
     this.settings = settings;
+    this.backendStatus=document.createElement('p');this.backendStatus.dataset.lmBackendStatus='';this.backendStatus.className='machine-glass-note';
+    this.backendStatus.textContent='Selecting inference backend…';settings.append(this.backendStatus);
     root.querySelector(".machine-settings-content").prepend(settings);
     this.status = settings.querySelector("[data-lm-status]");
     this.form.append(this.status);
@@ -32,7 +34,7 @@ export class ArticleLMSession {
     const disclosure = root.querySelector(".machine-disclosure");
     if (disclosure)
       disclosure.textContent =
-        "This viewer runs the trained unit-hypersphere research byte LM locally. Every replay frame is a recorded intermediate tensor from the displayed generation. Brightness is normalized per layer; coordinate inspection shows signed raw values. Attention operator nodes show head-context RMS. Dense links remain visual bundles, not individual weight measurements.";
+        "This viewer runs the trained unit-hypersphere research byte LM locally. Every inspected observation is a recorded intermediate tensor from the displayed generation. Displayed brightness and point size smoothly transition between observations; brightness is normalized per layer. Coordinate inspection shows signed raw values. Attention operator nodes show head-context RMS. Dense links remain visual bundles, not individual weight measurements.";
     if (disclosure) {
       const link = document.createElement("a");
       link.href = "/assets/lm/manifest.json";
@@ -64,6 +66,7 @@ export class ArticleLMSession {
     this.prepared.catch(() => {});
   }
   receive(message) {
+    if(message.backend){this.backend=message.backend;this.root.dataset.lmBackend=message.backend.selected;this.backendStatus.textContent=`Inference: ${message.backend.selected} · automatically selected for supported operations, numerical agreement and measured speed.`;}
     if (message.type === "ready") {
       this.ready = true;
       this.manifest = message.manifest;
