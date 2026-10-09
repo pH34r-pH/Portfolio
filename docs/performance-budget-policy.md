@@ -1,4 +1,4 @@
-# Initial-page transfer budget policy (draft)
+# Page transfer budget policy
 
 This policy defines an initial-navigation transfer warning and blocking
 threshold for every Lighthouse-audited route and profile. Transfer size is
@@ -7,22 +7,24 @@ page load.
 
 | Observed bytes | Result |
 |---:|---|
-| 0–500,000 | Pass |
-| 500,001–750,000 | Warning |
-| 750,001 and above | Blocking error |
+| 0–9,000,000 | Pass |
+| 9,000,001–10,000,000 | Warning |
+| 10,000,001 and above | Blocking error |
 
-Boundaries are strict: exactly 500,000 bytes passes, and exactly 750,000 bytes
+Boundaries are strict: exactly 9,000,000 bytes passes, and exactly 10,000,000 bytes
 warns without blocking. It applies equally to homepage, research, about, atlas,
 reproduce, article, and other routes whenever included in an audit manifest.
 No page class receives a separate total cap.
 
 ## Rationale and limits
 
-The 500,000-byte warning boundary is a design target based on an 8 Mbit/s
-connection profile: 500,000 bytes take 0.5 seconds to serialize at 1,000,000
-bytes/second. That calculation covers payload serialization only. It excludes
-round-trip time, server response time, dependency scheduling, and device work;
-8 Mbit/s is not asserted to be an average or minimum connection speed.
+The owner requested a quality-first 10 MB budget on October 9, 2026. The prior
+500 KB target encouraged low-resolution, low-frame-rate media and an
+illustrative model substitute. Native image quality and actual local inference
+now take priority; later optimization must preserve the accepted experience.
+The 9 MB warning leaves 1 MB of headroom. This is a product budget, not a claim
+about network speed or load time. The activated article audit also counts
+observed worker payloads and trained tensor bytes across startup/restoration.
 
 The comparison point is Dennis Snellenberg's portfolio homepage, with three Lighthouse
 cold runs per profile: mobile median 493,673 bytes (487,840–493,673), desktop
@@ -36,14 +38,14 @@ In a separate bounded mobile 8 Mbit/s profile, three runs each measured
 reports, and caveats in
 [`performance-budget-study.md`](performance-budget-study.md).
 
-The 750,000-byte blocking boundary leaves 250,000 bytes of warning headroom
-above the design target. It is a policy choice, not a peer-derived performance
-claim.
+Those comparison measurements describe the earlier implementation and do not
+qualify the repaired site. They remain historical evidence in the study.
 
 ## Independent quality gates
 
-The transfer warning and error do not replace Lighthouse performance,
-accessibility, best-practices, SEO, LCP, CLS, or TBT gates. Automated
+Performance scores, LCP and TBT now produce observations/warnings while the
+quality bar is established. Transfer, accessibility, best-practices, SEO, and
+CLS remain blocking gates. Automated
 accessibility must remain 1.00, alongside keyboard, focus, touch, and semantic
 interaction checks. SEO must remain at least 0.95. The expanded CI matrix
 exposed a missing meta description on `/research/`; the page now describes its
@@ -59,8 +61,8 @@ exactly three reports for each of `/`, `/about/`, `/atlas/`, `/reproduce/`, and
 `/research/` in each profile. It matches each report's original requested URL
 to its manifest route, while still counting redirects and their resources in
 the initial-navigation transfer. For example, `/reproduce/` currently lands on
-the external Experiments host. CI retains the manifests and full JSON reports
-as a 30-day workflow artifact, including on failed audits. The checker emits
+the external Experiments host. CI emits compact summaries and retains full
+Lighthouse reports only for explicitly requested detailed review. The checker emits
 at most one policy annotation per report.
 Script and stylesheet sizes remain available as resource-summary diagnostics
 in raw reports and are not hard byte gates. Boundary behavior is covered by

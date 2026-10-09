@@ -1,0 +1,149 @@
+{
+  "schemaVersion": 1,
+  "format": "little-endian-float32",
+  "condition": "unit_hypersphere_depth3",
+  "seed": 17,
+  "trainingSteps": 128,
+  "width": 128,
+  "heads": 4,
+  "depth": 3,
+  "frontendDimension": 32,
+  "frontendPositionBase": 10000,
+  "scalarRms": 0.42927879799206015,
+  "contextBytes": 128,
+  "normalizationEpsilon": 1e-05,
+  "geometryEpsilon": 1e-06,
+  "logRadiusEpsilon": 1e-06,
+  "checkpointSha256": "e5af552bd5171eb426b76aaa3d7f04a97ac6f2963e63879aa7ce59b99e2c0a64",
+  "trainedStateSha256": "ec94da8bb0980c90f5c88de5f005e5c22d941d0280a7d4943fc2c43d6d146824",
+  "frontendCheckpointSha256": "7dc0cc7b2298f34678596e8a895b74fb22e91184fe11d3c1fcc7663b57934d5e",
+  "historicalResultSha256": "909f08d00cd5048ba2a18305513d14fdf51f51cae10fe26bce4905206a789def",
+  "sourceModuleSha256": "77d3595b941db005946d8a09964c89ca9562db23ba64f065a675fb4aaa3718fc",
+  "sourceCommit": "82a96cbc5d3da5bd5dfe76e3b1b877be996e5df6",
+  "bytes": 958080,
+  "sha256": "342b0782bdd60097e1a1c38975204ed4ddd1fd0151b181d32417849d58cb9c83",
+  "tensors": {
+    "blocks.0.self_attn.in_proj_weight": {
+      "shape": [
+        384,
+        128
+      ],
+      "offset": 0,
+      "bytes": 196608
+    },
+    "blocks.0.self_attn.in_proj_bias": {
+      "shape": [
+        384
+      ],
+      "offset": 196608,
+      "bytes": 1536
+    },
+    "blocks.0.self_attn.out_proj.weight": {
+      "shape": [
+        128,
+        128
+      ],
+      "offset": 198144,
+      "bytes": 65536
+    },
+    "blocks.0.self_attn.out_proj.bias": {
+      "shape": [
+        128
+      ],
+      "offset": 263680,
+      "bytes": 512
+    },
+    "blocks.0.linear1.weight": {
+      "shape": [
+        512,
+        128
+      ],
+      "offset": 264192,
+      "bytes": 262144
+    },
+    "blocks.0.linear1.bias": {
+      "shape": [
+        512
+      ],
+      "offset": 526336,
+      "bytes": 2048
+    },
+    "blocks.0.linear2.weight": {
+      "shape": [
+        128,
+        512
+      ],
+      "offset": 528384,
+      "bytes": 262144
+    },
+    "blocks.0.linear2.bias": {
+      "shape": [
+        128
+      ],
+      "offset": 790528,
+      "bytes": 512
+    },
+    "blocks.0.norm1.weight": {
+      "shape": [
+        128
+      ],
+      "offset": 791040,
+      "bytes": 512
+    },
+    "blocks.0.norm1.bias": {
+      "shape": [
+        128
+      ],
+      "offset": 791552,
+      "bytes": 512
+    },
+    "blocks.0.norm2.weight": {
+      "shape": [
+        128
+      ],
+      "offset": 792064,
+      "bytes": 512
+    },
+    "blocks.0.norm2.bias": {
+      "shape": [
+        128
+      ],
+      "offset": 792576,
+      "bytes": 512
+    },
+    "head.weight": {
+      "shape": [
+        256,
+        128
+      ],
+      "offset": 793088,
+      "bytes": 131072
+    },
+    "head.bias": {
+      "shape": [
+        256
+      ],
+      "offset": 924160,
+      "bytes": 1024
+    },
+    "frontend.real.weight": {
+      "shape": [
+        257,
+        16
+      ],
+      "offset": 925184,
+      "bytes": 16448
+    },
+    "frontend.imag.weight": {
+      "shape": [
+        257,
+        16
+      ],
+      "offset": 941632,
+      "bytes": 16448
+    }
+  },
+  "input": "BOS and causal UTF-8 bytes; frozen current-symbol spectral frontend, log-polar coordinates, fixed RMS",
+  "attentionOperatorDisplay": "RMS of each real 32-coordinate attention context; raw weights retained in observations",
+  "description": "Trained research byte LM, historical AdamW baseline, seed 17, 128 steps. Small research model, not a chat assistant."
+}

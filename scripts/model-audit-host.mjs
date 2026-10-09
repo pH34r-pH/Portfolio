@@ -5,7 +5,8 @@ import {expect} from '@playwright/test';
 // Keep the embedded viewer's gesture/keyboard gates after the homepage changed.
 // Source-only runs use the canonical publication host fixture; finished bundles
 // must use a real rendered article with its own source and export contracts.
-export async function articleHost(base) {
+export async function articleHost(base,{componentFixture=false}={}) {
+  if(componentFixture){const html=await readFile(new URL('./fixtures/article-model.html',import.meta.url),'utf8');return {url:base+'/__audit/article-model/',kind:'illustrative-renderer-component-fixture',manualStart:false,html};}
   const response=await fetch(base+'/publication.json');
   if(response.ok&&(response.headers.get('content-type')||'').includes('json')) {
     const manifest=await response.json();

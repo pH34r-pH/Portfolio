@@ -4,8 +4,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 
-export const WARNING_BYTES = 500_000;
-export const ERROR_BYTES = 750_000;
+export const WARNING_BYTES = 9_000_000;
+export const ERROR_BYTES = 10_000_000;
 export const EXPECTED_ROUTES = ['/', '/about/', '/atlas/', '/reproduce/', '/research/'];
 export const EXPECTED_PROFILES = ['mobile', 'desktop'];
 export const RUNS_PER_ROUTE_PROFILE = 3;

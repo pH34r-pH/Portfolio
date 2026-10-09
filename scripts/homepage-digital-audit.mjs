@@ -32,7 +32,7 @@ async function cinematic(page,{quiet=false}={}) {
   await expect(background).toBeVisible();await expect(page.locator('.digital-machine-audit-surface')).toBeHidden();
   await expect(page.getByRole('button',{name:'Start interactive model'})).toBeHidden();
   const media=await video.evaluate(node=>({muted:node.muted,autoplay:node.autoplay,controls:node.controls,loop:node.loop,readyState:node.readyState}));
-  assert.equal(media.muted,true);assert.equal(media.autoplay,true);assert.equal(media.controls,false);assert.equal(media.loop,false);
+  assert.equal(media.muted,true);assert.equal(media.autoplay,false);assert.equal(media.controls,false);assert.equal(media.loop,false);
   const state=await page.evaluate(()=>PortfolioHomepageBackground.snapshot());
   assert.equal(state.audit,false);assert.equal(state.loopStart,1.8);assert.equal(state.loopEnd,8.4);
   if(quiet) {
@@ -40,6 +40,9 @@ async function cinematic(page,{quiet=false}={}) {
     await expect(video).toBeHidden();await expect(page.locator('.digital-model-loop-poster')).toBeVisible();
   } else {
     assert.equal(state.quiet,false);
+    await page.getByRole('button',{name:'Pause background',exact:true}).click();
+    await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().paused)).toBe(true);
+    await page.getByRole('button',{name:'Play background',exact:true}).click();
     await expect.poll(()=>page.evaluate(()=>document.querySelector('[data-homepage-model-loop]').readyState)).toBeGreaterThan(0);
     await page.evaluate(()=>{
       const node=document.querySelector('[data-homepage-model-loop]');
@@ -67,6 +70,10 @@ async function scrollAndNavigate(page) {
   const after=await background.evaluate(node=>{const r=node.getBoundingClientRect();return {top:r.top,height:r.height};});
   assert.ok(Math.abs(before.top-after.top)<1.5,'background stays fixed behind the argument while the page scrolls');
   assert.ok(Math.abs(before.height-after.height)<1.5);
+  await page.locator('footer').scrollIntoViewIfNeeded();await settle(page);
+  const boundary=await page.evaluate(()=>({background:document.querySelector('.digital-model-background').getBoundingClientRect().bottom,journey:document.querySelector('.digital-journey').getBoundingClientRect().bottom}));
+  assert.ok(boundary.background<=boundary.journey+1,'Background remains inside the journey above contact/footer');
+  await page.screenshot({path:`${out}/footer-${await page.evaluate(()=>innerWidth)}.png`});
   await page.evaluate(()=>scrollTo(0,0));await settle(page);
   await page.locator('.digital-next[href="#model-chapter"]').click();await expect(page).toHaveURL(base+'/#model-chapter');
   await page.goBack();await expect(page).toHaveURL(base+'/');
@@ -85,7 +92,8 @@ async function normalProfile(name,viewport) {
   try {
     const manifest=await (await page.request.get(base+'/assets/homepage-model-loop.json')).json();
     assert.equal(manifest.topology,'unit_hypersphere_depth3');assert.equal(manifest.nodes,1668);assert.equal(manifest.displayRoutes,3601);
-    assert.equal(manifest.loopStartSeconds,1.8);assert.equal(manifest.durationSeconds,8.4);assert.ok(manifest.bytes<=220000);
+    assert.equal(manifest.loopStartSeconds,1.8);assert.equal(manifest.durationSeconds,8.4);assert.ok(manifest.bytes<=8_000_000);
+    assert.ok(manifest.width>=1600&&manifest.height>=1600&&manifest.fps>=30,'Production media retains its quality floor');
     await cinematic(page);const colors=await palette(page);await accessibility(page);
     const navigation=await scrollAndNavigate(page);assert.equal(engineRequests(),0,'normal homepage never requests Three.js');
     await page.goto(base,{waitUntil:'networkidle'});await page.screenshot({path:`${out}/${name}.png`,fullPage:false});

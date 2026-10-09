@@ -1,19 +1,58 @@
 /* Reader-only composition: native sticky stays inside the finished article. */
 .notebook-content.myst-reader.article-sticky-reader { overflow: visible; }
 .article-model-machine { display: contents; }
+.article-model-toolbar { position:sticky; top:calc(var(--2071-header,58px) + 4px); z-index:7; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px; margin:22px 0 12px; border:1px solid var(--line); background:var(--bg); }
+.article-model-toolbar button { min-height:44px; padding:8px 10px; border:1px solid var(--line); background:var(--panel); color:var(--ink); cursor:pointer; font:600 12px/1.4 ui-monospace,monospace; }
+.article-model-toolbar [data-machine-settings] { margin:0; }
+.article-model-toolbar [data-machine-settings] summary { min-height:44px; padding:8px 10px; border:1px solid var(--line); display:flex; align-items:center; font:600 12px/1.4 ui-monospace,monospace; cursor:pointer; box-sizing:border-box; }
+.article-model-toolbar [data-machine-settings][open] .machine-settings-content { position:absolute; inset:100% 0 auto; z-index:10; padding:16px; max-height:60svh; overflow:auto; background:var(--bg); border:1px solid var(--line); }
+.article-model-machine[data-viewer-hidden=true] [data-machine-settings] { display:none; }
+.article-model-toolbar .article-model-startup { display:contents; }
+.article-model-toolbar .article-model-startup p { flex-basis:100%; }
+.article-model-machine[data-startup=ready] .article-model-startup,
+.article-model-machine[data-viewer-hidden=true] .article-model-startup { display:none; }
+.article-model-toolbar button[aria-pressed=true] { border-color:var(--accent); box-shadow:inset 0 -2px var(--accent); }
+.article-model-toolbar [data-viewer-context] { flex-basis:100%; color:var(--muted); font-size:12px; }
+.article-model-machine[data-viewer-hidden=true]>:not(.article-model-toolbar) { display:none!important; }
+.article-model-machine[data-viewer-pinned=false] .article-model-toolbar,
+.article-model-machine[data-viewer-pinned=false] .machine-stage,
+.article-model-machine[data-viewer-pinned=false] .machine-spatial-host[data-instruments=spatial] { position:relative; top:auto; }
+.article-model-machine[data-startup=idle] .machine-stage :is(.machine-input,.machine-output,.machine-status),
+.article-model-machine[data-startup=quiet]:not(.model-machine-replay) .machine-stage :is(.machine-input,.machine-output,.machine-status) { display:none; }
+.machine-generation-settings { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.machine-generation-settings label { display:grid; gap:4px; font-size:12px; }
+.machine-generation-settings :is(button,p) { grid-column:1/-1; }
+.machine-generation-settings p { color:var(--muted); font-size:12px; overflow-wrap:anywhere; }
+.article-model-machine [data-context-focus=true] { border-color:var(--accent)!important; }
+.machine-article-summary { color:var(--muted); font-size:13px; line-height:1.6; }
+.article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] { display:grid; grid-template-columns:minmax(0,1fr) 290px; align-items:start; gap:12px; position:sticky; top:calc(var(--2071-header,58px) + var(--model-controls-height,60px) + 12px); z-index:5; background:var(--bg); }
+.article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] .machine-stage { position:relative; top:auto; margin:0; grid-column:1; height:340px; }
+.article-model-machine[data-model-reader-layout=true] [data-instruments=flow] .machine-instruments { grid-column:2; grid-row:1; display:block; margin:0; height:340px!important; overflow:auto; }
+.article-model-machine[data-model-reader-layout=true] .machine-instrument-nav { grid-column:1/-1; margin:0; }
+.article-model-machine[data-model-reader-layout=true] .machine-glass-panel { padding:14px!important; backdrop-filter:blur(16px); }
+.article-model-machine[data-model-reader-layout=true] .machine-glass-panel h3 { font:600 16px/1.3 sans-serif; margin:0 0 8px; }
+.article-model-machine[data-model-reader-layout=true] .machine-article-summary { display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; margin:0 0 8px; font:400 12px/1.5 sans-serif; }
+.article-model-machine[data-model-reader-layout=true] .machine-glass-selection { margin-bottom:8px; font:500 12px/1.5 ui-monospace,monospace; }
+.article-model-machine[data-model-reader-layout=true][data-viewer-pinned=false] .machine-spatial-host[data-instruments=flow] { position:relative; top:auto; }
+@media(max-width:720px) {
+ .article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] { grid-template-columns:minmax(0,1fr); }
+ .article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] .machine-stage { height:260px; }
+ .article-model-machine[data-model-reader-layout=true] [data-instruments=flow] .machine-instruments { grid-column:1; grid-row:2; height:220px!important; }
+}
+.article-model-machine [data-lm-stop][disabled] { display:none; }
 .article-model-machine .machine-heading {
   margin: clamp(34px, 6vh, 52px) 0 14px;
 }
 .article-model-machine .machine-heading h2 {
-  max-width: 13ch;
-  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  max-width: 22ch;
+  font-size: clamp(1.7rem, 3.2vw, 2.7rem);
 }
 .article-model-machine .machine-stage {
   position: sticky;
-  top: calc(var(--2071-header, 58px) + 8px);
+  top: calc(var(--2071-header, 58px) + var(--model-controls-height, 60px) + 12px);
   z-index: 5;
   align-self: start;
-  height: clamp(220px, 31svh, 300px);
+  height: clamp(340px, 44svh, 440px);
   min-height: 0;
   margin: 0 0 1.5rem;
   scroll-margin-top: calc(var(--2071-header, 58px) + 8px);
@@ -29,7 +68,7 @@
 }
 .article-model-machine .machine-spatial-host[data-instruments="spatial"] {
   position: sticky;
-  top: calc(var(--2071-header, 58px) + 8px);
+  top: calc(var(--2071-header, 58px) + var(--model-controls-height, 60px) + 12px);
   z-index: 5;
   align-self: start;
   margin: 0 0 1.5rem;
@@ -67,6 +106,8 @@
 .article-model-machine:not([data-render]) .machine-fallback,
 .article-model-machine[data-render="fallback"] .machine-fallback { display: flex; }
 .article-model-machine .machine-render-hint { top: 40px; left: 12px; }
+.article-model-machine [data-lm-stop] { margin-top:8px; }
+.article-model-machine [data-lm-status] { margin:8px 0; font-size:11px; line-height:1.5; }
 .article-model-startup {
   position: relative;
   z-index: 6;

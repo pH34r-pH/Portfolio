@@ -9,6 +9,7 @@ import { digitalContours } from './model-digital.js';
 import { HomepageScreens } from './homepage-screens.js';
 import { containedDigitalView, digitalView, POSTER_FIT_MARGIN, POSTER_VIEWS } from './model-view.js';
 import { applyPower } from './model-power.js';
+import {modelContext} from './model-context.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
@@ -230,7 +231,7 @@ export class MachineScene {
     return [...this.camera.projectionMatrix.elements, ...this.camera.matrixWorld.elements,
       ...this.camera.matrixWorldInverse.elements].every(Number.isFinite);
   }
-  updateCamera() { return this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
+  updateCamera() { return this.poseCamera(this.yaw, this.pitch, this.zoom, {x:this.pan.x+(this.contextCenter||0),y:this.pan.y}); }
   setQuality(mode) {
     this.quality.set(mode);
     this.beads.geometry.dispose();
@@ -260,11 +261,11 @@ export class MachineScene {
     const began = performance.now();
     this.run = run; this.snapshot = state;
     if(this.powerProgress!==null){applyPower(this,this.powerProgress);this.render();return;}
-    const T = this.T, base = new T.Color(this.dark ? 0x447abb : 0x165577), active = new T.Color(0x39baff);
+    const T = this.T, base = new T.Color(this.dark ? 0x447abb : 0x165577), active = new T.Color(0x39baff),negative=new T.Color(0xba92ec);
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
-      const dim = this.focus === "consumer" && node.layer < 4 || this.focus === "representation" && node.layer > 3;
-      this.color.copy(base).lerp(active, value); if (dim) {this.color.multiplyScalar(.38);}
+      const dim = !modelContext(this.focus).layers.includes(node.layer);
+      this.color.copy(base).lerp(state.measured&&state.rawActivations[index]<0?negative:active, value); if (dim) {this.color.multiplyScalar(.38);}
       this.beads.setColorAt(index, this.color);
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
       this.beads.setMatrixAt(index, this.dummy.matrix);
@@ -287,6 +288,7 @@ export class MachineScene {
     this.metrics.add(this.metrics.frameCPU, performance.now() - began);
   }
   updateCarriers(run, frame) {
+    if(run.kind==='inference'){this.pulses.count=0;this.tokens.count=0;return;}
     const T = this.T;
     this.pulses.count = run.tokens.length; this.tokens.count = run.tokens.length;
     run.tokens.forEach((token, index) => {
@@ -315,8 +317,13 @@ export class MachineScene {
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) {
+  setFocus(part,forceCamera=false) {
     this.focus = part; this.glass.instruments.setContext?.(part);
+    if(this.root.classList.contains('article-model-machine')&&!this.root.hasAttribute('data-illustration-fixture')&&(forceCamera||this.root.dataset.modelFollow!=='false')&&this.contextPart!==part) {
+      const layers=modelContext(part).layers;this.contextPart=part;
+      this.contextCenter=layers.reduce((sum,layer)=>sum+layerX(layer),0)/layers.length*.9;
+      this.zoom=part==='all'?1:1.2;this.pan={x:0,y:0};this.poseTouched=false;this.updateCamera();
+    }
     if (this.snapshot) this.applyFrame(this.run, this.snapshot);
     this.animateGlassContext();
   }
@@ -336,10 +343,11 @@ export class MachineScene {
     if(this.glassAnimationRaf)cancelAnimationFrame(this.glassAnimationRaf);
     this.glassAnimationRaf=0;
   }
-  orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
+  orbit(dx, dy) { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }
   zoomByRatio(ratio) {
     if (!Number.isFinite(ratio) || ratio <= 0) return;
+    this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));
     const next = this.zoom * ratio, viewDistance = this.distance / next;
     if (!Number.isFinite(next) || next <= 0 || !Number.isFinite(viewDistance) || viewDistance <= 0) return;
     // Recompute clipping planes from the finite camera distance. Zoom itself
@@ -358,8 +366,8 @@ export class MachineScene {
     }
     this.poseTouched = true; this.render();
   }
-  resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
-  panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
+  resetView() { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.contextPart=null;this.contextCenter=0;this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
+  panBy(dx,dy) { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
     if (this.depthView) { const {yaw, pitch} = this.depthView; this.depthView = null; this.yaw = yaw; this.pitch = pitch; this.updateCamera(); this.render(); }
     else { this.depthView = {yaw:this.yaw, pitch:this.pitch}; this.orbit(-.05, .01); }

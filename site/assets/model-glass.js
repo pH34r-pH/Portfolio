@@ -170,7 +170,9 @@ export class SharedGlass {
     const zoomed = (visualViewport?.scale || 1) > 1.15;
     // The fit decision uses the pinned article pose, never the user's live
     // camera pose. Camera gestures therefore cannot reflow article controls.
-    const safe = !zoomed && this.layoutFits(visible);
+    // Reading panes keep native document layout beside/below the graph. The
+    // full spatial viewer retains projected glass when its controls fit.
+    const safe = !this.instruments.article && !zoomed && this.layoutFits(visible);
     if (stateChanged || (safe ? 'spatial' : 'flow') !== this.mode) this.instruments.setMode(safe ? 'spatial' : 'flow', this.phone);
     this.mode = safe ? 'spatial' : 'flow';
     if (!stateChanged && !this.hasContextAnimation()) {this.scene.updateMatrixWorld();return;}

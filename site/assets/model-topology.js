@@ -77,7 +77,30 @@ export function createReplay(text) {
   const cleaned=text.trim()||"the model learned a useful distinction";
   return Object.freeze({text:cleaned,tokens:Object.freeze(tokenize(cleaned)),seed:hashText(cleaned)});
 }
+export function createInferenceRun(text) {
+  return {kind:'inference', text, tokens:Array.from(new TextEncoder().encode(text), byte=>byte.toString(16).padStart(2,'0')), observations:[], generating:false};
+}
+function sampleInference(run, requestedFrame) {
+  const frame=clamp(Math.round(requestedFrame),0,Math.max(0,run.observations.length-1));
+  const observation=run.observations[frame];
+  const rawActivations=Array(GRAPH.nodes.length).fill(0),activations=Array(GRAPH.nodes.length).fill(0),capturedLayers=[];
+  if(observation) {
+    for(let index=frame;index>=0;index--) {
+      const item=run.observations[index];
+      if(item.token!==observation.token||item.pass!==observation.pass)break;
+      capturedLayers.push(item.layer);
+      const maximum=Math.max(1e-12,...item.values.map(Math.abs));
+      for(let coordinate=0;coordinate<item.values.length;coordinate++) {
+        const node=GRAPH.layers[item.layer][coordinate];
+        rawActivations[node]=item.values[coordinate];activations[node]=Math.abs(item.values[coordinate])/maximum;
+      }
+    }
+  }
+  return {frame,stage:observation?`byte ${observation.token+1} · pass ${observation.pass}/3 · ${TOPOLOGY.names[observation.layer]}`:'Ready to generate',
+    activations,rawActivations,capturedLayers,emitted:observation?.emitted||[],observation,measured:true};
+}
 export function sampleReplay(run,requestedFrame) {
+  if(run.kind==='inference')return sampleInference(run,requestedFrame);
   const frame=clamp(Math.round(requestedFrame),0,LAST_FRAME);
   const stage=frame===LAST_FRAME?"complete":frame<54?"UTF-8 byte illustration":frame<252?"shared block illustration":"scripted byte echo";
   const activations=GRAPH.nodes.map(node=>{

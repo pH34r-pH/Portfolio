@@ -1,0 +1,3 @@
+* text=auto eol=lf
+site/assets/vendor/** -text
+site/assets/lm/*.f32 binary

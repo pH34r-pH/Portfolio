@@ -4,10 +4,13 @@ html[data-theme=dark] .digital-home { --bg:#00070d; --panel:rgba(1,17,29,.78); -
 .digital-home .topbar,.digital-home .site-menu { color:var(--ink); background:color-mix(in srgb,var(--bg) 94%,transparent); }
 .digital-home .topbar { border-color:var(--line); }
 .digital-home .topbar :is(.menu-toggle,.search-toggle) { min-height:48px; min-width:48px; }
-.digital-journey { position:relative; display:block; width:100vw; margin-left:calc((100% - 100vw)/2); isolation:isolate; }
-.digital-model-background { position:sticky; top:var(--2071-header); z-index:0; display:grid; place-items:center; width:100%; height:calc(100svh - var(--2071-header)); margin-bottom:calc(var(--2071-header) - 100svh); overflow:hidden; pointer-events:none; }
+.digital-home main { width:100%; }
+.digital-home .moire { display:none; }
+.digital-motion-control { position:fixed; right:18px; bottom:18px; z-index:8; min-height:44px; padding:10px 14px; border:1px solid var(--accent); color:var(--ink); background:var(--bg); font:600 12px/1.4 ui-monospace,monospace; cursor:pointer; }
+.digital-journey { position:relative; display:grid; width:100%; isolation:isolate; }
+.digital-model-background { grid-area:1/1; align-self:start; position:sticky; top:var(--2071-header); z-index:0; display:grid; place-items:center; width:100%; height:calc(100svh - var(--2071-header)); overflow:hidden; pointer-events:none; }
 .digital-model-background::after { content:""; position:absolute; inset:0; background:radial-gradient(circle at 53% 47%,var(--signal-soft),transparent 48%),linear-gradient(180deg,transparent 68%,color-mix(in srgb,var(--bg) 82%,transparent)); pointer-events:none; }
-.digital-model-loop,.digital-model-loop-poster { grid-area:1/1; width:min(100vw,100svh); height:min(100vw,100svh); max-width:none; object-fit:contain; transform:scale(1.12); transform-origin:center; mix-blend-mode:screen; filter:saturate(1.08) contrast(1.08); pointer-events:none; }
+.digital-model-loop,.digital-model-loop-poster { grid-area:1/1; width:min(100%,100svh); height:min(100vw,100svh); max-width:100%; object-fit:contain; mix-blend-mode:screen; pointer-events:none; }
 .digital-model-loop { z-index:1; opacity:.46; }
 .digital-model-loop-poster { z-index:0; opacity:.25; }
 html[data-theme=dark] .digital-model-loop { opacity:.72; }
@@ -15,6 +18,7 @@ html[data-theme=dark] .digital-model-loop-poster { opacity:.36; }
 [data-background-motion=playing] .digital-model-loop-poster { opacity:.10; }
 [data-background-motion=fallback] .digital-model-loop { display:none; }
 .digital-machine-audit-surface { display:none; }
+.digital-journey[data-model-audit] { display:block; }
 .digital-journey[data-model-audit] .digital-model-background { display:none; }
 .digital-journey[data-model-audit] .digital-machine-audit-surface { display:block; }
 .digital-visual { grid-area:1/1; align-self:start; position:relative; top:0; height:clamp(280px,48svh,480px); min-height:0; pointer-events:auto; z-index:0; background:radial-gradient(ellipse at 52% 46%,var(--signal-soft),transparent 57%),linear-gradient(180deg,var(--bg),color-mix(in srgb,var(--bg) 96%,#165577)); }
@@ -46,7 +50,7 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
 .digital-home .hero::before,.digital-home .hero::after { display:none; }
 .digital-pane { position:relative; width:min(550px,100%); padding:30px; transform-origin:50% 50%; background:linear-gradient(115deg,color-mix(in srgb,var(--bg) 91%,transparent),color-mix(in srgb,var(--bg) 76%,transparent) 75%,color-mix(in srgb,var(--bg) 56%,transparent)); border:0; box-shadow:inset 0 1px color-mix(in srgb,var(--accent) 40%,transparent),inset 1px 0 color-mix(in srgb,var(--accent) 17%,transparent); }
 .digital-pane::before { content:""; position:absolute; inset:-1px; pointer-events:none; background:linear-gradient(var(--accent),var(--accent)) left top/60px 1px no-repeat,linear-gradient(var(--accent),var(--accent)) right bottom/34px 1px no-repeat,linear-gradient(var(--accent),var(--accent)) right bottom/1px 28px no-repeat; opacity:.65; }
-.digital-pane::after { content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; background:repeating-linear-gradient(0deg,transparent 0 5px,var(--line) 5px 6px); opacity:.09; }
+.digital-pane::after { display:none; }
 .digital-pane :is(h1,h2,h3) { color:var(--ink); text-shadow:0 0 28px color-mix(in srgb,var(--accent) 30%,transparent); }
 .digital-home .page-title { font-family:"Portfolio Long Measure","Arial Narrow",sans-serif; font-size:clamp(64px,7vw,100px); line-height:.92; margin:22px 0 24px; letter-spacing:-.035em; font-weight:400; }
 .digital-home .title-accent { color:var(--accent-strong); }
@@ -85,14 +89,13 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
 .digital-home .program-grid h3 { font-size:32px; }
 .digital-home .program-grid p { color:var(--ink); font-size:16px; }
 .digital-home .program-grid a { font-size:11px; display:inline-flex; min-height:44px; align-items:center; }
-.digital-contact { padding:70px 0 20px; max-width:760px; scroll-margin-top:80px; }
+.digital-contact { position:relative; padding:70px 0 20px; width:min(760px,calc(100% - 40px)); margin-inline:auto; scroll-margin-top:80px; background:var(--bg); }
 .digital-contact p { color:var(--ink); }
-.digital-home footer { color:var(--ink); }
+.digital-home footer { position:relative; width:min(1180px,calc(100% - 40px)); margin-inline:auto; color:var(--ink); background:var(--bg); }
 .digital-home footer summary { min-height:44px; }
 @media(max-width:1000px) { .digital-chapters { padding-inline:24px; } .digital-pane { background:color-mix(in srgb,var(--bg) 93%,transparent); } }
 @media(max-width:720px) {
- .digital-journey { display:block; }
- .digital-model-loop,.digital-model-loop-poster { width:112vw; height:112vw; transform:scale(1.04); }
+ .digital-model-loop,.digital-model-loop-poster { width:100%; height:auto; }
  .digital-visual { min-height:0; height:280px; margin-bottom:0; position:relative; top:0; }
  .machine-poster { background-image:url('/assets/model-posters/powered-down-phone-1x.webp'); background-image:image-set(url('/assets/model-posters/powered-down-phone-1x.avif') type('image/avif') 1x,url('/assets/model-posters/powered-down-phone-1x.webp') type('image/webp') 1x,url('/assets/model-posters/powered-down-phone-2x.avif') type('image/avif') 2x,url('/assets/model-posters/powered-down-phone-2x.webp') type('image/webp') 2x,url('/assets/model-posters/powered-down-phone-3x.avif') type('image/avif') 3x,url('/assets/model-posters/powered-down-phone-3x.webp') type('image/webp') 3x); }
  html[data-theme=dark] .machine-poster { background-image:url('/assets/model-posters/powered-down-phone-dark-1x.webp'); background-image:image-set(url('/assets/model-posters/powered-down-phone-dark-1x.avif') type('image/avif') 1x,url('/assets/model-posters/powered-down-phone-dark-1x.webp') type('image/webp') 1x,url('/assets/model-posters/powered-down-phone-dark-2x.avif') type('image/avif') 2x,url('/assets/model-posters/powered-down-phone-dark-2x.webp') type('image/webp') 2x,url('/assets/model-posters/powered-down-phone-dark-3x.avif') type('image/avif') 3x,url('/assets/model-posters/powered-down-phone-dark-3x.webp') type('image/webp') 3x); }
@@ -109,9 +112,8 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
  .digital-contact { padding-top:40px; }
 }
 @media(prefers-reduced-motion:reduce),(forced-colors:active) {
- .digital-journey { display:block; }
  .digital-model-loop { display:none; }
- .digital-model-loop-poster { opacity:.34; transform:none; }
+ .digital-model-loop-poster { opacity:.34; }
  .digital-visual { position:relative; top:0; margin-bottom:0; height:320px; min-height:0; }
  .digital-chapter,.digital-deep-reading { min-height:0; padding-block:30px; }
  .digital-pane { transform:none!important; background:var(--bg); box-shadow:none; }

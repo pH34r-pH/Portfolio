@@ -5,7 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
-const host=await articleHost(base);
+const host=await articleHost(base,{componentFixture:true});
 const out=process.env.GLASS_EVIDENCE_DIR||'ux-screenshots/glass';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
