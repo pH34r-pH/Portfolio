@@ -131,3 +131,21 @@ timers, playback/frame intervals and model identity. The article root's
 retains inference candidates, measured calibration, numerical error and fallback
 reason. Settings displays the selected inference backend. Repeat on the intended
 4K/8K and 120/144 Hz hardware before making a physical-display guarantee.
+
+## Native poster capture provenance
+
+Commit renderer and capture-pipeline edits before running
+`PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs`.
+The served site must use that checkout. Capture checks all 41 tracked inputs
+against their exact HEAD Git blobs before launching Chromium, then verifies the
+served renderer bytes. Git reads have a 10-second timeout and 8 MiB buffer per
+input, including the vendored engine. A clean `git status` is insufficient on
+Windows: line-ending conversion can hide a raw-byte mismatch. Use the repository's
+LF policy and materialize the exact committed bytes before capture; do not
+normalize hashes or hand-edit the manifest to conceal a mismatch.
+
+Commit the generated posters and manifest together after capture. Source and
+publication jobs run the existing `test-model-startup.mjs` raw-byte, decoded-image,
+and geometry contract immediately after dependency installation, before costly
+media generation. Source qualification repeats it after its fresh capture. Any
+tracked renderer or pipeline change requires matching shipped poster provenance.
