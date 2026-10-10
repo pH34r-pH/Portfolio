@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertEncasedRender} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const host=await articleHost(base,{componentFixture:true});
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
@@ -69,15 +69,22 @@ async function auditResetFitAfterResize(page,root) {
   assert.equal(Math.round(resized.width),Math.round(initial.width)-1,'Genuine one-pixel viewport resize changes the article canvas width');
   assert.equal(Math.round(resized.height),Math.round(initial.height),'Viewport resize preserves the article canvas height');
   const preReset=await root.evaluate(node=>node.machine.diagnostics());
-  if(host.html)assert.ok(Math.abs(preReset.camera.distance-17.270241)<1e-5,`Orbit-angle fit reproduces the pre-reset distance (${preReset.camera.distance})`);
+  assert.equal(preReset.camera.yaw,orbited.yaw,'Resize preserves the inspected yaw');
+  assert.equal(preReset.camera.pitch,orbited.pitch,'Resize preserves the inspected pitch');
+  assert.equal(preReset.camera.zoom,1,'Resize fits complete geometry at the existing unit zoom');
+  assert.equal(preReset.graphGeometryBounds.components.housing.count,8,'Fit includes all encased housing corners');
   assertFullGraphFit(preReset,`orbit after genuine ${Math.round(initial.width)}×${Math.round(initial.height)} → ${Math.round(resized.width)}×${Math.round(resized.height)} resize`);
   await root.locator('[data-camera="reset"]').click();
   const reset=await root.evaluate(node=>node.machine.diagnostics());
-  assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);
+  assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);assert.equal(reset.camera.zoom,1);
+  assert.deepEqual(reset.camera.pan,{x:0,y:0});
+  assert.notEqual(reset.camera.distance,preReset.camera.distance,'Reset recomputes the complete-geometry fit for the default angle');
   assertFullGraphFit(reset,'reset after genuine resize');
   const fresh=await open({viewport:{width:359,height:800},deviceScaleFactor:3,isMobile:true,hasTouch:true});
   const baseline=await fresh.root.evaluate(node=>node.machine.diagnostics());
-  if(host.html)assert.ok(Math.abs(baseline.camera.distance-25.164833)<1e-5,`Fresh default distance matches reported fit (${baseline.camera.distance})`);
+  // A fresh view derives its fit from the current full geometry. Flat-scene
+  // distance snapshots no longer describe the physical enclosure.
+  assertFullGraphFit(baseline,'fresh encased default view');
   assert.equal(reset.camera.distance,baseline.camera.distance,'Reset fit distance equals a fresh default article view');
   assert.deepEqual(reset.graphGeometryBounds,baseline.graphGeometryBounds,'Reset full-geometry framing equals fresh default article framing');
   await fresh.context.close();
@@ -196,9 +203,10 @@ try {
     await expect(root.locator('[data-machine-settings] summary')).toBeFocused();await expect(root.locator('[data-camera="reset"]')).toBeHidden();
     const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
     assert.equal(diagnostics.nodes,1668); assert.equal(diagnostics.edges,3601);
+    // Keep measured cost even if a subsequent behavioral/quality assertion fails.
+    await writeFile(`${out}/${name}-render-diagnostics.json`,JSON.stringify(diagnostics,null,2));
+    assertEncasedRender(diagnostics);
     // Preserve native DPR and observe the actual MSAA buffer and target resolution.
-    const drawBudget=diagnostics.quality?.effective==='lightweight' ? 24 : 32;
-    assert.ok(diagnostics.drawCalls<=drawBudget,`shared transmission draw budget ${drawBudget}`);
     const resolution=diagnostics.resolution,limits=diagnostics.quality.limits;
     assert.equal(diagnostics.quality.effective,'refraction','Auto retains full refraction regardless of renderer name');
     assert.equal(diagnostics.quality.contextAttributes.antialias,true);assert.ok(diagnostics.quality.sampleSupport.defaultFramebufferSamples>0);

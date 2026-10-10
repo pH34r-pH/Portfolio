@@ -15,6 +15,15 @@ import { applyPower } from './model-power.js';
 import {modelContext} from './model-context.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
+// Count retained geometry once per object, without renderer multipass totals.
+// Diagnostic-only: this does not alter draw ranges, materials, or visibility.
+function geometryCounts(object) {
+  const geometry=object.geometry,positions=geometry.attributes.position.count,indices=geometry.index?.count||0;
+  const instances=object.isInstancedMesh?object.count:1,vertices=indices||positions;
+  return {type:geometry.type,positions,indices,instances,
+    triangles:object.isMesh?vertices/3*instances:0,segments:object.isLineSegments?vertices/2*instances:0};
+}
+
 export class MachineScene {
   constructor(T, root, selectNode, fail, scrub, instruments, options={}) {
     const {animationActive=()=>!document.hidden, rendering=null}=options;
@@ -445,7 +454,10 @@ export class MachineScene {
         limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
         style:'encased-crystal-v1',backplate:'020b12',themeIndependent:true,lightBlue:'165577',darkBlue:'447abb',activityGold:'ffc778',contourColor:this.contours.material.color.getHexString(),
-        housingBounds:this.housing.bounds,glazingTransmission:this.materials.glazing.transmission,routes:this.routes.diagnostics()},
+        housingBounds:this.housing.bounds,glazingTransmission:this.materials.glazing.transmission,nodeTransmission:this.materials.node.transmission,routes:this.routes.diagnostics(),
+        geometry:{nodes:geometryCounts(this.beads),housing:this.housing.group.children.map(geometryCounts),
+          routes:geometryCounts(this.routes.lines),guideCore:geometryCounts(this.routes.guides),guideHalo:geometryCounts(this.routes.halo),
+          contours:geometryCounts(this.contours)}},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
       camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},distance:this.distance,
         position:this.camera.position.toArray(),quaternion:this.camera.quaternion.toArray()},pointers:this.gestures.points.size};
