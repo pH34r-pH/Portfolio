@@ -27,6 +27,14 @@ async function accessibility(page) {
   }));
   assert.ok(targets.every(item=>item.width>=44&&item.height>=44),JSON.stringify(targets.filter(item=>item.width<44||item.height<44)));
 }
+async function nativeRendering(page) {
+  const backend=()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().backend);
+  await expect.poll(backend,{timeout:30000}).toBe('native');
+  const rendering=await page.evaluate(()=>PortfolioHomepageBackground.snapshot().rendering);
+  assert.ok(['webgpu','webgl2'].includes(rendering.backend));
+  assert.equal(rendering.kind,'recorded-tensors');assert.equal(rendering.nodes,1668);assert.equal(rendering.edges,3601);
+  assert.equal(rendering.resolution.effectiveDPR,rendering.resolution.nativeDPR);
+}
 async function cinematic(page,{quiet=false}={}) {
   const background=page.locator('.digital-model-background'),video=page.locator('[data-homepage-model-loop]');
   await expect(background).toBeVisible();await expect(page.locator('.digital-machine-audit-surface')).toBeHidden();
@@ -43,11 +51,7 @@ async function cinematic(page,{quiet=false}={}) {
     await page.getByRole('button',{name:'Pause background',exact:true}).click();
     await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().paused)).toBe(true);
     await page.getByRole('button',{name:'Play background',exact:true}).click();
-    await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().backend),{timeout:30000}).toBe('native');
-    const rendering=await page.evaluate(()=>PortfolioHomepageBackground.snapshot().rendering);
-    assert.ok(['webgpu','webgl2'].includes(rendering.backend));
-    assert.equal(rendering.kind,'recorded-tensors');assert.equal(rendering.nodes,1668);assert.equal(rendering.edges,3601);
-    assert.equal(rendering.resolution.effectiveDPR,rendering.resolution.nativeDPR);
+    await nativeRendering(page);
     assert.equal(media.readyState,0,'Video stays unloaded when native rendering succeeds');
   }
 }
