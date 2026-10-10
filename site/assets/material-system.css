@@ -274,6 +274,11 @@ html body.digital-home .digital-pane::after {
 }
 @media print {
   .material-edge { display:none; }
-  html body :is(.digital-pane,.machine-glass-panel) { color:black; background:white; text-shadow:none; box-shadow:none; }
+  html body.digital-home .digital-pane,html body .article-model-machine .machine-glass-panel {
+    --ink:black; --muted:#333; color:black; background:white; text-shadow:none; box-shadow:none; backdrop-filter:none;
+  }
+  html body.digital-home .digital-pane :is(h1,h2,h3,.eyebrow,.title-accent),html body .article-model-machine .machine-glass-panel :is(h3,.machine-glass-label) {
+    color:black; text-shadow:none;
+  }
   html body :is(.notebook-content,.card,.article-model-toolbar) { background:white; color:black; box-shadow:none; backdrop-filter:none; }
 }
