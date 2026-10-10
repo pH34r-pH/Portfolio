@@ -68,7 +68,9 @@ are loaded by the carpentry renderer, preserving explicit article-model startup.
 Hardware limits alone constrain pixel density. Idle pieces have no frame loop;
 controls redraw during illumination/press changes, and visible frame crops redraw
 after layout/scroll changes. Long readers render only their visible rail segment.
-Forced colors uses system controls. Context/shader failure restores the CSS skin.
+Forced colors uses system controls. Context/shader failure or a reported software
+graphics adapter selects the CSS material fallback. Software browser audit hosts
+continue to exercise the same native controls and the independently owned model.
 
 `PortfolioCarpentry.snapshot()` records the actual adapter, render submission/copy
 timings, piece identities, press travel, and fallback reason. These CPU observations

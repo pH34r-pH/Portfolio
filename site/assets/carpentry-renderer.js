@@ -17,6 +17,10 @@ export class CarpentryRenderer {
     const gl = this.gl;
     const debug = gl.getExtension("WEBGL_debug_renderer_info");
     this.adapter = debug ? gl.getParameter(debug.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    if (/swiftshader|llvmpipe|software/i.test(this.adapter)) {
+      gl.getExtension("WEBGL_lose_context")?.loseContext();
+      throw Error("Software graphics adapter: CSS material fallback selected");
+    }
     this.timings = [];
     this.program = gl.createProgram();
     const shaders = [this.shader(gl.VERTEX_SHADER, vertex), this.shader(gl.FRAGMENT_SHADER, fragment)];
