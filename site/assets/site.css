@@ -506,7 +506,7 @@ section {
     margin-bottom: 40px;
   }
 
-  .page-title {
+  body:not(.digital-home) .page-title {
     font-size: clamp(3.25rem, 18vw, 5.8rem) !important;
     max-width: 11ch;
   }
@@ -547,7 +547,7 @@ section {
   main { width: calc(100% - 20px); }
   .appearance { grid-template-columns: 1fr 1fr 1fr; }
   .appearance-label { grid-column: 1 / -1; margin-bottom: 4px; }
-  .page-title { font-size: clamp(3rem, 17vw, 4.3rem) !important; }
+  body:not(.digital-home) .page-title { font-size: clamp(3rem, 17vw, 4.3rem) !important; }
 }
 
 @media (min-width: 1400px) {

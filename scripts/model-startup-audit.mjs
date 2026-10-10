@@ -37,7 +37,9 @@ async function open(options={},setup,path=homePath,browserInstance=browser) {
     };
     const nativeContext=HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext=function(type,...args){
-      if(typeof type==='string'&&type.startsWith('webgl')) {
+      // Count the model's contexts; the separate carved UI renderer owns its
+      // own context and must not be mistaken for a duplicate model startup.
+      if(typeof type==='string'&&type.startsWith('webgl')&&this.hasAttribute('data-machine-canvas')) {
         const count=Number(sessionStorage.getItem('__portfolioAuditWebglContexts')||0)+1;
         sessionStorage.setItem('__portfolioAuditWebglContexts',String(count));
       }

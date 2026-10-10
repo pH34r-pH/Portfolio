@@ -246,6 +246,7 @@ class MachineController {
       const scene=new MachineScene(T,this.root,index=>{this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.select(index);},reason=>this.fallback(reason),delta=>this.seek(this.frame+delta),this.instruments,{animationActive:()=>this.visible&&!document.hidden,rendering});
       this.scene=scene;
       if(this.startup&&!(await this.startup.accept(scene))){scene.dispose();if(this.scene===scene)this.scene=null;return null;}
+      if(!this.startup)await scene.prepare();
       if(!current()||this.scene!==scene||scene.disposed)return null;
       this.sceneReady(scene);return this.scene;
     })().catch(error=>{

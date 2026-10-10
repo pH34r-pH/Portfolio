@@ -7,7 +7,7 @@ html[data-theme=dark] .digital-home { --bg:#00070d; --panel:rgba(1,17,29,.78); -
 .digital-home main { width:100%; }
 .digital-home .moire { display:none; }
 .digital-motion-control { position:fixed; right:18px; bottom:18px; z-index:8; min-height:44px; padding:10px 14px; border:1px solid var(--accent); color:var(--ink); background:var(--bg); font:600 12px/1.4 ui-monospace,monospace; cursor:pointer; }
-.digital-journey { position:relative; display:grid; width:100%; isolation:isolate; }
+.digital-journey { position:relative; display:grid; grid-template-columns:minmax(0,1fr); width:100%; isolation:isolate; }
 .digital-model-background { grid-area:1/1; align-self:start; position:sticky; top:var(--2071-header); z-index:0; display:grid; place-items:center; width:100%; height:calc(100svh - var(--2071-header)); overflow:hidden; pointer-events:none; }
 .digital-model-background::after { content:""; position:absolute; inset:0; background:radial-gradient(circle at 53% 47%,var(--signal-soft),transparent 48%),linear-gradient(180deg,transparent 68%,color-mix(in srgb,var(--bg) 82%,transparent)); pointer-events:none; }
 .digital-model-loop,.digital-model-loop-poster { grid-area:1/1; width:min(100%,100svh); height:min(100vw,100svh); max-width:100%; object-fit:contain; mix-blend-mode:screen; pointer-events:none; }
@@ -51,7 +51,7 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
 .digital-viewer-controls { max-width:1180px; margin:0 auto 20px; padding:0 18px; }
 .digital-viewer-controls > p { font-size:13px; color:var(--muted); }
 .digital-home .digital-viewer-controls .machine-replay { margin:0; }
-.digital-chapters { grid-area:1/1; position:relative; z-index:2; padding-inline:max(28px,calc((100vw - 1180px)/2)); }
+.digital-chapters { grid-area:1/1; min-width:0; position:relative; z-index:2; padding-inline:max(28px,calc((100vw - 1180px)/2)); }
 .digital-chapter { display:flex; align-items:center; min-height:calc(100svh - 58px); padding-block:72px; scroll-margin-top:82px; }
 .digital-home .hero { margin:0; border:0; }
 .digital-home .hero::before,.digital-home .hero::after { display:none; }
