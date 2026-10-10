@@ -111,6 +111,9 @@ jobs:
       - name: Install locked audit tooling
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: npm ci
+      - name: Verify committed native poster provenance
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        run: node scripts/test-model-startup.mjs
       - name: Install homepage media renderer
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: |
@@ -390,6 +393,8 @@ jobs:
           sudo apt-get install -y inkscape ffmpeg
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
+      - name: Verify pinned native poster provenance
+        run: node Portfolio/scripts/test-model-startup.mjs
       - name: Install Chromium for native homepage rendering
         run: Portfolio/node_modules/.bin/playwright install --with-deps chromium
       - name: Render pre-built homepage model loop
