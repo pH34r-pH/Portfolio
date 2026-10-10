@@ -174,7 +174,9 @@ try {
   const context=await browser.newContext({viewport:{width:721,height:900},deviceScaleFactor:2});
   const page=await context.newPage();await page.goto(sourceBase+'/?model-audit=1',{waitUntil:'networkidle'});
   const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
-  await page.getByRole('button',{name:'Start interactive model'}).click();await expect(root).toHaveAttribute('data-render','webgl');
+  await page.getByRole('button',{name:'Start interactive model'}).click();
+  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  await expect(root).toHaveAttribute('data-render','webgl');
   const resize=[],canonicalHomeViews={};
   for(const width of [721,720,412,721]) {
     await page.setViewportSize({width,height:900});
