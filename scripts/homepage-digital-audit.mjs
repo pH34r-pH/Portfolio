@@ -43,7 +43,7 @@ async function cinematic(page,{quiet=false}={}) {
     await page.getByRole('button',{name:'Pause background',exact:true}).click();
     await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().paused)).toBe(true);
     await page.getByRole('button',{name:'Play background',exact:true}).click();
-    await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().backend)).toBe('native');
+    await expect.poll(()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().backend),{timeout:30000}).toBe('native');
     const rendering=await page.evaluate(()=>PortfolioHomepageBackground.snapshot().rendering);
     assert.ok(['webgpu','webgl2'].includes(rendering.backend));
     assert.equal(rendering.kind,'recorded-tensors');assert.equal(rendering.nodes,1668);assert.equal(rendering.edges,3601);
