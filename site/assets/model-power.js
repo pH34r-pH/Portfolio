@@ -1,4 +1,5 @@
 import {GRAPH,clamp,layerX} from './model-topology.js';
+import {ENCASED_PALETTE} from './model-encased-materials.js';
 
 // Theatrical display power, independent of replay or trained activation data.
 export function ignitionLevel(layer,progress) {
@@ -9,7 +10,7 @@ export function applyPower(scene,progress) {
   const p=clamp(progress,0,1),base=new scene.T.Color(scene.dark?0x447abb:0x165577);
   scene.scene.background=scene.powerBackground;
   scene.materials.node.blending=scene.T.NormalBlending;scene.contours.material.blending=scene.T.NormalBlending;
-  const on=new scene.T.Color(scene.dark?0x447abb:0x165577),activity=new scene.T.Color(0x39baff);
+  const on=new scene.T.Color(scene.dark?ENCASED_PALETTE.dark:ENCASED_PALETTE.light),activity=new scene.T.Color(ENCASED_PALETTE.active);
   GRAPH.nodes.forEach((node,index)=>{
     const level=ignitionLevel(node.layer,p),spark=Math.sin(Math.PI*level)*.6;
     scene.color.copy(base).lerp(on,level).lerp(activity,spark*.35);
@@ -23,7 +24,7 @@ export function applyPower(scene,progress) {
     }
   });
   scene.beads.instanceColor.needsUpdate=true;scene.edgeGeometry.attributes.color.needsUpdate=true;
-  scene.materials.node.opacity=.36+p*.54;scene.materials.edge.opacity=.1+p*.13;
+  scene.materials.node.opacity=1;scene.materials.node.emissiveIntensity=.03+p*.09;scene.materials.edge.opacity=.1+p*.13;scene.routes.setPower(p);
   scene.contours.material.opacity=.055+p*.185;
   scene.pulses.count=scene.tokens.count=0;scene.selection.visible=scene.probe.visible=false;
   scene.replayLight.position.set(layerX(Math.min(7,Math.floor(p*8))),1.6,3);

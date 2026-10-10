@@ -85,7 +85,7 @@ class MachineController {
     this.stage.setAttribute("aria-label", "Source-bound unit-hypersphere shared-block architecture. Space plays or pauses. Arrow keys inspect replay frames. W A S D orbit. Plus and minus zoom.");
     this.stage.append(element("div", "machine-legend"));
     this.stage.querySelector(".machine-legend").innerHTML = '<div>UNIT HYPERSPHERE / DEPTH 3<span>128 wide · 4 heads · one shared block ×3</span></div><div>SOURCE-BOUND ARCHITECTURE<span>1,664 coordinates + 4 operators<br>Dense edges bundled / illustrative signals</span></div>';
-    if(this.trainedArticle)this.stage.querySelector('.machine-legend').innerHTML='<div>TRAINED BYTE LM / DEPTH 3<span>128 wide · 4 heads · one shared block ×3</span></div><div>RECORDED ACTIVATIONS<span>Blue positive · purple negative · dark uncomputed<br>1,664 coordinates + 4 head-context RMS operators</span></div>';
+    if(this.trainedArticle)this.stage.querySelector('.machine-legend').innerHTML='<div>TRAINED BYTE LM / DEPTH 3<span>128 wide · 4 heads · one shared block ×3</span></div><div>RECORDED ACTIVATIONS<span>Gold positive · rose negative · blue resting<br>1,664 coordinates + 4 head-context RMS operators</span></div>';
     const axes = element("div", "machine-axis-labels");
     for (const label of ["128 STATE", "SHARED BLOCK ×3", "256 BYTE HEAD"]) axes.append(element("span", "", label));
     axes.setAttribute("aria-hidden", "true"); this.stage.append(axes);

@@ -55,7 +55,12 @@ const observer=new IntersectionObserver(entries=>{visible=entries[0].isIntersect
 if(journey)observer.observe(journey.querySelector('.digital-model-background'));
 syncMotion();
 
-window.PortfolioHomepageBackground=Object.freeze({snapshot:()=>({audit,quiet:quiet(),motion:journey?.dataset.backgroundMotion||'unavailable',
-  backend:journey?.dataset.backgroundBackend||'static',currentTime:native?.elapsed??video?.currentTime??null,
-  paused:native?!native.active:video?.paused??true,playbackRate:native?.playbackRate??video?.playbackRate??null,
-  loopStart,loopEnd,rendering:native?.snapshot()??null})});
+function playbackSnapshot() {
+  if(native)return {currentTime:native.elapsed,paused:!native.active,playbackRate:native.playbackRate,rendering:native.snapshot()};
+  return {currentTime:video?.currentTime??null,paused:video?.paused??true,playbackRate:video?.playbackRate??null,rendering:null};
+}
+function backgroundSnapshot() {
+  return {audit,quiet:quiet(),motion:journey?.dataset.backgroundMotion||'unavailable',
+    backend:journey?.dataset.backgroundBackend||'static',loopStart,loopEnd,...playbackSnapshot()};
+}
+window.PortfolioHomepageBackground=Object.freeze({snapshot:backgroundSnapshot});

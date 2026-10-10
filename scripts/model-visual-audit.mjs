@@ -12,7 +12,7 @@ await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
 const viewports=[['phone-360-dpr1',360,800,1],['phone-412-dpr3',412,915,3],['desktop-dpr2',1440,1000,2]];
 const root=fileURLToPath(new URL('../',import.meta.url));
-const sharedAssetFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js',
+const sharedAssetFiles=['model-view.js','model-power.js','model-scene.js','model-encased-materials.js','model-encased-housing.js','model-encased-routes.js','model-quality.js','model-topology.js','model-digital.js',
   'model-glass.js','model-hardware.js','model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js','model-machine.js','article-runtime.js',
   'model-startup.js','article-model-loader.js','article-model-sticky.css','model-machine.css','model-glass.css','site.css','model-context.js','article-model-context.js','article-model-presentation.js','article-lm-session.js','model-inference.js','model-lm-worker.js','model-inference-backend.js','model-presentation-sampling.js','homepage-motion.js','model-linear-webnn.js','model-linear-webgpu.js','model-renderer.js','model-background-glass.js','energy-architecture.js','material-light.js','material-system.css','lm/manifest.json','lm/unit-hypersphere.f32','vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
 let publishedAssetIdentity=null;
@@ -111,7 +111,7 @@ async function inspectHost(host,viewport) {
   assertHorizontal(diagnostics.landmarks.map(([x])=>x),`${kind}/${name}`);
   assert.ok(diagnostics.graphBounds.left>=-1&&diagnostics.graphBounds.right<=canvas.rect.width+1,`${kind}/${name}: graph fits horizontally ${JSON.stringify(diagnostics.graphBounds)}`);
   assert.ok(diagnostics.graphBounds.top>=-1&&diagnostics.graphBounds.bottom<=canvas.rect.height+1,`${kind}/${name}: graph fits vertically ${JSON.stringify(diagnostics.graphBounds)}`);
-  assert.equal(diagnostics.appearance.lightBlue,'165577');assert.equal(diagnostics.appearance.darkBlue,'447abb');assert.equal(diagnostics.appearance.activityBlue,'39baff');
+  assert.equal(diagnostics.appearance.lightBlue,'165577');assert.equal(diagnostics.appearance.darkBlue,'447abb');assert.equal(diagnostics.appearance.activityGold,'ffc778');
   assert.deepEqual(errors,[]);
   const path=`${out}/${kind}-${name}.png`;
   await screenshotModel(page,root,{path});

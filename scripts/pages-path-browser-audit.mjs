@@ -47,7 +47,7 @@ assert.ok(manifest.notebooks?.length, 'Prepared Pages manifest must include note
 assert.ok(manifest.articles[0].url.startsWith(`${basePath}/`),
   `Prepared article route must include the project path: ${manifest.articles[0].url}`);
 
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, args:['--use-angle=swiftshader','--enable-unsafe-swiftshader'] });
 try {
   const desktop = await browser.newContext({ viewport: { width: 1366, height: 900 } });
   const home = await desktop.newPage();
