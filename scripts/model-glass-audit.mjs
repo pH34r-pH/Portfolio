@@ -33,7 +33,7 @@ function assertNativeRender(diagnostics) {
 const center=panel=>[0,1].map(axis=>panel.corners.reduce((sum,point)=>sum+point[axis],0)*.25);
 async function align(root) {
   const result=await root.evaluate(node=>{
-    const canvas=node.querySelector('canvas').getBoundingClientRect();
+    const canvas=node.querySelector('[data-machine-canvas]').getBoundingClientRect();
     return node.machine.diagnostics().glass.panels.filter(panel=>panel.visible).map(panel=>{
       const rect=node.querySelector(`[data-glass-panel="${panel.id}"]`).getBoundingClientRect();
       const x=panel.corners.map(point=>point[0]),y=panel.corners.map(point=>point[1]);
@@ -387,7 +387,7 @@ async function deepZoomIsFinite(root) {
   await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=false);
 }
 async function independentPaneState(page,root,phone) {
-  const cdp=await page.context().newCDPSession(page),canvas=await root.locator('canvas').boundingBox();
+  const cdp=await page.context().newCDPSession(page),canvas=await root.locator('[data-machine-canvas]').boundingBox();
   const duration=await root.locator('[data-glass-panel]').first().evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration));
   assert.ok(duration>=.7,'context highlight transitions use a longer ease-in/out');
   const before=await root.evaluate(node=>({camera:node.machine.diagnostics().camera,glass:node.machine.diagnostics().glass,

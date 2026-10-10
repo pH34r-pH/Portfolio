@@ -20,7 +20,7 @@ export async function homepageLifecycle(open) {
   const delayed=await auditDelayedClock(open),hidden=await visibilitySignal(open);
   const {context,page,root,errors}=await open({viewport:{width:1366,height:900}});
   await root.evaluate(node=>node.machine.seek(145));
-  await root.locator('canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+  await root.locator('[data-machine-canvas]').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
   await expect(root).toHaveAttribute('data-render','fallback');
   assert.equal(await root.evaluate(node=>node.machine.snapshot().frame),145);
   await expect(root.locator('[data-machine-fallback] svg')).toBeVisible();

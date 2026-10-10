@@ -17,7 +17,7 @@ export class HomepageScreens extends SharedGlass {
   }
   sync(camera) {
     if (!this.viewport) return;
-    const T = this.T, root = this.instruments.root, canvas = root.querySelector('canvas').getBoundingClientRect();
+    const T = this.T, root = this.instruments.root, canvas = root.querySelector('[data-machine-canvas]').getBoundingClientRect();
     const faces = [...root.querySelectorAll('[data-digital-pane]')].map(node => ({node, rect:node.getBoundingClientRect()}))
       .filter(({rect}) => rect.bottom > canvas.top && rect.top < canvas.bottom).slice(0, 3);
     const distance = this.distance - 5, unit = 2 * distance * Math.tan(camera.fov * Math.PI / 360) / this.viewport.height;

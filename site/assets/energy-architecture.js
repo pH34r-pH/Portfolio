@@ -38,12 +38,39 @@ export class EnergyArchitecture {
     });
   }
   instances(geometry, material, count) {
+    if (geometry === this.geometry.wood) return this.woodPieces(geometry, material, count);
     const mesh = new this.T.InstancedMesh(geometry, material, count);
     mesh.frustumCulled = false;
     mesh.instanceMatrix.setUsage(this.T.DynamicDrawUsage);
     this.group.add(mesh);
     for (let index = 0; index < count; index++) this.hideInstance(mesh, index);
     return mesh;
+  }
+  woodPieces(geometry, material, count) {
+    this.woodGeometry = [];
+    const pieces = Array.from({ length: count }, (_, index) => {
+      const cut = geometry.clone(),
+        uv = cut.getAttribute("uv");
+      const x = ((index * 0.61803398875) % 1) * 0.76,
+        y = ((index * 0.41421356237) % 1) * 0.74;
+      for (let vertex = 0; vertex < uv.count; vertex++) uv.setXY(vertex, x + uv.getX(vertex) * 0.19, y + uv.getY(vertex) * 0.19);
+      const mesh = new this.T.Mesh(cut, material);
+      mesh.matrixAutoUpdate = false;
+      this.group.add(mesh);
+      this.woodGeometry.push(cut);
+      return mesh;
+    });
+    const batch = {
+      instanceMatrix: { needsUpdate: false },
+      setMatrixAt: (index, matrix) => {
+        const mesh = pieces[index];
+        mesh.matrix.copy(matrix);
+        mesh.matrixWorldNeedsUpdate = true;
+        mesh.visible = matrix.elements[12] < 1e5;
+      },
+    };
+    for (let index = 0; index < count; index++) this.hideInstance(batch, index);
+    return batch;
   }
   roundedWood() {
     const shape = new this.T.Shape();
@@ -85,6 +112,13 @@ export class EnergyArchitecture {
     texture.repeat.y = 1 / 3;
     texture.anisotropy = 8;
     this.materials.wood.map = texture;
+    const relief = texture.clone();
+    relief.colorSpace = this.T.NoColorSpace;
+    this.materials.wood.bumpMap = relief;
+    this.materials.wood.roughnessMap = relief;
+    this.materials.wood.roughness = 0.62;
+    this.materials.wood.clearcoat = 0.18;
+    this.relief = relief;
     this.materials.wood.color.set(0xffffff);
     this.materials.wood.needsUpdate = true;
     this.texture = texture;
@@ -169,6 +203,7 @@ export class EnergyArchitecture {
     this.distance = 12;
     this.forward = camera.getWorldDirection(new this.T.Vector3());
     this.unit = (2 * this.distance * Math.tan((camera.fov * Math.PI) / 360)) / this.bounds.height;
+    this.materials.wood.bumpScale = 0.18 * this.unit;
     const panes = [...this.journey.querySelectorAll("[data-digital-pane]")]
       .map((pane) => pane.getBoundingClientRect())
       .filter((rect) => rect.bottom > this.bounds.top && rect.top < this.bounds.bottom)
@@ -209,12 +244,22 @@ export class EnergyArchitecture {
     this.materials.mist.opacity = 0.08 + value * 0.05;
   }
   diagnostics() {
-    return { kind: "decorative-screen-support", wood: this.textureStatus || "loading", energy: this.energy, screenCapacity: 2, drawBatches: 8 };
+    return {
+      kind: "decorative-screen-support",
+      wood: this.textureStatus || "loading",
+      energy: this.energy,
+      screenCapacity: 2,
+      drawBatches: 19,
+      uniqueWoodCuts: 12,
+      grainRelief: true,
+    };
   }
   dispose() {
     this.disposed = true;
     this.scene.remove(this.group);
     this.texture?.dispose();
+    this.relief?.dispose();
+    this.woodGeometry?.forEach((geometry) => geometry.dispose());
     Object.values(this.geometry).forEach((item) => item.dispose());
     Object.values(this.materials).forEach((item) => item.dispose());
   }

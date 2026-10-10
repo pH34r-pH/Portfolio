@@ -1,4 +1,5 @@
 import('./material-light.js').catch(()=>{});
+import('./carpentry.js').catch(()=>{});
 function renderArticleList(container, articles) {
   if (!articles?.length) return;
   const cards = [...articles]

@@ -75,7 +75,7 @@ export class SharedGlass {
       this.scene.remove(panel.mesh, panel.trim); panel.mesh.geometry.dispose(); panel.trim.geometry.dispose();
       panel.mesh.material.dispose(); panel.trim.material.dispose();
     });
-    this.canvas = this.instruments.host.querySelector('canvas');
+    this.canvas = this.instruments.host.querySelector('[data-machine-canvas]');
     this.panels = this.instruments.dimensions(phone, viewport.width).map(size => {
       const anchor = anchors[size.id], depth = phone ? anchor.depth * .65 : anchor.depth;
       const center = new this.T.Vector3(phone ? 0 : anchor.x * 2 - 1, phone ? -.62 : 1 - anchor.y * 2, 0).unproject(camera);

@@ -41,7 +41,7 @@ html body :is(.site-menu,.search-dialog) {
   backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
 }
 /* Carved maple switches: the grain stays on the face, never on the label. */
-html body.digital-home .actions a.primary,
+html body.digital-home .actions a.primary:not([data-carpentry-control]),
 html body :is(.menu-toggle,.search-toggle,.appearance button,.actions a,.actions a.primary,.article-execution button,.synthetic-projection-control button,
   .article-model-toolbar button,.article-model-toolbar [data-machine-settings] summary,.article-model-startup button,.machine-generation-settings button,[data-lm-stop],.machine-input button,.machine-instrument-nav button,.machine-depth-view,.digital-motion-control) {
   position:relative; isolation:isolate; border:1px solid #c89862; border-radius:8px;
@@ -58,10 +58,10 @@ html body :is(.actions a.primary,.machine-input button,[data-viewer-follow][aria
   box-shadow:inset 0 1px #fff7de,inset 0 -3px rgba(24,118,205,.75),0 3px 0 #714a2c,0 0 0 1px rgba(112,215,255,.55),
     0 0 20px rgba(22,156,255,.24),0 10px 23px rgba(0,0,0,.25);
 }
-html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):hover {
+html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):not([data-carpentry-control]):hover {
   transform:translateY(-2px); filter:brightness(1.08);
 }
-html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):active {
+html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):not([data-carpentry-control]):active {
   transform:translateY(2px);
   box-shadow:inset 0 2px 4px rgba(58,31,11,.45),0 1px 0 #714a2c,0 3px 7px rgba(0,0,0,.25);
 }
