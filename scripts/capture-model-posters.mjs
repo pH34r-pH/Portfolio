@@ -13,8 +13,8 @@ const output=new URL('../site/assets/model-posters/',import.meta.url);
 const evidence=new URL('../ux-screenshots/visual-v2/posters/',import.meta.url);
 const densities=[1,2,3],assets=[];
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-const sourceFiles=['model-view.js','model-power.js','model-scene.js','model-quality.js','model-topology.js','model-digital.js','model-glass.js','model-hardware.js',
-  'model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js','model-architecture.json',
+const sourceFiles=['model-view.js','model-power.js','model-scene.js','model-encased-materials.js','model-encased-housing.js','model-encased-routes.js','model-quality.js','model-topology.js','model-digital.js','model-glass.js','model-hardware.js',
+  'model-light.js','model-gestures.js','model-render-metrics.js','model-renderer.js','model-background-glass.js','energy-architecture.js','energy-optics.js','steel-elbow.svg','homepage-native-model.js','homepage-motion.js','model-presentation-sampling.js','material-system.css','material-light.js','homepage-screens.js','model-architecture.json','model-context.js',
   'vendor/three@0.186.1/three.module.js','vendor/three@0.186.1/three.core.js'];
 const pipelineFiles=['scripts/capture-model-posters.mjs','scripts/model-pixel-fidelity.mjs','scripts/model-pixel-fidelity-worker.mjs',
   'scripts/test-model-pixel-fidelity.mjs','scripts/test-model-startup.mjs','scripts/model-audit-host.mjs','scripts/model-visual-audit.mjs',

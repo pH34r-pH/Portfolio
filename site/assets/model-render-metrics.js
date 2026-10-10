@@ -3,7 +3,10 @@ const percentile = (values, fraction) => [...values].sort((a, b) => a - b)[Math.
 // CPU submission time is not GPU completion or a physical-device FPS claim.
 export class RenderMetrics {
   constructor(renderer) {
-    this.gl = renderer.getContext(); this.extension = this.gl.getExtension('EXT_disjoint_timer_query_webgl2');
+    this.renderer = renderer;
+    this.gl = renderer.isWebGPURenderer ? null : renderer.getContext();
+    this.extension = this.gl?.getExtension('EXT_disjoint_timer_query_webgl2');
+    this.webGPU = renderer.backend?.trackTimestamp === true;
     this.cpu = []; this.gpu = []; this.pending = []; this.frameCPU = [];
   }
   begin() {
@@ -16,6 +19,12 @@ export class RenderMetrics {
     this.add(this.cpu, performance.now() - this.started);
     if (this.query) {
       this.gl.endQuery(this.extension.TIME_ELAPSED_EXT); this.pending.push(this.query); this.query = null;
+    }
+    if (this.webGPU && !this.resolving) {
+      this.resolving = true;
+      this.renderer.resolveTimestampsAsync('render').then(value => {
+        if (Number.isFinite(value)) this.add(this.gpu, value);
+      }).catch(() => {}).finally(() => { this.resolving = false; });
     }
   }
   add(list, value) { list.push(value); if (list.length > 180) list.shift(); }
@@ -32,7 +41,7 @@ export class RenderMetrics {
   }
   snapshot() {
     const summarize = values => ({samples: values.length, p50: percentile(values, .5), p95: percentile(values, .95)});
-    return {cpuRenderSubmissionMs: summarize(this.cpu), cpuFrameUpdateMs: summarize(this.frameCPU), gpuRenderMs: summarize(this.gpu), gpuTimerSupported: Boolean(this.extension)};
+    return {cpuRenderSubmissionMs: summarize(this.cpu), cpuFrameUpdateMs: summarize(this.frameCPU), gpuRenderMs: summarize(this.gpu), gpuTimerSupported: Boolean(this.extension || this.webGPU)};
   }
   dispose() { this.pending.forEach(query => this.gl.deleteQuery(query)); this.pending.length = 0; }
 }

@@ -459,8 +459,10 @@ _MODEL_FOCUS_PARTS = {
 }
 
 _ARTICLE_MODEL_CONTEXTS = (
-    (re.compile(r"\b(?:token\w*|word\w*|byte\w*|text\w*|input|source\w*|prompt|context\w*)\b", re.I), 'tokenizer'),
-    (re.compile(r"\b(?:consumer\w*|probe\w*|readout\w*|utiliz\w*|underus\w*|attention\w*|intervention\w*)\b", re.I), 'consumer'),
+    (re.compile(r"\b(?:references|sources|bibliography|chronology|provenance)\b", re.I), 'all'),
+    (re.compile(r"\b(?:token\w*|word\w*|byte\w*|input|prompt|encoding)\b", re.I), 'tokenizer'),
+    (re.compile(r"\b(?:attention\w*|heads|causal|query|key|value)\b", re.I), 'attention'),
+    (re.compile(r"\b(?:consumer\w*|probe\w*|readout\w*|utiliz\w*|underus\w*|intervention\w*)\b", re.I), 'consumer'),
     (re.compile(r"\b(?:output\w*|predict\w*|logit\w*|continuation\w*|benchmark\w*|evaluation\w*|task\w*|experiment\w*)\b", re.I), 'output'),
     (re.compile(r"\b(?:represent\w*|geometr\w*|normaliz\w*|sphere\w*|state\w*|tangent\w*|coordinate\w*|invariance\w*|rank\w*|signal\w*)\b", re.I), 'representation'),
 )
@@ -470,6 +472,8 @@ def annotate_article_model_context(article, metadata: dict) -> None:
     """Attach generated context hints to headings without changing MyST sources."""
     default = _MODEL_FOCUS_PARTS.get(str(metadata.get('modelFocus', 'full')), 'all')
     for heading in article.find_all(('h2', 'h3')):
+        if heading.find_parent(class_='article-model-machine'):
+            continue
         text = heading.get_text(' ', strip=True)
         focus = next((part for pattern, part in _ARTICLE_MODEL_CONTEXTS if pattern.search(text)), default)
         heading['data-model-context'] = focus
@@ -506,18 +510,18 @@ def render_article_model_machine(metadata: dict, slug: str) -> str:
     startup_status_id = f'model-startup-status-{slug}'
     return f'''<section class="model-machine article-model-machine" data-pagefind-ignore
       data-model-machine data-model-startup data-startup="idle"
-      data-topology-version="unit_hypersphere_depth3" data-style-version="leaf01-blue-horizontal-native-resolution"
+      data-topology-version="unit_hypersphere_depth3" data-style-version="trained-lm-recordings-v1"
       data-model-focus="{html.escape(part, quote=True)}"
       aria-labelledby="model-machine-{html.escape(slug, quote=True)}">
       <header class="machine-heading"><div><p class="eyebrow">MODEL VIEW / {html.escape(label)}</p>
-      <h2 id="model-machine-{html.escape(slug, quote=True)}">Same machine. Different intervention.</h2></div>
-      <p>The lit subsystem is this article's intervention surface. Run text through the same teaching model used across the research.</p></header>
+      <h2 id="model-machine-{html.escape(slug, quote=True)}">Inspect the model behind this question.</h2></div>
+      <p>Generate with the shared trained research byte LM and inspect its recorded activations. Article context highlights the relevant subsystem. This common baseline does not reproduce this article's experimental intervention.</p></header>
       <div class="machine-stage" data-machine-stage>
         <canvas class="machine-canvas" data-machine-canvas aria-hidden="true"></canvas>
         <div class="machine-fallback" data-machine-fallback aria-hidden="true"><span>text</span><b>→</b><span>tokens</span><b>→</b><span>model</span><b>→</b><span>output</span></div>
         <form class="machine-console machine-input" data-machine-form>
           <label for="{html.escape(prompt_id, quote=True)}">Input</label>
-          <div><input id="{html.escape(prompt_id, quote=True)}" name="prompt" value="the model learned a useful distinction" autocomplete="off"><button type="submit">Run</button></div>
+          <div><input id="{html.escape(prompt_id, quote=True)}" name="prompt" value="the model learned a useful distinction" autocomplete="off" disabled><button type="submit" disabled>Generate</button></div>
           <div class="machine-token-readout" data-machine-token-readout role="group" aria-label="Tokenized input"></div>
         </form>
         <div class="machine-console machine-output"><span class="machine-console-label">Output</span><p data-machine-output aria-live="polite">waiting for input</p></div>

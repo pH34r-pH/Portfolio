@@ -14,8 +14,8 @@
   <main id="main-content" data-pagefind-body tabindex="-1">
     <div class="digital-journey" data-model-machine data-digital-home data-homepage-viewer data-model-startup data-startup="idle" data-topology-version="unit_hypersphere_depth3" data-style-version="leaf01-blue-horizontal-native-resolution">
       <div class="digital-model-background" data-pagefind-ignore aria-hidden="true">
-        <video class="digital-model-loop" data-homepage-model-loop autoplay muted playsinline preload="metadata" data-loop-start="1.8" data-loop-end="8.4">
-          <source src="/assets/homepage-model-loop.webm" type="video/webm">
+        <video class="digital-model-loop" data-homepage-model-loop muted playsinline preload="none" data-loop-start="1.8" data-loop-end="8.4">
+          <source data-src="/assets/homepage-model-loop.webm" type="video/webm">
         </video>
         <img class="digital-model-loop-poster" src="/assets/homepage-model-loop-poster.webp" alt="">
       </div>
@@ -60,11 +60,12 @@
       <div class="digital-pane" data-digital-pane>
       <header class="machine-heading">
         <div><p class="eyebrow">MODEL MACHINE / SIGNAL LOOP</p><h2 id="model-machine-title">Watch the signal move through the machine.</h2></div>
-        <p>The background uses the same public topology as the article model. It ignites once, then cycles through prompt entry, network activity, and generated output while the view turns slowly around the graph.</p>
+        <p>The background replays a recorded generation from the same trained research language model used in the articles. Its colors follow real intermediate tensors across three passes through the shared block.</p>
       </header>
         <p class="digital-reading">A representation is useful only if the next operation can use it. Start with the connections: the wide state narrows through attention, expands through the feed-forward block, then returns to the shared state.</p>
         <p class="digital-architecture">128-wide state · 4 attention heads · one block, three passes</p>
-        <details class="digital-replay-disclosure" data-pagefind-ignore><summary>Inspect the architecture</summary><div><p>The background loop is pre-rendered from the public topology; its signals are illustrative. <a href="/assets/model-architecture.json">Architecture and aggregation map</a>.</p></div></details>
+        <button class="digital-motion-control" type="button" data-background-toggle aria-pressed="false">Pause background</button>
+        <details class="digital-replay-disclosure" data-pagefind-ignore><summary>Inspect the architecture</summary><div><p>This background renders recorded model tensors at native display resolution using WebGPU or WebGL2, with a video fallback. Playback is retimed; visual brightness and point sizes smoothly transition between recorded observations and are normalized per layer. It performs no live inference on the homepage. <a href="/assets/model-architecture.json">Architecture and aggregation map</a> · <a href="/assets/lm/manifest.json">Trained model identity</a>.</p></div></details>
         <a class="digital-next" href="#research-chapter">Follow the research <span aria-hidden="true">↓</span></a>
       </div>
     </section>

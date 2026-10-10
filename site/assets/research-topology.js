@@ -9,6 +9,7 @@ if (root) {
   let dependencies = new Map();
   let children = new Map();
   let buttons = new Map();
+  let edgeFrame = 0;
 
   const safe = (value) => typeof value === "string" ? value : "";
 
@@ -112,7 +113,10 @@ if (root) {
       article.date ? `PUBLISHED ${article.date}` : null,
     ].filter(Boolean).join(" / ");
     const heading = document.createElement("h3");
-    heading.textContent = nodeLabel(article);
+    const titleLink = document.createElement("a");
+    titleLink.href = article.url;
+    titleLink.textContent = nodeLabel(article);
+    heading.append(titleLink);
     const description = document.createElement("p");
     description.textContent = article.description || "";
     return [meta, heading, description];
@@ -168,12 +172,18 @@ if (root) {
     }
   }
 
-  function edgeRoute(source,target,stacked) {
-    const x1=source.offsetLeft+source.offsetWidth,y1=source.offsetTop+source.offsetHeight/2;
-    const x2=target.offsetLeft,y2=target.offsetTop+target.offsetHeight/2;
+  function nodeBounds(node) {
+    const rect=node.getBoundingClientRect(),origin=nodesLayer.getBoundingClientRect();
+    return {left:rect.left-origin.left,top:rect.top-origin.top,width:rect.width,height:rect.height};
+  }
+
+  function edgeRoute(sourceNode,targetNode,stacked) {
+    const source=nodeBounds(sourceNode),target=nodeBounds(targetNode);
+    const x1=source.left+source.width,y1=source.top+source.height/2;
+    const x2=target.left,y2=target.top+target.height/2;
     if(stacked) {
-      const startX=source.offsetLeft+source.offsetWidth/2,startY=source.offsetTop+source.offsetHeight;
-      const endX=target.offsetLeft+target.offsetWidth/2,endY=target.offsetTop;
+      const startX=source.left+source.width/2,startY=source.top+source.height;
+      const endX=target.left+target.width/2,endY=target.top;
       const delta=Math.max(18,Math.min(48,Math.abs(endY-startY)*.34));
       return {endX,endY,path:`M ${startX} ${startY} C ${startX} ${startY+delta}, ${endX} ${endY-delta}, ${endX} ${endY}`};
     }
@@ -186,11 +196,19 @@ if (root) {
     const active=Boolean(selected&&(dep===selected||slug===selected));
     const path=document.createElementNS("http://www.w3.org/2000/svg","path");
     path.setAttribute("d",route.path);path.dataset.source=dep;path.dataset.target=slug;
+    path.setAttribute("marker-end",`url(#topology-arrow${active?'-active':''})`);
     path.classList.toggle("is-active",active);edgesLayer.append(path);
-    const endpoint=document.createElementNS("http://www.w3.org/2000/svg","circle");
-    endpoint.classList.add("topology-edge-end");endpoint.classList.toggle("is-active",active);
-    endpoint.setAttribute("cx",String(route.endX));endpoint.setAttribute("cy",String(route.endY));
-    endpoint.setAttribute("r",active?"3":"2");edgesLayer.append(endpoint);
+  }
+
+  function arrowMarker(active) {
+    const marker=document.createElementNS("http://www.w3.org/2000/svg","marker");
+    marker.id=`topology-arrow${active?'-active':''}`;
+    for(const [name,value] of Object.entries({viewBox:'0 0 14 12',refX:14,refY:6,
+      markerWidth:14,markerHeight:12,markerUnits:'userSpaceOnUse',orient:'auto'}))marker.setAttribute(name,String(value));
+    const arrow=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    arrow.setAttribute("points","0,0 14,6 0,12 3,6");
+    arrow.classList.add("topology-arrowhead");arrow.classList.toggle("is-active",active);
+    marker.append(arrow);return marker;
   }
 
   function drawEdges() {
@@ -199,17 +217,13 @@ if (root) {
     const height = nodesLayer.scrollHeight;
     const stacked = matchMedia("(max-width: 640px)").matches;
     edgesLayer.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    edgesLayer.setAttribute("preserveAspectRatio", "none");
     edgesLayer.style.width = `${width}px`;
     edgesLayer.style.height = `${height}px`;
     edgesLayer.replaceChildren();
 
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
-    const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-    gradient.id = "topology-edge-signal";
-    gradient.setAttribute("x1", "0");
-    gradient.setAttribute("x2", "1");
-    gradient.innerHTML = '<stop offset="0" stop-color="var(--muted)" stop-opacity=".42"/><stop offset="1" stop-color="var(--accent)" stop-opacity=".72"/>';
-    defs.append(gradient);
+    defs.append(arrowMarker(false),arrowMarker(true));
     edgesLayer.append(defs);
 
     for (const article of articles) {
@@ -253,6 +267,8 @@ if (root) {
       nodeElements.push(createNode(article, row));
     }
     nodesLayer.replaceChildren(...nodeElements);
+    resize.disconnect();resize.observe(nodesLayer);
+    for(const button of buttons.values())resize.observe(button);
     renderAccessibleList();
 
     requestAnimationFrame(() => {
@@ -263,9 +279,14 @@ if (root) {
     });
   }
 
-  const resize = new ResizeObserver(() => requestAnimationFrame(drawEdges));
+  function scheduleEdges() {
+    if(edgeFrame)return;
+    edgeFrame=requestAnimationFrame(()=>{edgeFrame=0;drawEdges();});
+  }
+  const resize = new ResizeObserver(scheduleEdges);
   resize.observe(nodesLayer);
-  addEventListener("resize", () => requestAnimationFrame(drawEdges), { passive: true });
+  addEventListener("resize", scheduleEdges, { passive: true });
+  document.fonts.ready.then(scheduleEdges);
 
   if (window.PortfolioPublication) render(window.PortfolioPublication);
   else document.addEventListener("portfolio:publication", (event) => render(event.detail), { once: true });

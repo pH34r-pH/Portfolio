@@ -44,5 +44,8 @@
       "frozen frontend preparation"
     ]
   },
-  "replay": "Deterministic illustrative signal and UTF-8 byte echo; no model, trained tensors, optimizer execution or measurement."
+  "replay": "Production articles record actual trained forward-pass tensors and next-byte logits; the homepage retimes a recording from the same kernel and Three.js scene. Synthetic signals exist only in explicit isolated renderer audit fixtures.",
+  "trainedModelManifest": "/assets/lm/manifest.json",
+  "inference": "Shared historical AdamW research baseline, seed 17, 128 training steps, 128-byte context. It does not reproduce each article’s interventions, optimizer comparisons or probes.",
+  "displayEncoding": "Per-layer magnitude normalization; signed raw coordinate inspection; blue positive and purple negative; uncomputed layers dark; attention operators show real head-context RMS. Dense routes are structural bundles, not measured individual weights."
 }

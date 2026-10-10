@@ -24,7 +24,7 @@ try {
       await expect(page.locator('[data-replay-play]')).toHaveText('Pause');
       await page.locator('[data-replay-play]').click();
       const before=await root.evaluate(n=>n.machine.diagnostics().camera);
-      const canvas=await page.locator('canvas').boundingBox();
+      const canvas=await page.locator('[data-machine-canvas]').boundingBox();
       await page.mouse.move(canvas.x+canvas.width*.5,canvas.y+canvas.height*.5);
       await page.mouse.down();await page.mouse.move(canvas.x+canvas.width*.5+55,canvas.y+canvas.height*.5+20,{steps:5});await page.mouse.up();
       const after=await root.evaluate(n=>n.machine.diagnostics().camera);
@@ -72,7 +72,7 @@ async function transportDuringIgnition() {
       else if (action === 'scrub') {
         await page.locator('[data-replay-timeline]').focus();
         await page.keyboard.press('ArrowRight');
-      } else if (action === 'viewer-pointer') await page.locator('canvas').click();
+      } else if (action === 'viewer-pointer') await page.locator('[data-machine-canvas]').click();
       else {
         await page.locator('[data-machine-stage]').focus();
         await page.keyboard.press('ArrowRight');

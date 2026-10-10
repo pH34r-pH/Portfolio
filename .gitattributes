@@ -1,0 +1,4 @@
+* text=auto eol=lf
+site/assets/vendor/** -text
+site/assets/lm/*.f32 binary
+site/assets/homepage-model-trace.f32 binary

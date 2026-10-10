@@ -5,7 +5,7 @@ import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
 import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
-const host=await articleHost(base);
+const host=await articleHost(base,{componentFixture:true});
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
 await mkdir(out, {recursive:true});
 const browser = await chromium.launch({headless:true});
@@ -49,7 +49,7 @@ function assertFullGraphFit(diagnostics,label) {
 }
 async function auditResetFitAfterResize(page,root) {
   await root.locator('[data-camera="reset"]').click();
-  const canvas=root.locator('canvas'),camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
+  const canvas=root.locator('[data-machine-canvas]'),camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
   await canvas.scrollIntoViewIfNeeded();
   const initial=await canvas.boundingBox();
   if(host.html) {
@@ -64,7 +64,7 @@ async function auditResetFitAfterResize(page,root) {
   assert.ok(Math.abs(orbited.yaw-1.05)<1e-5,`Orbit reaches reproduction yaw 1.05 (${orbited.yaw})`);
   assert.ok(Math.abs(orbited.pitch)<1e-5,`Orbit reaches reproduction pitch 0 (${orbited.pitch})`);
   await page.setViewportSize({width:359,height:800});
-  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===width,Math.round(initial.width)-1);
+  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] [data-machine-canvas]').getBoundingClientRect().width)===width,Math.round(initial.width)-1);
   const resized=await canvas.boundingBox();
   assert.equal(Math.round(resized.width),Math.round(initial.width)-1,'Genuine one-pixel viewport resize changes the article canvas width');
   assert.equal(Math.round(resized.height),Math.round(initial.height),'Viewport resize preserves the article canvas height');
@@ -82,11 +82,11 @@ async function auditResetFitAfterResize(page,root) {
   assert.deepEqual(reset.graphGeometryBounds,baseline.graphGeometryBounds,'Reset full-geometry framing equals fresh default article framing');
   await fresh.context.close();
   await page.setViewportSize({width:360,height:800});
-  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] canvas').getBoundingClientRect().width)===width,Math.round(initial.width));
+  await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] [data-machine-canvas]').getBoundingClientRect().width)===width,Math.round(initial.width));
   return {initialCanvas:{width:Math.round(initial.width),height:Math.round(initial.height)},orbited:{yaw:orbited.yaw,pitch:orbited.pitch},resizedCanvas:{width:Math.round(resized.width),height:Math.round(resized.height)},preReset:{distance:preReset.camera.distance,bounds:preReset.graphGeometryBounds},reset:{distance:reset.camera.distance,bounds:reset.graphGeometryBounds},freshDefault:{distance:baseline.camera.distance,bounds:baseline.graphGeometryBounds}};
 }
 async function auditTouch(page,root) {
-  const canvas=root.locator('canvas');await canvas.scrollIntoViewIfNeeded();
+  const canvas=root.locator('[data-machine-canvas]');await canvas.scrollIntoViewIfNeeded();
   const box=await canvas.boundingBox(),client=await page.context().newCDPSession(page);
   // Keep the source reproduction coordinates, scaled into the shorter sticky
   // article canvas so every contact remains on the actual gesture target.
@@ -137,7 +137,7 @@ try {
     await expect(root).toHaveAttribute('data-render','webgl');
     await expect(root.locator('[data-camera="reset"]')).toBeHidden();
     const framing=await root.evaluate(node=>{
-      const canvas=node.querySelector('canvas').getBoundingClientRect(),legend=node.querySelector('.machine-legend').getBoundingClientRect();
+      const canvas=node.querySelector('[data-machine-canvas]').getBoundingClientRect(),legend=node.querySelector('.machine-legend').getBoundingClientRect();
       return {canvasTop:canvas.top,legendBottom:legend.bottom};
     });
     assert.ok(framing.canvasTop>=framing.legendBottom+6,`${name} HUD geometry band ${JSON.stringify(framing)}`);
@@ -242,7 +242,7 @@ try {
   evidence.push(await auditDelayedClock(open));
   const {context,page,root}=await open({viewport:{width:1366,height:900}});
   await seek(root,145);
-  await root.locator('canvas').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
+  await root.locator('[data-machine-canvas]').evaluate(canvas=>canvas.getContext('webgl2').getExtension('WEBGL_lose_context').loseContext());
   await expect(root).toHaveAttribute('data-render','fallback'); assert.equal((await snapshot(root)).frame,145);
   // Headless tabs remain visible; exercise the document visibility signal explicitly.
   const visibilityCase=await open({viewport:{width:1366,height:900}});

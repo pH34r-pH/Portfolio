@@ -1,0 +1,3845 @@
+{
+  "schemaVersion": 1,
+  "prompt": "the model learned a useful distinction",
+  "generatedBytes": [
+    97,
+    121,
+    105,
+    100,
+    115,
+    101,
+    114,
+    97,
+    58,
+    110,
+    108,
+    101
+  ],
+  "trainedStateSha256": "ec94da8bb0980c90f5c88de5f005e5c22d941d0280a7d4943fc2c43d6d146824",
+  "weightsSha256": "342b0782bdd60097e1a1c38975204ed4ddd1fd0151b181d32417849d58cb9c83",
+  "bytes": 215616,
+  "sha256": "5ec8ac6ba24ee4302c04ead2541daf3b6501aed0660f5ef24ac57f0e84009a16",
+  "durationSeconds": 8.4,
+  "loopStartSeconds": 1.8,
+  "observations": [
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 0,
+      "emitted": [],
+      "offset": 0,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 0,
+      "emitted": [],
+      "offset": 128,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 0,
+      "emitted": [],
+      "offset": 512,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 0,
+      "emitted": [],
+      "offset": 516,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 0,
+      "emitted": [],
+      "offset": 644,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 0,
+      "emitted": [],
+      "offset": 1156,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 0,
+      "emitted": [],
+      "offset": 1284,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 0,
+      "emitted": [],
+      "offset": 1412,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 0,
+      "emitted": [],
+      "offset": 1540,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 0,
+      "emitted": [],
+      "offset": 1924,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 0,
+      "emitted": [],
+      "offset": 1928,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 0,
+      "emitted": [],
+      "offset": 2056,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 0,
+      "emitted": [],
+      "offset": 2568,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 0,
+      "emitted": [],
+      "offset": 2696,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 0,
+      "emitted": [],
+      "offset": 2824,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 0,
+      "emitted": [],
+      "offset": 2952,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 0,
+      "emitted": [],
+      "offset": 3336,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 0,
+      "emitted": [],
+      "offset": 3340,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 0,
+      "emitted": [],
+      "offset": 3468,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 0,
+      "emitted": [],
+      "offset": 3980,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 0,
+      "emitted": [],
+      "offset": 4108,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 0,
+      "emitted": [
+        "61"
+      ],
+      "offset": 4236,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 4492,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 4620,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5004,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5008,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5136,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5648,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5776,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 5904,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 6032,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 6416,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 6420,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 6548,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7060,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7188,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7316,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7444,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7828,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7832,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 7960,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 8472,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 1,
+      "emitted": [
+        "61"
+      ],
+      "offset": 8600,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 1,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 8728,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 8984,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 9112,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 9496,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 9500,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 9628,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10140,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10268,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10396,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10524,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10908,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 10912,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 11040,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 11552,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 11680,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 11808,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 11936,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 12320,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 12324,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 12452,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 12964,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79"
+      ],
+      "offset": 13092,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 2,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 13220,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 13476,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 13604,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 13988,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 13992,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 14120,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 14632,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 14760,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 14888,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 15016,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 15400,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 15404,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 15532,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16044,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16172,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16300,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16428,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16812,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16816,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 16944,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 17456,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69"
+      ],
+      "offset": 17584,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 3,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 17712,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 17968,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 18096,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 18480,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 18484,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 18612,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19124,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19252,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19380,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19508,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19892,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 19896,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 20024,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 20536,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 20664,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 20792,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 20920,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 21304,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 21308,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 21436,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 21948,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64"
+      ],
+      "offset": 22076,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 4,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 22204,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 22460,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 22588,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 22972,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 22976,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 23104,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 23616,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 23744,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 23872,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 24000,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 24384,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 24388,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 24516,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25028,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25156,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25284,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25412,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25796,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25800,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 25928,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 26440,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73"
+      ],
+      "offset": 26568,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 5,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 26696,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 26952,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 27080,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 27464,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 27468,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 27596,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28108,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28236,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28364,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28492,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28876,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 28880,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 29008,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 29520,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 29648,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 29776,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 29904,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 30288,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 30292,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 30420,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 30932,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65"
+      ],
+      "offset": 31060,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 6,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 31188,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 31444,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 31572,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 31956,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 31960,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 32088,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 32600,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 32728,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 32856,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 32984,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 33368,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 33372,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 33500,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34012,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34140,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34268,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34396,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34780,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34784,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 34912,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 35424,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72"
+      ],
+      "offset": 35552,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 7,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 35680,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 35936,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 36064,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 36448,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 36452,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 36580,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37092,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37220,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37348,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37476,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37860,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37864,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 37992,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 38504,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 38632,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 38760,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 38888,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 39272,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 39276,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 39404,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 39916,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61"
+      ],
+      "offset": 40044,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 8,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 40172,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 40428,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 40556,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 40940,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 40944,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 41072,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 41584,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 41712,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 41840,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 41968,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 42352,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 42356,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 42484,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 42996,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43124,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43252,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43380,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43764,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43768,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 43896,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 44408,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a"
+      ],
+      "offset": 44536,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 9,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 44664,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 44920,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 45048,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 45432,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 45436,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 45564,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46076,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46204,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46332,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46460,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46844,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46848,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 46976,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 47488,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 47616,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 47744,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 47872,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 48256,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 48260,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 48388,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 48900,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e"
+      ],
+      "offset": 49028,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 10,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 49156,
+      "length": 256
+    },
+    {
+      "pass": 1,
+      "layer": 0,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 49412,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 1,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 49540,
+      "length": 384
+    },
+    {
+      "pass": 1,
+      "layer": 2,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 49924,
+      "length": 4
+    },
+    {
+      "pass": 1,
+      "layer": 3,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 49928,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 4,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 50056,
+      "length": 512
+    },
+    {
+      "pass": 1,
+      "layer": 5,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 50568,
+      "length": 128
+    },
+    {
+      "pass": 1,
+      "layer": 6,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 50696,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 0,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 50824,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 1,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 50952,
+      "length": 384
+    },
+    {
+      "pass": 2,
+      "layer": 2,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 51336,
+      "length": 4
+    },
+    {
+      "pass": 2,
+      "layer": 3,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 51340,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 4,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 51468,
+      "length": 512
+    },
+    {
+      "pass": 2,
+      "layer": 5,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 51980,
+      "length": 128
+    },
+    {
+      "pass": 2,
+      "layer": 6,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52108,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 0,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52236,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 1,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52364,
+      "length": 384
+    },
+    {
+      "pass": 3,
+      "layer": 2,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52748,
+      "length": 4
+    },
+    {
+      "pass": 3,
+      "layer": 3,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52752,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 4,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 52880,
+      "length": 512
+    },
+    {
+      "pass": 3,
+      "layer": 5,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 53392,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 6,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c"
+      ],
+      "offset": 53520,
+      "length": 128
+    },
+    {
+      "pass": 3,
+      "layer": 7,
+      "token": 11,
+      "emitted": [
+        "61",
+        "79",
+        "69",
+        "64",
+        "73",
+        "65",
+        "72",
+        "61",
+        "3a",
+        "6e",
+        "6c",
+        "65"
+      ],
+      "offset": 53648,
+      "length": 256
+    }
+  ]
+}

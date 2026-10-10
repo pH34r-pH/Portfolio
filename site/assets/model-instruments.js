@@ -1,3 +1,4 @@
+import {modelContext} from './model-context.js';
 let nextInstrument = 0;
 const make = (tag, className, text) => {
   const node = document.createElement(tag); node.className = className;
@@ -9,14 +10,17 @@ const make = (tag, className, text) => {
 export class ModelInstruments {
   constructor(root, stage, io, inspect, view) {
     this.root = root; this.active = 'input'; this.mode = 'flow';
+    this.article=root.classList.contains('article-model-machine')&&!root.hasAttribute('data-illustration-fixture');
+    if(this.article)root.dataset.modelReaderLayout='true';
     this.host = make('div', 'machine-spatial-host'); stage.before(this.host); this.host.append(stage, io);
     this.host.dataset.instruments = 'flow'; this.layer = io; io.className = 'machine-instruments';
+    if(this.article){io.tabIndex=0;io.setAttribute('role','region');io.setAttribute('aria-label','Model information');}
     const form = root.querySelector('[data-machine-form]'), output = root.querySelector('.machine-output');
     const input = this.panel('input', '01 / INPUT', 'A byte enters the block.'); input.append(form);
     const probe = this.panel('inspect', '02 / COORDINATE', 'One coordinate. One time slice.');
     this.selection = make('p', 'machine-glass-selection'); probe.append(this.selection);
     const inspectButton = make('button', '', 'Inspect coordinate'); inspectButton.type = 'button';
-    inspectButton.addEventListener('click', inspect); probe.append(inspectButton);
+    inspectButton.addEventListener('click', () => {root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));inspect();}); probe.append(inspectButton);
     const readout = this.panel('output', '03 / OUTPUT', 'A scripted byte returns.'); readout.append(output);
     const note = make('p', 'machine-glass-note', 'Deterministic teaching replay · first 12 UTF-8 bytes'); readout.append(note);
     this.nav = make('div', 'machine-instrument-nav'); this.nav.setAttribute('role', 'group');
@@ -26,6 +30,10 @@ export class ModelInstruments {
       button.addEventListener('click', () => {
         if (button.disabled) return;
         this.active = id; this.setMode(this.mode, this.phone); this.changed?.();
+        if(this.article) {
+          root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));
+          root.dispatchEvent(new CustomEvent('portfolio:model-focus',{detail:{part:{input:'input',inspect:'representation',output:'consumer'}[id],source:'controls'}}));
+        }
       }); this.nav.append(button);
     }
     this.context = root.dataset.modelFocus || 'all';
@@ -69,9 +77,9 @@ export class ModelInstruments {
     // Desktop context changes do not select a single pane. Reconcile that
     // selection when returning to a phone before any pane can be hidden.
     if (phone && this.relevant) this.active = this.relevant;
-    this.nav.hidden = !phone || mode === 'flow'; if (this.viewButton) this.viewButton.hidden = this.root.dataset.render !== 'webgl';
+    this.nav.hidden = !this.article&&(!phone || mode === 'flow'); if (this.viewButton) this.viewButton.hidden = !['webgl','webgpu'].includes(this.root.dataset.render);
     for (const panel of this.layer.children) {
-      panel.hidden = mode === 'spatial' && phone && (panel.contextVisible === false
+      panel.hidden = this.article ? panel.dataset.glassPanel!==this.active : mode === 'spatial' && phone && (panel.contextVisible === false
         || (panel.dataset.contextActive !== 'false' && panel.dataset.glassPanel !== this.active));
     }
     for (const button of this.nav.children) {
@@ -167,6 +175,11 @@ export class ModelInstruments {
   hasContextAnimation() { return [...this.layer.children].some(panel => panel.contextAnimating); }
   setContext(part, initial = false) {
     this.context = part || 'all';
+    if(this.article) {
+      const context=modelContext(this.context);this.relevant=undefined;this.active=context.instrument;
+      for(const panel of this.layer.children){this.setPanelContext(panel,true,initial);panel.dataset.contextFocus=String(panel.dataset.glassPanel===context.instrument);}
+      this.setMode(this.mode,this.phone);this.changed?.();return;
+    }
     const relevant = {
       tokenizer: 'input', input: 'input',
       representation: 'inspect',
@@ -182,6 +195,7 @@ export class ModelInstruments {
     if (changedSelection) this.changed?.();
   }
   dimensions(phone, width) {
+    if(this.root.hasAttribute('data-background-recording'))return [];
     const sizes = {input: 256, inspect: 268, output: 310};
     return [...this.layer.children].map(node => {
       const w = phone ? Math.min(320, width - 64) : sizes[node.dataset.glassPanel];

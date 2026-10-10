@@ -381,6 +381,11 @@ with the debug LHR files.
 
 ## Initial-page transfer policy evidence
 
+This is the historical PR91 policy selection. The owner replaced it with a
+quality-first 10 MB cap on October 9, 2026; see
+[`performance-budget-policy.md`](performance-budget-policy.md) for the active
+thresholds. The measurements below remain observations of the earlier build.
+
 The selected policy warns above 500,000 bytes and blocks above 750,000 bytes
 for every initial navigation in the mobile and desktop audit profiles. The
 500,000-byte warning boundary is a design target corresponding

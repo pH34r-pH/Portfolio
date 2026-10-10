@@ -114,12 +114,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-      - name: Render pre-built homepage model loop
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: node scripts/build-homepage-loop.mjs
       - name: Install Chromium
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: npx playwright install --with-deps chromium
+      - name: Render trained homepage model recording
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        run: node scripts/build-homepage-loop.mjs
       - name: Check UX environment
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: python3 scripts/preflight_env.py ux
@@ -129,10 +129,11 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/build-homepage-loop.mjs
-          for asset in site appearance article-runtime model-machine model-scene model-topology model-light model-gestures homepage-background homepage-model-loader homepage-digital research-topology search; do
+          for asset in site appearance article-runtime article-model-loader article-model-context article-model-presentation article-lm-session model-context model-inference model-inference-backend model-presentation-sampling model-linear-webnn model-linear-webgpu model-lm-worker model-machine model-scene model-encased-materials model-encased-housing model-encased-routes model-renderer model-background-glass model-topology model-light model-gestures material-light energy-architecture energy-optics homepage-background homepage-motion homepage-native-model homepage-model-loader homepage-digital research-topology search; do
             node --check "site/assets/$asset.js"
           done
           node scripts/test-model-replay.mjs
+          node scripts/test-model-inference.mjs
           node scripts/test-model-instrument-orientation.mjs
           node scripts/test-article-release-observation.mjs
           node scripts/test-model-pixel-fidelity.mjs
@@ -387,6 +388,8 @@ jobs:
           sudo apt-get install -y inkscape ffmpeg
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
+      - name: Install Chromium for native homepage rendering
+        run: Portfolio/node_modules/.bin/playwright install --with-deps chromium
       - name: Render pre-built homepage model loop
         run: node Portfolio/scripts/build-homepage-loop.mjs
       - name: Prepare isolated article export sources

@@ -2,10 +2,55 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
+export async function beginContextTransitionSample(root,part,previous=null) {
+  return root.evaluate((node,{part,previous})=>{
+    const element=node.querySelector('[data-glass-panel="input"]');
+    node.machine.focus(part);
+    const immediate={active:element.dataset.contextActive,ariaHidden:element.getAttribute('aria-hidden'),inert:element.inert,
+      stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
+    if(!previous){element.querySelector('input')?.focus();immediate.focusLeak=element.contains(document.activeElement);}
+    // Arm in this same browser task, after the renderer schedules its frame.
+    // External RPC polling can miss an entire ease on a CPU-limited runner.
+    node.contextAuditSample=new Promise(resolve=>{
+      let raf=0;
+      const finish=sample=>{clearTimeout(timeout);cancelAnimationFrame(raf);resolve(sample);};
+      const timeout=setTimeout(()=>finish(null),previous?5000:8000);
+      const capture=()=>{
+        try {
+        const backing=node.machineController.scene.glass.panels.find(panel=>panel.id==='input'),style=getComputedStyle(element);
+        const opacity=parseFloat(style.opacity),translation=parseFloat(style.translate)||0;
+        const matches=previous
+          ?backing.transitionOpacity>previous.panel.transitionOpacity
+            &&(!previous.panel.visible||backing.transitionOffset.x<previous.panel.transitionOffset.x)&&translation<previous.translation
+          :element.contextAnimating&&opacity>0&&opacity<1&&backing.mesh.material.opacity>0&&backing.mesh.material.opacity<1;
+        if(matches){finish({panel:node.machineController.scene.glass.diagnostics().panels.find(panel=>panel.id==='input'),translation,domOpacity:opacity});return;}
+        raf=requestAnimationFrame(capture);
+        } catch(error) {finish({error:String(error)});}
+      };
+      raf=requestAnimationFrame(capture);
+    });
+    return immediate;
+  },{part,previous});
+}
+
+export async function readContextTransitionSample(root) {
+  const sample=await root.evaluate(node=>node.contextAuditSample);
+  if(sample?.error)throw Error(sample.error);
+  return sample;
+}
+
+export async function assertSuppressedOpacityOrder(input,settled) {
+  if(!settled.suppressed)return;
+  const captured=await input.evaluate(panel=>({animating:panel.contextAuditAnimatingAtTransitionEnd,elapsed:panel.contextAuditElapsedAtTransitionEnd}));
+  if(!captured.animating)assert.ok(captured.elapsed>=settled.duration+250,
+    'an opacity event delivered after timer completion cannot precede the fallback deadline');
+}
+
 // Keep the embedded viewer's gesture/keyboard gates after the homepage changed.
 // Source-only runs use the canonical publication host fixture; finished bundles
 // must use a real rendered article with its own source and export contracts.
-export async function articleHost(base) {
+export async function articleHost(base,{componentFixture=false}={}) {
+  if(componentFixture){const html=await readFile(new URL('./fixtures/article-model.html',import.meta.url),'utf8');return {url:base+'/__audit/article-model/',kind:'illustrative-renderer-component-fixture',manualStart:false,html};}
   const response=await fetch(base+'/publication.json');
   if(response.ok&&(response.headers.get('content-type')||'').includes('json')) {
     const manifest=await response.json();

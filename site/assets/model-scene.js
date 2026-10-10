@@ -3,29 +3,32 @@ import { GRAPH, TOPOLOGY, clamp, hashText, layerX } from "./model-topology.js";
 import { ModelGestures } from "./model-gestures.js";
 import { SharedGlass } from "./model-glass.js";
 import { RenderMetrics } from "./model-render-metrics.js";
-import { ModelQuality } from "./model-quality.js";
-import { buildMachineHardware } from "./model-hardware.js";
+import { webGLRendering } from './model-renderer.js';
+import { BackgroundGlass } from './model-background-glass.js';
+import {encasedMaterials,encasedEnvironment,ENCASED_PALETTE,crystalPose} from './model-encased-materials.js';
+import {encasedHousing} from './model-encased-housing.js';
+import {EncasedRoutes} from './model-encased-routes.js';
 import { digitalContours } from './model-digital.js';
 import { HomepageScreens } from './homepage-screens.js';
 import { containedDigitalView, digitalView, POSTER_FIT_MARGIN, POSTER_VIEWS } from './model-view.js';
 import { applyPower } from './model-power.js';
+import {modelContext} from './model-context.js';
 const mobile = () => matchMedia("(max-width:720px)").matches;
 
 export class MachineScene {
-  constructor(T, root, selectNode, fail, scrub, instruments, animationActive=()=>!document.hidden) {
+  constructor(T, root, selectNode, fail, scrub, instruments, options={}) {
+    const {animationActive=()=>!document.hidden, rendering=null}=options;
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
     this.animationActive=animationActive;
     this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
-    const options = { alpha: true, antialias: true, powerPreference: "low-power" };
-    const context = this.canvas.getContext("webgl2", options);
-    if (!context) {throw new Error("WebGL2 unavailable");}
-    this.quality = new ModelQuality(context);
-    this.renderer = new T.WebGLRenderer({ canvas: this.canvas, context, ...options });
+    const prepared = rendering || webGLRendering(T, this.canvas);
+    const context = prepared.context;
+    this.quality = prepared.quality; this.renderer = prepared.renderer; this.backend = prepared.backend; this.fallbackReasons = prepared.fallbackReasons;
     this.transmissionTarget = null;
     const setRenderTarget = this.renderer.setRenderTarget.bind(this.renderer);
     this.renderer.setRenderTarget = (target, ...args) => {
       const result = setRenderTarget(target, ...args);
-      if (target && target.samples && Math.abs(target.width-this.canvas.width)<=1 && Math.abs(target.height-this.canvas.height)<=1) {
+      if (this.backend==='webgl2' && target && target.samples && Math.abs(target.width-this.canvas.width)<=1 && Math.abs(target.height-this.canvas.height)<=1) {
         this.transmissionTarget = {width:target.width, height:target.height, samples:target.samples,
           activeSamples:context.getParameter(context.SAMPLES),viewport:Array.from(context.getParameter(context.VIEWPORT))};
       }
@@ -43,24 +46,17 @@ export class MachineScene {
     this.phone=mobile();this.poseTouched=false;
     this.glassAnimationRaf = 0;
     this.yaw = this.phone ? -.15 : -.5; this.pitch = this.phone ? .38 : .1; this.zoom = 1; this.pan = {x:0,y:0}; this.selected = GRAPH.layers[6][0]; this.focus = "all";
-    this.materials = {
-      shell: new T.MeshStandardMaterial({ color: 0x10364c, metalness: .72, roughness: .28 }),
-      ceramic: new T.MeshStandardMaterial({ color: 0x8faabd, metalness: .32, roughness: .23 }),
-      node: new T.MeshBasicMaterial({color:0xffffff, transparent:true, opacity:.9, depthWrite:false, blending:T.AdditiveBlending}),
-      edge: new T.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: .18, depthWrite: false }),
-      probe: new T.LineBasicMaterial({ color: 0x168cdd, transparent: true, opacity: .85, depthWrite: false }),
-      signal: new T.MeshStandardMaterial({ color: 0x60ccff, emissive: 0x16a6ff, emissiveIntensity: 2, roughness: .25 }),
-    };
-    this.materials.probe.color.set(0x9b78cf); this.materials.signal.color.set(0x9b78cf);
+    this.materials = encasedMaterials(T);
     this.dummy = new T.Object3D(); this.color = new T.Color();
     this.buildGraph(); this.buildHardware(); this.addLights();
     const Screens = this.digital ? HomepageScreens : SharedGlass;
-    this.glass = new Screens(T, this.scene, this.renderer, instruments);
+    this.glass = root.hasAttribute('data-native-background') ? new BackgroundGlass(instruments) : new Screens(T, this.scene, this.renderer, instruments);
     this.glass.setQuality(this.quality.effective); instruments.quality(this.quality.effective);
     this.fitGeometry = this.collectFitGeometry();
     this.bindOrbit(selectNode,scrub);
     this.contextLost = event => { event.preventDefault(); fail("webgl-context-lost"); };
     this.canvas.addEventListener("webglcontextlost", this.contextLost);
+    if(this.backend==='webgpu')this.renderer.onDeviceLost=()=>fail('webgpu-device-lost');
     this.resizeObserver = new ResizeObserver(() => this.resize()); this.resizeObserver.observe(this.canvas);
     this.themeObserver = new MutationObserver(() => this.refreshTheme());
     this.themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
@@ -69,27 +65,17 @@ export class MachineScene {
   buildGraph() {
     const T = this.T;
     // Home and article nodes use the same fine point geometry and contour field.
-    this.beads = new T.InstancedMesh(new T.OctahedronGeometry(.0255), this.materials.node, GRAPH.nodes.length);
+    this.beads = new T.InstancedMesh(new T.OctahedronGeometry(.043), this.materials.node, GRAPH.nodes.length);
     this.beads.instanceMatrix.setUsage(T.DynamicDrawUsage);
     GRAPH.nodes.forEach((node, index) => {
-      this.dummy.position.set(...node.position); this.dummy.updateMatrix();
+      crystalPose(this.dummy,node);
       this.beads.setMatrixAt(index, this.dummy.matrix);
       this.beads.setColorAt(index, this.color.set(0x165577));
     });
     this.machine.add(this.beads);
-    const segments=[];this.edgeOffsets=[];
-    GRAPH.edges.forEach(edge=>{
-      this.edgeOffsets.push(segments.length);
-      const points=this.edgePoints(edge);
-      for(let index=1;index<points.length;index++){segments.push(...points[index-1],...points[index]);}
-    });
-    this.edgeOffsets.push(segments.length);
-    const positions=new Float32Array(segments);
-    this.edgeColors = new Float32Array(positions.length);
-    this.edgeGeometry = new T.BufferGeometry();
-    this.edgeGeometry.setAttribute("position", new T.BufferAttribute(positions, 3));
-    this.edgeGeometry.setAttribute("color", new T.BufferAttribute(this.edgeColors, 3).setUsage(T.DynamicDrawUsage));
-    this.edges = new T.LineSegments(this.edgeGeometry, this.materials.edge); this.machine.add(this.edges);
+    this.routes=new EncasedRoutes(T,this.machine,this.materials.edge);
+    this.edgeOffsets=this.routes.offsets;this.edgeGeometry=this.routes.geometry;
+    this.edgeColors=this.routes.colors;this.edges=this.routes.lines;
     this.probe = new T.LineSegments(new T.BufferGeometry(), this.materials.probe); this.machine.add(this.probe);
     this.selection = new T.Mesh(new T.TorusGeometry(.1015, .0112, 6, 32), this.materials.signal);
     this.machine.add(this.selection);
@@ -99,16 +85,17 @@ export class MachineScene {
     this.select(this.selected);
   }
   buildHardware() {
-    if (!this.digital) this.machine.add(buildMachineHardware(this.T, this.materials, TOPOLOGY, layerX));
-    this.contours = digitalContours(this.T); this.machine.add(this.contours);
+    this.housing=encasedHousing(this.T,this.materials);this.machine.add(this.housing.group);
+    this.environment=encasedEnvironment(this.T,this.renderer);this.scene.environment=this.environment.texture;
+    this.contours = digitalContours(this.T,this.root.hasAttribute('data-native-background')?512:64); this.machine.add(this.contours);
   }
   addLights() {
     const T = this.T;
     this.scene.add(new T.HemisphereLight(0xd6efff, 0x041225, 1.25));
     const key = new T.DirectionalLight(0xe9f5ff, 3.4); key.position.set(-3, 5, 6); this.scene.add(key);
     const rim = new T.DirectionalLight(0x1789f5, 4.5); rim.position.set(3, -1, -5); this.scene.add(rim);
-    const fill = new T.DirectionalLight(0x5ecfff, 1.8); fill.position.set(1, -4, 3); this.scene.add(fill);
-    this.replayLight = new T.PointLight(0x39baff, 0, 7, 2); this.machine.add(this.replayLight);
+    const fill = new T.DirectionalLight(0xffd596, 1.8); fill.position.set(1, -4, 3); this.scene.add(fill);
+    this.replayLight = new T.PointLight(ENCASED_PALETTE.active, 0, 7, 2); this.machine.add(this.replayLight);
     this.replayLight.userData.replayPulse = true;
   }
   resize() {
@@ -172,7 +159,7 @@ export class MachineScene {
     for(let index=0;index<contour.length;index+=3)contourVertices.push([contour[index],contour[index+1],contour[index+2]]);
     for(const center of [[-6,0,.02],[-4.52,0,.02],[4.45,0,.02],[6,0,.02]])
       for(const x of [-.13,.13])for(const y of [-.85,.85])for(const z of [-.14,.14])carrierEnvelope.push([center[0]+x,center[1]+y,center[2]+z]);
-    const groups={nodes,routeControlPoints,contourVertices,carrierEnvelope};
+    const groups={nodes,routeControlPoints,contourVertices,carrierEnvelope,housing:this.housing.bounds};
     return {...groups,all:Object.values(groups).flat(),routeCount:GRAPH.edges.length,
       recurrenceCount:GRAPH.edges.filter(edge=>edge.kind.startsWith('shared block')).length};
   }
@@ -230,11 +217,15 @@ export class MachineScene {
     return [...this.camera.projectionMatrix.elements, ...this.camera.matrixWorld.elements,
       ...this.camera.matrixWorldInverse.elements].every(Number.isFinite);
   }
-  updateCamera() { return this.poseCamera(this.yaw, this.pitch, this.zoom, this.pan); }
+  updateCamera() { return this.poseCamera(this.yaw, this.pitch, this.zoom, {x:this.pan.x+(this.contextCenter||0),y:this.pan.y}); }
   setQuality(mode) {
     this.quality.set(mode);
+    this.materials.glazing.transmission=this.quality.lightweight?0:1;
+    this.materials.glazing.transparent=true;this.materials.glazing.opacity=this.quality.lightweight?.06:.14;
+    this.materials.node.transmission=this.quality.lightweight?0:.18;
+    this.materials.glazing.needsUpdate=this.materials.node.needsUpdate=true;
     this.beads.geometry.dispose();
-    this.beads.geometry = new this.T.OctahedronGeometry(.0255);
+    this.beads.geometry = new this.T.OctahedronGeometry(.043);
     this.glass.setQuality(this.quality.effective); this.glass.instruments.quality(this.quality.effective);
     this.resize(); if (this.snapshot) {this.applyFrame(this.run, this.snapshot);}
   }
@@ -245,14 +236,15 @@ export class MachineScene {
     this.renderer.render(this.scene, this.camera); this.metrics.end();
   }
   refreshTheme() {
-    this.dark = document.documentElement.dataset.theme === "dark";
-    this.powerBackground=new this.T.Color(getComputedStyle(this.root).getPropertyValue('--bg').trim()||(this.dark?'#050712':'#f4f9fd'));
-    this.scene.background = this.digital ? null : new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
-    this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
-    this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
-    this.materials.edge.opacity = this.dark ? .23 : .17;
-    this.contours.material.color.set(this.dark ? 0x447abb : 0x165577);
-    this.contours.material.opacity = this.dark ? .28 : .2;
+    // The instrument has a dark optical backplate in every document theme.
+    this.dark = true;
+    this.powerBackground=new this.T.Color(0x020b12);
+    this.scene.background = this.digital ? null : this.powerBackground;
+    this.materials.shell.color.set(0x6a8292);
+    this.materials.ceramic.color.set(0x799bad);
+    this.materials.edge.opacity = .23;
+    this.contours.material.color.set(0x447abb);
+    this.contours.material.opacity = .28;
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
   applyFrame(run, state) {
@@ -260,33 +252,30 @@ export class MachineScene {
     const began = performance.now();
     this.run = run; this.snapshot = state;
     if(this.powerProgress!==null){applyPower(this,this.powerProgress);this.render();return;}
-    const T = this.T, base = new T.Color(this.dark ? 0x447abb : 0x165577), active = new T.Color(0x39baff);
+    const T = this.T, base = new T.Color(this.dark ? ENCASED_PALETTE.dark : ENCASED_PALETTE.light), active = new T.Color(ENCASED_PALETTE.active),negative=new T.Color(ENCASED_PALETTE.negative);
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
-      const dim = this.focus === "consumer" && node.layer < 4 || this.focus === "representation" && node.layer > 3;
-      this.color.copy(base).lerp(active, value); if (dim) {this.color.multiplyScalar(.38);}
+      const dim = !modelContext(this.focus).layers.includes(node.layer);
+      if (state.presentationNegative) this.color.copy(active).lerp(negative, state.presentationNegative[index]).lerp(base, 1 - value);
+      else this.color.copy(base).lerp(state.measured&&state.rawActivations[index]<0?negative:active, value);
+      if (dim) {this.color.multiplyScalar(.38);}
       this.beads.setColorAt(index, this.color);
-      this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
+      crystalPose(this.dummy,node,value,selected);
       this.beads.setMatrixAt(index, this.dummy.matrix);
     });
     this.dummy.scale.setScalar(1);
     this.beads.instanceColor.needsUpdate = true;
     this.beads.instanceMatrix.needsUpdate = true;
-    GRAPH.edges.forEach((edge,index)=>{
-      const value=Math.min(state.activations[edge.source],state.activations[edge.target]),intensity=.15+value*.85;
-      for(let offset=this.edgeOffsets[index];offset<this.edgeOffsets[index+1];offset+=3) {
-        this.edgeColors[offset]=intensity*.04;this.edgeColors[offset+1]=intensity*.42;this.edgeColors[offset+2]=intensity;
-      }
-    });
-    this.edgeGeometry.attributes.color.needsUpdate = true;
-    const light = sampleModelLight(run, state.frame, false);
+    this.routes.update(state);
+    const light = sampleModelLight(run, state.frame, false, this.root.hasAttribute('data-native-background') ? state : undefined);
     this.replayLight.position.set((light.x - .5) * 8.88, 1.6, 3);
-    this.replayLight.intensity = light.energy * 14;
+    this.replayLight.intensity = light.energy * 4;
     this.glass.pulse(light.energy);
     this.updateCarriers(run, state.frame); this.render();
     this.metrics.add(this.metrics.frameCPU, performance.now() - began);
   }
   updateCarriers(run, frame) {
+    if(run.kind==='inference'){this.pulses.count=0;this.tokens.count=0;return;}
     const T = this.T;
     this.pulses.count = run.tokens.length; this.tokens.count = run.tokens.length;
     run.tokens.forEach((token, index) => {
@@ -315,8 +304,13 @@ export class MachineScene {
     this.probe.geometry.dispose(); this.probe.geometry = new this.T.BufferGeometry().setFromPoints(points);
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
-  setFocus(part) {
+  setFocus(part,forceCamera=false) {
     this.focus = part; this.glass.instruments.setContext?.(part);
+    if(this.root.classList.contains('article-model-machine')&&!this.root.hasAttribute('data-illustration-fixture')&&(forceCamera||this.root.dataset.modelFollow!=='false')&&this.contextPart!==part) {
+      const layers=modelContext(part).layers;this.contextPart=part;
+      this.contextCenter=layers.reduce((sum,layer)=>sum+layerX(layer),0)/layers.length*.9;
+      this.zoom=part==='all'?1:1.2;this.pan={x:0,y:0};this.poseTouched=false;this.updateCamera();
+    }
     if (this.snapshot) this.applyFrame(this.run, this.snapshot);
     this.animateGlassContext();
   }
@@ -336,10 +330,11 @@ export class MachineScene {
     if(this.glassAnimationRaf)cancelAnimationFrame(this.glassAnimationRaf);
     this.glassAnimationRaf=0;
   }
-  orbit(dx, dy) { this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
+  orbit(dx, dy) { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.poseTouched=true;this.yaw = clamp(this.yaw + dx, -1.05, 1.05); this.pitch = clamp(this.pitch + dy, -.65, .65); this.updateCamera(); this.render(); }
   zoomBy(amount) { this.zoomByRatio(Math.exp(Number.isFinite(amount) ? amount : 0)); }
   zoomByRatio(ratio) {
     if (!Number.isFinite(ratio) || ratio <= 0) return;
+    this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));
     const next = this.zoom * ratio, viewDistance = this.distance / next;
     if (!Number.isFinite(next) || next <= 0 || !Number.isFinite(viewDistance) || viewDistance <= 0) return;
     // Recompute clipping planes from the finite camera distance. Zoom itself
@@ -358,17 +353,14 @@ export class MachineScene {
     }
     this.poseTouched = true; this.render();
   }
-  resetView() { this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
-  panBy(dx,dy) { this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
+  resetView() { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.contextPart=null;this.contextCenter=0;this.poseTouched=false;this.yaw = mobile() ? -.15 : -.5; this.pitch = mobile() ? .38 : .1; this.zoom = 1; this.pan={x:0,y:0}; this.depthView = null; if(!this.digital)this.fitKey=null; this.resize(); }
+  panBy(dx,dy) { this.root.dispatchEvent(new CustomEvent('portfolio:model-inspection'));this.poseTouched=true;this.pan.x=clamp(this.pan.x+dx,-2,2);this.pan.y=clamp(this.pan.y+dy,-2,2);this.updateCamera(); this.render(); }
   toggleDepthView() {
     if (this.depthView) { const {yaw, pitch} = this.depthView; this.depthView = null; this.yaw = yaw; this.pitch = pitch; this.updateCamera(); this.render(); }
     else { this.depthView = {yaw:this.yaw, pitch:this.pitch}; this.orbit(-.05, .01); }
   }
   edgePoints(edge) {
-    const a=edge.sourcePosition,b=edge.targetPosition;
-    if(edge.kind.startsWith("shared block")){return [a,[a[0],3.05,-.3],[b[0],3.05,-.3],b];}
-    if(edge.kind.startsWith("residual")){return [a,[a[0],-2.85,-.2],[b[0],-2.85,-.2],b];}
-    return [a,b];
+    return this.routes.points.get(edge);
   }
   bindOrbit(selectNode,scrub) {
     this.abort=new AbortController();const options={signal:this.abort.signal};
@@ -419,7 +411,7 @@ export class MachineScene {
     if (bounds.bottom < 0 || bounds.top > innerHeight) {return;}
     this.readingState={quiet,progress};if(this.powerProgress!==null){return;}
     this.materials.edge.opacity = quiet ? .065 : (this.dark ? .23 : .18);
-    this.materials.node.opacity = quiet ? .42 : .9;
+    this.materials.node.emissiveIntensity = quiet ? .04 : .12;
     this.contours.material.opacity = quiet ? .1 : .24 + Math.sin(progress * Math.PI * 2) * .045;
     this.render();
   }
@@ -431,8 +423,8 @@ export class MachineScene {
   }
   setPower(progress,force=false) {this.powerProgress=progress;applyPower(this,progress);this.render(force);}
   finishPower() {
-    this.powerProgress=null;this.glass.power=null;this.scene.background=null;this.selection.visible=this.probe.visible=true;
-    this.materials.node.blending=this.contours.material.blending=this.T.AdditiveBlending;
+    this.powerProgress=null;this.glass.power=null;this.scene.background=this.digital?null:this.powerBackground;this.selection.visible=this.probe.visible=true;
+    this.materials.node.blending=this.T.NormalBlending;this.contours.material.blending=this.T.AdditiveBlending;this.routes.setPower(1);
     if(this.snapshot){this.applyFrame(this.run,this.snapshot);}else {this.render();}
     if(this.readingState){this.reading(this.readingState);}
   }
@@ -445,14 +437,15 @@ export class MachineScene {
   diagnostics() {
     const bounds=this.canvas.getBoundingClientRect(),context=this.renderer.getContext(),view=this.powerView();
     const graphBounds=view.geometryBounds.all;
-    return {nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
-      drawCalls:this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
+    return {backend:this.backend,fallbackReasons:this.fallbackReasons,nodes:this.beads.count,edges:GRAPH.edges.length,graphOrigin:this.graphOrigin(),quality:this.quality.snapshot(),
+      drawCalls:this.renderer.info.render.drawCalls??this.renderer.info.render.calls,triangles:this.renderer.info.render.triangles,pixelRatio:this.renderer.getPixelRatio(),
       transmissionScale:this.renderer.transmissionResolutionScale,resolution:{cssWidth:bounds.width,cssHeight:bounds.height,
         nativeDPR:window.devicePixelRatio||1,effectiveDPR:this.renderer.getPixelRatio(),canvasWidth:this.canvas.width,canvasHeight:this.canvas.height,
-        drawingBufferWidth:context.drawingBufferWidth,drawingBufferHeight:context.drawingBufferHeight,
+        drawingBufferWidth:context.drawingBufferWidth??this.canvas.width,drawingBufferHeight:context.drawingBufferHeight??this.canvas.height,
         limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
-        lightBlue:'165577',darkBlue:'447abb',activityBlue:'39baff',contourColor:this.contours.material.color.getHexString()},
+        style:'encased-crystal-v1',backplate:'020b12',themeIndependent:true,lightBlue:'165577',darkBlue:'447abb',activityGold:'ffc778',contourColor:this.contours.material.color.getHexString(),
+        housingBounds:this.housing.bounds,glazingTransmission:this.materials.glazing.transmission,routes:this.routes.diagnostics()},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
       camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},distance:this.distance,
         position:this.camera.position.toArray(),quaternion:this.camera.quaternion.toArray()},pointers:this.gestures.points.size};
@@ -465,6 +458,6 @@ export class MachineScene {
     this.glass.dispose(); this.metrics.dispose();
     const geometry = new Set(), materials = new Set();
     this.scene.traverse(object => { if (object.geometry) {geometry.add(object.geometry);} if (object.material) {materials.add(object.material);} });
-    geometry.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); this.renderer.dispose();
+    geometry.forEach(item => item.dispose()); materials.forEach(item => item.dispose()); this.environment?.dispose();this.renderer.dispose();
   }
 }

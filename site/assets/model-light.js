@@ -1,8 +1,7 @@
 import { GRAPH, sampleReplay, clamp } from "./model-topology.js";
 
 // Visual coordinates of the source-bound schematic, not scientific telemetry.
-export function sampleModelLight(run, frame, vertical = false) {
-  const state = sampleReplay(run, frame);
+export function sampleModelLight(run, frame, vertical = false, state = sampleReplay(run, frame)) {
   const layerTotals = Array.from({ length: GRAPH.layers.length }, () => 0);
   let total = 0, flow = 0, offset = 0, depth = 0;
   GRAPH.nodes.forEach((node, index) => {
