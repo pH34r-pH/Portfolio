@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances,assertSuppressedOpacityOrder} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances,assertSuppressedOpacityOrder,beginContextTransitionSample,readContextTransitionSample,inputPaneOpacity} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
 const host=await articleHost(base,{componentFixture:true});
@@ -91,20 +91,13 @@ async function touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone) {
 async function contextExitWaitsForTransition(page,root,phone) {
   const input=root.locator('[data-glass-panel="input"]');
   await input.locator('input').focus();
-  // Stretch the production transition in the regression harness so both
-  // DOM and GPU progress can be sampled reliably on slow software WebGL.
+  // Keep the existing stretched duration and capture within browser frames.
   await input.evaluate(panel=>panel.style.transitionDuration='4s');
-  const immediate=await root.evaluate(node=>{node.machine.focus('representation');const panel=node.querySelector('[data-glass-panel="input"]');
-    const state={active:panel.dataset.contextActive,ariaHidden:panel.getAttribute('aria-hidden'),inert:panel.inert,
-      stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
-    panel.querySelector('input')?.focus();state.focusLeak=panel.contains(document.activeElement);return state;});
+  const immediate=await beginContextTransitionSample(root,'representation');
+  console.log('Glass context: exit observer armed');
   assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
-  try {await expect.poll(()=>input.evaluate(panel=>{
-    const machine=panel.closest('[data-model-machine]'),glass=machine?.machineController.scene?.glass;
-    const backing=glass?.panels.find(item=>item.id==='input'),opacity=Number.parseFloat(getComputedStyle(panel).opacity);
-    return Boolean(backing?.node.contextAnimating&&opacity>0&&opacity<1
-      &&backing.mesh.material.opacity>0&&backing.mesh.material.opacity<1);
-  }),{timeout:8000}).toBe(true);}
+  let exitSample;
+  try {exitSample=await readContextTransitionSample(root);assert.ok(exitSample,'An intermediate DOM/GPU fade was observed');}
   catch(error) {
     const state=await root.evaluate(node=>{const scene=node.machineController.scene,glass=scene?.glass;return {visible:node.machineController.visible,hidden:document.hidden,
       raf:scene?.glassAnimationRaf,panels:glass?.panels.map(panel=>({id:panel.id,active:panel.node.dataset.contextActive,
@@ -113,8 +106,8 @@ async function contextExitWaitsForTransition(page,root,phone) {
       stageRect:node.querySelector('[data-machine-stage]').getBoundingClientRect().toJSON()};});
     console.log(`Glass context state at exit sample timeout: ${JSON.stringify(state)}`);throw error;
   }
-  const exiting=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
-  const exitingTranslation=await input.evaluate(panel=>parseFloat(getComputedStyle(panel).translate)||0);
+  const {panel:exiting,translation:exitingTranslation}=exitSample;
+  console.log('Glass context: intermediate exit captured');
   assert.ok(exitingTranslation>0,'The exiting DOM pane translates in both spatial and flow layouts');
   assert.ok(exiting.transitionOpacity>0,'sample is inside the visible DOM transition');
   assert.equal(exiting.contextAnimating,true,'GPU transition remains active while the paused article replay is idle');
@@ -134,18 +127,16 @@ async function contextExitWaitsForTransition(page,root,phone) {
     await expect(root.locator('[data-instrument="inspect"]')).toBeEnabled();
     const state=await diagnostics(root);assert.equal(state.glass.panels.filter(panel=>panel.visible).length,state.glass.mode==='spatial'?1:0);
   }
-  await root.evaluate(node=>node.machine.focus('all'));
+  await beginContextTransitionSample(root,'all',exitSample);
   await expect(input).not.toHaveAttribute('aria-hidden','true');
   assert.equal(await input.evaluate(panel=>panel.inert),false,'reversing the context transition restores pane focusability');
-  await expect.poll(async()=>{
-    const panel=(await diagnostics(root)).glass.panels.find(item=>item.id==='input');
-    const translation=await input.evaluate(node=>parseFloat(getComputedStyle(node).translate)||0);
-    return contextTransitionAdvances(panel,exiting)&&translation<exitingTranslation;
-  },{timeout:5000}).toBe(true);
-  const reversing=(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input');
+  const reverseSample=await readContextTransitionSample(root);
+  console.log('Glass context: reentry captured');
+  assert.ok(reverseSample&&contextTransitionAdvances(reverseSample.panel,exiting)&&reverseSample.translation<exitingTranslation);
+  const reversing=reverseSample.panel;
   assert.ok(reversing.transitionOpacity>exiting.transitionOpacity,'reversed easing moves the glass and DOM pane back toward their context pose');
   if(exiting.visible)assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
-  assert.ok(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).translate)||0)<exitingTranslation,
+  assert.ok(reverseSample.translation<exitingTranslation,
     'reversed DOM translation returns in both spatial and flow layouts');
   await root.evaluate(node=>node.machine.focus('representation'));
   await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:12000}).toBe(false);
@@ -159,8 +150,6 @@ async function runContextReversal(root) {
   await root.evaluate(node=>node.machine.focus('representation'));
   await root.evaluate(node=>node.machine.focus('all'));
 }
-function computedOpacity(node) { return getComputedStyle(node).opacity; }
-async function inputPaneOpacity(input) { return input.evaluate(computedOpacity); }
 async function waitForInputReentry(root) {
   const input=root.locator('[data-glass-panel="input"]');
   await expect.poll(inputPaneOpacity.bind(null,input),
@@ -394,7 +383,9 @@ async function independentPaneState(page,root,phone) {
     panels:[...node.querySelectorAll('[data-glass-panel]')].map(panel=>({id:panel.dataset.glassPanel,rect:panel.getBoundingClientRect().toJSON()}))}));
   try {
     await touchOrbitKeepsLayout(page,root,cdp,canvas,before,phone);
+    console.log('Glass context: touch orbit passed');
     await contextExitWaitsForTransition(page,root,phone);
+    console.log('Glass context: exit/reversal passed');
     await contextReversalKeepsTabsValid(page,root,phone);
     await entryWithoutTransitionEvent(root);
     await missingTransitionEndFallsBack(root);

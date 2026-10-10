@@ -64,26 +64,6 @@ export class SharedGlass {
       panel.mesh.material.copy(this.material); panel.trim.material.copy(this.trimMaterial);
     }
   }
-  async prepareContextTransitions(camera) {
-    // Compile the fading variant before interaction. Switching transparency
-    // during the first exit otherwise compiles a new shader inside its ease,
-    // which can consume the entire transition on a software graphics driver.
-    const panels = this.panels.filter(panel => panel.mesh.visible);
-    const previous = panels.map(panel => panel.mesh.material.transparent);
-    if (!panels.length || previous.every(Boolean)) return;
-    try {
-      panels.forEach(panel => {
-        panel.mesh.material.transparent = true;
-        panel.mesh.material.needsUpdate = true;
-      });
-      await this.renderer.compileAsync(this.scene, camera);
-    } finally {
-      panels.forEach((panel, index) => {
-        panel.mesh.material.transparent = previous[index];
-        panel.mesh.material.needsUpdate = true;
-      });
-    }
-  }
   layout(camera, viewport, distance, phone) {
     this.viewport = viewport; this.phone = phone;
     // The first fit after rotation must see the current context's phone pane.

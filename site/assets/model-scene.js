@@ -433,8 +433,6 @@ export class MachineScene {
     this.render();
   }
   async prepare() {
-    if (!this.digital) await this.glass.prepareContextTransitions?.(this.camera);
-    if (this.disposed) return;
     if(!this.preparing){return;}
     applyPower(this,0);this.glass.power=null;this.selection.visible=this.probe.visible=true;this.glass.sync(this.camera);
     await this.renderer.compileAsync(this.scene,this.camera);
