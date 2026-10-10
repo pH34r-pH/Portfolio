@@ -80,7 +80,7 @@ registered with the GPU fittings. Hardware follows all four computed corner
 radii and the canvas origin. Scrolling while playback is paused re-seats the
 hardware with one event-driven render; observation time and pulse remain frozen.
 
-The local assembled preview on port 4190 is a design review artifact, combining
+The local assembled preview on port 4189 is a design review artifact, combining
 public article prose with refinement assets. It is not an immutable production
 bundle. The approved release remains separately available on port 4188. These
 CSS optical effects are a screen-space approximation, not path-traced glass.

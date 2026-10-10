@@ -120,5 +120,5 @@ exact-source qualification. A merge alone does not publish the website.
 
 The next refinement branch aligns DOM glass and GPU hardware, removes competing
 outlines, shares one reflected light direction, and adds small static backdrop
-refraction while keeping etched native text sharp. Its preview uses port 4190.
+refraction while keeping etched native text sharp. Its preview uses port 4189.
 See docs/spatial-materials.md for implementation bounds and browser fallback.
