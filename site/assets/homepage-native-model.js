@@ -1,7 +1,8 @@
 import { createRendering } from "./model-renderer.js";
 import { MachineScene } from "./model-scene.js";
 import { createInferenceRun, sampleReplay } from "./model-topology.js";
-import {samplePresentation} from './model-presentation-sampling.js';
+import { samplePresentation } from "./model-presentation-sampling.js";
+import { EnergyArchitecture } from "./energy-architecture.js";
 
 async function recordedRun() {
   const response = await fetch(new URL("./homepage-model-trace.json", import.meta.url));
@@ -43,6 +44,9 @@ export async function createNativeBackground(journey, fail) {
       instruments,
       { rendering },
     );
+    scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
+    await scene.glass.architecture.texturePromise;
+    scene.render(true);
     await scene.renderer.compileAsync(scene.scene, scene.camera);
     scene.selection.visible = scene.probe.visible = false;
     return new NativePlayback(scene, surface, run, metadata);

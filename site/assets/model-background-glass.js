@@ -7,10 +7,16 @@ export class BackgroundGlass {
   layout(camera, viewport) {
     this.viewport = viewport;
   }
-  sync() {}
-  pulse() {}
-  diagnostics() {
-    return { mode: "native-document", panels: [] };
+  sync(camera) {
+    this.architecture?.sync(camera);
   }
-  dispose() {}
+  pulse(value) {
+    this.architecture?.pulse(value);
+  }
+  diagnostics() {
+    return { mode: "native-document", panels: [], architecture: this.architecture?.diagnostics() ?? null };
+  }
+  dispose() {
+    this.architecture?.dispose();
+  }
 }

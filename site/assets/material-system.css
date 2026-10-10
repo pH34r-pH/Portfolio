@@ -1,0 +1,185 @@
+/* Energy carries structure. Glass carries content. Wood carries touch. */
+:root {
+  --wood-atlas:url('./materials/wood-atlas.webp');
+  --wood-cedar:#9e5433; --wood-hemlock:#d9b887; --wood-maple:#e5c79b;
+  --material-glass-face:rgba(235,248,255,.72); --material-glass-edge:rgba(255,255,255,.93);
+  --material-glass-shadow:rgba(3,35,55,.20); --material-glass-reflection:rgba(255,255,255,.52);
+  --beam-core:#ecfdff; --beam-blue:#48bfff; --beam-halo:rgba(13,133,255,.44);
+  --material-radius:18px; --material-speed:180ms;
+}
+html[data-theme=dark] {
+  --material-glass-face:rgba(1,15,27,.50); --material-glass-edge:rgba(179,239,255,.48);
+  --material-glass-shadow:rgba(0,0,0,.65); --material-glass-reflection:rgba(180,234,255,.15);
+}
+html body {
+  background:radial-gradient(ellipse at 85% 12%,rgba(22,112,170,.13),transparent 48%),var(--bg);
+}
+html body:not(.digital-home)::before {
+  z-index:-1; inset:80px max(16px,calc((100vw - 1200px)/2)) 24px; height:auto;
+  border:2px solid rgba(43,155,235,.44); border-radius:28px; background:none;
+  box-shadow:inset 0 0 1px var(--beam-core),0 0 4px var(--beam-blue),0 0 20px rgba(40,162,255,.18); opacity:1;
+  filter:none; transform:none;
+}
+html body .topbar {
+  border:0; background:linear-gradient(100deg,var(--material-glass-face),color-mix(in srgb,var(--bg) 89%,transparent));
+  box-shadow:inset 0 -1px var(--material-glass-edge),0 6px 28px var(--material-glass-shadow);
+  backdrop-filter:blur(20px) saturate(140%); -webkit-backdrop-filter:blur(20px) saturate(140%);
+}
+html body .topbar::before {
+  left:3%; bottom:-2px; width:94%; height:3px; opacity:1; border-radius:100%;
+  background:linear-gradient(90deg,transparent,var(--beam-blue) 12%,var(--beam-core) 50%,var(--beam-blue) 88%,transparent);
+  box-shadow:0 0 8px var(--beam-blue),0 0 24px var(--beam-halo);
+}
+html body .wordmark { letter-spacing:.09em; }
+html body .wordmark>span { letter-spacing:.04em; }
+html body :is(.site-menu,.search-dialog) {
+  border:1px solid var(--material-glass-edge); border-radius:var(--material-radius);
+  background:linear-gradient(135deg,var(--material-glass-face),color-mix(in srgb,var(--bg) 90%,transparent));
+  box-shadow:inset 0 1px rgba(255,255,255,.3),0 22px 70px var(--material-glass-shadow),0 0 32px rgba(36,146,216,.12);
+  backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+}
+/* Carved maple switches: the grain stays on the face, never on the label. */
+html body.digital-home .actions a.primary,
+html body :is(.menu-toggle,.search-toggle,.appearance button,.actions a,.actions a.primary,.article-execution button,.synthetic-projection-control button,
+  .article-model-toolbar button,.article-model-toolbar [data-machine-settings] summary,.article-model-startup button,.machine-generation-settings button,[data-lm-stop],.machine-input button,.machine-instrument-nav button,.machine-depth-view,.digital-motion-control) {
+  position:relative; isolation:isolate; border:1px solid #c89862; border-radius:8px;
+  color:#172631; background-color:var(--wood-maple);
+  background-image:linear-gradient(165deg,rgba(255,251,222,.2),rgba(76,41,16,.18)),var(--wood-atlas);
+  background-size:100% 100%,100% 300%; background-position:0 0,center bottom;
+  box-shadow:inset 0 1px 1px #fff4d8, inset 1px 0 rgba(255,245,215,.65),inset 0 -3px 2px rgba(50,25,5,.36),
+    0 3px 0 #714a2c,0 7px 14px rgba(0,0,0,.3),0 -1px 9px rgba(58,177,255,.12);
+  text-shadow:0 1px rgba(255,248,220,.35); clip-path:none;
+  transition:transform var(--material-speed),box-shadow var(--material-speed),filter var(--material-speed);
+}
+html body :is(.actions a.primary,.machine-input button,[data-viewer-follow][aria-pressed=true],[data-viewer-pin][aria-pressed=true],[data-instrument][aria-pressed=true],[data-theme-choice][aria-pressed=true]) {
+  border-color:#e4c395;
+  box-shadow:inset 0 1px #fff7de,inset 0 -3px rgba(24,118,205,.75),0 3px 0 #714a2c,0 0 0 1px rgba(112,215,255,.55),
+    0 0 20px rgba(22,156,255,.24),0 10px 23px rgba(0,0,0,.25);
+}
+html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):hover {
+  transform:translateY(-2px); filter:brightness(1.08);
+}
+html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):active {
+  transform:translateY(2px);
+  box-shadow:inset 0 2px 4px rgba(58,31,11,.45),0 1px 0 #714a2c,0 3px 7px rgba(0,0,0,.25);
+}
+html body button[disabled] { cursor:default; }
+html body :is(.machine-instrument-nav button,.machine-generation-settings button):disabled { opacity:.48; filter:saturate(.5); box-shadow:inset 0 1px rgba(255,244,215,.5),0 1px 0 #714a2c; }
+/* Native text remains sharp over a restrained transmitting screen face. */
+html body :is(.card,.notebook-content,.article-model-toolbar,.digital-pane,.program-grid article,.impact-rail article,.case-study,.package-info,.evidence-detail,.standard-card,.article-execution,.synthetic-projection-control,.experiment-table-wrap,.topology-instrument,.topology-node,.topology-detail,.topology-accessible) {
+  border:1px solid var(--material-glass-edge); border-radius:var(--material-radius);
+  background:linear-gradient(125deg,var(--material-glass-reflection),transparent 22%,transparent 78%,rgba(54,184,255,.08)),var(--material-glass-face);
+  box-shadow:inset 0 1px 1px rgba(233,253,255,.6),inset 0 -1px rgba(49,154,213,.3),
+    0 14px 40px var(--material-glass-shadow),0 0 30px rgba(21,124,184,.10);
+  backdrop-filter:blur(3px) saturate(115%); -webkit-backdrop-filter:blur(3px) saturate(115%);
+  clip-path:none;
+}
+html body .notebook-content { position:relative; border-radius:24px; }
+html body .notebook-content:not(.myst-reader) { overflow:hidden; }
+html body .card { padding:28px; }
+html body:not(.digital-home) :is(.program-grid,.impact-rail) { gap:18px; padding:0; background:none; }
+html body .card::before { color:var(--accent-strong); }
+html body .card::after,html body .notebook-content::before {
+  content:''; display:block; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+  border:4px solid transparent; background:var(--wood-atlas) center top/100% 300%; background-origin:border-box;
+  mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); mask-composite:exclude;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+}
+html body .article-model-startup button { color:#172631; }
+html body :is(.menu-toggle,.site-menu) { clip-path:none; }
+html body .article-model-toolbar { border-radius:12px; padding:12px; }
+html body .article-model-toolbar :is([data-viewer-context],[data-model-boot]) { color:var(--ink); }
+html body .article-model-toolbar [data-machine-settings][open] .machine-settings-content {
+  border-radius:12px; background:var(--bg); box-shadow:0 18px 40px var(--material-glass-shadow);
+}
+html body .article-model-machine[data-model-reader-layout=true] .machine-spatial-host[data-instruments=flow] {
+  background:transparent; gap:16px;
+}
+html body .article-model-machine[data-model-reader-layout=true] .machine-stage {
+  border:1px solid var(--material-glass-edge); border-radius:16px; background:var(--material-glass-face);
+  box-shadow:inset 0 1px rgba(255,255,255,.2),0 10px 28px var(--material-glass-shadow);
+}
+html body .article-model-machine[data-model-reader-layout=true] .machine-glass-panel {
+  position:relative; border:1px solid var(--material-glass-edge); border-radius:12px;
+  background:linear-gradient(125deg,var(--material-glass-reflection),transparent 30%,rgba(54,184,255,.08)),var(--material-glass-face);
+  box-shadow:inset 1px 0 rgba(255,205,159,.5),0 6px 20px var(--material-glass-shadow); backdrop-filter:blur(8px);
+}
+html body .article-model-machine[data-model-reader-layout=true] .machine-glass-panel::before {
+  content:''; position:absolute; inset:8px auto 8px 0; width:6px; border-radius:3px; pointer-events:none;
+  background:var(--wood-atlas) center top/auto 300%; box-shadow:inset 1px 0 rgba(255,216,177,.7),1px 0 4px rgba(27,12,2,.25);
+}
+html body :is(.notebook-reader>header,.index-page>header,.digital-contact,footer) {
+  border-top:1px solid var(--material-glass-edge); box-shadow:0 -3px 18px rgba(39,175,255,.09);
+}
+/* Homepage screens are suspended inside the native energy architecture. */
+html body.digital-home .digital-chapters { padding-inline:max(28px,calc((100vw - 1180px)/2)); }
+html body.digital-home .digital-chapter { padding-block:88px; }
+html body.digital-home .digital-pane {
+  width:min(600px,100%); padding:38px; border-radius:20px; isolation:isolate;
+  background:linear-gradient(127deg,var(--material-glass-reflection),transparent 30%,transparent 80%,rgba(51,159,240,.08)),var(--material-glass-face);
+  box-shadow:inset 0 1px rgba(229,252,255,.75),inset 0 -1px rgba(80,176,226,.4),
+    0 24px 55px var(--material-glass-shadow),0 0 24px rgba(43,166,255,.12);
+}
+html body.digital-home .digital-pane::before {
+  inset:0; opacity:1; z-index:-1; border-radius:inherit;
+  background:linear-gradient(90deg,rgba(25,55,74,.32),transparent 20%,rgba(25,55,74,.35)),var(--wood-atlas);
+  background-size:100% 100%,100% 300%; background-position:0 0,center top;
+  border:9px solid transparent; background-origin:border-box;
+  mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); mask-composite:exclude;
+  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+  box-shadow:inset 0 2px rgba(255,218,185,.7); pointer-events:none;
+}
+html body.digital-home .digital-pane::after {
+  display:block; content:''; position:absolute; inset:12px; border-radius:10px; pointer-events:none;
+  border-top:1px solid rgba(197,247,255,.65); border-right:1px solid rgba(93,205,255,.24);
+  background:radial-gradient(ellipse at var(--surface-light-x,20%) var(--surface-light-y,0%),rgba(201,248,255,.1),transparent 48%);
+}
+html body.digital-home .page-title {
+  font-family:ui-sans-serif,system-ui,sans-serif; font-size:clamp(54px,5.8vw,86px); font-weight:600;
+  line-height:1.02; letter-spacing:-.045em; margin:20px 0 26px;
+}
+html body.digital-home .title-accent {
+  color:var(--accent-strong); text-shadow:0 0 20px rgba(37,164,255,.2);
+}
+html body.digital-home .digital-native-model { opacity:1; mix-blend-mode:normal; }
+html body.digital-home .digital-model-background { background:transparent; }
+html body.digital-home .digital-model-background::after {
+  background:radial-gradient(ellipse at 86% 50%,rgba(6,100,163,.07),transparent 60%),linear-gradient(180deg,transparent 82%,var(--bg));
+}
+html body.digital-home .digital-next { color:var(--ink); }
+html body.digital-home .digital-pane :is(h2,h3),html body .digital-contact h2 {
+  font-family:ui-sans-serif,system-ui,sans-serif; font-size:clamp(30px,3.4vw,50px); font-weight:500;
+  letter-spacing:-.035em; line-height:1.08; text-shadow:none;
+}
+html body :is(.myst-reader h1,.index-page h1) {
+  font-family:ui-sans-serif,system-ui,sans-serif; font-size:clamp(36px,4vw,60px); font-weight:600;
+  line-height:1.08; letter-spacing:-.04em;
+}
+html body :is(.machine-heading h2,.card h3,.index-page>section>h2) {
+  font-family:ui-sans-serif,system-ui,sans-serif; font-weight:500; letter-spacing:-.035em; line-height:1.12;
+}
+html body .article-model-machine .machine-heading h2 { font-size:clamp(26px,2.4vw,36px); }
+html body.digital-home .digital-contact { padding:60px 0 28px; background:var(--bg); }
+html body .profile-portrait { box-shadow:0 0 0 2px var(--wood-hemlock),0 0 16px rgba(28,159,255,.2); }
+html body .digital-motion-control { bottom:24px; right:24px; }
+@media(max-width:720px) {
+  html body.digital-home .digital-chapters { padding-inline:18px; }
+  html body.digital-home .digital-chapter { padding-block:24px; }
+  html body.digital-home .digital-pane { padding:28px 22px; border-radius:16px; }
+  html body.digital-home .page-title { font-size:clamp(42px,11vw,58px); }
+  html body.digital-home .digital-pane::before { border-width:7px; }
+  html body .digital-motion-control { bottom:16px; right:16px; }
+}
+@media(prefers-reduced-motion:reduce) {
+  html body :is(button,.actions a,.digital-pane) { transition:none!important; transform:none!important; }
+}
+@media(forced-colors:active) {
+  html body :is(.digital-pane,.notebook-content,.card,.article-model-toolbar,.machine-glass-panel,.site-menu) {
+    background:Canvas; border:1px solid CanvasText; box-shadow:none; backdrop-filter:none;
+  }
+  html body :is(button,.actions a) { background:ButtonFace!important; color:ButtonText!important; border-color:ButtonText; box-shadow:none; filter:none; }
+  html body :is(.digital-pane,.topbar)::before,html body .digital-pane::after { display:none; }
+}
+@media print {
+  html body :is(.notebook-content,.card,.article-model-toolbar) { background:white; color:black; box-shadow:none; backdrop-filter:none; }
+}
