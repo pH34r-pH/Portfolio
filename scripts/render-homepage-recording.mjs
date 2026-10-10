@@ -16,7 +16,7 @@ const work=join(tmpdir(),'portfolio-homepage-recording'),width=1920,height=1920,
 const {run,manifest,emitted,prompt}=await recordHomepageRun(assets);
 const html=`<!doctype html><html data-theme="dark"><head><meta charset="utf-8"><link rel="stylesheet" href="/assets/site.css"><style>
 html,body{margin:0;padding:0;width:100%;height:100%;background:#00070d;--bg:#00070d;--ink:#f4fbff;--accent:#31a8ff}
-.article-model-machine,.machine-spatial-host{position:absolute!important;inset:0;display:block!important;margin:0!important}
+.article-model-machine,.machine-spatial-host{position:absolute!important;inset:0;display:block!important;margin:0!important;padding:0!important;border:0!important}
 .model-machine .machine-stage{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;min-height:0!important;margin:0!important;border:0!important;background:transparent!important}
 .model-machine .machine-canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-width:none!important}
 .machine-stage>:not(canvas),.machine-instruments,.machine-heading,.machine-replay,.machine-disclosure,.machine-help,.machine-instrument-nav,.machine-depth-view{display:none!important}
@@ -50,11 +50,23 @@ try {
   const frames=Math.round(duration*fps);
   for(let index=0;index<frames;index++) {
     const time=index/fps,phase=Math.max(0,(time-loopStart)/(duration-loopStart));
-    await page.evaluate(({frame,opacity})=>{
+    const png=await page.evaluate(({frame,opacity,width,height})=>{
       const root=document.querySelector('[data-model-machine]'),controller=root.machineController;
       controller.frame=frame;controller.stage.style.opacity=opacity;controller.draw();
-    },{frame:Math.min(run.observations.length-1,Math.floor(phase*run.observations.length)),opacity:Math.min(1,.22+time/loopStart*.78)});
-    await page.screenshot({path:join(work,`${String(index).padStart(4,'0')}.png`)});
+      const source=controller.scene.canvas;
+      if(source.width!==width||source.height!==height)throw new Error(`Recording requires native ${width}x${height} pixels; received ${source.width}x${source.height}`);
+      // Read immediately after drawing, before WebGL's default buffer can clear.
+      // The compositor screenshot fence can stall on software GL. This preserves
+      // the same native pixels, stage fade and page background without resampling.
+      const capture=controller.recordingCanvas??=document.createElement('canvas');
+      if(capture.width!==width||capture.height!==height){capture.width=width;capture.height=height;}
+      const context=capture.getContext('2d');
+      if(!context)throw new Error('Recording canvas 2D context unavailable');
+      context.globalAlpha=1;context.fillStyle='#00070d';context.fillRect(0,0,width,height);
+      context.globalAlpha=opacity;context.drawImage(source,0,0);
+      return capture.toDataURL('image/png');
+    },{frame:Math.min(run.observations.length-1,Math.floor(phase*run.observations.length)),opacity:Math.min(1,.22+time/loopStart*.78),width,height});
+    await writeFile(join(work,`${String(index).padStart(4,'0')}.png`),Buffer.from(png.split(',')[1],'base64'));
     if(index%60===0)console.log(`Recorded ${index}/${frames} native Three.js frames`);
   }
   if(errors.length)throw new Error(errors.join('; '));
@@ -66,7 +78,7 @@ try {
   const video=await readFile(output),posterBytes=await readFile(poster);
   await writeFile(join(assets,'homepage-model-loop.json'),JSON.stringify({schemaVersion:2,topology:TOPOLOGY.id,nodes:GRAPH.nodes.length,displayRoutes:GRAPH.edges.length,
     width,height,fps,durationSeconds:duration,loopStartSeconds:loopStart,prompt,result:new TextDecoder().decode(new Uint8Array(emitted)),generatedBytes:emitted,
-    renderer:'Production Three.js scene / native pixels / refraction / MSAA',codec:'VP9/WebM',trainedStateSha256:manifest.trainedStateSha256,weightsSha256:manifest.sha256,
+    renderer:'Production Three.js scene / native pixels / refraction / MSAA',capture:'Same-task canvas readback / 1:1 native pixels / original stage-opacity composition',codec:'VP9/WebM',trainedStateSha256:manifest.trainedStateSha256,weightsSha256:manifest.sha256,
     observations:run.observations.length,replay:'Retimed recorded forward-pass tensors; per-layer brightness normalization; signed coordinates',
     bytes:video.length,sha256:createHash('sha256').update(video).digest('hex'),posterBytes:posterBytes.length,posterSha256:createHash('sha256').update(posterBytes).digest('hex')},null,2)+'\n');
   console.log(`Recorded production scene: ${video.length} bytes, ${width}×${height} @ ${fps} fps`);
