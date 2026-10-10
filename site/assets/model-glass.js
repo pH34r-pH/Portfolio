@@ -47,7 +47,7 @@ function project(T, camera, mesh, size, viewport) {
 export class SharedGlass {
   constructor(T, scene, renderer, instruments) {
     this.T = T; this.scene = scene; this.instruments = instruments; this.panels = [];
-    this.renderer = renderer; this.environment = null;
+    this.renderer = renderer; this.environment = null; this.sharedEnvironment = scene.environment;
     this.material = new T.MeshPhysicalMaterial({color: 0xffffff, transmission: .99, opacity: 1, ior: 1.46, thickness: .58, roughness: .025, metalness: 0, side: T.FrontSide, attenuationColor: 0xffffff, attenuationDistance: Infinity, envMapIntensity: .3, clearcoat: 0});
     this.trimMaterial = new T.LineBasicMaterial({color: 0xc8dce5, transparent: true, opacity: .32});
     this.light = new T.PointLight(0x5bbfff, 0, 18, 2); scene.add(this.light);
@@ -55,8 +55,8 @@ export class SharedGlass {
   }
   setQuality(mode) {
     const low = mode === 'lightweight'; this.quality = mode;
-    if (!low && !this.instruments.article && !this.environment) this.environment = environment(this.T, this.renderer);
-    this.scene.environment = low ? null : this.environment?.texture || null;
+    if (!low && !this.sharedEnvironment && !this.instruments.article && !this.environment) this.environment = environment(this.T, this.renderer);
+    this.scene.environment = this.sharedEnvironment || (low ? null : this.environment?.texture || null);
     this.material.transmission = low ? 0 : .99; this.material.opacity = low ? .07 : 1;
     this.material.transparent = low; this.material.roughness = low ? .16 : .025;
     this.material.needsUpdate = true;
@@ -200,7 +200,7 @@ export class SharedGlass {
   }
   hasContextAnimation() { return this.instruments.hasContextAnimation(); }
   pulse(value) {
-    const energy = clamp(value, 0, 1); this.light.intensity = energy * 16;
+    const energy = clamp(value, 0, 1); this.light.intensity = energy * 4;
     const output = this.panels.find(panel => panel.id === 'output');
     if (output) this.light.position.copy(output.mesh.position).add(new this.T.Vector3(-1, 1.8, 2.4));
   }

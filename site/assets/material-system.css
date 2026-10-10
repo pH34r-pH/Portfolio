@@ -168,6 +168,89 @@ html body :is(.article-card h3,.topology-detail h3) a { text-decoration:none; }
 html body :is(.article-card h3,.topology-detail h3) a:hover { color:var(--accent-strong); text-decoration:underline; }
 html body .profile-portrait { box-shadow:0 0 0 1px var(--material-glass-edge),0 0 16px rgba(28,159,255,.2); }
 html body .digital-motion-control { bottom:24px; right:24px; }
+/* Model backplates retain a dark optical field in either document theme. */
+html body.digital-home .digital-model-background,
+html body.digital-home .digital-visual {
+  background:radial-gradient(ellipse at 70% 38%,#062236 0%,#020b12 62%,#00070c 100%);
+}
+html body.digital-home .digital-model-background::after {
+  background:radial-gradient(ellipse at 86% 50%,rgba(6,100,163,.06),transparent 60%);
+}
+html body.digital-home :is(.digital-model-loop,.digital-model-loop-poster) { mix-blend-mode:normal; opacity:.85; }
+html body.digital-home .machine-poster { background-color:#020b12; }
+html body .model-machine-replay .machine-stage {
+  --bg:#020b12; --ink:#e8f7ff; --muted:#9abbd1; --accent:#47b9ff; --accent-strong:#9bddff;
+  --line:rgba(103,202,255,.36); --panel:rgba(2,18,30,.92);
+  background:#020b12!important; color:var(--ink); border-color:rgba(126,217,255,.58);
+  box-shadow:inset 0 1px rgba(220,249,255,.35),inset 0 -3px rgba(32,139,211,.18),0 12px 30px rgba(0,8,16,.22);
+}
+/* Front and back arrises surround an illuminated bevel and a thick slab edge. */
+html body.digital-home .digital-pane,
+html body :is(.card,.notebook-content,.digital-pane,.topology-detail,.topology-accessible,.standard-card,.article-execution,.experiment-table-wrap),
+html body .article-model-machine[data-model-reader-layout=true] .machine-glass-panel {
+  position:relative; border:1px solid rgba(154,225,255,.64);
+  background:linear-gradient(118deg,rgba(242,253,255,.18),transparent 18%,transparent 62%,rgba(101,199,250,.10)),
+    radial-gradient(ellipse 70% 65% at var(--surface-light-x,18%) var(--surface-light-y,8%),var(--material-glass-reflection),transparent 62%),var(--material-glass-face);
+  box-shadow:inset 0 1px 1px rgba(244,254,255,.88),inset 2px 2px 3px rgba(180,237,255,.15),
+    inset -3px -4px 5px rgba(30,139,207,.15),inset 0 -1px rgba(201,243,255,.62),
+    3px 4px 0 rgba(90,179,225,.28),5px 7px 0 rgba(1,26,42,.65),
+    0 18px 38px var(--material-glass-shadow),0 0 16px rgba(34,164,255,.12);
+  text-shadow:0 1px .6px rgba(247,254,255,.28),0 -1px .6px rgba(2,16,27,.20);
+}
+html body.digital-home .digital-pane,
+html body .article-model-machine .machine-glass-panel {
+  --ink:#e8f7ff; --muted:#adccdf; --accent:#50bbff; --accent-strong:#91d7ff; --bg:#04131f;
+  --panel:rgba(3,24,39,.90); --material-glass-face:rgba(3,20,32,.59);
+  --material-glass-reflection:rgba(211,243,255,.13); --material-glass-edge:rgba(190,239,255,.58);
+  --material-glass-shadow:rgba(0,4,10,.60); --material-glass-controls:rgba(2,18,30,.94);
+  color:var(--ink); text-shadow:0 -1px .6px rgba(0,5,12,.9),0 1px .6px rgba(217,247,255,.35),0 0 9px rgba(27,162,255,.13);
+}
+html body.digital-home .digital-pane :is(h1,h2,h3),
+html body .article-model-machine .machine-glass-panel h3 {
+  text-shadow:0 -1px 1px rgba(0,5,12,.95),0 1px .7px rgba(236,253,255,.65),0 0 14px rgba(97,201,255,.23);
+}
+html body .article-model-machine .machine-glass-panel { --material-glass-face:rgba(2,15,25,.85); }
+html body .article-model-machine .machine-glass-panel :is(h3,.machine-glass-label,.machine-glass-note,.machine-console-label,.machine-console label) {
+  background:none; box-shadow:none;
+}
+html body .article-model-machine.model-machine-replay .machine-glass-panel button {
+  color:var(--ink); border:1px solid rgba(163,228,255,.6); border-radius:8px;
+  background:linear-gradient(168deg,rgba(230,250,255,.18),transparent 46%),rgba(2,18,30,.94);
+  box-shadow:inset 0 1px rgba(215,247,255,.55),inset 0 -3px 4px rgba(0,4,10,.75),
+    0 2px 6px rgba(0,0,0,.35),0 0 8px rgba(28,164,255,.13);
+  text-shadow:0 1px .5px rgba(238,254,255,.3),0 0 8px rgba(41,169,255,.22);
+}
+html body .article-model-machine[data-model-reader-layout=true] [data-instruments=flow] .machine-instruments {
+  padding:6px 8px 10px; overflow-x:hidden;
+}
+html body.digital-home .digital-pane :is(.title-accent,.eyebrow),
+html body .article-model-machine .machine-glass-label {
+  color:#9bddff; text-shadow:0 -1px .6px #00101c,0 1px .5px rgba(224,253,255,.6),0 0 9px rgba(38,171,255,.28);
+}
+html body.digital-home .digital-pane::before { border-color:rgba(161,229,255,.4); box-shadow:inset 0 0 8px rgba(31,154,245,.15); }
+html body.digital-home .digital-pane::after {
+  inset:5px; border-radius:15px; border-top:1px solid rgba(238,253,255,.5); border-right:1px solid rgba(147,226,255,.18);
+  background:linear-gradient(116deg,transparent 11%,rgba(226,247,255,.09) 13%,rgba(226,247,255,.015) 19%,transparent 21%,transparent 73%,rgba(232,251,255,.045) 76%,transparent 82%),
+    radial-gradient(ellipse 70% 45% at var(--surface-light-x,20%) var(--surface-light-y,0%),rgba(224,251,255,.11),transparent 65%);
+}
+.material-edge {
+  position:absolute; inset:-1px; border-radius:inherit; pointer-events:none; user-select:none;
+  border:1px solid rgba(182,239,255,.65); z-index:2;
+  box-shadow:0 0 1px #e0faff,0 0 4px rgba(45,180,255,.50),0 0 11px rgba(15,143,255,.19),inset 0 0 5px rgba(74,192,255,.15);
+}
+.material-edge::before {
+  content:''; position:absolute; inset:-1px; border:1px solid rgba(104,222,255,.45); border-radius:inherit;
+  box-shadow:0 0 6px rgba(32,163,255,.28); opacity:.7; animation:glass-edge-breath 14s ease-in-out infinite;
+}
+.material-corner { position:absolute; width:32px; height:32px; background:url('./steel-elbow.svg') center/100% 100% no-repeat; }
+.material-corner-tl { top:-6px; left:-6px; }
+.material-corner-tr { top:-6px; right:-6px; rotate:90deg; }
+.material-corner-br { bottom:-6px; right:-6px; rotate:180deg; }
+.material-corner-bl { bottom:-6px; left:-6px; rotate:270deg; }
+/* Homepage fittings are real lit metal in the existing GPU scene. */
+[data-background-backend=native] .digital-pane .material-corner { display:none; }
+[data-background-motion=paused] .material-edge::before { animation-play-state:paused; }
+@keyframes glass-edge-breath { 0%,100% { opacity:.65; } 50% { opacity:.76; } }
 @media(max-width:720px) {
   html body.digital-home .digital-chapters { padding-inline:18px; }
   html body.digital-home .digital-chapter { padding-block:24px; }
@@ -177,8 +260,12 @@ html body .digital-motion-control { bottom:24px; right:24px; }
 }
 @media(prefers-reduced-motion:reduce) {
   html body :is(button,.actions a,.digital-pane) { transition:none!important; transform:none!important; }
+  .material-edge::before { animation:none; }
 }
 @media(forced-colors:active) {
+  .material-edge { display:none; }
+  html body .model-machine-replay .machine-stage { background:Canvas!important; color:CanvasText; }
+  html body.digital-home .digital-pane,html body .article-model-machine .machine-glass-panel { color:CanvasText; text-shadow:none; }
   html body :is(.digital-pane,.notebook-content,.card,.article-model-toolbar,.machine-glass-panel,.site-menu) {
     background:Canvas; border:1px solid CanvasText; box-shadow:none; backdrop-filter:none;
   }
@@ -186,5 +273,7 @@ html body .digital-motion-control { bottom:24px; right:24px; }
   html body :is(.digital-pane,.topbar)::before,html body .digital-pane::after { display:none; }
 }
 @media print {
+  .material-edge { display:none; }
+  html body :is(.digital-pane,.machine-glass-panel) { color:black; background:white; text-shadow:none; box-shadow:none; }
   html body :is(.notebook-content,.card,.article-model-toolbar) { background:white; color:black; box-shadow:none; backdrop-filter:none; }
 }

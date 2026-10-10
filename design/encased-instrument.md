@@ -55,7 +55,7 @@ connections or fabricated telemetry. Brass, reflections and housing supports are
 decorative display hardware. The gold selection/probe treatment remains separate
 from the coordinate inspector's recorded values.
 
-The homepage retains its 264-second observation loop, eased signed-color and
+The homepage uses a 132-second observation loop (twice the initial encased pace), eased signed-color and
 brightness transitions, and continuous loop seam. Article generation, Hide,
 Unpin, Follow, input, coordinate inspection, and native keyboard controls retain
 their existing behavior. Quiet mode, pause, visibility suspension and retry remain
@@ -82,3 +82,32 @@ Review local images and controls before promoting this branch. Full exact-source
 CI, a trusted main revision, finished publication qualification, and protected
 Fleet promotion are still required for production. Native resolution is retained;
 this revision makes no new physical 120/144 Hz or 8K FPS claim.
+
+## Optical refinement and asset authoring
+
+Both the article and homepage instruments have a fixed dark backplate and
+optical palette in Light and Dark themes. The document theme still controls
+navigation and article prose. The case reflection environment is preserved
+when article instruments switch to native flow layout.
+
+The page rails now use actual steel quarter-torus elbows and end collars,
+64-sided energy cores and camera-facing Gaussian glow profiles in the same
+renderer. They follow the glass perimeter rather than framing empty space.
+Six instanced batches cover two visible panes and the desktop outer support.
+A low-amplitude 14-second breath is explicitly decorative; measured tensor
+values and signed coordinate inspection remain unchanged. Pause freezes the
+native scene and the CSS edge breath; reduced-motion pages retain static edges.
+
+Native document panes use layered cut edges, an offset slab silhouette,
+reflective light bands and directional etched-glyph highlights. Text, buttons,
+form controls and article flow remain native HTML. Reading-pane joints use an
+SVG rendition of the same steel elbow, avoiding another renderer per card.
+
+Blender would be useful for a future artist-authored case, bolts, imperfections
+or a baked studio environment. Its glTF exporter supports metallic/roughness,
+clearcoat and transmission materials:
+https://docs.blender.org/manual/en/latest/addons/scene_gltf2.html
+Those assets would still need live browser lighting and source-bound activation
+updates. This revision uses procedural real 3D geometry for responsive elbows
+and the existing case, so installing Blender is not required for these changes.
+It does not claim offline path-traced glass or measured 4K/8K refresh rates.

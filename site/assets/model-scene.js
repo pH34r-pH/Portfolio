@@ -236,14 +236,15 @@ export class MachineScene {
     this.renderer.render(this.scene, this.camera); this.metrics.end();
   }
   refreshTheme() {
-    this.dark = document.documentElement.dataset.theme === "dark";
-    this.powerBackground=new this.T.Color(getComputedStyle(this.root).getPropertyValue('--bg').trim()||(this.dark?'#050712':'#f4f9fd'));
-    this.scene.background = this.digital ? null : new this.T.Color(this.dark ? 0x071b2b : 0xe6f1fa);
-    this.materials.shell.color.set(this.dark ? 0x123b51 : 0x46768b);
-    this.materials.ceramic.color.set(this.dark ? 0x799bad : 0xd4e8f4);
-    this.materials.edge.opacity = this.dark ? .23 : .17;
-    this.contours.material.color.set(this.dark ? 0x447abb : 0x165577);
-    this.contours.material.opacity = this.dark ? .28 : .2;
+    // The instrument has a dark optical backplate in every document theme.
+    this.dark = true;
+    this.powerBackground=new this.T.Color(0x020b12);
+    this.scene.background = this.digital ? null : this.powerBackground;
+    this.materials.shell.color.set(0x6a8292);
+    this.materials.ceramic.color.set(0x799bad);
+    this.materials.edge.opacity = .23;
+    this.contours.material.color.set(0x447abb);
+    this.contours.material.opacity = .28;
     if (this.snapshot) {this.applyFrame(this.run, this.snapshot);} else {this.render();}
   }
   applyFrame(run, state) {
@@ -422,7 +423,7 @@ export class MachineScene {
   }
   setPower(progress,force=false) {this.powerProgress=progress;applyPower(this,progress);this.render(force);}
   finishPower() {
-    this.powerProgress=null;this.glass.power=null;this.scene.background=null;this.selection.visible=this.probe.visible=true;
+    this.powerProgress=null;this.glass.power=null;this.scene.background=this.digital?null:this.powerBackground;this.selection.visible=this.probe.visible=true;
     this.materials.node.blending=this.T.NormalBlending;this.contours.material.blending=this.T.AdditiveBlending;this.routes.setPower(1);
     if(this.snapshot){this.applyFrame(this.run,this.snapshot);}else {this.render();}
     if(this.readingState){this.reading(this.readingState);}
@@ -443,7 +444,7 @@ export class MachineScene {
         drawingBufferWidth:context.drawingBufferWidth??this.canvas.width,drawingBufferHeight:context.drawingBufferHeight??this.canvas.height,
         limits:this.quality.limits,transmissionTarget:this.transmissionTarget},
       landmarks:view.landmarks,graphBounds,graphGeometryBounds:view.geometryBounds,appearance:{pointGeometry:this.beads.geometry.type,pointRadius:this.beads.geometry.parameters.radius,
-        style:'encased-crystal-v1',lightBlue:'165577',darkBlue:'447abb',activityGold:'ffc778',contourColor:this.contours.material.color.getHexString(),
+        style:'encased-crystal-v1',backplate:'020b12',themeIndependent:true,lightBlue:'165577',darkBlue:'447abb',activityGold:'ffc778',contourColor:this.contours.material.color.getHexString(),
         housingBounds:this.housing.bounds,glazingTransmission:this.materials.glazing.transmission,routes:this.routes.diagnostics()},
       resources:{...this.renderer.info.memory},glass:this.glass.diagnostics(),performance:this.metrics.snapshot(),frame:this.snapshot?.frame,
       camera:{yaw:this.yaw,pitch:this.pitch,zoom:this.zoom,pan:{...this.pan},distance:this.distance,
