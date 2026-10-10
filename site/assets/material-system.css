@@ -1,7 +1,5 @@
-/* Energy carries structure. Glass carries content. Wood carries touch. */
+/* Energy carries structure. Glass carries content and native controls. */
 :root {
-  --wood-atlas:url('./materials/wood-atlas.webp');
-  --wood-cedar:#9e5433; --wood-hemlock:#d9b887; --wood-maple:#e5c79b;
   --material-glass-face:rgba(235,248,255,.72); --material-glass-edge:rgba(255,255,255,.93);
   --material-glass-shadow:rgba(3,35,55,.20); --material-glass-reflection:rgba(255,255,255,.52);
   --material-glass-controls:rgba(235,248,255,.92);
@@ -40,33 +38,31 @@ html body :is(.site-menu,.search-dialog) {
   box-shadow:inset 0 1px rgba(255,255,255,.3),0 22px 70px var(--material-glass-shadow),0 0 32px rgba(36,146,216,.12);
   backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
 }
-/* Carved maple switches: the grain stays on the face, never on the label. */
-html body.digital-home .actions a.primary:not([data-carpentry-control]),
+/* Crisp native labels sit on inset glass controls. */
+html body.digital-home .actions a.primary,
 html body :is(.menu-toggle,.search-toggle,.appearance button,.actions a,.actions a.primary,.article-execution button,.synthetic-projection-control button,
   .article-model-toolbar button,.article-model-toolbar [data-machine-settings] summary,.article-model-startup button,.machine-generation-settings button,[data-lm-stop],.machine-input button,.machine-instrument-nav button,.machine-depth-view,.digital-motion-control) {
-  position:relative; isolation:isolate; border:1px solid #c89862; border-radius:8px;
-  color:#172631; background-color:var(--wood-maple);
-  background-image:linear-gradient(165deg,rgba(255,251,222,.2),rgba(76,41,16,.18)),var(--wood-atlas);
-  background-size:100% 100%,100% 300%; background-position:0 0,center bottom;
-  box-shadow:inset 0 1px 1px #fff4d8, inset 1px 0 rgba(255,245,215,.65),inset 0 -3px 2px rgba(50,25,5,.36),
-    0 3px 0 #714a2c,0 7px 14px rgba(0,0,0,.3),0 -1px 9px rgba(58,177,255,.12);
-  text-shadow:0 1px rgba(255,248,220,.35); clip-path:none;
+  position:relative; isolation:isolate; border:1px solid var(--material-glass-edge); border-radius:8px;
+  color:var(--ink); background:linear-gradient(165deg,var(--material-glass-reflection),transparent 45%),var(--material-glass-controls);
+  box-shadow:inset 0 1px 1px var(--material-glass-edge),inset 0 -2px 4px var(--material-glass-shadow),
+    0 3px 10px var(--material-glass-shadow),0 0 12px rgba(58,177,255,.12);
+  text-shadow:none; clip-path:none;
   transition:transform var(--material-speed),box-shadow var(--material-speed),filter var(--material-speed);
 }
 html body :is(.actions a.primary,.machine-input button,[data-viewer-follow][aria-pressed=true],[data-viewer-pin][aria-pressed=true],[data-instrument][aria-pressed=true],[data-theme-choice][aria-pressed=true]) {
-  border-color:#e4c395;
-  box-shadow:inset 0 1px #fff7de,inset 0 -3px rgba(24,118,205,.75),0 3px 0 #714a2c,0 0 0 1px rgba(112,215,255,.55),
-    0 0 20px rgba(22,156,255,.24),0 10px 23px rgba(0,0,0,.25);
+  border-color:var(--accent-strong);
+  box-shadow:inset 0 1px var(--material-glass-edge),inset 0 -2px rgba(24,118,205,.6),
+    0 0 16px rgba(22,156,255,.2),0 4px 14px var(--material-glass-shadow);
 }
-html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):not([data-carpentry-control]):hover {
+html body :is(.actions a,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):hover {
   transform:translateY(-2px); filter:brightness(1.08);
 }
-html body :is(.actions a,.menu-toggle,.search-toggle,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):not([data-carpentry-control]):active {
+html body :is(.actions a,.appearance button,.article-model-toolbar button,.article-model-toolbar summary,.machine-input button,.machine-instrument-nav button,.machine-depth-view,.article-execution button):not(:disabled):active {
   transform:translateY(2px);
-  box-shadow:inset 0 2px 4px rgba(58,31,11,.45),0 1px 0 #714a2c,0 3px 7px rgba(0,0,0,.25);
+  box-shadow:inset 0 2px 5px var(--material-glass-shadow),0 1px 4px var(--material-glass-shadow);
 }
 html body button[disabled] { cursor:default; }
-html body :is(.machine-instrument-nav button,.machine-generation-settings button):disabled { opacity:.48; filter:saturate(.5); box-shadow:inset 0 1px rgba(255,244,215,.5),0 1px 0 #714a2c; }
+html body :is(.machine-instrument-nav button,.machine-generation-settings button):disabled { opacity:.48; filter:saturate(.5); box-shadow:none; }
 /* Native text remains sharp over a restrained transmitting screen face. */
 html body :is(.card,.notebook-content,.article-model-toolbar,.digital-pane,.program-grid article,.impact-rail article,.case-study,.package-info,.evidence-detail,.standard-card,.article-execution,.synthetic-projection-control,.experiment-table-wrap,.topology-instrument,.topology-node,.topology-detail,.topology-accessible) {
   border:1px solid var(--material-glass-edge); border-radius:var(--material-radius);
@@ -84,11 +80,9 @@ html body .card::before { color:var(--accent-strong); }
 html body .card::after,html body .notebook-content::before {
   content:''; display:block; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
   width:auto; height:auto; opacity:1; transform:none;
-  border:4px solid transparent; background:var(--wood-atlas) center top/100% 300%; background-origin:border-box;
-  mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); mask-composite:exclude;
-  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor;
+  border:1px solid var(--material-glass-edge); background:none;
+  box-shadow:inset 0 0 10px rgba(58,177,255,.08);
 }
-html body .article-model-startup button { color:#172631; }
 html body :is(.menu-toggle,.site-menu) { clip-path:none; }
 html body .article-model-toolbar {
   border-radius:12px; padding:12px; background:linear-gradient(125deg,var(--material-glass-reflection),transparent 30%),var(--material-glass-controls);
@@ -108,11 +102,11 @@ html body .article-model-machine[data-model-reader-layout=true] .machine-stage {
 html body .article-model-machine[data-model-reader-layout=true] .machine-glass-panel {
   position:relative; border:1px solid var(--material-glass-edge); border-radius:12px;
   background:linear-gradient(125deg,var(--material-glass-reflection),transparent 30%,rgba(54,184,255,.08)),var(--material-glass-face);
-  box-shadow:inset 1px 0 rgba(255,205,159,.5),0 6px 20px var(--material-glass-shadow); backdrop-filter:blur(8px);
+  box-shadow:inset 1px 0 var(--material-glass-edge),0 6px 20px var(--material-glass-shadow); backdrop-filter:blur(8px);
 }
 html body .article-model-machine[data-model-reader-layout=true] .machine-glass-panel::before {
-  content:''; position:absolute; inset:8px auto 8px 0; width:6px; border-radius:3px; pointer-events:none;
-  background:var(--wood-atlas) center top/auto 300%; box-shadow:inset 1px 0 rgba(255,216,177,.7),1px 0 4px rgba(27,12,2,.25);
+  content:''; position:absolute; inset:8px auto 8px 0; width:1px; border-radius:3px; pointer-events:none;
+  background:var(--material-glass-edge); box-shadow:0 0 8px var(--beam-halo);
 }
 html body :is(.notebook-reader>header,.index-page>header,.digital-contact,footer) {
   border-top:1px solid var(--material-glass-edge); box-shadow:0 -3px 18px rgba(39,175,255,.09);
@@ -128,12 +122,8 @@ html body.digital-home .digital-pane {
 }
 html body.digital-home .digital-pane::before {
   inset:0; opacity:1; z-index:-1; border-radius:inherit;
-  background:linear-gradient(90deg,rgba(25,55,74,.32),transparent 20%,rgba(25,55,74,.35)),var(--wood-atlas);
-  background-size:100% 100%,100% 300%; background-position:0 0,center top;
-  border:9px solid transparent; background-origin:border-box;
-  mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); mask-composite:exclude;
-  -webkit-mask:linear-gradient(#000 0 0) padding-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor;
-  box-shadow:inset 0 2px rgba(255,218,185,.7); pointer-events:none;
+  background:none; border:1px solid var(--material-glass-edge);
+  box-shadow:inset 0 0 12px rgba(58,177,255,.08); pointer-events:none;
 }
 html body.digital-home .digital-pane::after {
   display:block; content:''; position:absolute; inset:12px; border-radius:10px; pointer-events:none;
@@ -166,14 +156,13 @@ html body :is(.machine-heading h2,.card h3,.index-page>section>h2) {
 }
 html body .article-model-machine .machine-heading h2 { font-size:clamp(26px,2.4vw,36px); }
 html body.digital-home .digital-contact { padding:60px 0 28px; background:var(--bg); }
-html body .profile-portrait { box-shadow:0 0 0 2px var(--wood-hemlock),0 0 16px rgba(28,159,255,.2); }
+html body .profile-portrait { box-shadow:0 0 0 1px var(--material-glass-edge),0 0 16px rgba(28,159,255,.2); }
 html body .digital-motion-control { bottom:24px; right:24px; }
 @media(max-width:720px) {
   html body.digital-home .digital-chapters { padding-inline:18px; }
   html body.digital-home .digital-chapter { padding-block:24px; }
   html body.digital-home .digital-pane { padding:28px 22px; border-radius:16px; }
   html body.digital-home .page-title { font-size:clamp(42px,11vw,58px); }
-  html body.digital-home .digital-pane::before { border-width:7px; }
   html body .digital-motion-control { bottom:16px; right:16px; }
 }
 @media(prefers-reduced-motion:reduce) {

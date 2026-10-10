@@ -45,7 +45,6 @@ export async function createNativeBackground(journey, fail) {
       { rendering },
     );
     scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
-    await scene.glass.architecture.texturePromise;
     scene.render(true);
     await scene.renderer.compileAsync(scene.scene, scene.camera);
     scene.selection.visible = scene.probe.visible = false;
