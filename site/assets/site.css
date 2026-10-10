@@ -375,14 +375,7 @@ section {
   overflow: clip;
 }
 
-.notebook-content::before {
-  content: "";
-  display: block;
-  height: 2px;
-  margin: calc(clamp(18px,4vw,48px) * -1) calc(clamp(18px,4vw,48px) * -1) clamp(26px,5vw,54px);
-  background: linear-gradient(90deg, var(--accent), transparent 34%);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--accent) 22%, transparent);
-}
+
 
 .myst-reader {
   font-size: clamp(1rem, 1.2vw, 1.1rem);
