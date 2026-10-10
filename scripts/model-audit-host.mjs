@@ -2,8 +2,6 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
-export function inputPaneOpacity(input) { return input.evaluate(node=>getComputedStyle(node).opacity); }
-
 export async function beginContextTransitionSample(root,part,previous=null) {
   return root.evaluate((node,{part,previous})=>{
     const element=node.querySelector('[data-glass-panel="input"]');
