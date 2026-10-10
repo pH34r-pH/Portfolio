@@ -23,6 +23,17 @@ const pipelineFiles=['scripts/capture-model-posters.mjs','scripts/model-pixel-fi
 async function readLocalHashes(files) {
   return Object.fromEntries(await Promise.all(files.map(async file=>[file,hash(await readFile(new URL('../site/assets/'+file,import.meta.url)))])));
 }
+function verifyCommittedInputs(sourceCommit,sourceHashes,pipelineHashes) {
+  const inputs={...Object.fromEntries(Object.entries(sourceHashes).map(([file,digest])=>['site/assets/'+file,digest])),...pipelineHashes};
+  const options={cwd:new URL('..',import.meta.url),timeout:10000,maxBuffer:8*1024*1024};
+  const status=execFileSync('git',['status','--porcelain','--untracked-files=all','--',...Object.keys(inputs)],{...options,encoding:'utf8'});
+  assert.equal(status.trim(),'','Commit all capture inputs before producing qualified posters');
+  for(const [file,expected] of Object.entries(inputs)) {
+    const committed=execFileSync('git',['show',`${sourceCommit}:${file}`],options);
+    assert.equal(hash(committed),expected,`Capture input must match exact committed bytes (including line endings): ${file}`);
+  }
+  return true;
+}
 async function verifyServedSources(expected) {
   const actual={};
   for(const file of sourceFiles) {
@@ -117,12 +128,11 @@ async function captureVariant(browser,name,view,theme,density) {
 
 await mkdir(output,{recursive:true});await mkdir(evidence,{recursive:true});
 const localSourceHashes=await readLocalHashes(sourceFiles);
-const servedSourceHashes=await verifyServedSources(localSourceHashes);
 const pipelineHashes=Object.fromEntries(await Promise.all(pipelineFiles.map(async file=>[file,hash(await readFile(new URL('../'+file,import.meta.url)))])));
-const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:new URL('..',import.meta.url),encoding:'utf8'}).trim();
+const sourceCommit=execFileSync('git',['rev-parse','HEAD'],{cwd:new URL('..',import.meta.url),encoding:'utf8',timeout:10000}).trim();
+const sourceWorkingTreeClean=verifyCommittedInputs(sourceCommit,localSourceHashes,pipelineHashes);
+const servedSourceHashes=await verifyServedSources(localSourceHashes);
 const sourceTreeSha256=hash(Buffer.from(JSON.stringify({sourceHashes:localSourceHashes,pipelineHashes})));
-const sourceStatus=execFileSync('git',['status','--porcelain','--untracked-files=all','--',...sourceFiles.map(file=>'site/assets/'+file),...pipelineFiles],{cwd:new URL('..',import.meta.url),encoding:'utf8'});
-const sourceWorkingTreeClean=sourceStatus.trim()==='';
 const browser=await chromium.launch({headless:true});
 try {
   for(const [name,view] of Object.entries(POSTER_VIEWS))for(const theme of ['light','dark'])for(const density of densities)
