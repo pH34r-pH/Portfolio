@@ -220,7 +220,12 @@ export class SharedGlass {
         Math.abs(Math.max(...xs)-(rect.right-canvas.left)),Math.abs(Math.max(...ys)-(rect.bottom-canvas.top)),
         Math.abs((Math.max(...xs)-Math.min(...xs))-rect.width),Math.abs((Math.max(...ys)-Math.min(...ys))-rect.height));
     };
-    return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
+    const activeEnvironment=this.scene.environment, image=activeEnvironment?.image;
+    const cubeUV=Boolean(activeEnvironment&&activeEnvironment.mapping===this.T.CubeUVReflectionMapping);
+    const pmremSize=cubeUV?(image?.height||0)/4:0;
+    const illumination={ownership:!activeEnvironment?'none':activeEnvironment===this.sharedEnvironment?'shared':activeEnvironment===this.environment?.texture?'owned':'external',
+      mapping:cubeUV?'cube-uv':activeEnvironment?'other':'none',width:image?.width||0,height:image?.height||0,faceSize:pmremSize};
+    return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize, environment:illumination, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
       panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible,
