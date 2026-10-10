@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "98f41ae022684d5d8560cdc4634ec63ee945dcdf",
-    "sourceTreeSha256": "d8246bb318e8d8f48b2a77efcc07c320dccd704dd49da3dd197cf568f74022e2",
+    "sourceCommit": "9cf87cd71b8fafcf4983a40625ec7870948bcc9c",
+    "sourceTreeSha256": "adc4e44f2d5d5dfcd265fad7efa1e0c0638430ed39fdddb11d1c2823fc149aa9",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -17,8 +17,11 @@
     "provenanceVerified": true,
     "servedSourceHashes": {
       "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
-      "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-      "model-scene.js": "e4f1086a8e866c95f74b7217df64d7983ea83395c0136e86954d219a2fce3d3c",
+      "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
+      "model-scene.js": "2ad969cc444e7c803e8143e39923880aac8be55edbe36b42caaceba906f483ff",
+      "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
+      "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",
+      "model-encased-routes.js": "59ad55f2ec1a6c59703858b0010cce2444725a05eddf249a0dbf3720ce801468",
       "model-quality.js": "bcfae2997f93b3705793f2788a51cd9d4576540a90d6c38babf9b5253891e8f8",
       "model-topology.js": "abda4a61a479cfa6b74ebd7cf53f64593f2edc3b02d917a4da7c26d22ed1817a",
       "model-digital.js": "7fe3def8e29d347424609e447f81326cd2c25ebbbdaffc579d3bd17b8b4112fb",
@@ -42,16 +45,16 @@
       "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
     },
     "pipelineHashes": {
-      "scripts/capture-model-posters.mjs": "fac069d82e0af413bdd4b4a5f9fb480004dc697dd06ea00a80b4233fee33d815",
+      "scripts/capture-model-posters.mjs": "247bde472591bd701963ca8fa6c66dca72cbdcd7d573e2af1d71229b235774e7",
       "scripts/model-pixel-fidelity.mjs": "014e2c7baa3a713a81e8d44d42daef819ae29834957a74be13ea3ff400593f32",
       "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
       "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
       "scripts/test-model-startup.mjs": "ec8807b8172c014dae2c05a337150fb348659e990d32682940aace00db509511",
       "scripts/model-audit-host.mjs": "7746e89a1b80b8628535c50f910dc7ccc5a4f3f73f39a796371fc66b6a27416a",
-      "scripts/model-visual-audit.mjs": "9c3ce4d60ed7bff37e765de08727f4c6027f76faa8c1607db0a0471e3bf32f48",
+      "scripts/model-visual-audit.mjs": "af887bcbc4fa4081b032d3040174ba37441174d46aa34435cb28d8781ebe01d3",
       "scripts/model-startup-audit.mjs": "d4c0e0318cc2caedfa119c32263504685c07fee02e06fd0c211a401cde576725",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
-      ".github/workflows/ux-quality.yml": "9f92af47e9055c6bfe5284197b96a038ff5bb9650107b005c9c25df8a1b8e377",
+      ".github/workflows/ux-quality.yml": "fdb3d939e0d849dae343321f32f157d75dff183de81208fec9b45fc4de9ce218",
       "package.json": "5130a475509b9566ca9a80750880097fcd273254c4060210ef66ad1f6cd5f37a",
       "package-lock.json": "079df1e1ab5142a4efcd68013f1c9781b6ab66532153be41d7e62e86318cdd4d"
     }
@@ -77,8 +80,11 @@
   },
   "sourceHashes": {
     "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
-    "model-power.js": "1ae541640a6b4054e9e6dd70a05c450a9fe9f728a9982fb1b42cedddf15aa2a9",
-    "model-scene.js": "e4f1086a8e866c95f74b7217df64d7983ea83395c0136e86954d219a2fce3d3c",
+    "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
+    "model-scene.js": "2ad969cc444e7c803e8143e39923880aac8be55edbe36b42caaceba906f483ff",
+    "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
+    "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",
+    "model-encased-routes.js": "59ad55f2ec1a6c59703858b0010cce2444725a05eddf249a0dbf3720ce801468",
     "model-quality.js": "bcfae2997f93b3705793f2788a51cd9d4576540a90d6c38babf9b5253891e8f8",
     "model-topology.js": "abda4a61a479cfa6b74ebd7cf53f64593f2edc3b02d917a4da7c26d22ed1817a",
     "model-digital.js": "7fe3def8e29d347424609e447f81326cd2c25ebbbdaffc579d3bd17b8b4112fb",
@@ -127,50 +133,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-1x.png",
-        "sha256": "5518ddaf5bad435783b51d1b27ac2440f71d746e0a7d1fdbdaafa8ad13f6e065"
+        "sha256": "6a5fb292ad24bcda79288ddad02c198610d7a3cbf18440a365012e279bbb681e"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-1x.png",
-        "runningDetailSha256": "0c29a89ad2f972b644ccfc60cf11ff639a4130c0b6a872aff71b1d5febbc86f7",
+        "runningDetailSha256": "bc463c3f1b9c326a0019f179bddacd3fc7bcb33ee41b66a9162f435be3f37399",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -190,27 +203,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1280,
+            "height": 740,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1280,
+              740
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-1x.webp",
-      "bytes": 190168,
-      "sha256": "ec94a4e1dc8ca77190baa88f9fd6c394c2964db703f169679f2c88d790f4a986",
+      "bytes": 158252,
+      "sha256": "6910431f19842a5d4082fa200069818d00de27116099100ad347db41f6dc351f",
       "avifFile": "powered-down-desktop-1x.avif",
-      "avifBytes": 144492,
-      "avifSha256": "1b69f1ac50f8f39c8910a66ea4b4055ddf3c37b2d4b71e262460730d3dfb36dc",
+      "avifBytes": 116890,
+      "avifSha256": "b4a3362d984ae7d13bdc942dff48f8fbc8f550b4b532ec45a1b4d44b52f21df5",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.9038,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 22,
+          "meanAbsoluteChannelError": 1.4162,
+          "p99AbsoluteChannelError": 15,
+          "maxAbsoluteChannelError": 84,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3976,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 15,
+          "meanAbsoluteChannelError": 0.4727,
+          "p99AbsoluteChannelError": 6,
+          "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -221,7 +245,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -233,74 +257,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -329,7 +360,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1280,
+          "height": 740,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1280,
+            740
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -391,50 +433,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-2x.png",
-        "sha256": "48a04829c0f6e48a4769e7c8fb8cba6a8c167d4e46c53ab304b9f43029936a6f"
+        "sha256": "33c6eccee1fd3679b21b67420094249c1c1ec62e6169a4f63f0cd8f993212725"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-2x.png",
-        "runningDetailSha256": "3d25a7dd63d8c1fdfab8f6141eab3c332832d1ade1453c1756b7882dcddb1f1c",
+        "runningDetailSha256": "01d6100c48bd9fee904c56903835d17de83ad8ca077922812bb80ca559b8c3d5",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -454,27 +503,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 2560,
+            "height": 1480,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              2560,
+              1480
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-2x.webp",
-      "bytes": 607808,
-      "sha256": "d6189534cad150c950152a74a8967c90211847233336725b0e38dc63e473ac91",
+      "bytes": 473902,
+      "sha256": "c231d502a771ee79f0d5b730cbbb614249837e332a8b99e631d3472acd7bb113",
       "avifFile": "powered-down-desktop-2x.avif",
-      "avifBytes": 448839,
-      "avifSha256": "510bdf69af13904c7fac58a76e0cda0593d2bc4afc0e194f098b42a437eeb4c1",
+      "avifBytes": 335571,
+      "avifSha256": "e1bea207f70c7885c427321b5005e8855df163a763e5ecc43399eb16236a5877",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.831,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 18,
+          "meanAbsoluteChannelError": 1.1196,
+          "p99AbsoluteChannelError": 11,
+          "maxAbsoluteChannelError": 81,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.2901,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 17,
+          "meanAbsoluteChannelError": 0.3577,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 29,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -485,7 +545,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -497,74 +557,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -593,7 +660,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 2560,
+          "height": 1480,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            2560,
+            1480
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -655,50 +733,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-3x.png",
-        "sha256": "1adbd6c480b22f3d836e0e9c50795532c532e507cbebcc74d461ecb5da7a62b5"
+        "sha256": "397329639f141a708cc0a41069817a24ba99ef7ebfe602a5d8dedea1278f94ad"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-3x.png",
-        "runningDetailSha256": "8e755a1cedf274934b6524209fac5ef74c651f7cb5f7f2ea70832df083425232",
+        "runningDetailSha256": "ea717598fe3d600be64b2e13cc7f52eeb5db1e0c4b77633e02e53fc8cd0ee7ba",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -718,27 +803,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 3840,
+            "height": 2220,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              3840,
+              2220
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-3x.webp",
-      "bytes": 1172718,
-      "sha256": "95391afc318122af3bf4fd16137af271e473a2289e8845f1a617e12ebab7f25b",
+      "bytes": 870124,
+      "sha256": "b5dcfd0ed17893a2d27284d34fdf6ae3ab5556f34da6ed60895dc19238e69694",
       "avifFile": "powered-down-desktop-3x.avif",
-      "avifBytes": 860188,
-      "avifSha256": "2fd5723851c6cbb1cd13d083d142d214a259a716bb34276789dd52deebc38f19",
+      "avifBytes": 619665,
+      "avifSha256": "96307ec4146ba14b7130267e05029e6b82f06042ab996369ed724d643a147f31",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.794,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 19,
+          "meanAbsoluteChannelError": 1.0007,
+          "p99AbsoluteChannelError": 9,
+          "maxAbsoluteChannelError": 70,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.223,
-          "p99AbsoluteChannelError": 3,
-          "maxAbsoluteChannelError": 18,
+          "meanAbsoluteChannelError": 0.3151,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 34,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -749,7 +845,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -761,74 +857,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -857,7 +960,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 3840,
+          "height": 2220,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            3840,
+            2220
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -919,50 +1033,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-1x.png",
-        "sha256": "40a6bfa02d008f89b8f361d6132b7c1d162b882aa007a59dc1b3c592c9f6f763"
+        "sha256": "1c6f9289986e8a51e2cdf88f9f57f11ef3815c64994b160841e79b485ea2c293"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-1x.png",
-        "runningDetailSha256": "f8827ba63eac41749a76c5bca8bc5b8ec50baec6488bc8909cd600282b3d0c53",
+        "runningDetailSha256": "5307072d98c88612ae3d5037b8d84aef73b70cb2191f535ebc609ee51cc6e384",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -982,27 +1103,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1280,
+            "height": 740,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1280,
+              740
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-dark-1x.webp",
-      "bytes": 74316,
-      "sha256": "e80f83ab7e99daa3db6d6dd8ad0613d7d98cc03c284352b78041bbd31133ce85",
+      "bytes": 114130,
+      "sha256": "a95686a52e2a47de889c014348d1a20ecff4fd6dfa6426124458122a31040996",
       "avifFile": "powered-down-desktop-dark-1x.avif",
-      "avifBytes": 41608,
-      "avifSha256": "0abc1ae2d08559a50c6578972c50595a4b02527e820e74e2320955c9af67cae2",
+      "avifBytes": 80556,
+      "avifSha256": "d1b40cc95432f2d33e1d84a9e1a5c31b7be8e3adc6ed4ba0fb6c6e1fb63b2540",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.6075,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 23,
+          "meanAbsoluteChannelError": 1.0771,
+          "p99AbsoluteChannelError": 15,
+          "maxAbsoluteChannelError": 71,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4652,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 13,
+          "meanAbsoluteChannelError": 0.6077,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 29,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1013,7 +1145,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -1025,74 +1157,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -1121,7 +1260,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1280,
+          "height": 740,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1280,
+            740
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -1183,50 +1333,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-2x.png",
-        "sha256": "04c76288d71f33822d0976d2d964433901d09a1d6eee3950f0d94f6efd97b773"
+        "sha256": "8aa9987d623357e6a050f8cb425fe5459164427ccf995dfe030f65e030fc9adc"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-2x.png",
-        "runningDetailSha256": "a6f50ac7885187b9863deebe9d14fea5fdb8675182c8f9491a8d7b6727798ac3",
+        "runningDetailSha256": "f0f4d2ccdfe82b7961712eade405408d564ecf5e60b80a94b1bbc4552437e8f1",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -1246,27 +1403,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 2560,
+            "height": 1480,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              2560,
+              1480
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-dark-2x.webp",
-      "bytes": 196246,
-      "sha256": "7751babbb4d753065f2893159c87c138cc86b7effe5afab783a9397ee6f2e1fb",
+      "bytes": 312300,
+      "sha256": "72a752415778433d9a41623ff8ab2cc274602f3791540c788623110f52ead10e",
       "avifFile": "powered-down-desktop-dark-2x.avif",
-      "avifBytes": 106980,
-      "avifSha256": "3cd12b23ed7acc59b06b46364893665fba3ceeef88e09f638c8c917ca8ea50f2",
+      "avifBytes": 208246,
+      "avifSha256": "6511c2017e657fb6523dc29cc56b43a5f0d0f51af26be704d7d6abd18458dcf2",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.52,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 18,
+          "meanAbsoluteChannelError": 0.8087,
+          "p99AbsoluteChannelError": 11,
+          "maxAbsoluteChannelError": 78,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4271,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 13,
+          "meanAbsoluteChannelError": 0.5251,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1277,7 +1445,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -1289,74 +1457,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -1385,7 +1560,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 2560,
+          "height": 1480,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            2560,
+            1480
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -1447,50 +1633,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 191.21,
-            "right": 1127.26,
-            "top": 110.436,
-            "bottom": 641.445,
+            "left": 346.948,
+            "right": 955.13,
+            "top": 202.727,
+            "bottom": 540.571,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 217.068,
-            "right": 1105.481,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 7268
+            "left": 363.287,
+            "right": 940.514,
+            "top": 117.502,
+            "bottom": 580.66,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 183.34,
-            "right": 1126.004,
-            "top": 77.683,
-            "bottom": 666.8,
+            "left": 342.795,
+            "right": 955.382,
+            "top": 181.867,
+            "bottom": 561.255,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 263.149,
-            "bottom": 501.583,
+            "left": 298.572,
+            "right": 1025.811,
+            "top": 298.428,
+            "bottom": 451.974,
             "count": 32
+          },
+          "housing": {
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.67,
+            "bottom": 719.204,
+            "count": 8
           }
         },
         "all": {
-          "left": 128.975,
-          "right": 1258.625,
-          "top": 55.33,
-          "bottom": 671.206,
-          "count": 22692
+          "left": 158.445,
+          "right": 1129.743,
+          "top": 117.502,
+          "bottom": 719.204,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-3x.png",
-        "sha256": "084ded86250f44d53c9371d89f3d2944a91da9441f3f1474892717c63feaa860"
+        "sha256": "bcaf56272cc84f68980a059b703da1ebf69a6de9c1c03211af0a3a8e0320ced3"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-3x.png",
-        "runningDetailSha256": "435e5db36555922767fd4906f32a2840337759ceacf064f5aa96f61b9387b0c2",
+        "runningDetailSha256": "5f5a0e0de8cd766039a5e868740263667a3310e08ab6e18f3bfc937a1ed2cad8",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -1510,27 +1703,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 3840,
+            "height": 2220,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              3840,
+              2220
+            ]
+          }
         }
       },
       "file": "powered-down-desktop-dark-3x.webp",
-      "bytes": 328828,
-      "sha256": "7b9087727d75d2fb21bb704d9a235983f1679c474ab4d366ac7148f2af9c449a",
+      "bytes": 550202,
+      "sha256": "7dac3e9853a45b4760ba2397b4148dc4f8f7e07919c336f2896115755b71715f",
       "avifFile": "powered-down-desktop-dark-3x.avif",
-      "avifBytes": 179659,
-      "avifSha256": "e1b3673f40ffbf131a20131081c6cad0b9b29b1c7def0b929b1c52bbdda80811",
+      "avifBytes": 359369,
+      "avifSha256": "4fe182b019caea6e8da90cc3f152c9fa04b6cea4af9adce86fd82b4d4d0a0f16",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.4787,
-          "p99AbsoluteChannelError": 3,
-          "maxAbsoluteChannelError": 19,
+          "meanAbsoluteChannelError": 0.6961,
+          "p99AbsoluteChannelError": 9,
+          "maxAbsoluteChannelError": 73,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4053,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 11,
+          "meanAbsoluteChannelError": 0.4941,
+          "p99AbsoluteChannelError": 3,
+          "maxAbsoluteChannelError": 38,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1541,7 +1745,7 @@
         "height": 740,
         "aspect": 1.7297297297297298,
         "fov": 14.21212087816994,
-        "distance": 26.090933810998497,
+        "distance": 40.25789775214511,
         "geometryBounds": {
           "viewport": {
             "width": 1280,
@@ -1553,74 +1757,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 191.21,
-              "right": 1127.26,
-              "top": 110.436,
-              "bottom": 641.445,
+              "left": 346.948,
+              "right": 955.13,
+              "top": 202.727,
+              "bottom": 540.571,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 217.068,
-              "right": 1105.481,
-              "top": 55.33,
-              "bottom": 671.206,
-              "count": 7268
+              "left": 363.287,
+              "right": 940.514,
+              "top": 117.502,
+              "bottom": 580.66,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 183.34,
-              "right": 1126.004,
-              "top": 77.683,
-              "bottom": 666.8,
+              "left": 342.795,
+              "right": 955.382,
+              "top": 181.867,
+              "bottom": 561.255,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 128.975,
-              "right": 1258.625,
-              "top": 263.149,
-              "bottom": 501.583,
+              "left": 298.572,
+              "right": 1025.811,
+              "top": 298.428,
+              "bottom": 451.974,
               "count": 32
+            },
+            "housing": {
+              "left": 158.445,
+              "right": 1129.743,
+              "top": 117.67,
+              "bottom": 719.204,
+              "count": 8
             }
           },
           "all": {
-            "left": 128.975,
-            "right": 1258.625,
-            "top": 55.33,
-            "bottom": 671.206,
-            "count": 22692
+            "left": 158.445,
+            "right": 1129.743,
+            "top": 117.502,
+            "bottom": 719.204,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            292.0944221923237,
-            312.5500376851259
+            409.46045132414866,
+            331.9307960884796
           ],
           [
-            325.9675227517355,
-            269.90046696598023
+            434.89479820679776,
+            304.6216190686646
           ],
           [
-            485.1354039612144,
-            297.07319039250837
+            538.6996871083455,
+            322.29698187713075
           ],
           [
-            587.427981862731,
-            326.43457488409933
+            605.8291130539168,
+            341.683240074473
           ],
           [
-            693.591888039897,
-            338.2623128150366
+            674.5988527004508,
+            349.5101907372986
           ],
           [
-            804.0335468871331,
-            336.6178673905192
+            745.1447540776699,
+            348.60220552185507
           ],
           [
-            918.9766043400066,
-            342.02169335174494
+            817.5202427624081,
+            352.19665838994126
           ],
           [
-            1038.6767244944244,
-            350.5637253652521
+            891.787352558273,
+            357.7248712222046
           ]
         ]
       },
@@ -1649,7 +1860,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 3840,
+          "height": 2220,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            3840,
+            2220
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -1711,50 +1933,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-1x.png",
-        "sha256": "d0877d2760448d9c0bf5015e1c3e6184f2c0d5e13736561ec6ae0b1f08c7483d"
+        "sha256": "ac40c044ffb735cdc68fcb8d29eac02678925d60f7376fe69e96f4b4bf6becb6"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-1x.png",
-        "runningDetailSha256": "4297d4c3a48221a2bdf8ce150d255e5fc946dc7a5b41a5dcc06d1fc055b0f457",
+        "runningDetailSha256": "68e74a0cda18dcbd7170b2816cbf067521abeff9da72883b648256ba6f476af0",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -1774,27 +2003,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 500,
+            "height": 280,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              500,
+              280
+            ]
+          }
         }
       },
       "file": "powered-down-phone-1x.webp",
-      "bytes": 25856,
-      "sha256": "7798dc2c56a23cd3e534e1fedecc1020b09a01a869ee00be1ef98da9706a9c73",
+      "bytes": 24820,
+      "sha256": "c9dccf7967bc49eb5edb3c0b5c1a03b32024e516a2fbcabf5255582368985b27",
       "avifFile": "powered-down-phone-1x.avif",
-      "avifBytes": 20474,
-      "avifSha256": "de977f204be16ae513c1c0e525465a72e443c4793c56aee9436b9e2766f89a33",
+      "avifBytes": 19327,
+      "avifSha256": "e06e5e5b4edbcc424d68b33295c8e717970247b83c27b1fa26dfa5b32ee16bac",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.8941,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 33,
+          "meanAbsoluteChannelError": 1.4589,
+          "p99AbsoluteChannelError": 16,
+          "maxAbsoluteChannelError": 61,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3951,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 21,
+          "meanAbsoluteChannelError": 0.4653,
+          "p99AbsoluteChannelError": 6,
+          "maxAbsoluteChannelError": 29,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1805,7 +2045,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -1817,74 +2057,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -1913,7 +2160,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 500,
+          "height": 280,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            500,
+            280
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -1975,50 +2233,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-2x.png",
-        "sha256": "b87b4ae86f701abfda3abc3a8854b2f8e857ea0e2c3a573c706b6a476e1f4172"
+        "sha256": "c55b5ade49c56da75c9d17550781504b401befeb1d172f91fdbc3a4b6a2ef27d"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-2x.png",
-        "runningDetailSha256": "ffb42501d1cd1c276726afbbda88e714cf43f20c1316b8badff25c663c46aec9",
+        "runningDetailSha256": "827eb58ca1c55473ae80b67ef925b175a2383720732df201faec361bbe4b684c",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2038,27 +2303,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1000,
+            "height": 560,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1000,
+              560
+            ]
+          }
         }
       },
       "file": "powered-down-phone-2x.webp",
-      "bytes": 89200,
-      "sha256": "26b54906678991d0e1e3e7134e10a99ffc0ea462a51df10eb7e5b3b5348535e8",
+      "bytes": 73168,
+      "sha256": "fde95117274a49d669513de49963f111ba880399ded380a40b164b114a7aa40a",
       "avifFile": "powered-down-phone-2x.avif",
-      "avifBytes": 69454,
-      "avifSha256": "ef06eec52f37236270741f13c9455b02878b55fbb8473e677b2c8957eb0f3b24",
+      "avifBytes": 55720,
+      "avifSha256": "a34096bfff519ebea900be5fbbf9a771a49efd4eb1e067c5eef893405ae34c5c",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.8641,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 27,
+          "meanAbsoluteChannelError": 1.2307,
+          "p99AbsoluteChannelError": 14,
+          "maxAbsoluteChannelError": 69,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3614,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 18,
+          "meanAbsoluteChannelError": 0.3606,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 28,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2069,7 +2345,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -2081,74 +2357,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -2177,7 +2460,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1000,
+          "height": 560,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1000,
+            560
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -2239,50 +2533,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-3x.png",
-        "sha256": "5d7c50583dc29a5539f238bc026a89fc9e6f30ddf7e2874ab38522e6c2a93b01"
+        "sha256": "6a2d07648ef35bc2c25c17b79699c6884edf4a2252fa74a1d14246d9784ae9fe"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-3x.png",
-        "runningDetailSha256": "4c20628d5736963f6829ad2865592779421728c7541c46322e6e44db3606f97e",
+        "runningDetailSha256": "6a8f8513b5c5a1d4513a29395840160b376d7c24614d89f9304fe88ff01dd158",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2302,27 +2603,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1500,
+            "height": 840,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1500,
+              840
+            ]
+          }
         }
       },
       "file": "powered-down-phone-3x.webp",
-      "bytes": 179804,
-      "sha256": "52a39e1bc99f81d5b1bfc8dcbcfaae8176f6a5475027813a2c2fa1321e609dca",
+      "bytes": 139232,
+      "sha256": "466c44ce6c340058a6405072728ca5d7046e43ec156caf277879d50d4bad6140",
       "avifFile": "powered-down-phone-3x.avif",
-      "avifBytes": 137081,
-      "avifSha256": "e4cdbb3e386093072e0fcb5b8a25218e78fe86a3b3060f3e698a85a20618d924",
+      "avifBytes": 102125,
+      "avifSha256": "5935005721b42c73581d0f00ce7824d3e37b180be5c0bf35b3de0ed578ff0018",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.8317,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 23,
+          "meanAbsoluteChannelError": 1.1109,
+          "p99AbsoluteChannelError": 12,
+          "maxAbsoluteChannelError": 71,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3197,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 20,
+          "meanAbsoluteChannelError": 0.3127,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2333,7 +2645,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -2345,74 +2657,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -2441,7 +2760,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1500,
+          "height": 840,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1500,
+            840
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -2503,50 +2833,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-1x.png",
-        "sha256": "5a25aaa74d1abfc3b077a0fda928059fa1aa91ba0e294eddbbc4e3de25dbcbd9"
+        "sha256": "376360bcdbf12029e9b28f209e4c141883ccf7b1a0ceac602ae73df3fe1b9028"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-1x.png",
-        "runningDetailSha256": "a9253f1f02053ebc2fa4ddb8a831a7f3577f022c35c3b94af6f0b561ffcffb1f",
+        "runningDetailSha256": "8532ccd74446906e75b96189c9ef581d63e624ce14aa126974fefd321c457d32",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2566,27 +2903,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 500,
+            "height": 280,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              500,
+              280
+            ]
+          }
         }
       },
       "file": "powered-down-phone-dark-1x.webp",
-      "bytes": 10116,
-      "sha256": "16ba98a2b49e8227e4df2ba44659984bd0f105333c5fa7fc1dc0381d8bcec229",
+      "bytes": 17182,
+      "sha256": "00121a29efae4594d75f207ad540481721ee07f0a7a1a035e77d280910e49df5",
       "avifFile": "powered-down-phone-dark-1x.avif",
-      "avifBytes": 7472,
-      "avifSha256": "0100243801b23c24e0a32865aa7e0d4eb315354fe79deed8fe4ce674748c402c",
+      "avifBytes": 13592,
+      "avifSha256": "3dae17c9621632759c799acfcd6b2e587b424a27684169fb8de0f33a537868f8",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.5893,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 34,
+          "meanAbsoluteChannelError": 1.0618,
+          "p99AbsoluteChannelError": 15,
+          "maxAbsoluteChannelError": 79,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4449,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 8,
+          "meanAbsoluteChannelError": 0.5524,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2597,7 +2945,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -2609,74 +2957,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -2705,7 +3060,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 500,
+          "height": 280,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            500,
+            280
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -2767,50 +3133,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-2x.png",
-        "sha256": "377512a06d5a2ca37dcb4071356381aa5919965816e608419f4abd2c02fa3eca"
+        "sha256": "9a6bebdacb7e4926a06fd8092029d84df5297fea1fff55dc0c4c0eeef6c09120"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-2x.png",
-        "runningDetailSha256": "5cbf0a82fec11ab5a405432e7e7d6e555f391a4ad37edf39d1190e18861e364b",
+        "runningDetailSha256": "1a33e2b2d634042fafdb401b133810b37ef61df9fa8a356e99c8ed9e7377994b",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2830,27 +3203,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1000,
+            "height": 560,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1000,
+              560
+            ]
+          }
         }
       },
       "file": "powered-down-phone-dark-2x.webp",
-      "bytes": 31218,
-      "sha256": "9a9276b65aa7525c2104c368a5904fbe3934a880823712684d6684e38609a491",
+      "bytes": 50194,
+      "sha256": "b23e88ee471ded212ff410ecc59763d69c6d2e4120eb8f52aea1d020b24566ef",
       "avifFile": "powered-down-phone-dark-2x.avif",
-      "avifBytes": 19908,
-      "avifSha256": "ef19ae45e2d734f7603cff639db7f7b0a2e8493bba759aa77ae4c510f5cbae52",
+      "avifBytes": 36608,
+      "avifSha256": "3c14ecf7a0d387dc311a3e649063f6ad32ee7aa1e486ac7380a39c7ecadc9da8",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.5502,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 27,
+          "meanAbsoluteChannelError": 0.9322,
+          "p99AbsoluteChannelError": 14,
+          "maxAbsoluteChannelError": 78,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4285,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 9,
+          "meanAbsoluteChannelError": 0.4936,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2861,7 +3245,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -2873,74 +3257,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -2969,7 +3360,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1000,
+          "height": 560,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1000,
+            560
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
@@ -3031,50 +3433,57 @@
         "recurrenceCount": 1,
         "components": {
           "nodes": {
-            "left": 82.877,
-            "right": 410.32,
-            "top": 46.308,
-            "bottom": 233.775,
+            "left": 151.993,
+            "right": 345.723,
+            "top": 84,
+            "bottom": 195.093,
             "count": 13344
           },
           "routeControlPoints": {
-            "left": 90.64,
-            "right": 404.913,
-            "top": 23.88,
-            "bottom": 233.536,
-            "count": 7268
+            "left": 156.179,
+            "right": 342.497,
+            "top": 58.931,
+            "bottom": 201.164,
+            "count": 90025
           },
           "contourVertices": {
-            "left": 84.904,
-            "right": 406.138,
-            "top": 37.459,
-            "bottom": 244.788,
+            "left": 153.488,
+            "right": 343.055,
+            "top": 79.242,
+            "bottom": 202.078,
             "count": 2048
           },
           "carrierEnvelope": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 98.427,
-            "bottom": 184.124,
+            "left": 119.742,
+            "right": 384.186,
+            "top": 115.022,
+            "bottom": 166.01,
             "count": 32
+          },
+          "housing": {
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 8
           }
         },
         "all": {
-          "left": 32.424,
-          "right": 479.519,
-          "top": 23.88,
-          "bottom": 244.788,
-          "count": 22692
+          "left": 88.643,
+          "right": 398.022,
+          "top": 38.29,
+          "bottom": 259.748,
+          "count": 105457
         }
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-3x.png",
-        "sha256": "1cb492b9e0084991d72ffe3ea5a3be7d90bfedb21af95d9d2725091594ddb4c1"
+        "sha256": "767781f698cba8b1276c558903c2be937a3616c38491e5a3d757bf3d63893b58"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-3x.png",
-        "runningDetailSha256": "87eb716bfdec2807076544b1e6e6d5f9d79c3717ddcbc87b5d3124a47b3bfcf4",
+        "runningDetailSha256": "3697e2834a844a90fe1950ed93c6be91af89c413b48463a653746f872b06896b",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -3094,27 +3503,38 @@
             ],
             "maxTargetDimension": 8192
           },
-          "transmissionTarget": null
+          "transmissionTarget": {
+            "width": 1500,
+            "height": 840,
+            "samples": 4,
+            "activeSamples": 4,
+            "viewport": [
+              0,
+              0,
+              1500,
+              840
+            ]
+          }
         }
       },
       "file": "powered-down-phone-dark-3x.webp",
-      "bytes": 59326,
-      "sha256": "08ec6a4a8ee75ca826a109946fd05790430d3adc3425a575524303e262a396a2",
+      "bytes": 92464,
+      "sha256": "014310517a3d0397a792ce95039ddacb50204ebfe11430616865555eab8bfdd0",
       "avifFile": "powered-down-phone-dark-3x.avif",
-      "avifBytes": 36224,
-      "avifSha256": "0fb4abd03e3a7ae65f29f6a8465cc494a7e041796120c4fb2d5160d420c2476a",
+      "avifBytes": 65285,
+      "avifSha256": "1847de6631d513e90cd8439932ada66300ed29bb9950b71bd8132d8f1ccc5b4e",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.5128,
-          "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 25,
+          "meanAbsoluteChannelError": 0.8251,
+          "p99AbsoluteChannelError": 12,
+          "maxAbsoluteChannelError": 73,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4233,
-          "p99AbsoluteChannelError": 2,
-          "maxAbsoluteChannelError": 13,
+          "meanAbsoluteChannelError": 0.4613,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -3125,7 +3545,7 @@
         "height": 280,
         "aspect": 1.7857142857142858,
         "fov": 15.589089399506651,
-        "distance": 25.393779491318018,
+        "distance": 42.65096995510775,
         "geometryBounds": {
           "viewport": {
             "width": 500,
@@ -3137,74 +3557,81 @@
           "recurrenceCount": 1,
           "components": {
             "nodes": {
-              "left": 82.877,
-              "right": 410.32,
-              "top": 46.308,
-              "bottom": 233.775,
+              "left": 151.993,
+              "right": 345.723,
+              "top": 84,
+              "bottom": 195.093,
               "count": 13344
             },
             "routeControlPoints": {
-              "left": 90.64,
-              "right": 404.913,
-              "top": 23.88,
-              "bottom": 233.536,
-              "count": 7268
+              "left": 156.179,
+              "right": 342.497,
+              "top": 58.931,
+              "bottom": 201.164,
+              "count": 90025
             },
             "contourVertices": {
-              "left": 84.904,
-              "right": 406.138,
-              "top": 37.459,
-              "bottom": 244.788,
+              "left": 153.488,
+              "right": 343.055,
+              "top": 79.242,
+              "bottom": 202.078,
               "count": 2048
             },
             "carrierEnvelope": {
-              "left": 32.424,
-              "right": 479.519,
-              "top": 98.427,
-              "bottom": 184.124,
+              "left": 119.742,
+              "right": 384.186,
+              "top": 115.022,
+              "bottom": 166.01,
               "count": 32
+            },
+            "housing": {
+              "left": 88.643,
+              "right": 398.022,
+              "top": 38.29,
+              "bottom": 259.748,
+              "count": 8
             }
           },
           "all": {
-            "left": 32.424,
-            "right": 479.519,
-            "top": 23.88,
-            "bottom": 244.788,
-            "count": 22692
+            "left": 88.643,
+            "right": 398.022,
+            "top": 38.29,
+            "bottom": 259.748,
+            "count": 105457
           }
         },
         "landmarks": [
           [
-            104.16678113958572,
-            118.46475685059374
+            162.65006112264624,
+            127.10100354700322
           ],
           [
-            131.0182737580669,
-            113.07256022969858
+            179.8738143059036,
+            124.1293390065705
           ],
           [
-            186.57164395292543,
-            114.567314335731
+            212.23320338786513,
+            124.85675608445624
           ],
           [
-            228.80307112925337,
-            125.21858435795173
+            237.39189214271335,
+            131.20789224539374
           ],
           [
-            271.30225219085276,
-            129.78149315971046
+            262.6452960431756,
+            133.93416043726296
           ],
           [
-            314.3394136265835,
-            129.85365254623903
+            288.08792800920844,
+            133.9935207737798
           ],
           [
-            357.8672937006115,
-            132.21235396301998
+            313.7018547924869,
+            135.40094610698318
           ],
           [
-            401.8592296411351,
-            135.51945956123438
+            339.4766302810682,
+            137.3600309889218
           ]
         ]
       },
@@ -3233,7 +3660,18 @@
         },
         "transmissionScale": 1,
         "visibleTransmissivePanels": 0,
-        "transmissionTarget": null,
+        "transmissionTarget": {
+          "width": 1500,
+          "height": 840,
+          "samples": 4,
+          "activeSamples": 4,
+          "viewport": [
+            0,
+            0,
+            1500,
+            840
+          ]
+        },
         "contextAttributes": {
           "alpha": true,
           "antialias": true,
