@@ -2,6 +2,13 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
+export async function assertSuppressedOpacityOrder(input,settled) {
+  if(!settled.suppressed)return;
+  const captured=await input.evaluate(panel=>({animating:panel.contextAuditAnimatingAtTransitionEnd,elapsed:panel.contextAuditElapsedAtTransitionEnd}));
+  if(!captured.animating)assert.ok(captured.elapsed>=settled.duration+250,
+    'an opacity event delivered after timer completion cannot precede the fallback deadline');
+}
+
 // Keep the embedded viewer's gesture/keyboard gates after the homepage changed.
 // Source-only runs use the canonical publication host fixture; finished bundles
 // must use a real rendered article with its own source and export contracts.

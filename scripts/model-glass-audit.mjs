@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,contextTransitionAdvances,assertSuppressedOpacityOrder} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
 const host=await articleHost(base,{componentFixture:true});
@@ -291,11 +291,7 @@ async function missingTransitionEndFallsBack(root) {
   assert.equal(settled.animating,false);
   assert.ok(settled.elapsed>=settled.duration+200,'normal-duration pane waits for the delayed fallback after its CSS transition');
   assert.equal(settled.handled,0,'opacity transitionend never reaches the pane completion listener');
-  if(settled.suppressed) {
-    const captured=await input.evaluate(panel=>({animating:panel.contextAuditAnimatingAtTransitionEnd,elapsed:panel.contextAuditElapsedAtTransitionEnd}));
-    if(!captured.animating)assert.ok(captured.elapsed>=settled.duration+250,
-      'an opacity event delivered after timer completion cannot precede the fallback deadline');
-  }
+  await assertSuppressedOpacityOrder(input,settled);
   await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
   } finally {
     await input.evaluate(panel=>{
