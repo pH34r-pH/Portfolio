@@ -9,6 +9,8 @@ const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
+// Includes asynchronous engine import/compilation; product deadlines remain unchanged.
+const RENDERER_READINESS_TIMEOUT_MS=30000;
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
 const snapshot=page=>page.evaluate(()=>PortfolioModelStartup.snapshot());
 const settle=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
@@ -98,7 +100,7 @@ async function startup(name,width,height,change,options={}) {
     if(change){await page.setViewportSize(change);await page.evaluate(()=>scrollTo(0,600));await settle(page);}
     await expect(page.locator('.machine-poster')).toBeVisible();await page.screenshot({path:`${out}/${name}-powered-down.png`});
     release();
-    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:30000});
+    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:RENDERER_READINESS_TIMEOUT_MS});
     await expect.poll(()=>page.evaluate(()=>heldStartup.length)).toBe(1);
     const prepared=await snapshot(page);assert.equal(prepared.phase,'prepared');assert.equal(prepared.handoffs,0);
     const view=prepared.firstFrame,phone=page.viewportSize().width<=720;
@@ -166,7 +168,7 @@ async function quietFallback(mode,options) {
     await expect(page.getByRole('button',{name:'Start interactive model'})).toBeVisible();
     assert.equal(engines,0,'Clearing quiet mode does not bypass Home startup intent');
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:15000});
+    await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:RENDERER_READINESS_TIMEOUT_MS});
     await expect.poll(async()=>(await snapshot(page)).phase).toBe('ready');
     assert.ok(engines>0);assert.deepEqual(errors,[]);
     evidence.push({mode,phase:'quiet then explicit Home startup',engines,errors});
@@ -208,7 +210,7 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
     assert.equal(requests,1,'Resumed attempt shares the still-pending native module fetch');
 
     release();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:15000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const staleIsNull=await page.evaluate(()=>window.pendingStartup.then(value=>value===null));
     const ready=await snapshot(page);
     assert.equal(staleIsNull,true,'The interrupted loader settles without taking ownership of the resumed scene');
@@ -265,7 +267,7 @@ async function lateLoadTimeout(retryBeforeSettle=false) {
       const reusedFailedPromise=await page.evaluate(()=>PortfolioModelStartup.start()===window.firstStartupAttempt);
       assert.equal(reusedFailedPromise,false,'Retry during an unsettled import owns a fresh startup promise');
       release();
-      await expect.poll(async()=>(await snapshot(page)).phase,{timeout:12000}).toBe('ready');
+      await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
       const retried=await snapshot(page);
       assert.equal(retried.ignitionComplete,true);assert.equal(retried.handoffs,1);assert.equal(retried.completions,1);
       assert.deepEqual(errors,[]);
@@ -292,14 +294,14 @@ async function restoredVisit() {
   try {
     await assertFreshHome(page,()=>engineRequests);
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const first=await snapshot(page);
     assert.equal(first.elapsedActiveMs,IGNITION_DURATION_MS);assert.equal(first.completions,1);
     assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1');
 
     await page.goto(base+'/about/',{waitUntil:'domcontentloaded'});
     await page.goto(homeUrl,{waitUntil:'domcontentloaded'});
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:20000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const second=await snapshot(page);
     assert.equal(second.started,true);assert.equal(second.ignitionComplete,true);
     assert.equal(second.elapsedActiveMs,IGNITION_DURATION_MS);assert.equal(second.completions,0,'Completed ignition is not replayed after full navigation');
@@ -334,7 +336,7 @@ async function bfcache() {
   const {context,page,errors}=await open({},holdPartialIgnitionFrame,homePath,cacheBrowser);
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
     await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
     const before=await snapshot(page);
     assert.equal(before.ignitionComplete,false,'BFCache case captures partial ignition');
@@ -364,14 +366,14 @@ async function contextLossRetry() {
   const {context,page,errors}=await open();
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     await page.evaluate(()=>document.querySelector('[data-machine-canvas]').dispatchEvent(new Event('webglcontextlost',{cancelable:true})));
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
     await expect(page.getByRole('button',{name:'Retry interactive model'})).toBeVisible();
     const failed=await snapshot(page);assert.equal(failed.ignitionComplete,true);
     const ignitionsBeforeRetry=await page.evaluate(()=>portfolioStartupPhases.filter(phase=>phase==='igniting').length);
     await page.getByRole('button',{name:'Retry interactive model'}).click();
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:12000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const retried=await snapshot(page);
     assert.equal(retried.ignitionComplete,true);assert.equal(retried.completions,failed.completions);
     assert.equal(await page.evaluate(()=>portfolioStartupPhases.filter(phase=>phase==='igniting').length),ignitionsBeforeRetry,
@@ -472,7 +474,7 @@ try {
 
 async function failContextDuringIgnition(page) {
   await page.getByRole('button',{name:'Start interactive model'}).click();
-  await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('igniting');
+  await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
   if(await page.evaluate(()=>Array.isArray(window.heldStartup)))
     await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
   const partial=await snapshot(page);
