@@ -19,9 +19,13 @@ if (root) {
   quietButton.addEventListener('click',()=>loadLM().catch(()=>{quietButton.textContent='Retry language model';}));
   syncQuietButton();
 
-  startup.onStart = async () => {
+  startup.onStart = async ({retained=false}={}) => {
     const controller=await loadLM();
-    return controller?.boot() ?? null;
+    const scene=await controller?.boot() ?? null;
+    // Explicit Start reveals the prepared canvas. Restoring a prior session
+    // preserves the reader's scroll position and waits for visible startup.
+    if(scene&&!retained)controller.stage.scrollIntoView({block:'nearest',behavior:'instant'});
+    return scene;
   };
 
   startup.onQuietChange = quiet => {

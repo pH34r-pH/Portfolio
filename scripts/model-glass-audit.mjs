@@ -267,10 +267,12 @@ async function missingTransitionEndFallsBack(root) {
   await input.evaluate(panel=>{
     panel.contextAuditSuppressedTransitionEnds=0;
     panel.contextAuditAnimatingAtTransitionEnd=null;
+    panel.contextAuditElapsedAtTransitionEnd=null;
     panel.contextAuditSuppressTransitionEnd=event=>{
       if(event.target!==panel||event.propertyName!=='opacity')return;
       panel.contextAuditSuppressedTransitionEnds+=1;
       panel.contextAuditAnimatingAtTransitionEnd=panel.contextAnimating;
+      panel.contextAuditElapsedAtTransitionEnd=performance.now()-panel.contextTransitionStartedAt;
       event.stopImmediatePropagation();
     };
     panel.addEventListener('transitionend',panel.contextAuditSuppressTransitionEnd,true);
@@ -289,8 +291,11 @@ async function missingTransitionEndFallsBack(root) {
   assert.equal(settled.animating,false);
   assert.ok(settled.elapsed>=settled.duration+200,'normal-duration pane waits for the delayed fallback after its CSS transition');
   assert.equal(settled.handled,0,'opacity transitionend never reaches the pane completion listener');
-  if(settled.suppressed)assert.equal(await input.evaluate(panel=>panel.contextAuditAnimatingAtTransitionEnd),true,
-    'captured opacity transitionend is stopped while the pane is still animating');
+  if(settled.suppressed) {
+    const captured=await input.evaluate(panel=>({animating:panel.contextAuditAnimatingAtTransitionEnd,elapsed:panel.contextAuditElapsedAtTransitionEnd}));
+    if(!captured.animating)assert.ok(captured.elapsed>=settled.duration+250,
+      'an opacity event delivered after timer completion cannot precede the fallback deadline');
+  }
   await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
   } finally {
     await input.evaluate(panel=>{
