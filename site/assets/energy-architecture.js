@@ -113,8 +113,10 @@ export class EnergyArchitecture {
       .filter(pane => {const rect = pane.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && rect.bottom > this.bounds.top && rect.top < this.bounds.bottom;}).slice(0, 2);
     const frames = panes.map(pane => this.paneFrame(pane));
+    // Resize observers can update the camera after the DOM bounds settle.
+    // Rebuild the screen-space frame when that projection catches up.
     const key = JSON.stringify([this.bounds.left, this.bounds.top, this.bounds.width, this.bounds.height,
-      camera.fov, ...camera.position.toArray(), ...camera.quaternion.toArray(), frames]);
+      camera.fov, camera.projectionMatrix.elements, ...camera.position.toArray(), ...camera.quaternion.toArray(), frames]);
     if (key === this.lastLayout) return;
     this.lastLayout = key;
     this.sections.forEach((section, index) => frames[index] ? this.layoutScreen(section, frames[index]) : this.hide(section));

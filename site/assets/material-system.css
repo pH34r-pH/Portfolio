@@ -256,7 +256,7 @@ html body .article-model-machine[data-model-reader-layout=true] .machine-glass-p
 .material-corner-br { bottom:var(--material-joint-offset); right:var(--material-joint-offset); rotate:180deg; }
 .material-corner-bl { bottom:var(--material-joint-offset); left:var(--material-joint-offset); rotate:270deg; }
 /* Native homepage hardware provides the single energy perimeter. */
-[data-background-backend=native] .digital-pane .material-edge { display:none; }
+[data-background-backend=native]:not([data-background-motion=static]) .digital-pane .material-edge { display:none; }
 [data-background-motion=paused] .material-edge::before { animation-play-state:paused; }
 @keyframes glass-edge-breath { 0%,100% { opacity:.65; } 50% { opacity:.76; } }
 @media(max-width:720px) {

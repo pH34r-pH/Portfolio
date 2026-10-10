@@ -80,6 +80,7 @@ const surfaceObserver = new MutationObserver(records => {
 });
 surfaceObserver.observe(document.body, {childList: true, subtree: true});
 for (const type of ['scroll', 'resize', 'pageshow']) addEventListener(type, scheduleLighting, {passive: true});
+document.querySelector('[data-digital-home]')?.addEventListener('portfolio:reading', scheduleLighting);
 document.addEventListener('visibilitychange', scheduleLighting);
 addEventListener('pagehide', () => {
   cancelAnimationFrame(raf);
