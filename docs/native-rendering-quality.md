@@ -47,6 +47,35 @@ The user requested peak quality before byte optimization: 20 MB is observational
 warning headroom, with no hard page or media byte ceiling. Accessibility, source
 identity, layout stability and actual inference remain required.
 
+## Encased renderer qualification
+
+The encased article fixture keeps the same 1,668 octahedral nodes, 3,601 curved
+routes (24 segments each), 101 optical guides (32 by 6 tube segments plus a
+matching halo), eight pairs of layer contours, and 23 housing mesh batches in
+both refraction and lightweight modes. Lightweight switches off transmission
+for the enclosure, crystal nodes, and projected content panes; it retains their
+geometry, native DPR, MSAA, and full-resolution rendering targets. The projected
+panes reuse the housing's active 128-pixel-face PMREM (384 by 512 CubeUV atlas).
+Diagnostics distinguish shared illumination from a privately owned environment.
+
+The old flat-scene limits of 32/24 draw calls and 180,000/30,000 rendered
+triangles do not describe this assembly. Draw calls and triangles are now
+observations, with finite positive values required, rather than fixed aesthetic
+ceilings. They include transmission and back-face passes, and vary with visible
+panes, camera culling, and renderer capabilities. Existing audits assert the
+actual retained geometry and material contract instead of reducing detail to
+fit those limits. All interaction, accessibility, fallback, alignment, native
+resolution, and multisampling checks remain qualification gates.
+
+On October 10, the local Chromium WebGL2 / ANGLE SwiftShader software fixture
+at 1440 by 1100, DPR 1, frame 0, with three projected panes reported 71 draw calls / 150,490
+triangles with refraction and 45 / 121,100 in lightweight. These are rendered
+pass counts, not unique geometry or a claim of display frame rate. The existing
+glass audit writes `*-quality-costs.json` for both modes before its quality
+assertions and `*-profile.json` before profile assertions; the machine audit
+writes `*-render-diagnostics.json` before renderer assertions. Retain those
+receipts when a later assertion fails so cost changes remain reviewable.
+
 ## Local observations, October 9, 2026
 
 Installed Edge 154.0.4258.62, NVIDIA GTX 1070 / Pascal, WebGPU, 4x MSAA.

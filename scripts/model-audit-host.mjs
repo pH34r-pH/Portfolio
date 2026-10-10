@@ -2,6 +2,42 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
+// The encased scene retains its physical housing and optical routes in both
+// modes. Renderer totals include transmission/back-face passes and are reported
+// as evidence; legacy flat-scene draw/triangle ceilings are not quality goals.
+export function assertEncasedRender(diagnostics) {
+  const {appearance,quality,resolution,drawCalls,triangles,glass}=diagnostics;
+  assert.equal(appearance.style,'encased-crystal-v1');
+  assert.equal(diagnostics.nodes,1668);assert.equal(diagnostics.edges,3601);
+  assert.equal(appearance.pointGeometry,'OctahedronGeometry');assert.equal(appearance.pointRadius,.043);
+  const geometry=appearance.geometry,routes=appearance.routes;
+  assert.equal(geometry.nodes.instances,1668);assert.equal(geometry.nodes.triangles,1668*8);
+  assert.equal(geometry.housing.length,23,'All encased housing mesh batches are retained');
+  assert.equal(routes.curvedRoutes,3601);assert.equal(routes.segmentsPerRoute,24);
+  assert.equal(geometry.routes.segments,3601*24,'Every scientific edge retains its sampled curve');
+  assert.equal(routes.featuredOpticalGuides,101);
+  assert.equal(geometry.guideCore.triangles,101*32*6*2,'Featured routes retain the full tube tessellation');
+  assert.deepEqual(geometry.guideHalo,geometry.guideCore,'Optical halos retain the complete guide geometry');
+  assert.equal(geometry.contours.segments,8*2*64,'Article fixture retains every layer contour');
+  for(const component of [geometry.nodes,...geometry.housing,geometry.routes,geometry.guideCore,geometry.guideHalo,geometry.contours]) {
+    for(const [key,value] of Object.entries(component).filter(([key])=>key!=='type'))
+      assert.ok(Number.isSafeInteger(value)&&value>=0,`Finite retained geometry ${key}: ${value}`);
+    assert.ok(component.positions>0&&component.instances>0);
+  }
+  assert.ok(Number.isSafeInteger(drawCalls)&&drawCalls>0,`Actual render draw calls: ${drawCalls}`);
+  assert.ok(Number.isSafeInteger(triangles)&&triangles>0,`Actual rendered triangles: ${triangles}`);
+  assert.ok(['refraction','lightweight'].includes(quality.effective));
+  const lightweight=quality.effective==='lightweight';
+  assert.equal(appearance.glazingTransmission,lightweight?0:1);
+  assert.equal(appearance.nodeTransmission,lightweight?0:.18);
+  assert.equal(glass.material.transmission,lightweight?0:.99);
+  assert.equal(glass.pmremSize,128);
+  assert.deepEqual(glass.environment,{ownership:'shared',mapping:'cube-uv',width:384,height:512,faceSize:128},
+    'Panels reuse the active encased PMREM in both quality modes');
+  const expectedDPR=Math.min(resolution.nativeDPR,quality.limits.maxTargetDimension/Math.max(resolution.cssWidth,resolution.cssHeight));
+  assert.ok(Math.abs(resolution.effectiveDPR-expectedDPR)<1e-9,'Only the actual hardware dimension limit may reduce native DPR');
+}
+
 export async function beginContextTransitionSample(root,part,previous=null) {
   return root.evaluate((node,{part,previous})=>{
     const element=node.querySelector('[data-glass-panel="input"]');

@@ -29,6 +29,16 @@ function environment(T, renderer) {
   return target;
 }
 
+function environmentDiagnostics(T,active,shared,owned) {
+  const image=active?.image||{},cubeUV=Boolean(active&&active.mapping===T.CubeUVReflectionMapping);
+  const width=image.width||0,height=image.height||0,faceSize=cubeUV?height/4:0;
+  let ownership='external';
+  if(!active)ownership='none';
+  else if(active===shared)ownership='shared';
+  else if(active===owned)ownership='owned';
+  return {ownership,mapping:cubeUV?'cube-uv':active?'other':'none',width,height,faceSize};
+}
+
 // A projective DOM transform uses precisely the same world plane and camera as
 // the front glass face. No per-panel camera, screenshot texture or frame loop.
 function project(T, camera, mesh, size, viewport) {
@@ -220,7 +230,8 @@ export class SharedGlass {
         Math.abs(Math.max(...xs)-(rect.right-canvas.left)),Math.abs(Math.max(...ys)-(rect.bottom-canvas.top)),
         Math.abs((Math.max(...xs)-Math.min(...xs))-rect.width),Math.abs((Math.max(...ys)-Math.min(...ys))-rect.height));
     };
-    return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize: this.environment ? 128 : 0, lights,
+    const illumination=environmentDiagnostics(this.T,this.scene.environment,this.sharedEnvironment,this.environment?.texture);
+    return {mode: this.mode, quality:this.quality, visible: this.panels.filter(panel => panel.mesh.visible).length, pmremSize:illumination.faceSize, environment:illumination, lights,
       material: {transmission: this.material.transmission, opacity:this.material.opacity, ior: this.material.ior, thickness: this.material.thickness, roughness:this.material.roughness, tint:this.material.color.getHexString()},
       pinnedToArticleContext: this.pinnedToArticleContext === true, layoutGeneration: this.layoutGeneration,
       panels: this.panels.map(panel => ({id: panel.id, depth: panel.depth, visible: panel.mesh.visible,
