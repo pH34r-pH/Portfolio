@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "9cf87cd71b8fafcf4983a40625ec7870948bcc9c",
-    "sourceTreeSha256": "adc4e44f2d5d5dfcd265fad7efa1e0c0638430ed39fdddb11d1c2823fc149aa9",
+    "sourceCommit": "15c0ee006bc4c60a1d7620b6bb94e9747356f117",
+    "sourceTreeSha256": "96ab812cc89154c5a5d8748e590262722f0a7288b2cfb35cb1847cbf8e23c88a",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -18,26 +18,28 @@
     "servedSourceHashes": {
       "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
       "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
-      "model-scene.js": "2ad969cc444e7c803e8143e39923880aac8be55edbe36b42caaceba906f483ff",
+      "model-scene.js": "081afcdd5fede48ab0f0e037e58eef19ee6535e6e1475222665c5143adf47fb2",
       "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
       "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",
       "model-encased-routes.js": "59ad55f2ec1a6c59703858b0010cce2444725a05eddf249a0dbf3720ce801468",
       "model-quality.js": "bcfae2997f93b3705793f2788a51cd9d4576540a90d6c38babf9b5253891e8f8",
       "model-topology.js": "abda4a61a479cfa6b74ebd7cf53f64593f2edc3b02d917a4da7c26d22ed1817a",
       "model-digital.js": "7fe3def8e29d347424609e447f81326cd2c25ebbbdaffc579d3bd17b8b4112fb",
-      "model-glass.js": "a2dc22b5016c09600c559144a1c99a97781c9d2b06d750890684199504ad36db",
+      "model-glass.js": "425f89982ab3c488ff88a2126a0a3e1ebdf18498ec18d76380248c3635a71c2c",
       "model-hardware.js": "4bc54771d746bad6fca332703e17e8140af5249744497c38f29506154f2b13b6",
       "model-light.js": "93f6c619621978f528bc3518ca095eb38a8a306e4d49f00d78fbb523ae00f36e",
       "model-gestures.js": "36c8ab8b8c59383f4d2e895ef1e9890fe1b6faeba8fd8ac7f19b11b5af8695ec",
       "model-render-metrics.js": "247b786c44ab076aec9bae66ce5dd01360628c570e8c67ee1f962ad209dab4ec",
       "model-renderer.js": "178db06dc53b5851e44d81dc236c6f65e106d454cbc25143506bc5efe9f2e2fc",
       "model-background-glass.js": "cfc93b3cb3ba78ae342945028edf460f21734b997ad3486523319262d239d2f8",
-      "energy-architecture.js": "974617bfaa3a5681e52f9fcc85487505d1cf9db65dc221de2ef7732071841b07",
+      "energy-architecture.js": "89a1835f38b41803ad021c3d1ba4dfa30cad61497eb5a3ccec223ff3e8e1eb5b",
+      "energy-optics.js": "81ebfe70804d57e1293437a4a37d9a78f8a5336c95b73a0258c0051c24236ca9",
+      "steel-elbow.svg": "a459553163de396fa7fa5f0671c8ca6bbff71d32cc68d5ee1895f08d53c086a4",
       "homepage-native-model.js": "304138d99b29bcdf53aa1000492fb33d2b0d78c388afb5013e8e99bbbf56a969",
-      "homepage-motion.js": "c8c78d95e9b76b66702b733017a36b702acfe22a075ee7353ac435d771e10257",
+      "homepage-motion.js": "fa696c49a80a2b6ab228423960b25f570d1b47b3a0ab2623aae10aa167a4183f",
       "model-presentation-sampling.js": "99efc9a2f8f8045743b570af3c5096259bdb3fb9038475d8926014d9076ec01b",
-      "material-system.css": "54c16da6baefca8c21a08c5a5566fadca8f9fe40192894ee0338e57fb324c12d",
-      "material-light.js": "d2b2aa884278fe41c4f3c721abbc8ee6b2d86228289db2384e28f790a6a5f839",
+      "material-system.css": "9bee199f1d5e79609d9821f1ed5f777d5a78f7e947d34f0f5c7604396fdc49be",
+      "material-light.js": "801be236fccb03421bb6680222bdd0e1de58b1739bc0f66989ee1c2053fc5fb8",
       "homepage-screens.js": "6f9e43e7eaaed5c53f1b39e67d90567a48b7095d7f93e85f5903ddc56a25a268",
       "model-architecture.json": "9154fad0ef792acf218f23d8b187ff0ea13c6f776df10c8ae3b7af8858ccc19e",
       "model-context.js": "cbde09fb0f6edf3c7733304c92bcbc45e0345ef66050338e1b6de4e346ed81c6",
@@ -45,16 +47,16 @@
       "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
     },
     "pipelineHashes": {
-      "scripts/capture-model-posters.mjs": "247bde472591bd701963ca8fa6c66dca72cbdcd7d573e2af1d71229b235774e7",
+      "scripts/capture-model-posters.mjs": "a95c80f45d05efc780cb91e0bfa18f68b05ef56ff1f12cc86722e68eb3b4252d",
       "scripts/model-pixel-fidelity.mjs": "014e2c7baa3a713a81e8d44d42daef819ae29834957a74be13ea3ff400593f32",
       "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
       "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
       "scripts/test-model-startup.mjs": "ec8807b8172c014dae2c05a337150fb348659e990d32682940aace00db509511",
       "scripts/model-audit-host.mjs": "7746e89a1b80b8628535c50f910dc7ccc5a4f3f73f39a796371fc66b6a27416a",
-      "scripts/model-visual-audit.mjs": "af887bcbc4fa4081b032d3040174ba37441174d46aa34435cb28d8781ebe01d3",
+      "scripts/model-visual-audit.mjs": "87a178900b4103aff8fac4f4f47644a23f0186e9fe52d60f1742247cdf50b3f0",
       "scripts/model-startup-audit.mjs": "d4c0e0318cc2caedfa119c32263504685c07fee02e06fd0c211a401cde576725",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
-      ".github/workflows/ux-quality.yml": "fdb3d939e0d849dae343321f32f157d75dff183de81208fec9b45fc4de9ce218",
+      ".github/workflows/ux-quality.yml": "35239ef427e58c69344e20ea0ee9f832488415e317f03867e75d34d726a5e0c7",
       "package.json": "5130a475509b9566ca9a80750880097fcd273254c4060210ef66ad1f6cd5f37a",
       "package-lock.json": "079df1e1ab5142a4efcd68013f1c9781b6ab66532153be41d7e62e86318cdd4d"
     }
@@ -81,26 +83,28 @@
   "sourceHashes": {
     "model-view.js": "d93832c66fb63f98b9898e6a0f5fa2b77753ea67e16a33c9dfa4460fe01c309c",
     "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
-    "model-scene.js": "2ad969cc444e7c803e8143e39923880aac8be55edbe36b42caaceba906f483ff",
+    "model-scene.js": "081afcdd5fede48ab0f0e037e58eef19ee6535e6e1475222665c5143adf47fb2",
     "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
     "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",
     "model-encased-routes.js": "59ad55f2ec1a6c59703858b0010cce2444725a05eddf249a0dbf3720ce801468",
     "model-quality.js": "bcfae2997f93b3705793f2788a51cd9d4576540a90d6c38babf9b5253891e8f8",
     "model-topology.js": "abda4a61a479cfa6b74ebd7cf53f64593f2edc3b02d917a4da7c26d22ed1817a",
     "model-digital.js": "7fe3def8e29d347424609e447f81326cd2c25ebbbdaffc579d3bd17b8b4112fb",
-    "model-glass.js": "a2dc22b5016c09600c559144a1c99a97781c9d2b06d750890684199504ad36db",
+    "model-glass.js": "425f89982ab3c488ff88a2126a0a3e1ebdf18498ec18d76380248c3635a71c2c",
     "model-hardware.js": "4bc54771d746bad6fca332703e17e8140af5249744497c38f29506154f2b13b6",
     "model-light.js": "93f6c619621978f528bc3518ca095eb38a8a306e4d49f00d78fbb523ae00f36e",
     "model-gestures.js": "36c8ab8b8c59383f4d2e895ef1e9890fe1b6faeba8fd8ac7f19b11b5af8695ec",
     "model-render-metrics.js": "247b786c44ab076aec9bae66ce5dd01360628c570e8c67ee1f962ad209dab4ec",
     "model-renderer.js": "178db06dc53b5851e44d81dc236c6f65e106d454cbc25143506bc5efe9f2e2fc",
     "model-background-glass.js": "cfc93b3cb3ba78ae342945028edf460f21734b997ad3486523319262d239d2f8",
-    "energy-architecture.js": "974617bfaa3a5681e52f9fcc85487505d1cf9db65dc221de2ef7732071841b07",
+    "energy-architecture.js": "89a1835f38b41803ad021c3d1ba4dfa30cad61497eb5a3ccec223ff3e8e1eb5b",
+    "energy-optics.js": "81ebfe70804d57e1293437a4a37d9a78f8a5336c95b73a0258c0051c24236ca9",
+    "steel-elbow.svg": "a459553163de396fa7fa5f0671c8ca6bbff71d32cc68d5ee1895f08d53c086a4",
     "homepage-native-model.js": "304138d99b29bcdf53aa1000492fb33d2b0d78c388afb5013e8e99bbbf56a969",
-    "homepage-motion.js": "c8c78d95e9b76b66702b733017a36b702acfe22a075ee7353ac435d771e10257",
+    "homepage-motion.js": "fa696c49a80a2b6ab228423960b25f570d1b47b3a0ab2623aae10aa167a4183f",
     "model-presentation-sampling.js": "99efc9a2f8f8045743b570af3c5096259bdb3fb9038475d8926014d9076ec01b",
-    "material-system.css": "54c16da6baefca8c21a08c5a5566fadca8f9fe40192894ee0338e57fb324c12d",
-    "material-light.js": "d2b2aa884278fe41c4f3c721abbc8ee6b2d86228289db2384e28f790a6a5f839",
+    "material-system.css": "9bee199f1d5e79609d9821f1ed5f777d5a78f7e947d34f0f5c7604396fdc49be",
+    "material-light.js": "801be236fccb03421bb6680222bdd0e1de58b1739bc0f66989ee1c2053fc5fb8",
     "homepage-screens.js": "6f9e43e7eaaed5c53f1b39e67d90567a48b7095d7f93e85f5903ddc56a25a268",
     "model-architecture.json": "9154fad0ef792acf218f23d8b187ff0ea13c6f776df10c8ae3b7af8858ccc19e",
     "model-context.js": "cbde09fb0f6edf3c7733304c92bcbc45e0345ef66050338e1b6de4e346ed81c6",
@@ -178,12 +182,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-1x.png",
-        "sha256": "6a5fb292ad24bcda79288ddad02c198610d7a3cbf18440a365012e279bbb681e"
+        "sha256": "b24dc8de2f328ad59ac205b89ee67b10a39ae8545fc0fe6996e3c324d2d02d06"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-1x.png",
-        "runningDetailSha256": "bc463c3f1b9c326a0019f179bddacd3fc7bcb33ee41b66a9162f435be3f37399",
+        "runningDetailSha256": "89e9aa8f636def7055a5d3c29584fe015f79dac5c462e6984ae61a49964836d2",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -218,23 +222,23 @@
         }
       },
       "file": "powered-down-desktop-1x.webp",
-      "bytes": 158252,
-      "sha256": "6910431f19842a5d4082fa200069818d00de27116099100ad347db41f6dc351f",
+      "bytes": 128196,
+      "sha256": "adc2e404a19cfd8517e8b87a15257a327aaad0d365ecc3a4afcf813860459565",
       "avifFile": "powered-down-desktop-1x.avif",
-      "avifBytes": 116890,
-      "avifSha256": "b4a3362d984ae7d13bdc942dff48f8fbc8f550b4b532ec45a1b4d44b52f21df5",
+      "avifBytes": 93272,
+      "avifSha256": "eeceb1afe751dc21a6a2f6943ba2b117d99987bc71535bd1502a1d763d2acb0d",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.4162,
-          "p99AbsoluteChannelError": 15,
-          "maxAbsoluteChannelError": 84,
+          "meanAbsoluteChannelError": 1.2996,
+          "p99AbsoluteChannelError": 16,
+          "maxAbsoluteChannelError": 77,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4727,
-          "p99AbsoluteChannelError": 6,
-          "maxAbsoluteChannelError": 31,
+          "meanAbsoluteChannelError": 0.4751,
+          "p99AbsoluteChannelError": 5,
+          "maxAbsoluteChannelError": 30,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -478,12 +482,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-2x.png",
-        "sha256": "33c6eccee1fd3679b21b67420094249c1c1ec62e6169a4f63f0cd8f993212725"
+        "sha256": "c5eba365c215e9586b41fbc9b8d4d20c45a2d42c87aae56c1ce6d233c8749cb8"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-2x.png",
-        "runningDetailSha256": "01d6100c48bd9fee904c56903835d17de83ad8ca077922812bb80ca559b8c3d5",
+        "runningDetailSha256": "b001f2d23a3783da11ed4a8a4b0bc2caad5425a8225c634af3439fbf786832c5",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -518,23 +522,23 @@
         }
       },
       "file": "powered-down-desktop-2x.webp",
-      "bytes": 473902,
-      "sha256": "c231d502a771ee79f0d5b730cbbb614249837e332a8b99e631d3472acd7bb113",
+      "bytes": 345920,
+      "sha256": "49adedd17a18c0308417ebbec5b6d38fc23fc6c3839a5a1d1f9557804294292b",
       "avifFile": "powered-down-desktop-2x.avif",
-      "avifBytes": 335571,
-      "avifSha256": "e1bea207f70c7885c427321b5005e8855df163a763e5ecc43399eb16236a5877",
+      "avifBytes": 234019,
+      "avifSha256": "4217f9bc9a6c3abb95a29966263256a67e48c53781b8267dea7ff70401ea8d13",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.1196,
-          "p99AbsoluteChannelError": 11,
+          "meanAbsoluteChannelError": 1.0303,
+          "p99AbsoluteChannelError": 12,
           "maxAbsoluteChannelError": 81,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3577,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 29,
+          "meanAbsoluteChannelError": 0.3786,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 35,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -778,12 +782,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-3x.png",
-        "sha256": "397329639f141a708cc0a41069817a24ba99ef7ebfe602a5d8dedea1278f94ad"
+        "sha256": "d73a1361512754ae9a8699e714b52886e318799fadfccada9847f1aca62425b0"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-3x.png",
-        "runningDetailSha256": "ea717598fe3d600be64b2e13cc7f52eeb5db1e0c4b77633e02e53fc8cd0ee7ba",
+        "runningDetailSha256": "d6123dcf2d4a1b7339c561187a9eaac0a65f20fd630c7def332eedcecd534c63",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -818,23 +822,23 @@
         }
       },
       "file": "powered-down-desktop-3x.webp",
-      "bytes": 870124,
-      "sha256": "b5dcfd0ed17893a2d27284d34fdf6ae3ab5556f34da6ed60895dc19238e69694",
+      "bytes": 612756,
+      "sha256": "e00392c87fe642ac85237c889f146c8ba56e85c662ee9c3ac52ef5ba13af8797",
       "avifFile": "powered-down-desktop-3x.avif",
-      "avifBytes": 619665,
-      "avifSha256": "96307ec4146ba14b7130267e05029e6b82f06042ab996369ed724d643a147f31",
+      "avifBytes": 408079,
+      "avifSha256": "31884095796a72866c33a779bdbabbf7a9c0740670be0c0e8aa706783c50b5b9",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.0007,
-          "p99AbsoluteChannelError": 9,
-          "maxAbsoluteChannelError": 70,
+          "meanAbsoluteChannelError": 0.912,
+          "p99AbsoluteChannelError": 10,
+          "maxAbsoluteChannelError": 74,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3151,
+          "meanAbsoluteChannelError": 0.3463,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 34,
+          "maxAbsoluteChannelError": 40,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1078,12 +1082,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-1x.png",
-        "sha256": "1c6f9289986e8a51e2cdf88f9f57f11ef3815c64994b160841e79b485ea2c293"
+        "sha256": "b24dc8de2f328ad59ac205b89ee67b10a39ae8545fc0fe6996e3c324d2d02d06"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-1x.png",
-        "runningDetailSha256": "5307072d98c88612ae3d5037b8d84aef73b70cb2191f535ebc609ee51cc6e384",
+        "runningDetailSha256": "89e9aa8f636def7055a5d3c29584fe015f79dac5c462e6984ae61a49964836d2",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -1118,23 +1122,23 @@
         }
       },
       "file": "powered-down-desktop-dark-1x.webp",
-      "bytes": 114130,
-      "sha256": "a95686a52e2a47de889c014348d1a20ecff4fd6dfa6426124458122a31040996",
+      "bytes": 128196,
+      "sha256": "adc2e404a19cfd8517e8b87a15257a327aaad0d365ecc3a4afcf813860459565",
       "avifFile": "powered-down-desktop-dark-1x.avif",
-      "avifBytes": 80556,
-      "avifSha256": "d1b40cc95432f2d33e1d84a9e1a5c31b7be8e3adc6ed4ba0fb6c6e1fb63b2540",
+      "avifBytes": 93272,
+      "avifSha256": "eeceb1afe751dc21a6a2f6943ba2b117d99987bc71535bd1502a1d763d2acb0d",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.0771,
-          "p99AbsoluteChannelError": 15,
-          "maxAbsoluteChannelError": 71,
+          "meanAbsoluteChannelError": 1.2996,
+          "p99AbsoluteChannelError": 16,
+          "maxAbsoluteChannelError": 77,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.6077,
+          "meanAbsoluteChannelError": 0.4751,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 29,
+          "maxAbsoluteChannelError": 30,
           "comparedChannelSamples": 2841600,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1378,12 +1382,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-2x.png",
-        "sha256": "8aa9987d623357e6a050f8cb425fe5459164427ccf995dfe030f65e030fc9adc"
+        "sha256": "c5eba365c215e9586b41fbc9b8d4d20c45a2d42c87aae56c1ce6d233c8749cb8"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-2x.png",
-        "runningDetailSha256": "f0f4d2ccdfe82b7961712eade405408d564ecf5e60b80a94b1bbc4552437e8f1",
+        "runningDetailSha256": "b001f2d23a3783da11ed4a8a4b0bc2caad5425a8225c634af3439fbf786832c5",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -1418,23 +1422,23 @@
         }
       },
       "file": "powered-down-desktop-dark-2x.webp",
-      "bytes": 312300,
-      "sha256": "72a752415778433d9a41623ff8ab2cc274602f3791540c788623110f52ead10e",
+      "bytes": 345920,
+      "sha256": "49adedd17a18c0308417ebbec5b6d38fc23fc6c3839a5a1d1f9557804294292b",
       "avifFile": "powered-down-desktop-dark-2x.avif",
-      "avifBytes": 208246,
-      "avifSha256": "6511c2017e657fb6523dc29cc56b43a5f0d0f51af26be704d7d6abd18458dcf2",
+      "avifBytes": 234019,
+      "avifSha256": "4217f9bc9a6c3abb95a29966263256a67e48c53781b8267dea7ff70401ea8d13",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.8087,
-          "p99AbsoluteChannelError": 11,
-          "maxAbsoluteChannelError": 78,
+          "meanAbsoluteChannelError": 1.0303,
+          "p99AbsoluteChannelError": 12,
+          "maxAbsoluteChannelError": 81,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.5251,
+          "meanAbsoluteChannelError": 0.3786,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 31,
+          "maxAbsoluteChannelError": 35,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1678,12 +1682,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-desktop-dark-3x.png",
-        "sha256": "bcaf56272cc84f68980a059b703da1ebf69a6de9c1c03211af0a3a8e0320ced3"
+        "sha256": "d73a1361512754ae9a8699e714b52886e318799fadfccada9847f1aca62425b0"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-desktop-dark-3x.png",
-        "runningDetailSha256": "5f5a0e0de8cd766039a5e868740263667a3310e08ab6e18f3bfc937a1ed2cad8",
+        "runningDetailSha256": "d6123dcf2d4a1b7339c561187a9eaac0a65f20fd630c7def332eedcecd534c63",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 1280,
@@ -1718,23 +1722,23 @@
         }
       },
       "file": "powered-down-desktop-dark-3x.webp",
-      "bytes": 550202,
-      "sha256": "7dac3e9853a45b4760ba2397b4148dc4f8f7e07919c336f2896115755b71715f",
+      "bytes": 612756,
+      "sha256": "e00392c87fe642ac85237c889f146c8ba56e85c662ee9c3ac52ef5ba13af8797",
       "avifFile": "powered-down-desktop-dark-3x.avif",
-      "avifBytes": 359369,
-      "avifSha256": "4fe182b019caea6e8da90cc3f152c9fa04b6cea4af9adce86fd82b4d4d0a0f16",
+      "avifBytes": 408079,
+      "avifSha256": "31884095796a72866c33a779bdbabbf7a9c0740670be0c0e8aa706783c50b5b9",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.6961,
-          "p99AbsoluteChannelError": 9,
-          "maxAbsoluteChannelError": 73,
+          "meanAbsoluteChannelError": 0.912,
+          "p99AbsoluteChannelError": 10,
+          "maxAbsoluteChannelError": 74,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4941,
-          "p99AbsoluteChannelError": 3,
-          "maxAbsoluteChannelError": 38,
+          "meanAbsoluteChannelError": 0.3463,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 40,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1978,12 +1982,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-1x.png",
-        "sha256": "ac40c044ffb735cdc68fcb8d29eac02678925d60f7376fe69e96f4b4bf6becb6"
+        "sha256": "846ca40a77b652d74b3e76586ac9db8c50674a7e1842e3283ee7b8436c4ca286"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-1x.png",
-        "runningDetailSha256": "68e74a0cda18dcbd7170b2816cbf067521abeff9da72883b648256ba6f476af0",
+        "runningDetailSha256": "f83b135f216885857678d41f7a757c0a500aee6518dde93ae3ffd30bbcc3dbae",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2018,23 +2022,23 @@
         }
       },
       "file": "powered-down-phone-1x.webp",
-      "bytes": 24820,
-      "sha256": "c9dccf7967bc49eb5edb3c0b5c1a03b32024e516a2fbcabf5255582368985b27",
+      "bytes": 20246,
+      "sha256": "8575228e2664597b516a152f502b4e63b60f4c37a4a14de19937cabbc4d48267",
       "avifFile": "powered-down-phone-1x.avif",
-      "avifBytes": 19327,
-      "avifSha256": "e06e5e5b4edbcc424d68b33295c8e717970247b83c27b1fa26dfa5b32ee16bac",
+      "avifBytes": 15932,
+      "avifSha256": "97eb93557d4c58877fb6d63314e7ca72e48c2afefca0727d668380ed15e88639",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.4589,
-          "p99AbsoluteChannelError": 16,
-          "maxAbsoluteChannelError": 61,
+          "meanAbsoluteChannelError": 1.223,
+          "p99AbsoluteChannelError": 14,
+          "maxAbsoluteChannelError": 54,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4653,
+          "meanAbsoluteChannelError": 0.4321,
           "p99AbsoluteChannelError": 6,
-          "maxAbsoluteChannelError": 29,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2278,12 +2282,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-2x.png",
-        "sha256": "c55b5ade49c56da75c9d17550781504b401befeb1d172f91fdbc3a4b6a2ef27d"
+        "sha256": "eef06322a3ca0f1b7fb27c257e4993104599d43c56138c76fad1889a32d49a0c"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-2x.png",
-        "runningDetailSha256": "827eb58ca1c55473ae80b67ef925b175a2383720732df201faec361bbe4b684c",
+        "runningDetailSha256": "4db85c887a5a3123901c0e5da562ca055ad46d92010dfe29dbcfb70d2017fc65",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2318,23 +2322,23 @@
         }
       },
       "file": "powered-down-phone-2x.webp",
-      "bytes": 73168,
-      "sha256": "fde95117274a49d669513de49963f111ba880399ded380a40b164b114a7aa40a",
+      "bytes": 57746,
+      "sha256": "a0ac49320027fa93fdcaf8b644470568e4e5aedc7833cb8b5aadfc6e072a5b1d",
       "avifFile": "powered-down-phone-2x.avif",
-      "avifBytes": 55720,
-      "avifSha256": "a34096bfff519ebea900be5fbbf9a771a49efd4eb1e067c5eef893405ae34c5c",
+      "avifBytes": 44331,
+      "avifSha256": "be688b670c36e7337565ea0aafe21d4ff73ba75bcd353c46219a1bbebd180ff7",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.2307,
-          "p99AbsoluteChannelError": 14,
-          "maxAbsoluteChannelError": 69,
+          "meanAbsoluteChannelError": 1.0901,
+          "p99AbsoluteChannelError": 12,
+          "maxAbsoluteChannelError": 66,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3606,
+          "meanAbsoluteChannelError": 0.3436,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 28,
+          "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2578,12 +2582,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-3x.png",
-        "sha256": "6a2d07648ef35bc2c25c17b79699c6884edf4a2252fa74a1d14246d9784ae9fe"
+        "sha256": "2f0b7f0a3f358dd4e73dcce46b16d9d71b0e56764ea342e03d001ec24547a3bc"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-3x.png",
-        "runningDetailSha256": "6a8f8513b5c5a1d4513a29395840160b376d7c24614d89f9304fe88ff01dd158",
+        "runningDetailSha256": "dad4888ecba4d7464864f7f61eb310bed4e3f8ecb3236d1e93712849427e0b93",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2618,23 +2622,23 @@
         }
       },
       "file": "powered-down-phone-3x.webp",
-      "bytes": 139232,
-      "sha256": "466c44ce6c340058a6405072728ca5d7046e43ec156caf277879d50d4bad6140",
+      "bytes": 106218,
+      "sha256": "2bcaf1b2069428c5c64aa4b0629b11b93eb353046d2cac941c68786004decebc",
       "avifFile": "powered-down-phone-3x.avif",
-      "avifBytes": 102125,
-      "avifSha256": "5935005721b42c73581d0f00ce7824d3e37b180be5c0bf35b3de0ed578ff0018",
+      "avifBytes": 78616,
+      "avifSha256": "63af1931ae45e1fbcab006ffd14cd71495ac48d3da028ea78962f22b4a57ef43",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.1109,
-          "p99AbsoluteChannelError": 12,
-          "maxAbsoluteChannelError": 71,
+          "meanAbsoluteChannelError": 1.0189,
+          "p99AbsoluteChannelError": 11,
+          "maxAbsoluteChannelError": 72,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3127,
-          "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 27,
+          "meanAbsoluteChannelError": 0.3038,
+          "p99AbsoluteChannelError": 4,
+          "maxAbsoluteChannelError": 28,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2878,12 +2882,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-1x.png",
-        "sha256": "376360bcdbf12029e9b28f209e4c141883ccf7b1a0ceac602ae73df3fe1b9028"
+        "sha256": "846ca40a77b652d74b3e76586ac9db8c50674a7e1842e3283ee7b8436c4ca286"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-1x.png",
-        "runningDetailSha256": "8532ccd74446906e75b96189c9ef581d63e624ce14aa126974fefd321c457d32",
+        "runningDetailSha256": "f83b135f216885857678d41f7a757c0a500aee6518dde93ae3ffd30bbcc3dbae",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -2918,22 +2922,22 @@
         }
       },
       "file": "powered-down-phone-dark-1x.webp",
-      "bytes": 17182,
-      "sha256": "00121a29efae4594d75f207ad540481721ee07f0a7a1a035e77d280910e49df5",
+      "bytes": 20246,
+      "sha256": "8575228e2664597b516a152f502b4e63b60f4c37a4a14de19937cabbc4d48267",
       "avifFile": "powered-down-phone-dark-1x.avif",
-      "avifBytes": 13592,
-      "avifSha256": "3dae17c9621632759c799acfcd6b2e587b424a27684169fb8de0f33a537868f8",
+      "avifBytes": 15932,
+      "avifSha256": "97eb93557d4c58877fb6d63314e7ca72e48c2afefca0727d668380ed15e88639",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 1.0618,
-          "p99AbsoluteChannelError": 15,
-          "maxAbsoluteChannelError": 79,
+          "meanAbsoluteChannelError": 1.223,
+          "p99AbsoluteChannelError": 14,
+          "maxAbsoluteChannelError": 54,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.5524,
-          "p99AbsoluteChannelError": 5,
+          "meanAbsoluteChannelError": 0.4321,
+          "p99AbsoluteChannelError": 6,
           "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
@@ -3178,12 +3182,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-2x.png",
-        "sha256": "9a6bebdacb7e4926a06fd8092029d84df5297fea1fff55dc0c4c0eeef6c09120"
+        "sha256": "eef06322a3ca0f1b7fb27c257e4993104599d43c56138c76fad1889a32d49a0c"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-2x.png",
-        "runningDetailSha256": "1a33e2b2d634042fafdb401b133810b37ef61df9fa8a356e99c8ed9e7377994b",
+        "runningDetailSha256": "4db85c887a5a3123901c0e5da562ca055ad46d92010dfe29dbcfb70d2017fc65",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -3218,22 +3222,22 @@
         }
       },
       "file": "powered-down-phone-dark-2x.webp",
-      "bytes": 50194,
-      "sha256": "b23e88ee471ded212ff410ecc59763d69c6d2e4120eb8f52aea1d020b24566ef",
+      "bytes": 57746,
+      "sha256": "a0ac49320027fa93fdcaf8b644470568e4e5aedc7833cb8b5aadfc6e072a5b1d",
       "avifFile": "powered-down-phone-dark-2x.avif",
-      "avifBytes": 36608,
-      "avifSha256": "3c14ecf7a0d387dc311a3e649063f6ad32ee7aa1e486ac7380a39c7ecadc9da8",
+      "avifBytes": 44331,
+      "avifSha256": "be688b670c36e7337565ea0aafe21d4ff73ba75bcd353c46219a1bbebd180ff7",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.9322,
-          "p99AbsoluteChannelError": 14,
-          "maxAbsoluteChannelError": 78,
+          "meanAbsoluteChannelError": 1.0901,
+          "p99AbsoluteChannelError": 12,
+          "maxAbsoluteChannelError": 66,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4936,
-          "p99AbsoluteChannelError": 4,
+          "meanAbsoluteChannelError": 0.3436,
+          "p99AbsoluteChannelError": 5,
           "maxAbsoluteChannelError": 27,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
@@ -3478,12 +3482,12 @@
       },
       "capturePNG": {
         "evidenceFile": "ux-screenshots/visual-v2/posters/powered-down-phone-dark-3x.png",
-        "sha256": "767781f698cba8b1276c558903c2be937a3616c38491e5a3d757bf3d63893b58"
+        "sha256": "2f0b7f0a3f358dd4e73dcce46b16d9d71b0e56764ea342e03d001ec24547a3bc"
       },
       "visualEvidence": {
         "poweredDownAndPosterShareExactSource": true,
         "runningDetailFile": "ux-screenshots/visual-v2/posters/running-detail-powered-down-phone-dark-3x.png",
-        "runningDetailSha256": "3697e2834a844a90fe1950ed93c6be91af89c413b48463a653746f872b06896b",
+        "runningDetailSha256": "dad4888ecba4d7464864f7f61eb310bed4e3f8ecb3236d1e93712849427e0b93",
         "runningDetailFrame": 145,
         "runningDetailResolution": {
           "cssWidth": 500,
@@ -3518,23 +3522,23 @@
         }
       },
       "file": "powered-down-phone-dark-3x.webp",
-      "bytes": 92464,
-      "sha256": "014310517a3d0397a792ce95039ddacb50204ebfe11430616865555eab8bfdd0",
+      "bytes": 106218,
+      "sha256": "2bcaf1b2069428c5c64aa4b0629b11b93eb353046d2cac941c68786004decebc",
       "avifFile": "powered-down-phone-dark-3x.avif",
-      "avifBytes": 65285,
-      "avifSha256": "1847de6631d513e90cd8439932ada66300ed29bb9950b71bd8132d8f1ccc5b4e",
+      "avifBytes": 78616,
+      "avifSha256": "63af1931ae45e1fbcab006ffd14cd71495ac48d3da028ea78962f22b4a57ef43",
       "compressionComparison": {
         "webp": {
-          "meanAbsoluteChannelError": 0.8251,
-          "p99AbsoluteChannelError": 12,
-          "maxAbsoluteChannelError": 73,
+          "meanAbsoluteChannelError": 1.0189,
+          "p99AbsoluteChannelError": 11,
+          "maxAbsoluteChannelError": 72,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4613,
+          "meanAbsoluteChannelError": 0.3038,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 27,
+          "maxAbsoluteChannelError": 28,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
