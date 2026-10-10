@@ -111,3 +111,14 @@ Those assets would still need live browser lighting and source-bound activation
 updates. This revision uses procedural real 3D geometry for responsive elbows
 and the existing case, so installing Blender is not required for these changes.
 It does not claim offline path-traced glass or measured 4K/8K refresh rates.
+
+## Continued assembly and glass work
+
+The approved encased snapshot is 1521f914b0958bbb360d5bc72606cd00f888fb84;
+PR110 merged it to main as ae577d2960cb018fa8f6fff690e8130de0d24418 for
+exact-source qualification. A merge alone does not publish the website.
+
+The next refinement branch aligns DOM glass and GPU hardware, removes competing
+outlines, shares one reflected light direction, and adds small static backdrop
+refraction while keeping etched native text sharp. Its preview uses port 4190.
+See docs/spatial-materials.md for implementation bounds and browser fallback.

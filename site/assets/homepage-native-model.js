@@ -49,7 +49,7 @@ export async function createNativeBackground(journey, fail) {
     scene.render(true);
     await scene.renderer.compileAsync(scene.scene, scene.camera);
     scene.selection.visible = scene.probe.visible = false;
-    return new NativePlayback(scene, surface, run, metadata);
+    return new NativePlayback(scene, surface, run, metadata, journey);
   } catch (error) {
     scene?.dispose();
     if (!scene) rendering?.renderer.dispose();
@@ -59,8 +59,9 @@ export async function createNativeBackground(journey, fail) {
 }
 
 class NativePlayback {
-  constructor(scene, surface, run, metadata) {
+  constructor(scene, surface, run, metadata, journey) {
     this.scene = scene;
+    this.journey = journey;
     this.surface = surface;
     this.run = run;
     this.metadata = metadata;
@@ -71,6 +72,15 @@ class NativePlayback {
     this.intervals = [];
     this.active = false;
     this.scene.applyFrame(run, sampleReplay(run, 0));
+    this.relayout = () => {
+      if (this.disposed || this.active || document.hidden) return;
+      const rect = this.surface.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= innerHeight) return;
+      // Scrolling moves the glass even with playback paused. Re-seat its fittings
+      // without sampling another observation, changing the pulse, or starting RAF.
+      this.scene.render();
+    };
+    this.journey.addEventListener("portfolio:reading", this.relayout);
   }
   sync(active) {
     this.active = active;
@@ -112,6 +122,8 @@ class NativePlayback {
     };
   }
   dispose() {
+    this.disposed = true;
+    this.journey.removeEventListener("portfolio:reading", this.relayout);
     this.sync(false);
     this.scene.dispose();
     this.surface.remove();

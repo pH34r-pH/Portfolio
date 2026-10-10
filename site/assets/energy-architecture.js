@@ -76,23 +76,33 @@ export class EnergyArchitecture {
       this.dummy.updateMatrix(); this.batch.collar.setMatrixAt(index * 2 + endpoint, this.dummy.matrix);
     });
   }
-  layoutFrame(section, x, y, width, height, radius, beamRadius) {
-    const r = radius, right = x + width, bottom = y + height, scale = r / 18;
-    const beams = [[[x + r, y], [right - r, y]], [[right, y + r], [right, bottom - r]],
-      [[right - r, bottom], [x + r, bottom]], [[x, bottom - r], [x, y + r]]];
+  layoutFrame(section, x, y, width, height, radii, beamRadius) {
+    const [tl, tr, br, bl] = Array.isArray(radii) ? radii : [radii, radii, radii, radii];
+    const right = x + width, bottom = y + height;
+    const beams = [[[x + tl, y], [right - tr, y]], [[right, y + tr], [right, bottom - br]],
+      [[right - br, bottom], [x + bl, bottom]], [[x, bottom - bl], [x, y + tl]]];
     beams.forEach(([a, b], index) => this.placeBeam(section.beams[index], a, b, beamRadius));
     const corners = [
-      [[x + r, y + r], Math.PI / 2, [[x + r, y, Math.PI / 2], [x, y + r, 0]]],
-      [[right - r, y + r], 0, [[right - r, y, Math.PI / 2], [right, y + r, 0]]],
-      [[right - r, bottom - r], -Math.PI / 2, [[right, bottom - r, 0], [right - r, bottom, Math.PI / 2]]],
-      [[x + r, bottom - r], Math.PI, [[x + r, bottom, Math.PI / 2], [x, bottom - r, 0]]],
+      [[x + tl, y + tl], Math.PI / 2, tl, [[x + tl, y, Math.PI / 2], [x, y + tl, 0]]],
+      [[right - tr, y + tr], 0, tr, [[right - tr, y, Math.PI / 2], [right, y + tr, 0]]],
+      [[right - br, bottom - br], -Math.PI / 2, br, [[right, bottom - br, 0], [right - br, bottom, Math.PI / 2]]],
+      [[x + bl, bottom - bl], Math.PI, bl, [[x + bl, bottom, Math.PI / 2], [x, bottom - bl, 0]]],
     ];
-    corners.forEach(([center, angle, ends], index) => this.placeJoint(section.joints[index], center, angle, scale, ends));
+    corners.forEach(([center, angle, radius, ends], index) => this.placeJoint(section.joints[index], center, angle, radius / 18, ends));
   }
-  layoutScreen(section, pane) {
-    const rect = pane.getBoundingClientRect(), radius = parseFloat(getComputedStyle(pane).borderTopLeftRadius) || 20;
-    this.layoutFrame(section, rect.left - this.bounds.left - 1, rect.top - this.bounds.top - 1,
-      rect.width + 2, rect.height + 2, radius + 1, 1.5);
+  paneFrame(pane) {
+    const rect = pane.getBoundingClientRect(), style = getComputedStyle(pane);
+    const radii = ['TopLeft', 'TopRight', 'BottomRight', 'BottomLeft']
+      .map(corner => Math.max(0, parseFloat(style[`border${corner}Radius`]) || 0));
+    // Match the browser's corner overlap reduction before adding the 1px seat.
+    const [tl, tr, br, bl] = radii;
+    const scale = Math.min(1, rect.width / (tl + tr), rect.width / (bl + br),
+      rect.height / (tl + bl), rect.height / (tr + br));
+    return {x: rect.left - this.bounds.left - 1, y: rect.top - this.bounds.top - 1,
+      width: rect.width + 2, height: rect.height + 2, radii: radii.map(radius => radius * scale + 1)};
+  }
+  layoutScreen(section, frame) {
+    this.layoutFrame(section, frame.x, frame.y, frame.width, frame.height, frame.radii, 1.5);
   }
   sync(camera) {
     this.camera = camera; this.bounds = this.surface.getBoundingClientRect();
@@ -100,13 +110,14 @@ export class EnergyArchitecture {
     this.distance = 12; this.forward = camera.getWorldDirection(new this.T.Vector3());
     this.unit = (2 * this.distance * Math.tan(camera.fov * Math.PI / 360)) / this.bounds.height;
     const panes = [...this.journey.querySelectorAll('[data-digital-pane]')]
-      .filter(pane => {const rect = pane.getBoundingClientRect(); return rect.bottom > this.bounds.top && rect.top < this.bounds.bottom;}).slice(0, 2);
-    const key = JSON.stringify([this.bounds.width, this.bounds.height, camera.fov, ...camera.position.toArray(),
-      ...camera.quaternion.toArray(), ...panes.map(pane => {const rect = pane.getBoundingClientRect();
-        return [rect.left, rect.top, rect.width, rect.height, getComputedStyle(pane).borderTopLeftRadius];})]);
+      .filter(pane => {const rect = pane.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && rect.bottom > this.bounds.top && rect.top < this.bounds.bottom;}).slice(0, 2);
+    const frames = panes.map(pane => this.paneFrame(pane));
+    const key = JSON.stringify([this.bounds.left, this.bounds.top, this.bounds.width, this.bounds.height,
+      camera.fov, ...camera.position.toArray(), ...camera.quaternion.toArray(), frames]);
     if (key === this.lastLayout) return;
     this.lastLayout = key;
-    this.sections.forEach((section, index) => panes[index] ? this.layoutScreen(section, panes[index]) : this.hide(section));
+    this.sections.forEach((section, index) => frames[index] ? this.layoutScreen(section, frames[index]) : this.hide(section));
     const w = this.bounds.width, h = this.bounds.height;
     if (w < 720) this.hide(this.spine);
     else this.layoutFrame(this.spine, 42, 22, w - 84, h - 50, 18, 1.2);
@@ -121,6 +132,7 @@ export class EnergyArchitecture {
   diagnostics() {
     return {kind: 'decorative-screen-support', energy: this.energy, screenCapacity: 2, drawBatches: 6,
       corners: 'steel-quarter-torus-with-collars', glow: 'continuous-gaussian', edgeOffsetPx: 1,
+      registration: 'screen-parallel-glass-perimeter', cornerRadii: 'computed-per-corner',
       decorativePulsePeriodSeconds: 14, decorativePulseAmplitude: .035};
   }
   dispose() {

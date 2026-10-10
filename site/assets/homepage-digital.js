@@ -21,7 +21,9 @@ function update() {
     chapter.dataset.paneState = index === active ? 'active' : index < active ? 'past' : 'next';
     // Focus always restores the native pane; never hide, inert or clone content.
     const frozen = staticReading || pane.contains(document.activeElement);
-    pane.style.transform = frozen ? 'none' : `perspective(1600px) translate3d(${progress * 26}px,${progress * 18}px,${-Math.abs(progress) * 36}px) rotateY(${progress * -4}deg)`;
+    // Glass and its GPU fittings share a screen-parallel plane. Perspective
+    // would tilt the DOM face away from the measured rectangular steel frame.
+    pane.style.transform = frozen ? 'none' : `translate3d(${progress * 26}px,${progress * 18}px,0)`;
     pane.style.setProperty('--screen-energy', near ? '1' : '.2');
   });
   journey.dispatchEvent(new CustomEvent('portfolio:reading', {detail:{quiet:chapters[active].classList.contains('digital-deep-reading'),active,progress:Math.max(0,Math.min(1,-journey.getBoundingClientRect().top / Math.max(1,journey.offsetHeight-height)))}}));
