@@ -3,6 +3,7 @@ import { MachineScene } from "./model-scene.js";
 import { createInferenceRun, sampleReplay } from "./model-topology.js";
 import { samplePresentation } from "./model-presentation-sampling.js";
 import { EnergyArchitecture } from "./energy-architecture.js";
+import { BACKGROUND_PLAYBACK_RATE } from "./homepage-motion.js";
 
 async function recordedRun() {
   const response = await fetch(new URL("./homepage-model-trace.json", import.meta.url));
@@ -63,7 +64,8 @@ class NativePlayback {
     this.surface = surface;
     this.run = run;
     this.metadata = metadata;
-    this.elapsed = 0;
+    this.elapsed = metadata.loopStartSeconds;
+    this.playbackRate = BACKGROUND_PLAYBACK_RATE;
     this.frames = 0;
     this.last = null;
     this.intervals = [];
@@ -87,11 +89,12 @@ class NativePlayback {
       this.intervals.push(delta);
       if (this.intervals.length > 180) this.intervals.shift();
     }
-    this.elapsed += delta / 1000;
+    // A long frame should hold the ambient motion, never skip ahead and flash.
+    this.elapsed += Math.min(delta, 100) / 1000 * this.playbackRate;
     const { durationSeconds: end, loopStartSeconds: start } = this.metadata;
     if (this.elapsed >= end) this.elapsed = start + ((this.elapsed - start) % (end - start));
-    const position = Math.min(this.run.observations.length - 1, Math.max(0, (this.elapsed - start) / (end - start)) * (this.run.observations.length - 1));
-    this.scene.applyFrame(this.run, samplePresentation(this.run, position));
+    const position = Math.max(0, (this.elapsed - start) / (end - start)) * this.run.observations.length;
+    this.scene.applyFrame(this.run, samplePresentation(this.run, position, { loop: true, smooth: true }));
     this.frames++;
     this.raf = requestAnimationFrame((next) => this.tick(next));
   }
@@ -102,6 +105,8 @@ class NativePlayback {
       trainedStateSha256: this.metadata.trainedStateSha256,
       frames: this.frames,
       time: this.elapsed,
+      playbackRate: this.playbackRate,
+      loopDurationSeconds: (this.metadata.durationSeconds - this.metadata.loopStartSeconds) / this.playbackRate,
       frameIntervalMs: { samples: sorted.length, p50: sorted[Math.floor(sorted.length * 0.5)] ?? null, p95: sorted[Math.floor(sorted.length * 0.95)] ?? null },
       ...this.scene.diagnostics(),
     };

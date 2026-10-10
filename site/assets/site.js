@@ -8,7 +8,10 @@ function renderArticleList(container, articles) {
       card.className = "card article-card";
       card.dataset.index = String(index + 1).padStart(2, "0");
       const heading = document.createElement("h3");
-      heading.textContent = article.title || article.slug;
+      const titleLink = document.createElement("a");
+      titleLink.href = article.url;
+      titleLink.textContent = article.title || article.slug;
+      heading.append(titleLink);
       const summary = document.createElement("p");
       summary.className = "card-question";
       summary.textContent = article.description || "";

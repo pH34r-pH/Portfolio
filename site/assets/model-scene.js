@@ -266,7 +266,9 @@ export class MachineScene {
     GRAPH.nodes.forEach((node, index) => {
       const value = state.activations[index], selected = index === this.selected;
       const dim = !modelContext(this.focus).layers.includes(node.layer);
-      this.color.copy(base).lerp(state.measured&&state.rawActivations[index]<0?negative:active, value); if (dim) {this.color.multiplyScalar(.38);}
+      if (state.presentationNegative) this.color.copy(active).lerp(negative, state.presentationNegative[index]).lerp(base, 1 - value);
+      else this.color.copy(base).lerp(state.measured&&state.rawActivations[index]<0?negative:active, value);
+      if (dim) {this.color.multiplyScalar(.38);}
       this.beads.setColorAt(index, this.color);
       this.dummy.position.set(...node.position); this.dummy.scale.setScalar(1 + value * .25 + (selected ? .18 : 0)); this.dummy.updateMatrix();
       this.beads.setMatrixAt(index, this.dummy.matrix);
@@ -281,7 +283,7 @@ export class MachineScene {
       }
     });
     this.edgeGeometry.attributes.color.needsUpdate = true;
-    const light = sampleModelLight(run, state.frame, false);
+    const light = sampleModelLight(run, state.frame, false, this.root.hasAttribute('data-native-background') ? state : undefined);
     this.replayLight.position.set((light.x - .5) * 8.88, 1.6, 3);
     this.replayLight.intensity = light.energy * 14;
     this.glass.pulse(light.energy);

@@ -155,7 +155,17 @@ html body :is(.machine-heading h2,.card h3,.index-page>section>h2) {
   font-family:ui-sans-serif,system-ui,sans-serif; font-weight:500; letter-spacing:-.035em; line-height:1.12;
 }
 html body .article-model-machine .machine-heading h2 { font-size:clamp(26px,2.4vw,36px); }
-html body.digital-home .digital-contact { padding:60px 0 28px; background:var(--bg); }
+html body.digital-home { --homepage-content-gutter:clamp(22px,4vw,64px); }
+html body.digital-home :is(.digital-contact,footer) {
+  width:min(1180px,calc(100% - 2 * var(--homepage-content-gutter)));
+  padding-inline:clamp(24px,4vw,48px);
+}
+html body.digital-home .digital-contact { padding-block:60px 36px; background:var(--bg); }
+html body.digital-home footer { flex-wrap:wrap; }
+html body.digital-home footer>* { min-width:0; max-width:100%; }
+html body.digital-home footer summary { overflow-wrap:anywhere; }
+html body :is(.article-card h3,.topology-detail h3) a { text-decoration:none; }
+html body :is(.article-card h3,.topology-detail h3) a:hover { color:var(--accent-strong); text-decoration:underline; }
 html body .profile-portrait { box-shadow:0 0 0 1px var(--material-glass-edge),0 0 16px rgba(28,159,255,.2); }
 html body .digital-motion-control { bottom:24px; right:24px; }
 @media(max-width:720px) {

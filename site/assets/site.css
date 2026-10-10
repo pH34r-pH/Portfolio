@@ -955,12 +955,16 @@ section {
   inset: 0 auto auto 0;
   overflow: visible;
   pointer-events: none;
+  /* The SVG spans the scrollable graph, beyond the viewport's width. */
+  max-width: none;
+  display: block;
 }
 
 .topology-edges path {
   fill: none;
-  stroke: color-mix(in srgb, var(--muted) 34%, transparent);
-  stroke-width: 1;
+  stroke: color-mix(in srgb, var(--muted) 72%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   transition:
     stroke var(--2071-speed) linear,
@@ -970,7 +974,7 @@ section {
 
 .topology-edges path.is-active {
   stroke: var(--accent);
-  stroke-width: 2;
+  stroke-width: 3;
   filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 46%, transparent));
 }
 
@@ -1000,7 +1004,6 @@ section {
 }
 
 .topology-node:hover {
-  transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
 }
 
@@ -1470,12 +1473,11 @@ body::after {
     0 16px 32px var(--shadow);
 }
 
-.topology-edge-end {
+.topology-arrowhead {
   fill: var(--muted);
-  transition: fill var(--2071-speed-fast) linear, r var(--2071-speed-fast) var(--2071-ease-mechanical);
 }
 
-.topology-edge-end.is-active {
+.topology-arrowhead.is-active {
   fill: var(--accent);
 }
 /* Mobile topology is a readable sequence. Edges turn vertical instead of

@@ -1,3 +1,4 @@
+import { FALLBACK_PLAYBACK_RATE } from './homepage-motion.js';
 const journey=document.querySelector('[data-digital-home]');
 const video=journey?.querySelector('[data-homepage-model-loop]');
 const reduced=matchMedia('(prefers-reduced-motion: reduce)'),forced=matchMedia('(forced-colors: active)');
@@ -13,6 +14,7 @@ function useVideo(reason) {
   videoFallback=true;native?.dispose();native=null;
   journey.dataset.backgroundBackend='video';journey.dataset.backgroundFallback=reason;
   const source=video.querySelector('source');
+  video.defaultPlaybackRate=video.playbackRate=FALLBACK_PLAYBACK_RATE;
   if(!source.src){source.src=source.dataset.src;video.load();}
   syncMotion();
 }
@@ -55,4 +57,5 @@ syncMotion();
 
 window.PortfolioHomepageBackground=Object.freeze({snapshot:()=>({audit,quiet:quiet(),motion:journey?.dataset.backgroundMotion||'unavailable',
   backend:journey?.dataset.backgroundBackend||'static',currentTime:native?.elapsed??video?.currentTime??null,
-  paused:native?!native.active:video?.paused??true,loopStart,loopEnd,rendering:native?.snapshot()??null})});
+  paused:native?!native.active:video?.paused??true,playbackRate:native?.playbackRate??video?.playbackRate??null,
+  loopStart,loopEnd,rendering:native?.snapshot()??null})});

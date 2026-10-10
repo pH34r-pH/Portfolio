@@ -29,6 +29,17 @@ speed uses timestamps, so a faster monitor does not speed up the observation
 timeline. Brightness/point-size transitions interpolate recorded magnitudes;
 raw inspection, bytes, probabilities and captured stages stay discrete.
 
+Homepage ambient playback runs at 1/40 of the recording's source speed: the
+6.6-second observation sequence takes 264 seconds (4 minutes 24 seconds).
+Each observation receives about one second, with eased brightness and signed
+color transitions, continuously sampled illumination, and a last-to-first
+crossfade. Long rendering stalls hold progression instead of skipping ahead.
+The native renderer still draws at the browser's refresh rate. The compatibility
+video uses 1/16 playback speed (105.6 seconds per loop); this retains its existing
+encoded pixels within the decoder's playback-rate range. Article generation and
+interactive article replay retain their own pace. Pause and quiet mode remain
+available.
+
 Pause, document visibility, offscreen background and quiet preferences suspend
 the animation. Quiet startup does not request an engine. The existing 30 fps
 VP9 recording remains a compatibility fallback, not a high-refresh claim.
