@@ -4,6 +4,7 @@
 .carpentry-label { position:relative; z-index:1; display:inline-flex; align-items:center; justify-content:center; gap:inherit; pointer-events:none; }
 html body[data-carpentry-ready] .carpentry-control[data-carpentry-control] {
   position:relative; isolation:isolate; background-color:#dfc79f; background-clip:content-box;
+  padding:8px 12px;
   background-image:none; border:1px solid transparent; border-radius:7px; box-shadow:none;
   color:#172631; text-shadow:0 1px rgba(255,249,227,.6),0 -1px rgba(73,43,21,.12); transition:none;
 }
