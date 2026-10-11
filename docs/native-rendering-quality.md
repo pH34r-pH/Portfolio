@@ -242,6 +242,12 @@ retry and 1,800 ms ignition behavior. Fast preparations still complete immediate
 static architecture remains available during preparation. Existing injected-timeout
 checks use the exported deadline constant and retain late-completion/retry guards.
 
+The existing BFCache/context-loss fixture caps its injected ignition clock at
+150 ms before holding the next frame. This stages partial progress even when a
+software-rendered frame is delayed; it is synthetic fixture timing, not measured
+native frame timing. Preparation, handoff and released callbacks retain native
+timestamps, and production animation timing is unchanged.
+
 The same run stalled while obtaining the element handle for Home's 250% equivalent
 profile (576 by 360 CSS pixels, DPR 5). Its visible/WebGL/ready state had already
 been logged. That evidence does not prove the seek callback itself was slow.

@@ -337,12 +337,15 @@ async function restoredVisit() {
 
 async function holdPartialIgnitionFrame(page) {
   await page.addInitScript(()=>{
-    // Freeze after partial progress so runner speed cannot turn this into completion.
+    // Stage a partial frame with a capped fixture clock, then freeze its successor.
     const native=requestAnimationFrame.bind(window);window.heldStartup=[];window.holdStartup=true;
     window.requestAnimationFrame=callback=>native(time=>{
-      const elapsed=window.PortfolioModelStartup?.snapshot?.().elapsedActiveMs||0;
-      if(window.holdStartup&&callback.toString().includes('advanceStartup')&&elapsed>=150)window.heldStartup.push(callback);
-      else callback(time);
+      const startup=document.querySelector('[data-model-machine]')?.modelStartup;
+      if(window.holdStartup&&callback.toString().includes('advanceStartup')&&startup?.phase==='igniting') {
+        if(startup.elapsedActiveMs>=150){window.heldStartup.push(callback);return;}
+        if(Number.isFinite(startup.lastTime))time=Math.min(time,startup.lastTime+150-startup.elapsedActiveMs);
+      }
+      callback(time);
     });
     window.releaseStartup=()=>{window.holdStartup=false;window.heldStartup.splice(0).forEach(callback=>native(callback));};
     addEventListener('pagehide',()=>window.heldStartup.splice(0));
