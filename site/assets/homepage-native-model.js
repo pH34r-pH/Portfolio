@@ -53,7 +53,7 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
     await scene.renderer.compileAsync(scene.scene, scene.camera);
     retain();
     scene.selection.visible = scene.probe.visible = false;
-    return new NativePlayback(scene, surface, run, metadata);
+    return new NativePlayback(scene, surface, run, metadata, journey);
   } catch (error) {
     scene?.dispose();
     if (!scene) rendering?.renderer.dispose();
@@ -63,8 +63,9 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
 }
 
 class NativePlayback {
-  constructor(scene, surface, run, metadata) {
+  constructor(scene, surface, run, metadata, journey) {
     this.scene = scene;
+    this.journey = journey;
     this.surface = surface;
     this.run = run;
     this.metadata = metadata;
