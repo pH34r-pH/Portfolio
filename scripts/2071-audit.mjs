@@ -38,14 +38,31 @@ async function auditSearchMetadataMatches(browser) {
     `,
   }));
   const page = await context.newPage();
-  await page.goto(base + "/", { waitUntil: "domcontentloaded" });
-  await page.keyboard.press("Control+K");
-  await page.locator("#portfolio-search").fill("metadata fixture");
-  await expect(page.locator(".search-status")).toHaveText("3 results.");
-  await expect(page.locator(".search-results strong")).toHaveText([
-    "Title-only match", "Body match with image metadata", "Image description match",
-  ]);
-  await context.close();
+  try {
+    // This stubbed-index fixture checks metadata filtering. Native Home startup
+    // is covered separately; keep its GPU preparation out of this query timer.
+    await page.goto(base + "/?model-audit=1", { waitUntil: "domcontentloaded" });
+    await page.keyboard.press("Control+K");
+    await expect(page.locator("dialog.search-dialog")).toBeVisible();
+    const input = page.locator("#portfolio-search");
+    await expect(input).toBeFocused();
+    await input.fill("metadata fixture");
+    await expect(input).toHaveValue("metadata fixture");
+    await expect(page.locator(".search-status")).toHaveText("3 results.");
+    await expect(page.locator(".search-results strong")).toHaveText([
+      "Title-only match", "Body match with image metadata", "Image description match",
+    ]);
+  } catch (error) {
+    const state = await page.evaluate(() => ({
+      input: document.querySelector("#portfolio-search")?.value,
+      focused: document.activeElement?.id,
+      dialogOpen: document.querySelector("dialog.search-dialog")?.open,
+      status: document.querySelector(".search-status")?.textContent,
+      background: window.PortfolioHomepageBackground?.snapshot(),
+    })).catch(snapshotError => ({ snapshotError: snapshotError.message }));
+    console.error("Metadata search fixture failure:", JSON.stringify(state));
+    throw error;
+  } finally { await context.close(); }
 }
 
 async function auditSearchDialog(page, hasPagefind, manifest) {
