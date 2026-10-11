@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import {RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const out=process.env.HOMEPAGE_EVIDENCE_DIR||'ux-screenshots/homepage';
@@ -29,7 +30,7 @@ async function accessibility(page) {
 }
 async function nativeRendering(page) {
   const backend=()=>page.evaluate(()=>PortfolioHomepageBackground.snapshot().backend);
-  await expect.poll(backend,{timeout:30000}).toBe('native');
+  await expect.poll(backend,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe('native');
   const rendering=await page.evaluate(()=>PortfolioHomepageBackground.snapshot().rendering);
   assert.ok(['webgpu','webgl2'].includes(rendering.backend));
   assert.equal(rendering.kind,'recorded-tensors');assert.equal(rendering.nodes,1668);assert.equal(rendering.edges,3601);

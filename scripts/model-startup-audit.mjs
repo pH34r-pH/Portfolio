@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {IGNITION_DURATION_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
+import {IGNITION_DURATION_MS,PREPARATION_TIMEOUT_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
 import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 import {resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
 
@@ -10,7 +10,7 @@ const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}),evidence=[];
-// Includes asynchronous engine import/compilation; product deadlines remain unchanged.
+// Readiness waits observe engine preparation without changing its product deadline.
 const RENDERER_READINESS_TIMEOUT_MS=RENDERER_OBSERVATION_TIMEOUT_MS;
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
 const snapshot=page=>page.evaluate(()=>PortfolioModelStartup.snapshot());
@@ -27,7 +27,7 @@ const startupState=state=>({schemaVersion:STARTUP_SCHEMA_VERSION,started:state.s
 async function open(options={},setup,path=homePath,browserInstance=browser) {
   const context=await browserInstance.newContext({colorScheme:'dark',viewport:{width:1440,height:1000},...options});
   const page=await context.newPage(),errors=[];
-  await page.addInitScript(()=>{
+  await page.addInitScript(preparationTimeoutMs=>{
     window.portfolioStartupPhases=[];window.portfolioStartupDeadlines=[];
     const phases=new MutationObserver(records=>records.forEach(record=>{
       if(record.target.matches?.('[data-model-startup]'))window.portfolioStartupPhases.push(record.target.dataset.startup);
@@ -35,7 +35,7 @@ async function open(options={},setup,path=homePath,browserInstance=browser) {
     phases.observe(document,{subtree:true,attributes:true,attributeFilter:['data-startup']});
     const nativeTimeout=window.setTimeout.bind(window);
     window.setTimeout=(callback,delay,...args)=>{
-      if(delay===15000)window.portfolioStartupDeadlines.push(callback);
+      if(delay===preparationTimeoutMs)window.portfolioStartupDeadlines.push(callback);
       return nativeTimeout(callback,delay,...args);
     };
     const nativeContext=HTMLCanvasElement.prototype.getContext;
@@ -50,7 +50,7 @@ async function open(options={},setup,path=homePath,browserInstance=browser) {
     };
     addEventListener('pagehide',event=>sessionStorage.setItem('__portfolioAuditPageHidePersisted',String(event.persisted)));
     addEventListener('pageshow',event=>sessionStorage.setItem('__portfolioAuditPageShowPersisted',String(event.persisted)));
-  });
+  },PREPARATION_TIMEOUT_MS);
   page.on('pageerror',error=>errors.push(error.message));if(setup)await setup(page);
   await page.goto(base+path,{waitUntil:'domcontentloaded'});
   if(options.javaScriptEnabled!==false)await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioModelStartup)),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(true);

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
+import {RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const out='ux-screenshots/homepage-presentation';
 await mkdir(out,{recursive:true});
@@ -17,7 +18,7 @@ try {
     await expect(root).toHaveAttribute('data-startup','idle');
     assert.equal(await page.evaluate(()=>Boolean(document.querySelector('[data-digital-home]').machine)),false);
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect(root).toHaveAttribute('data-startup',fallback?'fallback':'ready',{timeout:30000});
+    await expect(root).toHaveAttribute('data-startup',fallback?'fallback':'ready',{timeout:fallback?30000:RENDERER_OBSERVATION_TIMEOUT_MS});
     await expect(page.locator('[data-replay-play]')).toBeVisible();
     assert.equal(await page.locator('.digital-replay-disclosure').getAttribute('open'),null);
     if(!fallback) {
@@ -37,7 +38,7 @@ try {
     }
     await page.screenshot({path:`${out}/${width}-${fallback?'fallback':'webgl'}.png`});
     evidence.push({width,fallback,startup:await root.evaluate(n=>n.modelStartup.snapshot())});
-    if(!fallback){await page.reload();await expect(root).toHaveAttribute('data-startup','ready',{timeout:30000});await expect(page.locator('[data-replay-play]')).toHaveText('Play');assert.equal((await root.evaluate(n=>n.modelStartup.snapshot())).completions,0);}
+    if(!fallback){await page.reload();await expect(root).toHaveAttribute('data-startup','ready',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});await expect(page.locator('[data-replay-play]')).toHaveText('Play');assert.equal((await root.evaluate(n=>n.modelStartup.snapshot())).completions,0);}
     await context.close();
   }
 } finally {await writeFile(`${out}/audit.json`,JSON.stringify(evidence,null,2));await browser.close();}
@@ -62,7 +63,7 @@ async function transportDuringIgnition() {
         window.releaseIgnition = () => { startup.advanceIgnition = advance; };
       });
       await page.locator('[data-model-start]').click();
-      await page.waitForFunction(() => window.ignitionHeld);
+      await page.waitForFunction(() => window.ignitionHeld,null,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       const root = page.locator('[data-model-startup]');
       await expect(root).toHaveAttribute('data-startup','igniting');
       if (action === 'pause') {
@@ -80,7 +81,7 @@ async function transportDuringIgnition() {
       const before = await root.evaluate(node => node.machine.snapshot());
       assert.equal(before.playing,false);
       await page.evaluate(() => window.releaseIgnition());
-      await expect(root).toHaveAttribute('data-startup','ready',{timeout:15000});
+      await expect(root).toHaveAttribute('data-startup','ready',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       const after = await root.evaluate(async node => {
         await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         return node.machine.snapshot();

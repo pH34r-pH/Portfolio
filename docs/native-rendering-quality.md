@@ -97,18 +97,19 @@ then resumed for reversal; this prevents the reverse baseline moving meanwhile.
 The native backing sync uses that same held pose. Setting the observed current
 time synchronously completes a pending pause, as specified by
 [Web Animations](https://www.w3.org/TR/web-animations-1/#setting-the-current-time-of-an-animation).
-The final exit still uses four seconds. The ignition phase wait admits the same
-30-second cold renderer budget while preserving the product's 15-second prepare
-deadline and 1,800 ms ignition contract.
+The final exit still uses four seconds. Native readiness has a 75-second
+observation allowance; preparation has a bounded 45-second deadline and ignition
+retains its 1,800 ms contract.
 
-Linux qualification uses one bounded 30-second observation budget for native
+Linux qualification uses one bounded 75-second observation budget for native
 renderer visibility, replay progression, glass sampling, and ignition readiness.
 The delayed-clock audit arms its observer and releases the held clock in the same
 browser task, after checking the held state. Intentional holds do not consume
 the progression deadline. Visibility timeout evidence includes the real stage
 bounds and clock state; glass observation timeouts identify the exit or reversal
 phase. The existing state, geometry, opacity, alignment, and clock predicates
-remain required. Production preparation and ignition durations are unchanged.
+remain required. Production ignition is unchanged. Preparation completes as soon
+as the scene is ready; the 45-second ceiling only controls fallback.
 Native model and full-page evidence screenshots have a separate bounded
 120-second capture allowance. The complete pixel dimensions, DPR, glass passes,
 element stability checks, and geometry assertions remain enabled. Hosted Linux
@@ -206,7 +207,7 @@ metadata; a preview overlay is not a qualified release artifact.
 
 Commit renderer and capture-pipeline edits before running
 `PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs`.
-The served site must use that checkout. Capture checks all 42 tracked inputs
+The served site must use that checkout. Capture checks all 43 tracked inputs
 against their exact HEAD Git blobs before launching Chromium, then verifies the
 served renderer bytes. Git reads have a 10-second timeout and 8 MiB buffer per
 input, including the vendored engine. A clean `git status` is insufficient on
@@ -229,3 +230,22 @@ three-result assertions and original five-second result allowance. Failures
 record input, focus, dialog, status, and background state. The same audit still
 checks real published Pagefind queries on normal Home; dedicated Home and model
 audits continue to cover native initialization and interaction separately.
+
+## Measured preparation and native lookup allowance
+
+Exact-main run 38126143638 retained a real `startup-timeout` after the former
+15-second deadline. The interrupted import was released only 1 ms after observing
+its fresh attempt; the intentional hold did not consume that deadline. Successful
+full-quality hosted preparations took 19,365 and 20,335 ms. Preparation now allows
+45 seconds before fallback, with unchanged quiet-mode, ownership, cancellation,
+retry and 1,800 ms ignition behavior. Fast preparations still complete immediately;
+static architecture remains available during preparation. Existing injected-timeout
+checks use the exported deadline constant and retain late-completion/retry guards.
+
+The same run stalled while obtaining the element handle for Home's 250% equivalent
+profile (576 by 360 CSS pixels, DPR 5). Its visible/WebGL/ready state had already
+been logged. That evidence does not prove the seek callback itself was slow.
+The explicit full-native seek uses a 120-second locator-resolution allowance and
+logs profile identity and elapsed wall time. Playwright's locator evaluation option
+bounds element lookup, not callback execution. Pixel, geometry, MSAA, topology,
+glass and all result assertions remain intact; overall CI job bounds remain in force.

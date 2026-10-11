@@ -1,4 +1,6 @@
 export const IGNITION_DURATION_MS = 1800;
+// Preparation can finish immediately; this bounds the wait before static fallback.
+export const PREPARATION_TIMEOUT_MS = 45000;
 export const STARTUP_STATE_KEY = "portfolio.home-model-startup.v1";
 export const STARTUP_SCHEMA_VERSION = 1;
 
@@ -155,7 +157,7 @@ export class ModelStartup {
     return pending;
   }
 
-  beginDeadline(remaining = 15000) {
+  beginDeadline(remaining = PREPARATION_TIMEOUT_MS) {
     clearTimeout(this.deadline);
     this.deadlineAt = clock() + remaining;
     this.deadline = setTimeout(() => this.fail("startup-timeout"), remaining);
