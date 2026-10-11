@@ -8,7 +8,7 @@ const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const host=await articleHost(base,{componentFixture:true});
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
 await mkdir(out, {recursive:true});
-const browser = await chromium.launch({headless:true});
+const browser = await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const evidence = [];
 async function open(options={}, setup) {
   const context = await browser.newContext(options); const page = await context.newPage();

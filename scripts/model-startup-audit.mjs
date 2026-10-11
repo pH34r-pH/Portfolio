@@ -8,7 +8,7 @@ import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietMo
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
-const browser=await chromium.launch({headless:true}),evidence=[];
+const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}),evidence=[];
 // Includes asynchronous engine import/compilation; product deadlines remain unchanged.
 const RENDERER_READINESS_TIMEOUT_MS=30000;
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
@@ -108,7 +108,7 @@ async function startup(name,width,height,change,options={}) {
     await page.screenshot({path:`${out}/${name}-matched-off.png`});
 
     await page.evaluate(()=>{scrollTo(0,0);releaseStartup();});
-    await expect.poll(async()=>(await snapshot(page)).phase).toBe('igniting');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
     await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(100);
     await page.evaluate(()=>{
       Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
@@ -331,7 +331,7 @@ async function holdPartialIgnitionFrame(page) {
 async function bfcache() {
   // Playwright disables BFCache and its headless shell uses a separate cache
   // policy. Use full Chromium's new headless mode and remove only that switch.
-  const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new'],
+  const cacheBrowser=await chromium.launch({headless:false,args:['--headless=new','--use-angle=swiftshader','--enable-unsafe-swiftshader'],
     ignoreDefaultArgs:['--disable-back-forward-cache']});
   const {context,page,errors}=await open({},holdPartialIgnitionFrame,homePath,cacheBrowser);
   try {

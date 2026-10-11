@@ -6,8 +6,10 @@ const diagnostics=root=>root.evaluate(node=>node.machine.diagnostics());
 export async function contextExitWaitsForTransition(page,root,phone) {
   const input=root.locator('[data-glass-panel="input"]');
   await input.locator('input').focus();
-  // Keep the existing stretched duration and capture within browser frames.
-  await input.evaluate(panel=>panel.style.transitionDuration='4s');
+  // Stretch only this audit's intermediate observation window. Full-quality
+  // software draws can consume the former four-second ease before the sampler
+  // gets a frame; the production duration and capture predicates stay intact.
+  await input.evaluate(panel=>panel.style.transitionDuration='30s');
   const immediate=await beginContextTransitionSample(root,'representation');
   console.log('Glass context: exit observer armed');
   assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
@@ -59,6 +61,10 @@ export async function contextExitWaitsForTransition(page,root,phone) {
   if(exiting.visible)assert.ok(reversing.transitionOffset.x<exiting.transitionOffset.x,'reversed GPU backing follows the returning DOM pane');
   assert.ok(exitingTranslation>reverseSample.translation,
     'reversed DOM translation returns in both spatial and flow layouts');
+  await input.evaluate(panel=>{
+    for(const animation of panel.getAnimations())if(animation.playState==='paused')animation.play();
+    panel.style.transitionDuration='4s';
+  });
   await root.evaluate(node=>node.machine.focus('representation'));
   await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:12000}).toBe(false);
   await expect(input).toHaveAttribute('inert','');

@@ -40,6 +40,11 @@ encoded pixels within the decoder's playback-rate range. Article generation and
 interactive article replay retain their own pace. Pause and quiet mode remain
 available.
 
+Interactive replay also admits at most 100 ms of observation progression per
+presented frame. Normal refresh scheduling keeps its original speed; a slow
+renderer holds the signal rather than skipping to the end. Recorded tensors,
+generation, and raw-coordinate inspection are unchanged.
+
 Pause, document visibility, offscreen background and quiet preferences suspend
 the animation. Quiet startup does not request an engine. The existing 30 fps
 VP9 recording remains a compatibility fallback, not a high-refresh claim.
@@ -75,6 +80,31 @@ glass audit writes `*-quality-costs.json` for both modes before its quality
 assertions and `*-profile.json` before profile assertions; the machine audit
 writes `*-render-diagnostics.json` before renderer assertions. Retain those
 receipts when a later assertion fails so cost changes remain reviewable.
+
+Headless machine, glass, startup, and Lighthouse qualification explicitly select
+ANGLE SwiftShader. Lighthouse uses WebGL2 in this software observation instead
+of an unqualified headless WebGPU driver. Native DPR, MSAA, transmission, and
+complete geometry remain enabled; the published site's backend selection is
+unchanged. Lighthouse's optional full-page report image is disabled because its
+pinned gatherer enlarges the viewport to document height, reallocating the live
+native-DPR canvas outside the measured device profile. All Lighthouse metrics
+and assertions remain enabled; dedicated native visual and UX screenshot audits
+retain screenshot evidence. The glass audit stretches its intermediate transition
+to 30 seconds
+so a slow full-quality draw can expose the same DOM/backing alignment predicates.
+An observed CSS transition is held while its assertions cross the browser RPC,
+then resumed for reversal; this prevents the reverse baseline moving meanwhile.
+The native backing sync uses that same held pose. Setting the observed current
+time synchronously completes a pending pause, as specified by
+[Web Animations](https://www.w3.org/TR/web-animations-1/#setting-the-current-time-of-an-animation).
+The final exit still uses four seconds. The ignition phase wait admits the same
+30-second cold renderer budget while preserving the product's 15-second prepare
+deadline and 1,800 ms ignition contract.
+
+Lighthouse requires three mobile and three desktop reports for each Portfolio
+page: Home, About, Atlas, and Research (24 reports). `/reproduce/` immediately
+redirects to the separately deployed Experiments site; routing checks retain
+that contract. An external site's outage is not Portfolio UI qualification.
 
 ## Local observations, October 9, 2026
 

@@ -321,8 +321,10 @@ class MachineController {
     this.raf = 0; this.clockTicks += 1;
     if (!this.playing || !this.visible || document.hidden) { this.lastTime = null; return; }
     if (this.lastTime === null) this.lastTime = time;
-    const delta = time - this.lastTime;
-    // Presentation follows display rAF; the observation timeline retains its speed.
+    // Hold observation progression through long rendering stalls rather than
+    // jumping across the replay or completing it in a handful of visible frames.
+    const delta = Math.min(time - this.lastTime, 100);
+    // Normal display scheduling retains the observation timeline's speed.
     if (delta > 0) {
       this.fraction = (this.fraction || 0) + delta * FPS / 1000;
       const advance = Math.floor(this.fraction); this.fraction -= advance;

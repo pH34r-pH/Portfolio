@@ -39,7 +39,7 @@ const matrix = [...profiles].flatMap(([reportDir, profile]) => EXPECTED_ROUTES.f
   })),
 ));
 assert.doesNotThrow(() => validateFindingMatrix(matrix, profiles));
-assert.throws(() => validateFindingMatrix(matrix.slice(1), profiles), /Expected 30 Lighthouse reports/);
+assert.throws(() => validateFindingMatrix(matrix.slice(1), profiles), /Expected 24 Lighthouse reports/);
 const oneMissingAbout = matrix.filter((finding) => !finding.url.endsWith('/about/') || finding.profile !== 'mobile' || finding !== matrix.find((item) => item.url.endsWith('/about/') && item.profile === 'mobile'));
 oneMissingAbout.push({ ...matrix.find((item) => item.url.endsWith('/research/') && item.profile === 'mobile') });
 assert.throws(() => validateFindingMatrix(oneMissingAbout, profiles), /Expected 3 Lighthouse reports for mobile \/about\//);
