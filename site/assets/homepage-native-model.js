@@ -75,6 +75,14 @@ class NativePlayback {
     this.intervals = [];
     this.active = false;
     this.scene.applyFrame(run, sampleReplay(run, 0));
+    this.relayout = () => {
+      if (this.disposed || this.active || document.hidden) return;
+      const rect = this.surface.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= innerHeight) return;
+      // Re-seat page furniture while retaining the paused activation frame.
+      this.scene.render();
+    };
+    this.journey.addEventListener("portfolio:reading", this.relayout);
   }
   sync(active) {
     this.active = active;
@@ -116,7 +124,10 @@ class NativePlayback {
     };
   }
   dispose() {
+    if(this.disposed)return;
     this.sync(false);
+    this.disposed = true;
+    this.journey.removeEventListener("portfolio:reading", this.relayout);
     this.scene.dispose();
     this.surface.remove();
   }
