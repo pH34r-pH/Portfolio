@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "429c49bdcf6cab18b9ddc89eb1b717e107c53f14",
-    "sourceTreeSha256": "7c75c268a9f7efad8e551bf9f0826e3f926beba7f12b59d5fe849e9065914c01",
+    "sourceCommit": "4afef0a864e5872441539a83a7f3f31ae5e0dc37",
+    "sourceTreeSha256": "5e3f86ae0fa68773e7971f6102ff3e6ad51e2a76a9999dbfe5e430df892752e9",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -53,12 +53,12 @@
       "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
       "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
       "scripts/test-model-startup.mjs": "188e82df0289c7576624b24c25e422e9c235eaeb336324f8ff183898371aa9d6",
-      "scripts/model-audit-host.mjs": "271d1a23f66d656237be138f5f110747c3b4fe38b0cf003c3106a37239270141",
+      "scripts/model-audit-host.mjs": "ffedb5825995f449d22d3354d2c70e9d365afc6e54185a42d962aef059b17633",
       "scripts/model-visual-audit.mjs": "fd11960411b1e4c513e3a704c95a7983fd4981def7512bbb5b7544b2465132ac",
       "scripts/model-startup-audit.mjs": "a3e5c8db22233fa50ba35287fdd6f1d0d8787924e71508fb683e99cfae6684db",
       "scripts/model-startup-observation.mjs": "96d43c12ef94b6e1c416c768d1a0d8716dda32bff41b51d3f4e20445851009f2",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
-      ".github/workflows/ux-quality.yml": "f9af8ae16919018d91f7d64c1347f602326145fd2ef442399acbdb0e15cc9095",
+      ".github/workflows/ux-quality.yml": "9aa288988ee63461ed7f8aee803a5eba931e683cc614b18088eedd43b13cfe24",
       "package.json": "5130a475509b9566ca9a80750880097fcd273254c4060210ef66ad1f6cd5f37a",
       "package-lock.json": "079df1e1ab5142a4efcd68013f1c9781b6ab66532153be41d7e62e86318cdd4d"
     }
