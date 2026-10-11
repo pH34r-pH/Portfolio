@@ -219,3 +219,13 @@ publication jobs run the existing `test-model-startup.mjs` raw-byte, decoded-ima
 and geometry contract immediately after dependency installation, before costly
 media generation. Source qualification repeats it after its fresh capture. Any
 tracked renderer or pipeline change requires matching shipped poster provenance.
+
+## Search metadata fixture readiness
+
+The existing 2071 metadata-filter fixture uses `/?model-audit=1` so native Home
+GPU preparation does not compete with its 120 ms query debounce. It waits for
+the dialog and input focus, verifies the entered value, then retains the exact
+three-result assertions and original five-second result allowance. Failures
+record input, focus, dialog, status, and background state. The same audit still
+checks real published Pagefind queries on normal Home; dedicated Home and model
+audits continue to cover native initialization and interaction separately.
