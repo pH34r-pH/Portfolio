@@ -3,7 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertEncasedRender} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const host=await articleHost(base,{componentFixture:true});
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
@@ -25,6 +25,17 @@ async function open(options={}, setup) {
 }
 async function snapshot(root) { return root.evaluate(node=>node.machine.snapshot()); }
 async function seek(root, frame) { await root.evaluate((node,value)=>node.machine.seek(value), frame); }
+async function settledFramingDiagnostics(root) {
+  let diagnostics;
+  // DOM dimensions update before ResizeObserver applies the camera/glass layout.
+  // Observe that real handoff; do not force a resize or substitute fit bounds.
+  await expect.poll(async()=>{
+    diagnostics=await root.evaluate(node=>node.machine.diagnostics());
+    const {viewport}=diagnostics.graphGeometryBounds,resolution=diagnostics.resolution;
+    return viewport.width===resolution.cssWidth&&viewport.height===resolution.cssHeight;
+  },{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(true);
+  return diagnostics;
+}
 function assertInspectionPose(actual,expected,label,{layoutUnchanged=true}={}) {
   const controls=pose=>({yaw:pose.yaw,pitch:pose.pitch,zoom:pose.zoom,pan:pose.pan});
   assert.deepEqual(controls(actual),controls(expected),`${label}: stored orbit/zoom/pan controls`);
@@ -68,20 +79,20 @@ async function auditResetFitAfterResize(page,root) {
   const resized=await canvas.boundingBox();
   assert.equal(Math.round(resized.width),Math.round(initial.width)-1,'Genuine one-pixel viewport resize changes the article canvas width');
   assert.equal(Math.round(resized.height),Math.round(initial.height),'Viewport resize preserves the article canvas height');
-  const preReset=await root.evaluate(node=>node.machine.diagnostics());
+  const preReset=await settledFramingDiagnostics(root);
   assert.equal(preReset.camera.yaw,orbited.yaw,'Resize preserves the inspected yaw');
   assert.equal(preReset.camera.pitch,orbited.pitch,'Resize preserves the inspected pitch');
   assert.equal(preReset.camera.zoom,1,'Resize fits complete geometry at the existing unit zoom');
   assert.equal(preReset.graphGeometryBounds.components.housing.count,8,'Fit includes all encased housing corners');
   assertFullGraphFit(preReset,`orbit after genuine ${Math.round(initial.width)}×${Math.round(initial.height)} → ${Math.round(resized.width)}×${Math.round(resized.height)} resize`);
   await root.locator('[data-camera="reset"]').click();
-  const reset=await root.evaluate(node=>node.machine.diagnostics());
+  const reset=await settledFramingDiagnostics(root);
   assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);assert.equal(reset.camera.zoom,1);
   assert.deepEqual(reset.camera.pan,{x:0,y:0});
   assert.notEqual(reset.camera.distance,preReset.camera.distance,'Reset recomputes the complete-geometry fit for the default angle');
   assertFullGraphFit(reset,'reset after genuine resize');
   const fresh=await open({viewport:{width:359,height:800},deviceScaleFactor:3,isMobile:true,hasTouch:true});
-  const baseline=await fresh.root.evaluate(node=>node.machine.diagnostics());
+  const baseline=await settledFramingDiagnostics(fresh.root);
   // A fresh view derives its fit from the current full geometry. Flat-scene
   // distance snapshots no longer describe the physical enclosure.
   assertFullGraphFit(baseline,'fresh encased default view');
@@ -90,6 +101,7 @@ async function auditResetFitAfterResize(page,root) {
   await fresh.context.close();
   await page.setViewportSize({width:360,height:800});
   await page.waitForFunction(width=>Math.round(document.querySelector('[data-model-machine] [data-machine-canvas]').getBoundingClientRect().width)===width,Math.round(initial.width));
+  await settledFramingDiagnostics(root);
   return {initialCanvas:{width:Math.round(initial.width),height:Math.round(initial.height)},orbited:{yaw:orbited.yaw,pitch:orbited.pitch},resizedCanvas:{width:Math.round(resized.width),height:Math.round(resized.height)},preReset:{distance:preReset.camera.distance,bounds:preReset.graphGeometryBounds},reset:{distance:reset.camera.distance,bounds:reset.graphGeometryBounds},freshDefault:{distance:baseline.camera.distance,bounds:baseline.graphGeometryBounds}};
 }
 async function auditTouch(page,root) {

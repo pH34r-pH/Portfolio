@@ -3,14 +3,14 @@ import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {IGNITION_DURATION_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
-import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore} from './model-audit-host.mjs';
+import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
 const out=process.env.STARTUP_EVIDENCE_DIR||'ux-screenshots/startup';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}),evidence=[];
 // Includes asynchronous engine import/compilation; product deadlines remain unchanged.
-const RENDERER_READINESS_TIMEOUT_MS=30000;
+const RENDERER_READINESS_TIMEOUT_MS=RENDERER_OBSERVATION_TIMEOUT_MS;
 const manifest=await (await fetch(base+'/assets/model-posters/manifest.json')).json();
 const snapshot=page=>page.evaluate(()=>PortfolioModelStartup.snapshot());
 const settle=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
@@ -101,7 +101,7 @@ async function startup(name,width,height,change,options={}) {
     await expect(page.locator('.machine-poster')).toBeVisible();await page.screenshot({path:`${out}/${name}-powered-down.png`});
     release();
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:RENDERER_READINESS_TIMEOUT_MS});
-    await expect.poll(()=>page.evaluate(()=>heldStartup.length)).toBe(1);
+    await expect.poll(()=>page.evaluate(()=>heldStartup.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     const prepared=await snapshot(page);assert.equal(prepared.phase,'prepared');assert.equal(prepared.handoffs,0);
     const view=prepared.firstFrame,phone=page.viewportSize().width<=720;
     matchPoster(view,manifest.assets.find(asset=>asset.name===(phone?'phone':'desktop')&&asset.theme==='dark'));
@@ -109,7 +109,7 @@ async function startup(name,width,height,change,options={}) {
 
     await page.evaluate(()=>{scrollTo(0,0);releaseStartup();});
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
-    await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs).toBeGreaterThan(100);
+    await expect.poll(async()=>(await snapshot(page)).elapsedActiveMs,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBeGreaterThan(100);
     await page.evaluate(()=>{
       Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});
       document.dispatchEvent(new Event('visibilitychange'));
@@ -124,7 +124,7 @@ async function startup(name,width,height,change,options={}) {
     await expect.poll(()=>page.locator('[data-machine-canvas]').evaluate(canvas=>{
       const box=canvas.getBoundingClientRect();return box.bottom<=0||box.top>=innerHeight;
     })).toBe(true);
-    await expect.poll(async()=>(await snapshot(page)).scheduled,{timeout:5000})
+    await expect.poll(async()=>(await snapshot(page)).scheduled,{timeout:RENDERER_READINESS_TIMEOUT_MS})
       .toBe(false);
     const offscreen=await snapshot(page);assert.equal(offscreen.scheduled,false,'Offscreen startup has no pending frame');
     await page.waitForTimeout(120);assert.equal((await snapshot(page)).elapsedActiveMs,offscreen.elapsedActiveMs,'Offscreen time does not count toward ignition');
@@ -132,7 +132,7 @@ async function startup(name,width,height,change,options={}) {
       document.querySelector('[data-machine-canvas]').style.transform='';
       dispatchEvent(new Event('scroll'));
     });
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const ready=await snapshot(page);
     assert.equal(ready.handoffs,1);assert.equal(ready.completions,1);assert.equal(ready.scheduled,false);
     assert.equal(ready.ignitionComplete,true);assert.equal(ready.elapsedActiveMs,IGNITION_DURATION_MS);
@@ -169,7 +169,7 @@ async function quietFallback(mode,options) {
     assert.equal(engines,0,'Clearing quiet mode does not bypass Home startup intent');
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:RENDERER_READINESS_TIMEOUT_MS});
-    await expect.poll(async()=>(await snapshot(page)).phase).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     assert.ok(engines>0);assert.deepEqual(errors,[]);
     evidence.push({mode,phase:'quiet then explicit Home startup',engines,errors});
   } finally {await context.close();}
@@ -337,7 +337,7 @@ async function bfcache() {
   try {
     await page.getByRole('button',{name:'Start interactive model'}).click();
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
-    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
+    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     const before=await snapshot(page);
     assert.equal(before.ignitionComplete,false,'BFCache case captures partial ignition');
     assert.ok(before.elapsedActiveMs>=150,'BFCache captures ignition after the partial-progress frame is held');
@@ -347,7 +347,7 @@ async function bfcache() {
     await page.waitForTimeout(16000);
     await page.goBack({waitUntil:'commit'});await expect(page).toHaveURL(homeUrl);
     await page.evaluate(()=>window.releaseStartup());
-    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:10000}).toBe('ready');
+    await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const persisted=await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditPageShowPersisted'));
     assert.equal(persisted,'true','Browser restores the healthy homepage from BFCache');
     const after=await snapshot(page);
@@ -476,7 +476,7 @@ async function failContextDuringIgnition(page) {
   await page.getByRole('button',{name:'Start interactive model'}).click();
   await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('igniting');
   if(await page.evaluate(()=>Array.isArray(window.heldStartup)))
-    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length)).toBe(1);
+    await expect.poll(()=>page.evaluate(()=>window.heldStartup.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
   const partial=await snapshot(page);
   assert.ok(partial.elapsedActiveMs>=150&&partial.elapsedActiveMs<IGNITION_DURATION_MS,
     'Failure injection starts after the partial-progress frame is held but before completion');

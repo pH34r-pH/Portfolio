@@ -101,6 +101,17 @@ The final exit still uses four seconds. The ignition phase wait admits the same
 30-second cold renderer budget while preserving the product's 15-second prepare
 deadline and 1,800 ms ignition contract.
 
+Linux qualification uses one bounded 30-second observation budget for native
+renderer visibility, replay progression, glass sampling, and ignition readiness.
+The delayed-clock audit arms its observer and releases the held clock in the same
+browser task, after checking the held state. Intentional holds do not consume
+the progression deadline. Visibility timeout evidence includes the real stage
+bounds and clock state; glass observation timeouts identify the exit or reversal
+phase. The existing state, geometry, opacity, alignment, and clock predicates
+remain required. Production preparation and ignition durations are unchanged.
+The one-pixel resize regression waits for renderer bounds to match the live
+canvas dimensions before checking the complete fit; it does not invoke resize.
+
 Lighthouse requires three mobile and three desktop reports for each Portfolio
 page: Home, About, Atlas, and Research (24 reports). `/reproduce/` immediately
 redirects to the separately deployed Experiments site; routing checks retain
