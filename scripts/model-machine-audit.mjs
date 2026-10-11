@@ -3,13 +3,24 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {eligible,advance,frozenAcrossFrames,auditPlayback,auditDelayedClock} from './model-playback-audit.mjs';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS,NATIVE_ELEMENT_TIMEOUT_MS} from './model-audit-host.mjs';
 const base = process.env.PORTFOLIO_AUDIT_URL || 'http://127.0.0.1:4173';
 const host=await articleHost(base,{componentFixture:true});
 const out = process.env.MODEL_EVIDENCE_DIR || 'ux-screenshots/model';
 await mkdir(out, {recursive:true});
 const browser = await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']});
 const evidence = [];
+async function resetView(root,label) {
+  const started=performance.now();
+  console.log(`Reset view action: ${label}`);
+  try {
+    await root.locator('[data-camera="reset"]').click({timeout:NATIVE_ELEMENT_TIMEOUT_MS});
+    console.log(`Reset view completed: ${label} (${Math.round(performance.now()-started)}ms)`);
+  } catch(error) {
+    console.error(`Reset view failed: ${label} (${Math.round(performance.now()-started)}ms)`);
+    throw error;
+  }
+}
 async function open(options={}, setup) {
   const context = await browser.newContext(options); const page = await context.newPage();
   if(host.html)await page.route(host.url,route=>route.fulfill({contentType:'text/html',body:host.html}));
@@ -59,7 +70,7 @@ function assertFullGraphFit(diagnostics,label) {
   }
 }
 async function auditResetFitAfterResize(page,root) {
-  await root.locator('[data-camera="reset"]').click();
+  await resetView(root,'phone default before resize');
   const canvas=root.locator('[data-machine-canvas]'),camera=()=>root.evaluate(node=>node.machine.diagnostics().camera);
   await canvas.scrollIntoViewIfNeeded();
   const initial=await canvas.boundingBox();
@@ -85,7 +96,7 @@ async function auditResetFitAfterResize(page,root) {
   assert.equal(preReset.camera.zoom,1,'Resize fits complete geometry at the existing unit zoom');
   assert.equal(preReset.graphGeometryBounds.components.housing.count,8,'Fit includes all encased housing corners');
   assertFullGraphFit(preReset,`orbit after genuine ${Math.round(initial.width)}×${Math.round(initial.height)} → ${Math.round(resized.width)}×${Math.round(resized.height)} resize`);
-  await root.locator('[data-camera="reset"]').click();
+  await resetView(root,'phone after genuine resize');
   const reset=await settledFramingDiagnostics(root);
   assert.equal(reset.camera.yaw,-.15);assert.equal(reset.camera.pitch,.38);assert.equal(reset.camera.zoom,1);
   assert.deepEqual(reset.camera.pan,{x:0,y:0});
@@ -124,7 +135,7 @@ async function auditTouch(page,root) {
   await touch('touchEnd',[]);assert.equal(await root.evaluate(node=>node.machine.diagnostics().pointers),0);
   await touch('touchStart',[p(4,100,150),p(5,220,150)]);await touch('touchCancel',[]);
   assert.equal(await root.evaluate(node=>node.machine.diagnostics().pointers),0);
-  await root.locator('[data-camera="reset"]').click();await seek(root,145);
+  await resetView(root,'after touch inspection');await seek(root,145);
   // A swipe in document content outside the viewer retains native page scrolling.
   await page.evaluate(()=>scrollTo(0,0));const before=await page.evaluate(()=>scrollY);
   const outside=await root.evaluate(node=>{
@@ -193,7 +204,7 @@ try {
       await page.setViewportSize({width,height});await page.waitForTimeout(120);
     }
     if(name==='phone360')evidence.push({name:'reset-fit-after-orbit-resize',...(await auditResetFitAfterResize(page,root))});
-    await root.locator('[data-camera="reset"]').click();
+    await resetView(root,`${name} after camera inspection and resize`);
     if(name==='phone360')await auditTouch(page,root);
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
     await root.locator('[data-machine-stage]').focus(); await page.keyboard.press('ArrowLeft');

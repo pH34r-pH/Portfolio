@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "4afef0a864e5872441539a83a7f3f31ae5e0dc37",
-    "sourceTreeSha256": "5e3f86ae0fa68773e7971f6102ff3e6ad51e2a76a9999dbfe5e430df892752e9",
+    "sourceCommit": "a2a2ca40fcd2e7366ec76d899e88caea79b8cd00",
+    "sourceTreeSha256": "2378f3e5b4f2a473e2204871779d063edeaf2f11000a64c4c789d67a8df5e4dd",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -58,7 +58,7 @@
       "scripts/model-startup-audit.mjs": "a3e5c8db22233fa50ba35287fdd6f1d0d8787924e71508fb683e99cfae6684db",
       "scripts/model-startup-observation.mjs": "96d43c12ef94b6e1c416c768d1a0d8716dda32bff41b51d3f4e20445851009f2",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
-      ".github/workflows/ux-quality.yml": "9aa288988ee63461ed7f8aee803a5eba931e683cc614b18088eedd43b13cfe24",
+      ".github/workflows/ux-quality.yml": "183ffea653b03eecda5d392b5eb822bacbd29c7caf68e0d2f834ce21323dfeb5",
       "package.json": "5130a475509b9566ca9a80750880097fcd273254c4060210ef66ad1f6cd5f37a",
       "package-lock.json": "079df1e1ab5142a4efcd68013f1c9781b6ab66532153be41d7e62e86318cdd4d"
     }
