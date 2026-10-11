@@ -255,3 +255,18 @@ The explicit full-native seek uses a 120-second locator-resolution allowance and
 logs profile identity and elapsed wall time. Playwright's locator evaluation option
 bounds element lookup, not callback execution. Pixel, geometry, MSAA, topology,
 glass and all result assertions remain intact; overall CI job bounds remain in force.
+
+Finished-bundle run 38135853285 passed all source gates and nine bundle groups,
+including the published-article visual matrix. Its article-isolation check instead
+timed out waiting for Playwright's stage-stability frames immediately after Start.
+The reader already reveals its stage after preparation; the audit now observes
+renderer/startup readiness before its bounded 120-second stage scroll. It keeps
+the same user Start, ownership, complete ignition and native-renderer assertions.
+
+The same bundle's article-follow check observed the previous heading only twice
+within five seconds. That log does not establish a context-mapping defect or which
+viewport failed. Follow observation now uses the existing 75-second native budget;
+all exact heading, context, glass-pane and scene-focus assertions remain intact.
+Failure metadata records viewport, scroll bounds, heading positions, reading line
+and actual context so a later failure can distinguish delayed observation from
+incorrect geometry. These bounds are CI allowances, not reader latency targets.

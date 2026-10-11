@@ -698,13 +698,24 @@ jobs:
           else
             printf 'audit_status\tNOT_RUN\n' >> "$summary"
           fi
+          if [ "$JOB_OUTCOME" != success ]; then
+            if [ -f Portfolio/ux-screenshots/startup/audit.json ]; then
+              cp Portfolio/ux-screenshots/startup/audit.json "$RUNNER_TEMP/portfolio-bundle-startup-failure.json"
+            fi
+            for receipt in Portfolio/ux-screenshots/article-lm/*-failure.json; do
+              [ -f "$receipt" ] || continue
+              cp "$receipt" "$RUNNER_TEMP/portfolio-bundle-article-$(basename "$receipt")"
+            done
+          fi
       - name: Upload compact finished-bundle UX audit summary
         continue-on-error: true
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: bundle-ux-audit-summary-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/portfolio-bundle-ux-audit-summary.tsv
+          path: |
+            ${{ runner.temp }}/portfolio-bundle-ux-audit-summary.tsv
+            ${{ runner.temp }}/portfolio-bundle-*-failure.json
           if-no-files-found: warn
           retention-days: 14
       - name: Upload detailed finished-bundle audit diagnostics on failure or manual review

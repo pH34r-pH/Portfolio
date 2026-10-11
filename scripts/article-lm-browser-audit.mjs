@@ -6,6 +6,38 @@ import { decodeWeights, forwardBytes, sampleByte, seededRandom } from "../site/a
 import { modelContext } from "../site/assets/model-context.js";
 import { RENDERER_OBSERVATION_TIMEOUT_MS } from "./model-audit-host.mjs";
 
+async function retainArticleFailure(page, path, error) {
+  let snapshot, captureTimer;
+  try {
+    const capture = page.evaluate(() => {
+      const model = document.querySelector('.article-model-machine');
+      if (!model) return { missingModel: true };
+      const host = model.querySelector('.machine-spatial-host'), stage = model.querySelector('[data-machine-stage]');
+      const height = node => node?.getBoundingClientRect().height || 0;
+      const header = height(document.querySelector('.topbar')) || Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--2071-header')) || 58;
+      const toolbar = height(model.querySelector('.article-model-toolbar'));
+      function contextLine() {
+        if (model.dataset.viewerHidden === 'true' || model.dataset.viewerPinned === 'false') return header + innerHeight * .25;
+        const spatial = host?.dataset.instruments === 'spatial' || model.dataset.modelReaderLayout === 'true';
+        return Math.min(Math.max(0, innerHeight - 3), header + toolbar + 12 + (height(spatial ? host : stage) || 280) + (spatial ? 28 : 72));
+      }
+      const readingLine = contextLine();
+      return { scrollY, maxScroll: document.documentElement.scrollHeight - innerHeight, viewport: { width: innerWidth, height: innerHeight },
+        readingLine, header, toolbar, hostHeight: height(host), stageHeight: height(stage),
+        state: { heading: model.dataset.articleHeading, context: model.dataset.articleContext, follow: model.dataset.modelFollow,
+          pinned: model.dataset.viewerPinned, hidden: model.dataset.viewerHidden, startup: model.dataset.startup, lmState: model.dataset.lmState },
+        scene: { focus: model.machineController?.scene?.focus, contextPart: model.machineController?.scene?.contextPart },
+        headings: [...document.querySelectorAll('.myst-reader [data-model-context]:not(.article-model-machine [data-model-context])')]
+          .map(node => ({ id: node.id, part: node.dataset.modelContext, top: node.getBoundingClientRect().top })) };
+    });
+    snapshot = await Promise.race([capture, new Promise((_, reject) => {
+      captureTimer = setTimeout(() => reject(new Error('Article failure snapshot exceeded 10 seconds')), 10000);
+    })]);
+  } catch (captureError) { snapshot = { captureError: captureError.message }; }
+  finally { clearTimeout(captureTimer); }
+  await writeFile(path, JSON.stringify({ error: error.message, snapshot }, null, 2) + '\n');
+}
+
 async function openTrainedArticle(page, url, requests) {
   await page.goto(url, { waitUntil: "networkidle" });
   const root = page.locator(".article-model-machine");
@@ -100,7 +132,7 @@ async function verifyFollowing(root, page) {
       const line = Math.min(innerHeight - 3, header + toolbar + 12 + height + (spatial ? 28 : 72));
       scrollBy(0, document.getElementById(id).getBoundingClientRect().top - line + 2);
     }, target.id);
-    await expect(root).toHaveAttribute("data-article-heading", target.id);
+    await expect(root).toHaveAttribute("data-article-heading", target.id, { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
     await expect(root).toHaveAttribute("data-article-context", target.part);
     await expect(root.locator("[data-viewer-context]")).toContainText(target.text);
     await expect(root.locator(`[data-glass-panel=${modelContext(target.part).instrument}]`)).toHaveAttribute("data-context-focus", "true");
@@ -197,6 +229,9 @@ async function auditProfile(browser, config, view) {
       errors,
       sampledBytes: sampled,
     };
+  } catch (error) {
+    await retainArticleFailure(page, `${out}/${view.name}-failure.json`, error);
+    throw error;
   } finally {
     await context.close();
   }
