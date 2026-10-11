@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { chromium, expect } from '@playwright/test';
+import { RENDERER_OBSERVATION_TIMEOUT_MS } from './model-audit-host.mjs';
 
 const base = new URL(process.env.PORTFOLIO_PAGES_AUDIT_URL || 'http://127.0.0.1:4174/Portfolio/',
   process.env.PORTFOLIO_PAGES_AUDIT_URL || 'http://127.0.0.1:4174/Portfolio/');
@@ -63,7 +64,7 @@ try {
   await expect(home.locator('[data-model-start]')).toBeVisible({ timeout: 30000 });
   await home.locator('[data-model-start]').click();
   await expect(home.locator('[data-model-start]')).toHaveJSProperty('hidden', true, { timeout: 30000 });
-  await expect(home.locator('[data-startup]')).toHaveAttribute('data-startup', 'ready', { timeout: 30000 });
+  await expect(home.locator('[data-startup]')).toHaveAttribute('data-startup', 'ready', { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
   await expect(home.locator('[data-model-machine]')).toHaveAttribute('data-render', 'webgl');
   await expect(home.locator('[data-machine-canvas]')).toBeVisible();
 

@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "92a830c6ed6a81918f92a69f9a38041c8c6139fc",
-    "sourceTreeSha256": "935e2a35f33f07a88ed9c31a82f5ddfd67a2b5610e6931f4543575ba02d64a32",
+    "sourceCommit": "429c49bdcf6cab18b9ddc89eb1b717e107c53f14",
+    "sourceTreeSha256": "7c75c268a9f7efad8e551bf9f0826e3f926beba7f12b59d5fe849e9065914c01",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -18,6 +18,7 @@
     "servedSourceHashes": {
       "model-view.js": "053b6831fbe4737574698117310fadd759696ae98e2a84e41e8cdde16996d88c",
       "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
+      "model-startup.js": "fe8c4d698b6116daec5bce3f90c48cb0ec02ca8959b822d1b70b95e913cc1d1c",
       "model-scene.js": "81f4d058b0f3d1526c6b7db279f245c78b6fa49930c6f85a0896008cf9316291",
       "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
       "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",
@@ -47,14 +48,14 @@
       "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
     },
     "pipelineHashes": {
-      "scripts/capture-model-posters.mjs": "60bb069ce9fa4ce923102512e3b079609c9b3ee0d8c6ce4296236750b4b8fe2b",
+      "scripts/capture-model-posters.mjs": "44cd7d952cefc3358f4c02d0698d5eaa0ab02a9e0c8a948aa23c8804477b871f",
       "scripts/model-pixel-fidelity.mjs": "014e2c7baa3a713a81e8d44d42daef819ae29834957a74be13ea3ff400593f32",
       "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
       "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
-      "scripts/test-model-startup.mjs": "532c72f4aad9abc90b6d3959a10e27a46ae46a0038e7c39415a6a0fc3edbdabd",
-      "scripts/model-audit-host.mjs": "f560dbd28d640e9002760778fc8e45308e769f892f7f8088cde9e5b9ea196341",
-      "scripts/model-visual-audit.mjs": "a58909665000c6a5243e0ef15cefe258e7d3c3f1d0d69549f8384944ec445032",
-      "scripts/model-startup-audit.mjs": "f4649715b7d5222a484a94fb775cf61065bf6a93e5b18ffa33465de11142d003",
+      "scripts/test-model-startup.mjs": "188e82df0289c7576624b24c25e422e9c235eaeb336324f8ff183898371aa9d6",
+      "scripts/model-audit-host.mjs": "271d1a23f66d656237be138f5f110747c3b4fe38b0cf003c3106a37239270141",
+      "scripts/model-visual-audit.mjs": "fd11960411b1e4c513e3a704c95a7983fd4981def7512bbb5b7544b2465132ac",
+      "scripts/model-startup-audit.mjs": "a3e5c8db22233fa50ba35287fdd6f1d0d8787924e71508fb683e99cfae6684db",
       "scripts/model-startup-observation.mjs": "96d43c12ef94b6e1c416c768d1a0d8716dda32bff41b51d3f4e20445851009f2",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
       ".github/workflows/ux-quality.yml": "f9af8ae16919018d91f7d64c1347f602326145fd2ef442399acbdb0e15cc9095",
@@ -84,6 +85,7 @@
   "sourceHashes": {
     "model-view.js": "053b6831fbe4737574698117310fadd759696ae98e2a84e41e8cdde16996d88c",
     "model-power.js": "7fb8bf73f96df22713ad9907601a790e128a25b34af9b9070201c61c82ecdfba",
+    "model-startup.js": "fe8c4d698b6116daec5bce3f90c48cb0ec02ca8959b822d1b70b95e913cc1d1c",
     "model-scene.js": "81f4d058b0f3d1526c6b7db279f245c78b6fa49930c6f85a0896008cf9316291",
     "model-encased-materials.js": "8fedcd734dfd66c0ab541a3af7bb2e02fe3a96adc3078cdb133a97d5ed98870a",
     "model-encased-housing.js": "cf6a225ab242cddda24ad4cae25dc712817902c37386c473909a15d29dc1772d",

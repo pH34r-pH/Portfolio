@@ -3,9 +3,21 @@ import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
 // Full-quality software rendering can delay observation across several native frames.
-export const RENDERER_OBSERVATION_TIMEOUT_MS = 30000;
+export const RENDERER_OBSERVATION_TIMEOUT_MS = 75000;
 // Native DPR and full glass passes remain enabled during evidence capture.
 export const NATIVE_SCREENSHOT_TIMEOUT_MS = 120000;
+// Locator resolution can cross several full-quality software-rendered frames.
+export const NATIVE_ELEMENT_TIMEOUT_MS = 120000;
+
+export async function seekNativeFrame(root,label) {
+  const started=Date.now();
+  console.log('Native visual seek:',label);
+  // Playwright bounds locator resolution here; it does not time the callback.
+  await root.evaluate(node=>{node.machine.seek(145);},undefined,{timeout:NATIVE_ELEMENT_TIMEOUT_MS}).then(
+    ()=>console.log('Native visual seek elapsed:',label,Date.now()-started,'ms'),
+    error=>{console.error('Native visual seek failed:',label,Date.now()-started,'ms');throw error;}
+  );
+}
 
 // The encased scene retains its physical housing and optical routes in both
 // modes. Renderer totals include transmission/back-face passes and are reported

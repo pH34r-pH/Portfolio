@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
 import { auditPhoneTopologySelection } from "./topology-browser-audit.mjs";
+import { RENDERER_OBSERVATION_TIMEOUT_MS } from "./model-audit-host.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
 
@@ -144,7 +145,7 @@ async function auditVisibleMachine(browser) {
     await page.getByRole('button',{name:'Start interactive model'}).focus();
     await page.keyboard.press('Enter');
   }
-  await expect(machine).toHaveAttribute("data-render", /webgl|fallback/, { timeout: 30000 });
+  await expect(machine).toHaveAttribute("data-render", /webgl|fallback/, { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
   const loaded = [...engineRequests];
   assert.deepEqual(loaded.map(url=>new URL(url).pathname).sort(), [
     '/assets/vendor/three@0.186.1/three.core.js',

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {mkdir,readFile,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
-import {articleHost,prepareArticleModel,screenshotModel} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,screenshotModel,seekNativeFrame,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 import {fileURLToPath} from 'node:url';
 
 const sourceBase=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:45937';
@@ -82,12 +82,12 @@ async function inspectHost(host,viewport) {
     await scrollObservedStageIntoView(page);
     await page.getByRole('button',{name:'Start interactive model'}).click();
   } else await prepareArticleModel(page,root,host);
-  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
   await expect(root).toHaveAttribute('data-render','webgl');
   // Full-geometry QA explicitly resets article focus. Context zoom is tested
   // separately against real prose by article-model-sticky-audit.mjs.
   if(kind!=='home')await root.evaluate(node=>{node.machine.focus('all');node.machineController.scene.resetView();});
-  await root.evaluate(node=>node.machine.seek(145));
+  await seekNativeFrame(root,`${kind}/${name}, ${width}x${height} DPR${dpr}`);
   const diagnostics=await root.evaluate(node=>node.machine.diagnostics());
   assert.equal(diagnostics.nodes,1668);assert.equal(diagnostics.edges,3601);
   assert.equal(diagnostics.quality.requested,'auto');assert.equal(diagnostics.quality.effective,'refraction');
@@ -175,7 +175,7 @@ try {
   const page=await context.newPage();await page.goto(sourceBase+'/?model-audit=1',{waitUntil:'networkidle'});
   const root=page.locator('[data-model-machine]').first();await root.scrollIntoViewIfNeeded();
   await page.getByRole('button',{name:'Start interactive model'}).click();
-  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:30000});
+  await expect(root).toHaveAttribute('data-render',/webgl|fallback/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
   await expect(root).toHaveAttribute('data-render','webgl');
   const resize=[],canonicalHomeViews={};
   for(const width of [721,720,412,721]) {

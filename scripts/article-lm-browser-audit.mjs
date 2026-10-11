@@ -4,6 +4,7 @@ import { chromium, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { decodeWeights, forwardBytes, sampleByte, seededRandom } from "../site/assets/model-inference.js";
 import { modelContext } from "../site/assets/model-context.js";
+import { RENDERER_OBSERVATION_TIMEOUT_MS } from "./model-audit-host.mjs";
 
 async function openTrainedArticle(page, url, requests) {
   await page.goto(url, { waitUntil: "networkidle" });
@@ -18,7 +19,7 @@ async function openTrainedArticle(page, url, requests) {
   const heading = await root.locator(".machine-heading h2").textContent();
   await expect(root.locator("[name=prompt]")).toBeDisabled();
   await root.locator("[data-model-start]").click();
-  await expect(root).toHaveAttribute("data-startup", /^(ready|fallback)$/, { timeout: 30000 });
+  await expect(root).toHaveAttribute("data-startup", /^(ready|fallback)$/, { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
   await expect(root).toHaveAttribute("data-lm-state", "ready", { timeout: 30000 });
   await expect(root.locator(".machine-heading h2"), "Starting preserves the article presentation").toHaveText(heading);
   for (const pane of ["input", "inspect", "output"]) assert.equal(await root.locator(`[data-glass-panel=${pane}]`).getAttribute("aria-hidden"), null);
