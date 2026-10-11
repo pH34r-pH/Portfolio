@@ -20,6 +20,7 @@ assert.equal(manifest.capture.provenanceVerified,true);assert.match(manifest.cap
 assert.deepEqual(manifest.capture.servedSourceHashes,manifest.sourceHashes,'HTTP capture source matches the exact local asset bytes');
 for(const file of ['model-light.js','model-gestures.js','model-render-metrics.js','homepage-screens.js'])
   assert.ok(manifest.capture.servedSourceHashes[file],`Renderer dependency is covered by served and local provenance: ${file}`);
+assert.ok(manifest.capture.pipelineHashes['scripts/model-startup-observation.mjs'],'Capture provenance includes the startup observation dependency');
 for(const [file,expected] of Object.entries(manifest.capture.pipelineHashes))
   assert.equal(createHash('sha256').update(readFileSync(new URL('../'+file,import.meta.url))).digest('hex'),expected,`Capture pipeline changed: ${file}`);
 assert.equal(manifest.capture.sourceTreeSha256,createHash('sha256').update(JSON.stringify({sourceHashes:manifest.sourceHashes,pipelineHashes:manifest.capture.pipelineHashes})).digest('hex'),
