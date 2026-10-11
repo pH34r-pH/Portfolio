@@ -171,9 +171,11 @@ export async function assertUnstartedArticle(root,{quiet=false}={}) {
 export async function startArticleModel(root) {
   // Exercise the same user-facing control as readers, never boot()/start().
   await root.locator('[data-model-start]').click();
-  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
   await expect(root).toHaveAttribute('data-render',/^(webgl|fallback)$/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
   await expect(root).toHaveAttribute('data-startup',/^(ready|fallback)$/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
+  // The reader's Start handler reveals the prepared stage. Observe that real
+  // startup before Playwright asks for consecutive stable animation frames.
+  await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded({timeout:NATIVE_ELEMENT_TIMEOUT_MS});
   const state=await root.evaluate(node=>({startup:node.modelStartup.snapshot(),
     ownsStartup:node.machineController.startup===node.modelStartup,homeStartup:Boolean(window.PortfolioModelStartup)}));
   assert.equal(state.ownsStartup,true,'Article controller uses its own startup instance');
