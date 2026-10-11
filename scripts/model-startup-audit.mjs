@@ -52,7 +52,7 @@ async function open(options={},setup,path=homePath,browserInstance=browser) {
   });
   page.on('pageerror',error=>errors.push(error.message));if(setup)await setup(page);
   await page.goto(base+path,{waitUntil:'domcontentloaded'});
-  if(options.javaScriptEnabled!==false)await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioModelStartup))).toBe(true);
+  if(options.javaScriptEnabled!==false)await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioModelStartup)),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(true);
   return {context,page,errors};
 }
 
@@ -74,6 +74,11 @@ async function assertFreshHome(page,engineRequests) {
   await expect(page.locator('[data-model-boot]')).toContainText('Static architecture display');
 }
 
+async function startupFailure(page,{name,requested,errors,error}) {
+  const failed=await snapshot(page).catch(diagnosticError=>({diagnosticError:diagnosticError.message}));
+  return {name,failure:error.message,requested,failed,errors:[...errors]};
+}
+
 async function startup(name,width,height,change,options={}) {
   let release;const held=new Promise(resolve=>{release=resolve;});let requested=0;
   const {context,page,errors}=await open({viewport:{width,height},...options},async page=>{
@@ -91,18 +96,21 @@ async function startup(name,width,height,change,options={}) {
     await assertFreshHome(page,()=>requested);
     const button=page.getByRole('button',{name:'Start interactive model'});
     await button.focus();await expect(button).toBeFocused();await page.keyboard.press('Enter');
-    await expect.poll(()=>requested).toBe(1);
+    await expect.poll(()=>requested,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     const samePromise=await page.evaluate(()=>{
       const first=PortfolioModelStartup.start(),second=PortfolioModelStartup.start();
       return first===second;
     });
     assert.equal(samePromise,true,'Concurrent Start requests share the per-root promise');
     if(change){await page.setViewportSize(change);await page.evaluate(()=>scrollTo(0,600));await settle(page);}
-    await expect(page.locator('.machine-poster')).toBeVisible();await page.screenshot({path:`${out}/${name}-powered-down.png`});
+    await expect(page.locator('.machine-poster')).toBeVisible();
     release();
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-render','webgl',{timeout:RENDERER_READINESS_TIMEOUT_MS});
     await expect.poll(()=>page.evaluate(()=>heldStartup.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     const prepared=await snapshot(page);assert.equal(prepared.phase,'prepared');assert.equal(prepared.handoffs,0);
+    // Capture after releasing the synthetic network stall, while the first
+    // handoff frame is still held. Screenshot cost must not extend that stall.
+    await page.screenshot({path:`${out}/${name}-powered-down.png`});
     const view=prepared.firstFrame,phone=page.viewportSize().width<=720;
     matchPoster(view,manifest.assets.find(asset=>asset.name===(phone?'phone':'desktop')&&asset.theme==='dark'));
     await page.screenshot({path:`${out}/${name}-matched-off.png`});
@@ -146,7 +154,7 @@ async function startup(name,width,height,change,options={}) {
     evidence.push({name,phase:'ready',prepared,ready,requested,concurrentStartDeduplicated:samePromise,
       hiddenPauseMs:120,offscreenPauseMs:120,keyboardStart:true,sessionState:saved,errors});
   } catch(error) {
-    evidence.push({name,failure:error.message});throw error;
+    evidence.push(await startupFailure(page,{name,requested,errors,error}));throw error;
   } finally {release();await context.close();}
 }
 
@@ -184,7 +192,7 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
   try {
     await assertFreshHome(page,()=>requests);
     await page.getByRole('button',{name:'Start interactive model'}).click();
-    await expect.poll(()=>requests).toBe(1);
+    await expect.poll(()=>requests,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     await page.evaluate(()=>{window.pendingStartup=PortfolioModelStartup.start();});
     assert.equal(await page.evaluate(()=>PortfolioModelStartup.start()===window.pendingStartup),true,
       'The initial pending start remains deduplicated');
@@ -206,7 +214,7 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
     });
     assert.equal(freshAttempt,true,`${mode} restoration owns a fresh startup promise`);
     await expect(root).toHaveAttribute('data-render','loading');
-    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length)).toBe(2);
+    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(2);
     assert.equal(requests,1,'Resumed attempt shares the still-pending native module fetch');
 
     release();
@@ -251,8 +259,8 @@ async function lateLoadTimeout(retryBeforeSettle=false) {
     assert.equal(await page.evaluate(()=>portfolioStartupDeadlines.length),0,'No timeout runs before user intent');
     await page.getByRole('button',{name:'Start interactive model'}).click();
     if(retryBeforeSettle)await page.evaluate(()=>{window.firstStartupAttempt=PortfolioModelStartup.start();});
-    await expect.poll(()=>requests).toBe(1);
-    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length)).toBe(1);
+    await expect.poll(()=>requests,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
+    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(1);
     await page.evaluate(()=>portfolioStartupDeadlines[0]());
     await expect(page.locator('[data-model-machine]')).toHaveAttribute('data-startup','fallback');
     const timedOut=await snapshot(page);assert.equal(timedOut.started,true);assert.equal(timedOut.handoffs,0);

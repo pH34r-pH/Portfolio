@@ -173,6 +173,23 @@ retains inference candidates, measured calibration, numerical error and fallback
 reason. Settings displays the selected inference backend. Repeat on the intended
 4K/8K and 120/144 Hz hardware before making a physical-display guarantee.
 
+## Home navigation and paused quality
+
+The background pause preference controls playback, not renderer initialization.
+A visible Home page still initializes its native-resolution scene when Pause is
+remembered across About, Research or article navigation. Reduced motion and
+forced colors retain their static path without importing the 3D engine.
+
+Non-persisted page departures retire pending background creation. The renderer
+ownership predicate is checked after asynchronous loading and compilation;
+abandoned scenes are disposed and cannot publish a stale fallback callback.
+BFCache departures suspend playback and preserve the scene for restoration.
+
+Local preview assemblies must refresh the normal Home recording and poster as
+well as the inspection viewer's responsive posters. They are separate assets.
+Keep preview assembly provenance separate from an older publication bundle's
+metadata; a preview overlay is not a qualified release artifact.
+
 ## Native poster capture provenance
 
 Commit renderer and capture-pipeline edits before running
