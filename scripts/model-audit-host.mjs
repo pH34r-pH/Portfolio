@@ -4,6 +4,8 @@ import {expect} from '@playwright/test';
 
 // Full-quality software rendering can delay observation across several native frames.
 export const RENDERER_OBSERVATION_TIMEOUT_MS = 30000;
+// Native DPR and full glass passes remain enabled during evidence capture.
+export const NATIVE_SCREENSHOT_TIMEOUT_MS = 120000;
 
 // The encased scene retains its physical housing and optical routes in both
 // modes. Renderer totals include transmission/back-face passes and are reported
@@ -199,6 +201,7 @@ export async function startThenQuietArticle(page,root,mode) {
 }
 
 export async function screenshotModel(page,root,options) {
+  options={timeout:NATIVE_SCREENSHOT_TIMEOUT_MS,...options};
   if(await root.evaluate(node=>getComputedStyle(node).display)!=='contents')return root.screenshot(options);
   // The finished sticky article uses display:contents, so its section has no
   // screenshot box. Capture the union of its real child boxes without changing

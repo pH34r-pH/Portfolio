@@ -109,6 +109,18 @@ the progression deadline. Visibility timeout evidence includes the real stage
 bounds and clock state; glass observation timeouts identify the exit or reversal
 phase. The existing state, geometry, opacity, alignment, and clock predicates
 remain required. Production preparation and ignition durations are unchanged.
+Native model and full-page evidence screenshots have a separate bounded
+120-second capture allowance. The complete pixel dimensions, DPR, glass passes,
+element stability checks, and geometry assertions remain enabled. Hosted Linux
+timed out at the former 30-second screenshot limit after geometry checks passed;
+the evidence allowance does not change renderer readiness or product startup.
+Full source and finished-bundle jobs admit 180 and 150 minutes respectively:
+the previous incomplete source suite already took 101 minutes. Both complete
+qualification jobs must still pass before Fleet intake or deployment.
+The interrupted-import startup audit observes the fresh deadline and loading
+state together, releases its synthetic network hold before subsequent
+assertions, and retains failure snapshots and timing. Stale-promise, single
+context, handoff, completion, and complete ignition predicates remain required.
 The one-pixel resize regression waits for renderer bounds to match the live
 canvas dimensions before checking the complete fit; it does not invoke resize.
 
@@ -194,7 +206,7 @@ metadata; a preview overlay is not a qualified release artifact.
 
 Commit renderer and capture-pipeline edits before running
 `PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs`.
-The served site must use that checkout. Capture checks all 41 tracked inputs
+The served site must use that checkout. Capture checks all 42 tracked inputs
 against their exact HEAD Git blobs before launching Chromium, then verifies the
 served renderer bytes. Git reads have a 10-second timeout and 8 MiB buffer per
 input, including the vendored engine. A clean `git status` is insufficient on
