@@ -206,7 +206,7 @@ metadata; a preview overlay is not a qualified release artifact.
 
 Commit renderer and capture-pipeline edits before running
 `PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173 node scripts/capture-model-posters.mjs`.
-The served site must use that checkout. Capture checks all 41 tracked inputs
+The served site must use that checkout. Capture checks all 42 tracked inputs
 against their exact HEAD Git blobs before launching Chromium, then verifies the
 served renderer bytes. Git reads have a 10-second timeout and 8 MiB buffer per
 input, including the vendored engine. A clean `git status` is insufficient on
