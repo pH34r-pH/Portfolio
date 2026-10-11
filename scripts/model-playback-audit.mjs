@@ -1,11 +1,18 @@
 import assert from 'node:assert/strict';
 import {expect} from '@playwright/test';
+import {RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 
 export async function eligible(root) {
-  await expect.poll(()=>root.evaluate(node=>node.machine.clock()),{timeout:5000}).toMatchObject({visible:true,hidden:false});
+  try {
+    await expect.poll(()=>root.evaluate(node=>node.machine.clock()),{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toMatchObject({visible:true,hidden:false});
+  } catch(error) {
+    const state=await root.evaluate(node=>({clock:node.machine.clock(),stage:node.querySelector('[data-machine-stage]').getBoundingClientRect().toJSON(),
+      viewport:{width:innerWidth,height:innerHeight},scrollY}));
+    console.log(`Replay eligibility timeout: ${JSON.stringify(state)}`);throw error;
+  }
 }
-export async function advance(root,startFrame,play=false) {
-  return root.evaluate((node,{startFrame,play})=>new Promise((resolve,reject)=>{
+export async function advance(root,startFrame,play=false,releaseHeldClock=false) {
+  return root.evaluate((node,{startFrame,play,releaseHeldClock,timeout})=>new Promise((resolve,reject)=>{
     const began=performance.now();
     const observer=new MutationObserver(()=>{
       const frame=node.machine.snapshot().frame;
@@ -15,14 +22,15 @@ export async function advance(root,startFrame,play=false) {
     });
     const deadline=setTimeout(()=>{
       observer.disconnect();reject(new Error(`No replay frame change: ${JSON.stringify({frame:node.machine.snapshot().frame,clock:node.machine.clock(),render:node.dataset.render})}`));
-    },5000);
+    },timeout);
     observer.observe(node,{attributes:true,attributeFilter:['data-replay-frame']});
     if(play)node.querySelector('[data-replay-play]').click();
+    if(releaseHeldClock)window.auditReleaseClock();
     // Subscribe before checking: resume may already have advanced while scrolling.
     if(node.machine.snapshot().frame>startFrame) {
       observer.disconnect();clearTimeout(deadline);resolve({frame:node.machine.snapshot().frame,elapsed:0,clock:node.machine.clock()});
     }
-  }),{startFrame,play});
+  }),{startFrame,play,releaseHeldClock,timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
 }
 export async function frozenAcrossFrames(root) {
   return root.evaluate(async node=>{
@@ -39,7 +47,7 @@ export async function auditPlayback(page,root,name) {
   // A short article can expose its viewer even at scroll=0; a homepage can have
   // a sticky stage there. Move beyond the actual host in either context.
   await page.evaluate(()=>{const spacer=document.createElement('div');spacer.dataset.auditSpacer='';spacer.style.height='2000px';document.body.append(spacer);scrollTo(0,document.body.scrollHeight);});
-  await expect.poll(()=>root.evaluate(node=>node.machine.clock()),{timeout:5000}).toMatchObject({visible:false,scheduled:false});
+  await expect.poll(()=>root.evaluate(node=>node.machine.clock()),{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toMatchObject({visible:false,scheduled:false});
   const paused=await frozenAcrossFrames(root);assert.equal(paused.after,paused.before,`${name} offscreen freeze`);
   assert.equal(await root.evaluate(node=>node.machine.light().energy),0,`${name} offscreen light clears`);
   await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();await eligible(root);
@@ -62,12 +70,14 @@ export async function auditDelayedClock(open) {
   // Discard the deliberately held startup replay after open() has paused it.
   await page.evaluate(()=>auditHeldClock.splice(0));
   await eligible(root);await root.evaluate(node=>node.machine.seek(70));
-  const progressing=advance(root,70,true);
-  await expect.poll(()=>page.evaluate(()=>auditHeldClock.length),{timeout:5000}).toBe(1);
+  await root.evaluate(node=>node.querySelector('[data-replay-play]').click());
+  await expect.poll(()=>page.evaluate(()=>auditHeldClock.length),{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(1);
   const held=await root.evaluate(node=>({frame:node.machine.snapshot().frame,clock:node.machine.clock()}));
   assert.equal(held.frame,70);assert.equal(held.clock.ticks,0);
   assert.equal(held.clock.visible,true);assert.equal(held.clock.hidden,false);assert.equal(held.clock.scheduled,true);
-  await page.evaluate(()=>auditReleaseClock());const advanced=await progressing;
+  // Arm progress observation and release in one browser task. Deliberately held
+  // frames and the held-state RPCs do not consume the progress deadline.
+  const advanced=await advance(root,70,false,true);
   assert.ok(advanced.frame>70&&advanced.clock.ticks>=2,'released native clock must advance');
   await root.evaluate(node=>node.machine.pause());await context.close();
   return {mode:'delayed-native-clock',held,advanced};

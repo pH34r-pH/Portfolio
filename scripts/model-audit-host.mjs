@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {expect} from '@playwright/test';
 
+// Full-quality software rendering can delay observation across several native frames.
+export const RENDERER_OBSERVATION_TIMEOUT_MS = 30000;
+
 // The encased scene retains its physical housing and optical routes in both
 // modes. Renderer totals include transmission/back-face passes and are reported
 // as evidence; legacy flat-scene draw/triangle ceilings are not quality goals.
@@ -39,7 +42,7 @@ export function assertEncasedRender(diagnostics) {
 }
 
 export async function beginContextTransitionSample(root,part,previous=null) {
-  return root.evaluate((node,{part,previous})=>{
+  return root.evaluate((node,{part,previous,timeoutMs})=>{
     function holdContextTransition(element,scene) {
       for(const animation of element.getAnimations()) {
         const time=animation.currentTime;
@@ -64,7 +67,9 @@ export async function beginContextTransitionSample(root,part,previous=null) {
     node.contextAuditSample=new Promise(resolve=>{
       let raf=0;
       const finish=sample=>{clearTimeout(timeout);cancelAnimationFrame(raf);resolve(sample);};
-      const timeout=setTimeout(()=>finish(null),previous?5000:8000);
+      const timeout=setTimeout(()=>finish({timedOut:true,
+        error:`Glass context ${previous?'reentry':'exit'} observation timed out after ${timeoutMs}ms`,
+      }),timeoutMs);
       const capture=()=>{
         try {
         const backing=node.machineController.scene.glass.panels.find(panel=>panel.id==='input'),style=getComputedStyle(element);
@@ -86,12 +91,16 @@ export async function beginContextTransitionSample(root,part,previous=null) {
       raf=requestAnimationFrame(capture);
     });
     return immediate;
-  },{part,previous});
+  },{part,previous,timeoutMs:RENDERER_OBSERVATION_TIMEOUT_MS});
 }
 
 export async function readContextTransitionSample(root) {
   const sample=await root.evaluate(node=>node.contextAuditSample);
-  if(sample?.error)throw Error(sample.error);
+  if(sample?.error) {
+    const error=Error(sample.error);
+    if(sample.timedOut)error.name='ContextTransitionObservationTimeout';
+    throw error;
+  }
   return sample;
 }
 
@@ -149,8 +158,8 @@ export async function startArticleModel(root) {
   // Exercise the same user-facing control as readers, never boot()/start().
   await root.locator('[data-model-start]').click();
   await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
-  await expect(root).toHaveAttribute('data-render',/^(webgl|fallback)$/,{timeout:30000});
-  await expect(root).toHaveAttribute('data-startup',/^(ready|fallback)$/,{timeout:30000});
+  await expect(root).toHaveAttribute('data-render',/^(webgl|fallback)$/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
+  await expect(root).toHaveAttribute('data-startup',/^(ready|fallback)$/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
   const state=await root.evaluate(node=>({startup:node.modelStartup.snapshot(),
     ownsStartup:node.machineController.startup===node.modelStartup,homeStartup:Boolean(window.PortfolioModelStartup)}));
   assert.equal(state.ownsStartup,true,'Article controller uses its own startup instance');
@@ -172,7 +181,7 @@ export async function prepareArticleModel(page,root,host) {
     await startArticleModel(root);
   } else {
     await root.locator('[data-machine-stage]').scrollIntoViewIfNeeded();
-    await expect(root).toHaveAttribute('data-render',/^(webgl|fallback)$/,{timeout:30000});
+    await expect(root).toHaveAttribute('data-render',/^(webgl|fallback)$/,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
   }
   return {quiet:false,unstarted:false};
 }
@@ -240,14 +249,14 @@ export async function auditArticleQuietModeRestore(browser,base,mode,initial,cle
       await expect(root).toHaveAttribute('data-render','fallback');
       await expect(root.locator('[data-machine-fallback] svg')).toBeVisible();
       await page.emulateMedia(cleared);
-      await expect(root).toHaveAttribute('data-startup','ready',{timeout:15000});
+      await expect(root).toHaveAttribute('data-startup','ready',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       const restored=await root.evaluate(node=>({snapshot:node.modelStartup.snapshot(),
         owned:node.machineController.startup===node.modelStartup,homeStartup:Boolean(window.PortfolioModelStartup)}));
       assert.equal(restored.owned,true,'Preference restoration preserves article startup ownership');
       assert.equal(restored.homeStartup,false,'Preference restoration does not attach Home startup');
       assert.equal(restored.snapshot.completions,started.completions,'Quiet restoration does not repeat completed ignition');
     } else assert.equal(await root.getAttribute('data-model-startup'),null,'Source fixture keeps its independent deferred lifecycle');
-    await expect(root).toHaveAttribute('data-render','webgl',{timeout:15000});
+    await expect(root).toHaveAttribute('data-render','webgl',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
     assert.ok(engines>0,`${mode} article restores its visible interactive renderer after authorized startup`);
     assert.deepEqual(errors,[]);
     return {mode:`article-${mode}-restoration`,articleEvidence:host.kind,engines,visibleRestore:true,

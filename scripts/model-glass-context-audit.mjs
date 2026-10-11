@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {expect} from '@playwright/test';
-import {beginContextTransitionSample,readContextTransitionSample,contextTransitionAdvances} from './model-audit-host.mjs';
+import {beginContextTransitionSample,readContextTransitionSample,contextTransitionAdvances,
+  RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 const diagnostics=root=>root.evaluate(node=>node.machine.diagnostics());
 
 export async function contextExitWaitsForTransition(page,root,phone) {
@@ -9,7 +10,7 @@ export async function contextExitWaitsForTransition(page,root,phone) {
   // Stretch only this audit's intermediate observation window. Full-quality
   // software draws can consume the former four-second ease before the sampler
   // gets a frame; the production duration and capture predicates stay intact.
-  await input.evaluate(panel=>panel.style.transitionDuration='30s');
+  await input.evaluate((panel,timeoutMs)=>panel.style.transitionDuration=`${timeoutMs}ms`,RENDERER_OBSERVATION_TIMEOUT_MS);
   const immediate=await beginContextTransitionSample(root,'representation');
   console.log('Glass context: exit observer armed');
   assert.deepEqual(immediate,{active:'false',ariaHidden:'true',inert:true,stageFocused:true,focusLeak:false},'exit makes the pane inert immediately and relocates focus');
@@ -17,7 +18,7 @@ export async function contextExitWaitsForTransition(page,root,phone) {
   try {await expect.poll(async()=>{
     exitSample=await readContextTransitionSample(root);
     return Boolean(exitSample);
-  },{timeout:8000}).toBe(true);}
+  },{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(true);}
   catch(error) {
     const state=await root.evaluate(node=>{const scene=node.machineController.scene,glass=scene?.glass;return {visible:node.machineController.visible,hidden:document.hidden,
       raf:scene?.glassAnimationRaf,panels:glass?.panels.map(panel=>({id:panel.id,active:panel.node.dataset.contextActive,
@@ -54,7 +55,7 @@ export async function contextExitWaitsForTransition(page,root,phone) {
   await expect.poll(async()=>{
     reverseSample=await readContextTransitionSample(root);
     return reverseSample&&contextTransitionAdvances(reverseSample.panel,exiting)&&exitingTranslation>reverseSample.translation;
-  },{timeout:5000}).toBe(true);
+  },{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(true);
   console.log('Glass context: reentry captured');
   const reversing=reverseSample.panel;
   assert.ok(reversing.transitionOpacity>exiting.transitionOpacity,'reversed easing moves the glass and DOM pane back toward their context pose');
@@ -66,8 +67,8 @@ export async function contextExitWaitsForTransition(page,root,phone) {
     panel.style.transitionDuration='4s';
   });
   await root.evaluate(node=>node.machine.focus('representation'));
-  await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:12000}).toBe(false);
+  await expect.poll(()=>input.evaluate(panel=>panel.contextVisible),{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(false);
   await expect(input).toHaveAttribute('inert','');
-  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible,{timeout:12000}).toBe(false);
+  await expect.poll(async()=>(await diagnostics(root)).glass.panels.find(panel=>panel.id==='input').visible,{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(false);
   await input.evaluate(panel=>panel.style.transitionDuration='');
 }

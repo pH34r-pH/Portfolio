@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {expect} from '@playwright/test';
-import {assertSuppressedOpacityOrder} from './model-audit-host.mjs';
+import {assertSuppressedOpacityOrder,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 
 export async function missingTransitionEndFallsBack(root,waitForGlassPanelSettled,glassContextSettled) {
   const input=root.locator('[data-glass-panel="input"]');
@@ -26,7 +26,7 @@ export async function missingTransitionEndFallsBack(root,waitForGlassPanelSettle
     return {duration:panel.contextTransitionDuration,animating:panel.contextAnimating};
   });
   assert.ok(started.duration>=700&&started.animating,'normal-duration exit arms the timer fallback while the pane is animating');
-  await waitForGlassPanelSettled(root,'input',10000,'production-duration transitionend suppressed');
+  await waitForGlassPanelSettled(root,'input',RENDERER_OBSERVATION_TIMEOUT_MS,'production-duration transitionend suppressed');
   const settled=await input.evaluate(panel=>({duration:panel.contextTransitionDuration,
     elapsed:performance.now()-panel.contextTransitionStartedAt,animating:panel.contextAnimating,
     suppressed:panel.contextAuditSuppressedTransitionEnds,handled:panel.contextAuditTransitionEnds}));
@@ -34,7 +34,7 @@ export async function missingTransitionEndFallsBack(root,waitForGlassPanelSettle
   assert.ok(settled.elapsed>=settled.duration+200,'normal-duration pane waits for the delayed fallback after its CSS transition');
   assert.equal(settled.handled,0,'opacity transitionend never reaches the pane completion listener');
   await assertSuppressedOpacityOrder(input,settled);
-  await expect.poll(()=>glassContextSettled(root),{timeout:5000}).toBe(true);
+  await expect.poll(()=>glassContextSettled(root),{timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(true);
   } finally {
     await input.evaluate(panel=>{
       panel.removeEventListener('transitionend',panel.contextAuditSuppressTransitionEnd,true);

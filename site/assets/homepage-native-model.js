@@ -24,7 +24,7 @@ async function recordedRun() {
   return { run, metadata };
 }
 
-export async function createNativeBackground(journey, fail) {
+export async function createNativeBackground(journey, fail, {current=()=>true}={}) {
   const surface = document.createElement("div");
   surface.className = "digital-native-model";
   surface.setAttribute("data-digital-home", "");
@@ -32,15 +32,18 @@ export async function createNativeBackground(journey, fail) {
   surface.innerHTML = "<canvas data-machine-canvas></canvas>";
   journey.querySelector(".digital-model-background").append(surface);
   let rendering, scene;
+  const retain=()=>{if(!current())throw new Error("Homepage background creation retired");};
   try {
     const { run, metadata } = await recordedRun();
-    rendering = await createRendering(surface);
+    retain();
+    rendering = await createRendering(surface,{current});
+    retain();
     const instruments = { root: surface, host: surface, layer: surface, quality: () => {}, setContext: () => {} };
     scene = new MachineScene(
       rendering.T,
       surface,
       () => {},
-      fail,
+      reason=>{if(current())fail(reason);},
       () => {},
       instruments,
       { rendering },
@@ -48,8 +51,9 @@ export async function createNativeBackground(journey, fail) {
     scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
     scene.render(true);
     await scene.renderer.compileAsync(scene.scene, scene.camera);
+    retain();
     scene.selection.visible = scene.probe.visible = false;
-    return new NativePlayback(scene, surface, run, metadata);
+    return new NativePlayback(scene, surface, run, metadata, journey);
   } catch (error) {
     scene?.dispose();
     if (!scene) rendering?.renderer.dispose();
@@ -59,8 +63,9 @@ export async function createNativeBackground(journey, fail) {
 }
 
 class NativePlayback {
-  constructor(scene, surface, run, metadata) {
+  constructor(scene, surface, run, metadata, journey) {
     this.scene = scene;
+    this.journey = journey;
     this.surface = surface;
     this.run = run;
     this.metadata = metadata;
@@ -71,6 +76,14 @@ class NativePlayback {
     this.intervals = [];
     this.active = false;
     this.scene.applyFrame(run, sampleReplay(run, 0));
+    this.relayout = () => {
+      if (this.disposed || this.active || document.hidden) return;
+      const rect = this.surface.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0 || rect.bottom <= 0 || rect.top >= innerHeight) return;
+      // Re-seat page furniture while retaining the paused activation frame.
+      this.scene.render();
+    };
+    this.journey.addEventListener("portfolio:reading", this.relayout);
   }
   sync(active) {
     this.active = active;
@@ -112,7 +125,10 @@ class NativePlayback {
     };
   }
   dispose() {
+    if(this.disposed)return;
     this.sync(false);
+    this.disposed = true;
+    this.journey.removeEventListener("portfolio:reading", this.relayout);
     this.scene.dispose();
     this.surface.remove();
   }

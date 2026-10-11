@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertSuppressedOpacityOrder,assertEncasedRender} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertSuppressedOpacityOrder,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
 
 import {contextExitWaitsForTransition} from './model-glass-context-audit.mjs';
 import {contextReversalKeepsTabsValid,offscreenContextPause} from './model-glass-visibility-audit.mjs';
 import {missingTransitionEndFallsBack} from './model-glass-fallback-audit.mjs';
 
+const rendererObservation={timeout:RENDERER_OBSERVATION_TIMEOUT_MS};
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
 const host=await articleHost(base,{componentFixture:true});
 const out=process.env.GLASS_EVIDENCE_DIR||'ux-screenshots/glass';
@@ -103,7 +104,7 @@ async function inputPaneOpacity(input) { return input.evaluate(computedOpacity);
 async function waitForInputReentry(root) {
   const input=root.locator('[data-glass-panel="input"]');
   await expect.poll(inputPaneOpacity.bind(null,input),
-    {timeout:12000}).toBe('1');
+    rendererObservation).toBe('1');
 }
 async function reverseContextToAll(root) {
   await runContextReversal(root);await waitForInputReentry(root);
@@ -182,17 +183,17 @@ async function entryWithoutTransitionEvent(root) {
     assert.equal(await input.evaluate(panel=>parseFloat(getComputedStyle(panel).transitionDuration)),0,
       'fallback regression disables CSS transitions so no transitionend can settle the pane');
     await root.evaluate(node=>node.machine.focus('representation'));
-    await waitForGlassPanelSettled(root,'input',8000,'zero-duration exit');
+    await waitForGlassPanelSettled(root,'input',RENDERER_OBSERVATION_TIMEOUT_MS,'zero-duration exit');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration exit settles without transitionend');
     await root.evaluate(node=>node.machine.focus('all'));
-    await waitForGlassPanelSettled(root,'input',8000,'zero-duration entry');
+    await waitForGlassPanelSettled(root,'input',RENDERER_OBSERVATION_TIMEOUT_MS,'zero-duration entry');
     assert.equal(await input.evaluate(panel=>panel.contextAuditTransitionEnds),0,'zero-duration entry settles without transitionend');
   } finally {await input.evaluate((panel,duration)=>panel.style.transitionDuration=duration,previous);}
 }
 
 async function nativeInputSelection(page,root,cdp) {
   await cdp.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});
-  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe('flow');
+  await expect.poll(async()=>(await diagnostics(root)).glass.mode,rendererObservation).toBe('flow');
   const textInput=root.locator('[data-glass-panel="input"] input');
   await textInput.scrollIntoViewIfNeeded();await textInput.fill('pane selection stays native');
   const inputBox=await textInput.boundingBox();assert.ok(inputBox?.width>0&&inputBox?.height>0,'article input remains laid out for text selection');
@@ -289,12 +290,12 @@ async function reflow(page,root,phone) {
   await page.keyboard.press('Escape');
   const client=await page.context().newCDPSession(page);
   await client.send('Emulation.setPageScaleFactor',{pageScaleFactor:2});
-  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe('flow');
+  await expect.poll(async()=>(await diagnostics(root)).glass.mode,rendererObservation).toBe('flow');
   await expect(root.locator('[data-glass-panel]')).toHaveCount(3);
   for(const panel of await root.locator('[data-glass-panel]').all())await expect(panel).toBeVisible();
   await root.locator('[data-machine-form] input').focus();await expect(root.locator('[data-machine-form] input')).toBeFocused();
   await client.send('Emulation.setPageScaleFactor',{pageScaleFactor:1});await client.detach();
-  await expect.poll(async()=>(await diagnostics(root)).glass.mode).toBe(fitMode);
+  await expect.poll(async()=>(await diagnostics(root)).glass.mode,rendererObservation).toBe(fitMode);
   await root.evaluate(node=>node.querySelector('[data-machine-settings]').open=true);
   await root.locator('[data-camera="in"]').click();await root.locator('[data-camera="in"]').click();
   assert.equal((await diagnostics(root)).glass.mode,fitMode,'camera zoom does not reflow article panes');

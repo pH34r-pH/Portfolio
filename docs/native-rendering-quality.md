@@ -101,6 +101,17 @@ The final exit still uses four seconds. The ignition phase wait admits the same
 30-second cold renderer budget while preserving the product's 15-second prepare
 deadline and 1,800 ms ignition contract.
 
+Linux qualification uses one bounded 30-second observation budget for native
+renderer visibility, replay progression, glass sampling, and ignition readiness.
+The delayed-clock audit arms its observer and releases the held clock in the same
+browser task, after checking the held state. Intentional holds do not consume
+the progression deadline. Visibility timeout evidence includes the real stage
+bounds and clock state; glass observation timeouts identify the exit or reversal
+phase. The existing state, geometry, opacity, alignment, and clock predicates
+remain required. Production preparation and ignition durations are unchanged.
+The one-pixel resize regression waits for renderer bounds to match the live
+canvas dimensions before checking the complete fit; it does not invoke resize.
+
 Lighthouse requires three mobile and three desktop reports for each Portfolio
 page: Home, About, Atlas, and Research (24 reports). `/reproduce/` immediately
 redirects to the separately deployed Experiments site; routing checks retain
@@ -161,6 +172,23 @@ timers, playback/frame intervals and model identity. The article root's
 retains inference candidates, measured calibration, numerical error and fallback
 reason. Settings displays the selected inference backend. Repeat on the intended
 4K/8K and 120/144 Hz hardware before making a physical-display guarantee.
+
+## Home navigation and paused quality
+
+The background pause preference controls playback, not renderer initialization.
+A visible Home page still initializes its native-resolution scene when Pause is
+remembered across About, Research or article navigation. Reduced motion and
+forced colors retain their static path without importing the 3D engine.
+
+Non-persisted page departures retire pending background creation. The renderer
+ownership predicate is checked after asynchronous loading and compilation;
+abandoned scenes are disposed and cannot publish a stale fallback callback.
+BFCache departures suspend playback and preserve the scene for restoration.
+
+Local preview assemblies must refresh the normal Home recording and poster as
+well as the inspection viewer's responsive posters. They are separate assets.
+Keep preview assembly provenance separate from an older publication bundle's
+metadata; a preview overlay is not a qualified release artifact.
 
 ## Native poster capture provenance
 
