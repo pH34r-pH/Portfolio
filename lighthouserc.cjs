@@ -1,12 +1,20 @@
 const baseUrl = process.env.PORTFOLIO_LHCI_BASE_URL ?? 'http://127.0.0.1:4173';
-const routes = ['/', '/about/', '/atlas/', '/reproduce/', '/research/'];
+// /reproduce/ is an external Experiments redirect, covered by routing checks.
+// Qualify only the UI served by this exact Portfolio source/bundle.
+const routes = ['/', '/about/', '/atlas/', '/research/'];
 
 module.exports = {
   ci: {
     collect: {
       url: routes.map((route) => new URL(route, baseUrl).href),
       numberOfRuns: 3,
-      settings: { chromeFlags: '--no-sandbox --headless' },
+      settings: {
+        chromeFlags: '--no-sandbox --headless --use-angle=swiftshader --enable-unsafe-swiftshader --disable-webgpu',
+        // Lighthouse enlarges the viewport to document height for this report
+        // image, which also reallocates the live native-DPR canvas. Dedicated
+        // visual audits own screenshot evidence without changing this profile.
+        disableFullPageScreenshot: true,
+      },
     },
     assert: {
       assertions: {

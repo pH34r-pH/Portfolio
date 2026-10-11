@@ -5,7 +5,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 export const WARNING_BYTES = 20_000_000;
-export const EXPECTED_ROUTES = ['/', '/about/', '/atlas/', '/reproduce/', '/research/'];
+export const EXPECTED_ROUTES = ['/', '/about/', '/atlas/', '/research/'];
 export const EXPECTED_PROFILES = ['mobile', 'desktop'];
 export const RUNS_PER_ROUTE_PROFILE = 3;
 

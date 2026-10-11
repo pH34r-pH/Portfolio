@@ -12,7 +12,7 @@ const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4174';
 const host=await articleHost(base,{componentFixture:true});
 const out=process.env.GLASS_EVIDENCE_DIR||'ux-screenshots/glass';
 await mkdir(out,{recursive:true});
-const browser=await chromium.launch({headless:true}),evidence=[];
+const browser=await chromium.launch({headless:true,args:['--use-angle=swiftshader','--enable-unsafe-swiftshader']}),evidence=[];
 async function open(options={},setup) {
   const context=await browser.newContext(options),page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));if(setup)await setup(page);

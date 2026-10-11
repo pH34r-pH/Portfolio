@@ -40,8 +40,22 @@ export function assertEncasedRender(diagnostics) {
 
 export async function beginContextTransitionSample(root,part,previous=null) {
   return root.evaluate((node,{part,previous})=>{
+    function holdContextTransition(element,scene) {
+      for(const animation of element.getAnimations()) {
+        const time=animation.currentTime;
+        // Seeking to the observed time completes the pending pause immediately.
+        animation.pause();animation.currentTime=time;
+      }
+      // Hold the observed CSS pose across audit RPCs and align the native
+      // backing at that pose rather than a later wall-clock ease.
+      scene.glass.sync(scene.camera);
+    }
+    function resumeContextTransition(element) {
+      for(const animation of element.getAnimations())if(animation.playState==='paused')animation.play();
+    }
     const element=node.querySelector('[data-glass-panel="input"]');
     node.machine.focus(part);
+    if(previous)resumeContextTransition(element);
     const immediate={active:element.dataset.contextActive,ariaHidden:element.getAttribute('aria-hidden'),inert:element.inert,
       stageFocused:node.querySelector('[data-machine-stage]')===document.activeElement};
     if(!previous){element.querySelector('input')?.focus();immediate.focusLeak=element.contains(document.activeElement);}
@@ -59,7 +73,13 @@ export async function beginContextTransitionSample(root,part,previous=null) {
           ?backing.transitionOpacity>previous.panel.transitionOpacity
             &&(!previous.panel.visible||backing.transitionOffset.x<previous.panel.transitionOffset.x)&&translation<previous.translation
           :element.contextAnimating&&opacity>0&&opacity<1&&backing.mesh.material.opacity>0&&backing.mesh.material.opacity<1;
-        if(matches){finish({panel:node.machineController.scene.glass.diagnostics().panels.find(panel=>panel.id==='input'),translation,domOpacity:opacity});return;}
+        if(matches){
+          const scene=node.machineController.scene;
+          holdContextTransition(element,scene);
+          const held=getComputedStyle(element);
+          finish({panel:scene.glass.diagnostics().panels.find(panel=>panel.id==='input'),
+            translation:parseFloat(held.translate)||0,domOpacity:parseFloat(held.opacity)});return;
+        }
         raf=requestAnimationFrame(capture);
         } catch(error) {finish({error:String(error)});}
       };
