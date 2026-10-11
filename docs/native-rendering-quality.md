@@ -270,3 +270,24 @@ all exact heading, context, glass-pane and scene-focus assertions remain intact.
 Failure metadata records viewport, scroll bounds, heading positions, reading line
 and actual context so a later failure can distinguish delayed observation from
 incorrect geometry. These bounds are CI allowances, not reader latency targets.
+
+Run 38151992304 passed 11 source browser groups, including all startup cases,
+but the first desktop Reset click exceeded Playwright's default 30 seconds after
+actionability and scrolling passed. That log does not prove whether the handler
+completed. Existing Reset checks retain normal button clicks and all camera,
+replay and complete-framing assertions, with the same bounded 120-second native
+action allowance and profile/elapsed logging. Product reset behavior is unchanged.
+
+That run also failed Lighthouse's desktop Home collection: the pinned response
+compression gatherer allows only one second for `Network.getResponseBody`. There
+is no generic protocol timeout setting that overrides this operation. Desktop
+autorun can retry once only for an exit-1 collection failure with that exact fatal
+protocol error and no completed collection/assertion/upload phase. Preserve the
+first log and partial state inside the job, then rerun all four routes and three reports from
+fresh collection state with unchanged settings, hard gates and transfer policy.
+LHCI already retries each numbered run three times and reports its first error;
+the outer retry can allow six attempts for that run, with other internal failures
+unobserved. A repeated collection error or any assertion failure still fails CI.
+This is bounded collection recovery, not proof of fixed browser contention.
+The first error remains in durable job logs; raw logs/state join the existing
+optional detailed Lighthouse artifact when that retention is requested.

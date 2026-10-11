@@ -229,10 +229,36 @@ jobs:
             exit 1
           fi
           export PORTFOLIO_LHCI_BASE_URL="http://127.0.0.1:$port"
+          run_lhci() {
+            local config="$1" profile="$2" result=0
+            local log="$RUNNER_TEMP/portfolio-lhci-$profile.log"
+            npx lhci autorun --config="$config" 2>&1 | tee "$log"
+            result=${PIPESTATUS[0]}
+            if [ "$result" -eq 0 ]; then return 0; fi
+            local fatal='Runtime error encountered: Waiting for DevTools protocol response has exceeded the allotted time. (Method: Network.getResponseBody)'
+            local terminal
+            terminal="$(awk 'NF { line=$0 } END { print line }' "$log")"
+            # Keep hard assertion failures terminal. A fatal collection timeout
+            # gets one fresh autorun of the complete identical profile.
+            if [ "$result" -ne 1 ] || \
+              ! grep -Fq '"code": "PROTOCOL_TIMEOUT"' "$log" || \
+              [ "$terminal" != "$fatal" ] || \
+              grep -Eq 'Done running Lighthouse!|assert command failed|upload command failed' "$log"; then
+              return "$result"
+            fi
+            # Preserve partial reports and any prior assertion receipt. The
+            # next complete collection must start without either as input.
+            local first_state="$RUNNER_TEMP/portfolio-lhci-$profile-first-state"
+            if [ -e "$first_state" ]; then return 1; fi
+            if [ -d .lighthouseci ]; then mv -- .lighthouseci "$first_state" || return 1; fi
+            printf '\nLighthouse %s: fatal response-body collection timeout; retrying the complete identical profile once. LHCI already retries each numbered run internally; other internal errors are not exposed here.\n' "$profile" | tee -a "$GITHUB_STEP_SUMMARY"
+            npx lhci autorun --config="$config" 2>&1 | tee "$RUNNER_TEMP/portfolio-lhci-$profile-retry.log"
+            return "${PIPESTATUS[0]}"
+          }
           status=0
           npx lhci autorun --config=./lighthouserc.cjs || status=$?
           desktop_status=0
-          npx lhci autorun --config=./lighthouserc.desktop.cjs || desktop_status=$?
+          run_lhci ./lighthouserc.desktop.cjs desktop || desktop_status=$?
           if [ "$status" -ne 0 ] || [ "$desktop_status" -ne 0 ]; then
             echo "LHCI failures: mobile=$status desktop=$desktop_status" >&2
             exit 1
@@ -249,6 +275,8 @@ jobs:
             lighthouse-results/
             lighthouse-results-desktop/
             lhci-server.log
+            ${{ runner.temp }}/portfolio-lhci-*.log
+            ${{ runner.temp }}/portfolio-lhci-*-first-state/
           if-no-files-found: warn
           retention-days: 30
       - name: Summarize public source qualification
