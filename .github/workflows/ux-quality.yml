@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     # Full-quality encased rendering on software GL needs additional wall time.
     # Keep the complete audit suite, native pixels, and media settings intact.
-    timeout-minutes: 120
+    timeout-minutes: 180
     outputs:
       fast_path: ${{ steps.scope.outputs.fast_path }}
     steps:
@@ -316,7 +316,7 @@ jobs:
     # Scoped route/profile PRs need only the fast UX contract. Main and manual Pages builds use the exact candidate.
     if: ${{ !cancelled() && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     permissions:
       contents: read
     steps:

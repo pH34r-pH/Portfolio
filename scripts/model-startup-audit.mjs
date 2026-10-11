@@ -4,6 +4,7 @@ import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {IGNITION_DURATION_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
 import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
+import {resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
@@ -183,10 +184,22 @@ async function quietFallback(mode,options) {
   } finally {await context.close();}
 }
 
+async function interruptedImportFailure(page,details,timing) {
+  const failure=await startupFailure(page,details);
+  const controller=await page.evaluate(()=>{
+    const root=document.querySelector('[data-model-machine]'),startup=root?.modelStartup;
+    return {observedAt:performance.now(),observedWallTime:Date.now(),dataset:{...root?.dataset},
+      startedAt:startup?.startedAt,deadlineAt:startup?.deadlineAt,
+      deadlineCount:portfolioStartupDeadlines.length,phases:portfolioStartupPhases};
+  }).catch(error=>({diagnosticError:error.message}));
+  return {...failure,timing,controller};
+}
+
 async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
+  const timing={startedWallTime:Date.now()};
   let release;const held=new Promise(resolve=>{release=resolve;});let requests=0;
   const {context,page,errors}=await open({},async page=>{
-    page.on('request',request=>{if(request.url().includes('three@0.186.1'))requests++;});
+    page.on('request',request=>{if(request.url().includes('three@0.186.1')){requests++;timing.firstEngineRequestWallTime??=Date.now();}});
     await page.route('**/vendor/three@0.186.1/three.module.js',async route=>{await held;await route.continue();});
   });
   try {
@@ -208,16 +221,14 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
     assert.equal(quiet.handoffs,0);assert.equal(quiet.ignitionComplete,false);assert.equal(requests,1);
 
     await page.emulateMedia(clearOptions);
-    const freshAttempt=await page.evaluate(()=>{
-      window.resumedStartup=PortfolioModelStartup.start({retained:true});
-      return window.resumedStartup!==window.pendingStartup;
-    });
-    assert.equal(freshAttempt,true,`${mode} restoration owns a fresh startup promise`);
-    await expect(root).toHaveAttribute('data-render','loading');
-    await expect.poll(()=>page.evaluate(()=>portfolioStartupDeadlines.length),{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe(2);
-    assert.equal(requests,1,'Resumed attempt shares the still-pending native module fetch');
-
-    release();
+    await page.waitForFunction(resumedImportArmed,null,{timeout:RENDERER_READINESS_TIMEOUT_MS});
+    timing.resumed=await page.evaluate(resumedImportObservation);
+    const requestsBeforeRelease=requests;
+    timing.releasedWallTime=Date.now();release();
+    // Assert the captured pending state after releasing the synthetic network stall.
+    assert.equal(timing.resumed.freshAttempt,true,`${mode} restoration owns a fresh startup promise`);
+    assert.equal(timing.resumed.render,'loading');assert.equal(timing.resumed.deadlineCount,2);
+    assert.equal(requestsBeforeRelease,1,'Resumed attempt shares the still-pending native module fetch');
     await expect.poll(async()=>(await snapshot(page)).phase,{timeout:RENDERER_READINESS_TIMEOUT_MS}).toBe('ready');
     const staleIsNull=await page.evaluate(()=>window.pendingStartup.then(value=>value===null));
     const ready=await snapshot(page);
@@ -227,7 +238,9 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
     assert.equal(await page.evaluate(()=>sessionStorage.getItem('__portfolioAuditWebglContexts')),'1');
     assert.equal(await root.getAttribute('data-render'),'webgl');assert.deepEqual(errors,[]);
     evidence.push({mode:`${mode}-interrupted-pending-import`,quiet,ready,staleIsNull,requests,
-      freshAttempt:true,staticFallbackRetained:true,errors});
+      freshAttempt:true,staticFallbackRetained:true,timing,errors});
+  } catch(error) {
+    evidence.push(await interruptedImportFailure(page,{name:`${mode}-interrupted-pending-import`,requested:requests,errors,error},timing));throw error;
   } finally {release();await context.close();}
 }
 

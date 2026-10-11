@@ -109,6 +109,18 @@ the progression deadline. Visibility timeout evidence includes the real stage
 bounds and clock state; glass observation timeouts identify the exit or reversal
 phase. The existing state, geometry, opacity, alignment, and clock predicates
 remain required. Production preparation and ignition durations are unchanged.
+Native model and full-page evidence screenshots have a separate bounded
+120-second capture allowance. The complete pixel dimensions, DPR, glass passes,
+element stability checks, and geometry assertions remain enabled. Hosted Linux
+timed out at the former 30-second screenshot limit after geometry checks passed;
+the evidence allowance does not change renderer readiness or product startup.
+Full source and finished-bundle jobs admit 180 and 150 minutes respectively:
+the previous incomplete source suite already took 101 minutes. Both complete
+qualification jobs must still pass before Fleet intake or deployment.
+The interrupted-import startup audit observes the fresh deadline and loading
+state together, releases its synthetic network hold before subsequent
+assertions, and retains failure snapshots and timing. Stale-promise, single
+context, handoff, completion, and complete ignition predicates remain required.
 The one-pixel resize regression waits for renderer bounds to match the live
 canvas dimensions before checking the complete fit; it does not invoke resize.
 
