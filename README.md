@@ -1,5 +1,7 @@
 # Portfolio
 
+![Portfolio — Research systems, made inspectable.](docs/assets/hero.png)
+
 Portfolio is the publicly shareable portion of my ongoing research project. Its public site is article-centered: reviewed MyST articles explain the work, figures and equations make the reasoning inspectable, and clearly marked teaching cells can run in the browser. The chronological notebooks remain available as source and historical records, with the original code and evidence preserved.
 
 ## Publication model
