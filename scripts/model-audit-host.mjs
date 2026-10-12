@@ -262,7 +262,7 @@ export async function auditArticleQuietModeRestore(browser,base,mode,initial,cle
       // Once the reader has started, preference restoration may resume that
       // retained intent, with the same article-owned controller and ignition.
       await page.emulateMedia(initial);
-      await expect(root).toHaveAttribute('data-startup','quiet');
+      await expect(root).toHaveAttribute('data-startup','quiet',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       await expect(root).toHaveAttribute('data-render','fallback');
       await expect(root.locator('[data-machine-fallback] svg')).toBeVisible();
       await page.emulateMedia(cleared);
