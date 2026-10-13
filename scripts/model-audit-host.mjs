@@ -266,6 +266,12 @@ export async function auditArticleQuietModeRestore(browser,base,mode,initial,cle
       await expect(root).toHaveAttribute('data-render','fallback');
       await expect(root.locator('[data-machine-fallback] svg')).toBeVisible();
       await page.emulateMedia(cleared);
+      // Media delivery, native preparation and the powered handoff can each
+      // cross full-quality software-rendered frames. Observe each stage as
+      // initial Start does, rather than spending one budget on the whole path.
+      await expect.poll(()=>root.evaluate(node=>node.modelStartup.quiet),
+        {timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(false);
+      await expect(root).toHaveAttribute('data-render','webgl',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       await expect(root).toHaveAttribute('data-startup','ready',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       const restored=await root.evaluate(node=>({snapshot:node.modelStartup.snapshot(),
         owned:node.machineController.startup===node.modelStartup,homeStartup:Boolean(window.PortfolioModelStartup)}));
@@ -278,5 +284,18 @@ export async function auditArticleQuietModeRestore(browser,base,mode,initial,cle
     assert.deepEqual(errors,[]);
     return {mode:`article-${mode}-restoration`,articleEvidence:host.kind,engines,visibleRestore:true,
       articleManualStart:host.manualStart,started,errors};
+  } catch(error) {
+    const diagnostic=await page.locator('[data-model-machine]').first().evaluate(node=>{
+      const startup=node.modelStartup,controller=node.machineController;
+      const {firstFrame,...state}=startup?.snapshot()||{};
+      return {startup:state,quiet:startup?.quiet,onScreen:startup?.onScreen(),hidden:document.hidden,
+        reducedMotion:matchMedia('(prefers-reduced-motion:reduce)').matches,
+        forcedColors:matchMedia('(forced-colors:active)').matches,render:node.dataset.render,
+        canvas:startup?.scene?.canvas?.getBoundingClientRect().toJSON(),
+        firstFrame:firstFrame&&{width:firstFrame.width,height:firstFrame.height},
+        owned:controller?.startup===startup,visible:controller?.visible};
+    }).catch(failure=>({diagnosticFailure:failure.message}));
+    console.error('Article quiet restoration failure:',JSON.stringify({mode,...diagnostic}));
+    throw error;
   } finally {await context.close();}
 }
