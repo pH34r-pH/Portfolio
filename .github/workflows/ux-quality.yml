@@ -348,6 +348,11 @@ jobs:
     permissions:
       contents: read
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: Portfolio
+          persist-credentials: false
       - name: Pin public input revisions
         id: refs
         shell: bash
@@ -356,8 +361,19 @@ jobs:
         run: |
           set -euo pipefail
           portfolio="$PORTFOLIO_SOURCE_SHA"
-          research_notes="$(git ls-remote https://github.com/pH34r-pH/research-notes.git refs/heads/main | cut -f1)"
-          theorem_library="$(git ls-remote https://github.com/pH34r-pH/theorem-library.git refs/heads/main | cut -f1)"
+          python3 - <<'PY' > "$RUNNER_TEMP/portfolio-public-source-pins"
+          import json, re
+          from pathlib import Path
+          pins = json.loads(Path('Portfolio/publication/public-sources.lock.json').read_text())
+          assert set(pins) == {'schemaVersion', 'researchNotes', 'theoremLibrary'}
+          assert type(pins['schemaVersion']) is int and pins['schemaVersion'] == 1
+          for field in ('researchNotes', 'theoremLibrary'):
+              assert isinstance(pins[field], str) and re.fullmatch(r'[0-9a-f]{40}', pins[field])
+              print(pins[field])
+          PY
+          mapfile -t source_pins < "$RUNNER_TEMP/portfolio-public-source-pins"
+          research_notes="${source_pins[0]}"
+          theorem_library="${source_pins[1]}"
           for revision in "$portfolio" "$research_notes" "$theorem_library"; do
             [[ "$revision" =~ ^[0-9a-f]{40}$ ]] || { echo 'Expected full source commit SHAs'; exit 1; }
           done
@@ -366,11 +382,6 @@ jobs:
             echo "research_notes=$research_notes"
             echo "theorem_library=$theorem_library"
           } >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.refs.outputs.portfolio }}
-          path: Portfolio
-          persist-credentials: false
       - name: Read immutable public Compiler input pin
         id: compiler
         run: python3 Portfolio/scripts/compiler_projection_input.py --pin Portfolio/publication/compiler-projection.lock.json >> "$GITHUB_OUTPUT"
