@@ -29,7 +29,7 @@ export class MachineScene {
     const {animationActive=()=>!document.hidden, rendering=null}=options;
     this.T = T; this.root = root; this.digital = root.hasAttribute('data-digital-home'); this.canvas = root.querySelector("[data-machine-canvas]");
     this.animationActive=animationActive;
-    this.preparing=this.digital&&root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
+    this.preparing=root.hasAttribute('data-model-startup');this.powerProgress=this.preparing?0:null;
     const prepared = rendering || webGLRendering(T, this.canvas);
     const context = prepared.context;
     this.quality = prepared.quality; this.renderer = prepared.renderer; this.backend = prepared.backend; this.fallbackReasons = prepared.fallbackReasons;
@@ -324,12 +324,12 @@ export class MachineScene {
     this.animateGlassContext();
   }
   animateGlassContext() {
-    if (this.digital || this.disposed || !this.animationActive?.()) return;
+    if (this.digital || this.disposed || this.powerProgress!==null || !this.animationActive?.()) return;
     if(!this.glass.hasContextAnimation?.()){this.render();return;}
     if(this.glassAnimationRaf)return;
     const tick = () => {
       this.glassAnimationRaf = 0;
-      if (this.disposed||!this.animationActive?.()) return;
+      if (this.disposed||this.powerProgress!==null||!this.animationActive?.()) return;
       this.render();
       if (this.glass.hasContextAnimation?.()&&this.animationActive?.()) this.glassAnimationRaf = requestAnimationFrame(tick);
     };
@@ -436,6 +436,7 @@ export class MachineScene {
     this.materials.node.blending=this.T.NormalBlending;this.contours.material.blending=this.T.AdditiveBlending;this.routes.setPower(1);
     if(this.snapshot){this.applyFrame(this.run,this.snapshot);}else {this.render();}
     if(this.readingState){this.reading(this.readingState);}
+    this.animateGlassContext();
   }
   powerView() {
     this.scene.updateMatrixWorld();this.camera.updateMatrixWorld();
