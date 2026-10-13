@@ -269,7 +269,7 @@ export async function auditArticleQuietModeRestore(browser,base,mode,initial,cle
       // Media delivery, native preparation and the powered handoff can each
       // cross full-quality software-rendered frames. Observe each stage as
       // initial Start does, rather than spending one budget on the whole path.
-      await expect.poll(()=>root.evaluate(node=>node.modelStartup.quiet),
+      await expect.poll(()=>page.evaluate(()=>document.querySelector('[data-model-machine]').modelStartup.quiet),
         {timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(false);
       await expect(root).toHaveAttribute('data-render','webgl',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
       await expect(root).toHaveAttribute('data-startup','ready',{timeout:RENDERER_OBSERVATION_TIMEOUT_MS});
