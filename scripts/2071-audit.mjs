@@ -246,16 +246,17 @@ async function auditPhoneTopology(page,nodes,layout,articles) {
 
 async function auditTopology(page, manifest) {
   if (!manifest?.articles?.length) return;
+  const milestones = manifest.articles.filter(article => !article.articleKind);
   await page.goto(base + "/research/", { waitUntil: "networkidle" });
   const nodes = page.locator(".topology-node");
-  await expect(nodes).toHaveCount(manifest.articles.length);
-  await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(manifest.articles));
+  await expect(nodes).toHaveCount(milestones.length);
+  await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(milestones));
   const layout = await page.locator("[data-research-topology]").evaluate(topologyLayout);
   assert.equal(layout.overlaps, 0, "topology nodes must not overlap");
   assert.ok(layout.background.includes("radial-gradient"), "the page field should use dimensional gradients");
   assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
-  await auditFrontierSelection(page,manifest.articles);
-  await auditPhoneTopology(page,nodes,layout,manifest.articles);
+  await auditFrontierSelection(page,milestones);
+  await auditPhoneTopology(page,nodes,layout,milestones);
 }
 
 async function auditArticleMachine(page, manifest) {

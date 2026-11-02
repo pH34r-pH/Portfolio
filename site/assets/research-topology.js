@@ -254,7 +254,7 @@ if (root) {
 
   function render(manifest) {
     if (!manifest?.articles?.length) return;
-    articles = buildRelations([...manifest.articles].sort((a, b) => (a.sequence || 0) - (b.sequence || 0)));
+    articles = buildRelations(manifest.articles.filter((article) => !article.articleKind).sort((a, b) => (a.sequence || 0) - (b.sequence || 0)));
     const depths = Math.max(...articles.map((article) => article.topologyDepth), 0) + 1;
     nodesLayer.style.setProperty("--topology-columns", String(depths));
     buttons = new Map();

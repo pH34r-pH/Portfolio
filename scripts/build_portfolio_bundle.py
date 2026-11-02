@@ -102,6 +102,7 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
 
 
 _ARTICLE_METADATA_FIELDS = {
+    'article_kind': 'articleKind',
     'short_title': 'shortTitle',
     'model_focus': 'modelFocus',
     'model_variant': 'modelVariant',
@@ -572,11 +573,12 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     article = BeautifulSoup(str(article), "html.parser").article
     _normalize_article_heading(article, source_text, metadata["title"])
     _rewrite_myst_article_routes(article, ordered_sources)
-    annotate_article_model_context(article, metadata)
     slug = src.stem
     canonical_url = f"https://tyharbin.com/articles/{quote(slug)}/"
-    machine = BeautifulSoup(render_article_model_machine(metadata, slug), "html.parser")
-    insert_article_model(article, machine.section)
+    if not metadata.get('articleKind'):
+        annotate_article_model_context(article, metadata)
+        machine = BeautifulSoup(render_article_model_machine(metadata, slug), "html.parser")
+        insert_article_model(article, machine.section)
     copied_assets = _copy_myst_assets(article, args.myst_html, args.output, source_digests,
                                       args.research_notes, args.research_notes_sha)
     has_executable = _prepare_article_execution(article)
@@ -599,7 +601,8 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    canonical_url, args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    article_label = {'essay': 'PROJECT ESSAY', 'work-in-progress': 'WORK IN PROGRESS'}.get(metadata.get('articleKind'), 'RESEARCH ARTICLE')
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">{article_label} · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -619,7 +622,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     if 'compiled_experiment' in metadata:
         entry['compiled_experiment'] = metadata['compiled_experiment']
     for key in (
-        'shortTitle', 'modelFocus', 'modelVariant', 'dependsOn', 'tags',
+        'articleKind', 'shortTitle', 'modelFocus', 'modelVariant', 'dependsOn', 'tags',
         'frontierObserved', 'frontierOpen', 'frontierNext',
     ):
         if key in metadata:

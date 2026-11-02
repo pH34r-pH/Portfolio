@@ -17,7 +17,8 @@ function renderArticleList(container, articles) {
       summary.textContent = article.description || "";
       const meta = document.createElement("p");
       meta.className = "card-meta";
-      meta.textContent = `Reviewed article · ${article.date || ""}`;
+      const kind = article.articleKind === "work-in-progress" ? "Work in progress" : article.articleKind === "essay" ? "Project essay" : "Reviewed article";
+      meta.textContent = `${kind} · ${article.date || ""}`;
       const links = document.createElement("div");
       links.className = "links";
       const read = document.createElement("a");

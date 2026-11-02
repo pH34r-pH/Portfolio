@@ -232,6 +232,9 @@
             "type": "string",
             "minLength": 1
           },
+          "articleKind": {
+            "enum": ["essay", "work-in-progress"]
+          },
           "modelFocus": {
             "type": "string",
             "minLength": 1

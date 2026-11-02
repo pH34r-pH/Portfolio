@@ -386,6 +386,23 @@ class ReaderPublicationTest(unittest.TestCase):
         with patch.object(sys, 'argv', args):
             build_bundle()
 
+    def test_standalone_article_has_kind_and_no_unrelated_model_instrument(self):
+        with tempfile.TemporaryDirectory() as directory:
+            args, schema, _, bundle, _ = self._article_bundle_fixture(Path(directory))
+            source = Path(directory) / 'research-notes/articles/sample-article-second.md'
+            text = source.read_text(encoding='utf-8').replace(
+                'date: 2026-09-29\n', 'date: 2026-09-29\narticle_kind: work-in-progress\n')
+            source.write_text(text, encoding='utf-8')
+            self._build_fixture_bundle(args)
+            manifest = json.loads((bundle / 'publication.json').read_text())
+            Draft202012Validator(schema).validate(manifest)
+            article = manifest['articles'][1]
+            self.assertEqual(article['articleKind'], 'work-in-progress')
+            page = BeautifulSoup((bundle / 'articles/sample-article-second/index.html').read_text(), 'html.parser')
+            self.assertIsNone(page.select_one('[data-model-machine]'))
+            self.assertIsNotNone(BeautifulSoup((bundle / 'articles/sample-article/index.html').read_text(),
+                                              'html.parser').select_one('[data-model-machine]'))
+
     def test_public_candidate_v2_carries_articles_and_exact_sources(self):
         with tempfile.TemporaryDirectory() as directory:
             args, schema, revisions, bundle, _ = self._article_bundle_fixture(Path(directory))
