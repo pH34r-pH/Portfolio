@@ -148,6 +148,12 @@ export async function assertUnstartedArticle(root,{quiet=false}={}) {
   await expect(root).toHaveAttribute('data-model-startup','');
   await expect(root).toHaveAttribute('data-startup',quiet?'quiet':'idle');
   await expect.poll(()=>root.evaluate(node=>Boolean(node.modelStartup))).toBe(true);
+  if (await root.getAttribute('data-viewer-hidden') === 'true') {
+    await expect(root.locator('[data-machine-stage]')).toBeHidden();
+    const reveal = root.getByRole('button', { name: 'Show model', exact: true });
+    await reveal.click();
+    await expect(root).toHaveAttribute('data-viewer-hidden', 'false');
+  }
   const state=await root.evaluate(node=>({startup:node.modelStartup.snapshot(),
     ownsRoot:node.modelStartup.root===node,controller:Boolean(node.machineController),
     homeMarker:node.hasAttribute('data-digital-home'),homeStartup:Boolean(window.PortfolioModelStartup),
