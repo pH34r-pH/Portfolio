@@ -180,7 +180,8 @@ async function auditPublishedArticleHistory(page, manifest) {
   await expect(page).toHaveURL(base + article.url);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
 
-  const fragment = page.locator('article.myst-reader a[href^="#"]').first();
+  await page.locator('.article-contents > summary').click();
+  const fragment = page.locator('.article-contents a[href^="#"]').first();
   await expect(fragment).toBeVisible();
   const hashHref = await fragment.getAttribute("href");
   assert.ok(hashHref && hashHref.length > 1, `${article.url}: same-page anchor has a fragment`);

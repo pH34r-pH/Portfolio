@@ -26,7 +26,8 @@ concurrency:
 
 jobs:
   ux:
-    runs-on: ubuntu-latest
+    # The locked Playwright release supports this image; ubuntu-latest now uses 26.04.
+    runs-on: ubuntu-24.04
     # Full-quality encased rendering on software GL needs additional wall time.
     # Keep the complete audit suite, native pixels, and media settings intact.
     timeout-minutes: 180
@@ -342,7 +343,7 @@ jobs:
       pages_artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
     # Scoped route/profile PRs need only the fast UX contract. Main and manual Pages builds use the exact candidate.
     if: ${{ needs.ux.result == 'success' && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     permissions:
       contents: read
