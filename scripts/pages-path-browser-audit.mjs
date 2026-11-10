@@ -13,6 +13,7 @@ const localFailures = [];
 const externalFailures = [];
 const pageErrors = [];
 const browserErrors = [];
+const browserWarnings = [];
 
 function pageUrl(route) {
   const normalized = route.startsWith('/') ? route : `/${route}`;
@@ -37,6 +38,7 @@ function collectNetworkFailures(page) {
   page.on('pageerror', error => pageErrors.push(error.message));
   page.on('console', message => {
     if (message.type() === 'error') browserErrors.push(`${message.location().url}: ${message.text()}`);
+    if (message.type() === 'warning') browserWarnings.push(message.text());
   });
 }
 
@@ -64,7 +66,12 @@ try {
   await expect(home.locator('[data-model-start]')).toBeVisible({ timeout: 30000 });
   await home.locator('[data-model-start]').click();
   await expect(home.locator('[data-model-start]')).toHaveJSProperty('hidden', true, { timeout: 30000 });
-  await expect(home.locator('[data-startup]')).toHaveAttribute('data-startup', 'ready', { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
+  try {
+    await expect(home.locator('[data-startup]')).toHaveAttribute('data-startup', 'ready', { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
+  } catch (error) {
+    console.error('Pages model startup diagnostics:', JSON.stringify({ localFailures, pageErrors, browserErrors, browserWarnings }));
+    throw error;
+  }
   await expect(home.locator('[data-model-machine]')).toHaveAttribute('data-render', 'webgl');
   await expect(home.locator('[data-machine-canvas]')).toBeVisible();
 
