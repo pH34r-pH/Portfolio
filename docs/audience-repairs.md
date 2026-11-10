@@ -1,13 +1,13 @@
 # Audience review implementation
 
-Tracks the November 10 review, issues [127â€“138](https://github.com/pH34r-pH/Portfolio/issues?q=is%3Aissue+created%3A2026-11-10).
+Tracks the November 10 review, issues [127–138](https://github.com/pH34r-pH/Portfolio/issues?q=is%3Aissue+created%3A2026-11-10).
 An implementation entry is not a completion claim: each issue's acceptance criteria remain authoritative.
 
 ## Dependency order and ownership
 
 | Order | Issue | Work and owner | State |
 | --- | --- | --- | --- |
-| 1 | #127 | Portfolio: recruiter summary, verified impact, rÃ©sumÃ©, About order | Implemented; final publication validation pending |
+| 1 | #127 | Portfolio: recruiter summary, verified impact, résumé, About order | Implemented; final publication validation pending |
 | 2 | #128 | Portfolio: Projects and source-grounded case studies | Implemented; final publication validation pending |
 | 3 | #129 | Portfolio: research entry paths, resource hierarchy, mobile map | Implemented; final publication validation pending |
 | 4 | #130 | Research Notes: conceptual dependencies; Portfolio: map navigation | Implemented; source revisions pinned; map and reading-navigation checks passed |
@@ -17,8 +17,8 @@ An implementation entry is not a completion claim: each issue's acceptance crite
 | 8 | #134 | Portfolio: all search results, types, excerpts, shortcuts | Implemented; real-index pagination and search fixtures passed |
 | 9 | #135 | Portfolio: About decoration and intermediate-width overflow | Implemented and responsive checks passed |
 | 10 | #136 | Portfolio: model first use and compact mobile presentation | Implemented; generation, fallback, and accessibility checks passed |
-| 11 | #137 | Portfolio: notebook guidance, provenance disclosure, Lab return context | Implemented; Lab and project-path validation pending |
-| 12 | #138 | Portfolio: typography, spacing, themes, cross-page visual review | Implemented; assembled-page visual review pending |
+| 11 | #137 | Portfolio: notebook guidance, provenance disclosure, Lab return context | Implemented; project-path Python execution, search, and return navigation passed |
+| 12 | #138 | Portfolio: typography, spacing, themes, cross-page visual review | Implemented; assembled appearance and visual review passed |
 
 ## Verification boundaries
 
@@ -45,3 +45,11 @@ An implementation entry is not a completion claim: each issue's acceptance crite
 - Full article-model browser audit passes real generation, numerical observations, prompt focus, phone first use, hide/show, unpin/follow, fallback, accessibility, and payload checks.
 - Assembled 2071 audit passes search, topology relationships, phone navigation/Back restoration, article model presence, Pagefind boundaries, and model startup/reduced motion. Manual real-index search reaches all 17 consumer matches (8 → 16 → 17) with accurate counts and types.
 - Manually inspected assembled homepage, résumé screen and print styles, and article phone layout. Browser emulation was reset after inspection. Native 1920×1920 homepage recording completed at 30 fps.
+
+- Final project-path browser audit passes at `/Portfolio/`: live model startup, article/PDF access, exact JupyterLite source cells, Python execution, contextual notebook return, associated article link, real search result prefixes, mobile navigation, and reduced motion.
+- Final assembled appearance audit passes 10 routes at 320/412/768/1366px in all theme modes, denied storage, About intermediate widths, and forced colors.
+- CI compatibility repair: pin browser jobs to Ubuntu 24.04 because the locked Playwright release rejects Ubuntu 26.04, now selected by `ubuntu-latest`. Native poster assets are regenerated with the current source and pipeline provenance; capture quality and validation thresholds remain unchanged.
+- The model loader now resolves bundled Three.js relative to its own module, fixing live model startup on project-path hosting. Research entry actions precede the detailed finding/open-question paragraphs on phones.
+
+- All route checks pass at 360/412/768/1366px, including all 16 articles, readable notebook cells, both Lab return journeys, preserved-download hashes, exact Compiler navigation, and real MyST browser Python execution. A focused history regression test then reproduced and verified the fix for Forward restoring an anchor after the article contents disclosure collapsed; disclosure state now travels with browser history.
+- Final native poster capture uses source `05f992a975bdb6f1ec55901ed45984f87ae4eb56`; all 12 theme/orientation/density variants and source/pipeline hash checks pass. Portfolio CI must finish against the final PR head before integration.

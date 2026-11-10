@@ -1,4 +1,23 @@
 import('./material-light.js').catch(()=>{});
+
+function restoreArticleContents() {
+  const contents = document.querySelector('.article-contents');
+  if (!contents) return;
+  const restore = () => {
+    if (typeof history.state?.articleContentsOpen === 'boolean') {
+      contents.open = history.state.articleContentsOpen;
+    }
+  };
+  const remember = () => history.replaceState(
+    { ...history.state, articleContentsOpen: contents.open }, '', location.href,
+  );
+  restore();
+  contents.addEventListener('toggle', remember);
+  addEventListener('hashchange', remember);
+  addEventListener('popstate', restore);
+}
+restoreArticleContents();
+
 function renderArticleList(container, articles) {
   if (!articles?.length) return;
   const cards = [...articles]
