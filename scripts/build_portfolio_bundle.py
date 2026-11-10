@@ -624,19 +624,23 @@ def article_reading_navigation(src: Path, metadata: dict, ordered_sources: list[
             + '</nav>')
 
 
+def validate_article_identity(metadata: dict, src: Path, research_notes: Path) -> None:
+    if 'notebookSlug' in metadata:
+        notebook_slug = metadata['notebookSlug']
+        if not isinstance(notebook_slug, str) or not re.fullmatch(r'[a-z0-9_]+', notebook_slug):
+            raise ValueError(f'Invalid source_notebook in {src}')
+        if not (research_notes / 'notebooks' / f'{notebook_slug}.ipynb').is_file():
+            raise ValueError(f'Article source notebook does not exist: {src}')
+    if 'milestone' in metadata and not re.fullmatch(r'[0-9]{3}', str(metadata['milestone'])):
+        raise ValueError(f'Invalid milestone identity in {src}')
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
     source_text = src.read_text(encoding="utf-8")
     metadata = _article_metadata(source_text, src)
-    if 'notebookSlug' in metadata:
-        notebook_slug = metadata['notebookSlug']
-        if not isinstance(notebook_slug, str) or not re.fullmatch(r'[a-z0-9_]+', notebook_slug):
-            raise ValueError(f'Invalid source_notebook in {src}')
-        if not (args.research_notes / 'notebooks' / f'{notebook_slug}.ipynb').is_file():
-            raise ValueError(f'Article source notebook does not exist: {src}')
-    if 'milestone' in metadata and not re.fullmatch(r'[0-9]{3}', str(metadata['milestone'])):
-        raise ValueError(f'Invalid milestone identity in {src}')
+    validate_article_identity(metadata, src, args.research_notes)
     article_html = _myst_article_html_path(args.myst_html, src, ordered_sources)
     document = BeautifulSoup(article_html.read_text(encoding="utf-8"), "html.parser")
     article = document.select_one("article.myst-article")
@@ -675,7 +679,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    canonical_url, args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -909,6 +913,23 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
     return entry
 
 
+def research_relations(articles: list[dict], ordered: list[dict], link) -> str:
+    by_slug = {article['slug']: article for article in articles}
+    relations = []
+    for article in ordered:
+        prerequisites = []
+        for slug in article.get('dependsOn', []):
+            target = by_slug.get(slug)
+            prerequisites.append(link(target['url'], target['title']) if target else
+                                 html.escape(slug) + ' (not in this publication)')
+        relation = ' — Prerequisites: ' + ', '.join(prerequisites) if prerequisites else ' — No declared prerequisite.'
+        dependents = [link(item['url'], item['title']) for item in ordered
+                      if article['slug'] in item.get('dependsOn', [])]
+        relation += ' — Used by: ' + ', '.join(dependents) if dependents else ' — No declared dependent.'
+        relations.append('<li>' + link(article['url'], article['title']) + relation + '</li>')
+    return ''.join(relations)
+
+
 def write_research_catalog(output: Path, notebooks: list[dict], articles: list[dict]) -> None:
     """Publish a usable reading path before JavaScript or the manifest loads."""
     path = output / 'research/index.html'
@@ -952,20 +973,7 @@ def write_research_catalog(output: Path, notebooks: list[dict], articles: list[d
                      f'<p class="card-question">{html.escape(notebook.get("question", ""))}</p><div class="links">'
                      + link('/notebooks/' + quote(slug) + '/', 'Read notebook') + '</div></article>')
     replace('#notebook-list', ''.join(cards))
-    by_slug = {article['slug']: article for article in articles}
-    relations = []
-    for article in ordered:
-        prerequisites = []
-        for slug in article.get('dependsOn', []):
-            target = by_slug.get(slug)
-            prerequisites.append(link(target['url'], target['title']) if target else
-                                 html.escape(slug) + ' (not in this publication)')
-        relation = ' — Prerequisites: ' + ', '.join(prerequisites) if prerequisites else ' — No declared prerequisite.'
-        dependents = [link(item['url'], item['title']) for item in ordered
-                      if article['slug'] in item.get('dependsOn', [])]
-        relation += ' — Used by: ' + ', '.join(dependents) if dependents else ' — No declared dependent.'
-        relations.append('<li>' + link(article['url'], article['title']) + relation + '</li>')
-    replace('[data-topology-list]', ''.join(relations))
+    replace('[data-topology-list]', research_relations(articles, ordered, link))
     path.write_text(str(page), encoding='utf-8')
 
 
