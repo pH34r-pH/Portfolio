@@ -13,6 +13,10 @@
 .article-model-machine[data-viewer-hidden=true] .article-model-startup { display:none; }
 .article-model-toolbar button[aria-pressed=true] { border-color:var(--accent); box-shadow:inset 0 -2px var(--accent); }
 .article-model-toolbar [data-viewer-context] { flex-basis:100%; color:var(--muted); font-size:12px; }
+.article-model-toolbar .model-reader-note { flex-basis:100%; color:var(--muted); font-size:13px; line-height:1.5; }
+.article-model-machine[data-viewer-hidden=true] [data-viewer-pin],
+.article-model-machine[data-viewer-hidden=true] [data-viewer-follow],
+.article-model-machine[data-viewer-hidden=true] [data-viewer-context] { display:none; }
 .article-model-machine[data-viewer-hidden=true]>:not(.article-model-toolbar) { display:none!important; }
 .article-model-machine[data-viewer-pinned=false] .article-model-toolbar,
 .article-model-machine[data-viewer-pinned=false] .machine-stage,

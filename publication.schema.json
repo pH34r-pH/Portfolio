@@ -304,6 +304,21 @@
                 "pattern": "^/article-exports/[a-z0-9-]+\\.xml$"
               }
             }
+          },
+          "milestone": {
+            "type": "string",
+            "pattern": "^[0-9]{3}$"
+          },
+          "notebookSlug": {
+            "type": "string",
+            "pattern": "^[a-z0-9_]+$"
+          },
+          "articleKind": {
+            "type": "string",
+            "enum": [
+              "essay",
+              "work-in-progress"
+            ]
           }
         }
       }

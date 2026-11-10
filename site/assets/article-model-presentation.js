@@ -5,14 +5,21 @@ export class ArticleModelPresentation {
   constructor(root) {
     this.root=root;
     let saved={};try{saved=JSON.parse(sessionStorage.getItem(KEY))||{};}catch{}
-    this.hidden=saved.hidden===true;this.pinned=saved.pinned!==false;this.follow=saved.follow!==false;
+    const narrow=matchMedia('(max-width:720px)').matches;
+    this.hidden=typeof saved.hidden==='boolean'?saved.hidden:narrow;
+    this.pinned=typeof saved.pinned==='boolean'?saved.pinned:!narrow;this.follow=saved.follow!==false;
     const toolbar=document.createElement('div');toolbar.className='article-model-toolbar';toolbar.setAttribute('role','group');toolbar.setAttribute('aria-label','Model presentation');
-    toolbar.innerHTML='<button type="button" data-viewer-visibility>Hide model</button><button type="button" data-viewer-pin>Unpin model</button><button type="button" data-viewer-follow>Follow article</button><span data-viewer-context aria-live="polite">Model view</span>';
+    toolbar.innerHTML='<button type="button" data-viewer-prompt>Try a prompt</button><button type="button" data-viewer-visibility>Hide model</button><button type="button" data-viewer-pin>Unpin model</button><button type="button" data-viewer-follow>Follow article</button><span class="model-reader-note">Small trained baseline · generates a short continuation locally, often imperfect text. This is an inspection tool, not a replay of this article’s experiment.</span><span data-viewer-context aria-live="polite">Model view</span>';
     root.prepend(toolbar);this.toolbar=toolbar;
     toolbar.append(root.querySelector('.article-model-startup'));
     this.visibility=toolbar.querySelector('[data-viewer-visibility]');this.pin=toolbar.querySelector('[data-viewer-pin]');this.followButton=toolbar.querySelector('[data-viewer-follow]');this.label=toolbar.querySelector('[data-viewer-context]');
     const stage=root.querySelector('[data-machine-stage]');stage.id ||= `${root.getAttribute('aria-labelledby')}-viewer`;
     this.visibility.setAttribute('aria-controls',stage.id);
+    toolbar.querySelector('[data-viewer-prompt]').addEventListener('click',()=>{
+      this.hidden=false;this.sync();
+      root.dispatchEvent(new CustomEvent('portfolio:model-visibility',{detail:{visible:true}}));
+      root.dispatchEvent(new CustomEvent('portfolio:model-prompt'));
+    });
     this.visibility.addEventListener('click',()=>{
       this.hidden=!this.hidden;this.sync();
       if(this.hidden){root.machine?.pause();if(root.machineController)root.machineController.visible=false;root.machineController?.scene?.pauseGlassContext();}

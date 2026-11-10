@@ -48,6 +48,13 @@ async function openTrainedArticle(page, url, requests) {
     false,
     "Model download requires reader intent",
   );
+  if (page.viewportSize().width <= 720) {
+    await expect(root).toHaveAttribute('data-viewer-hidden', 'true');
+    await expect(root.locator('[data-machine-stage]')).toBeHidden();
+    await root.getByRole('button', { name: 'Show model', exact: true }).click();
+    await expect(root).toHaveAttribute('data-viewer-pinned', 'false');
+    await root.getByRole('button', { name: 'Pin model', exact: true }).click();
+  }
   const heading = await root.locator(".machine-heading h2").textContent();
   await expect(root.locator("[name=prompt]")).toBeDisabled();
   await root.locator("[data-model-start]").click();
@@ -60,7 +67,8 @@ async function openTrainedArticle(page, url, requests) {
 }
 
 async function generate(root, count, temperature) {
-  await root.getByRole("button", { name: "Input", exact: true }).click();
+  await root.getByRole("button", { name: "Try a prompt", exact: true }).click();
+  await expect(root.locator('[name=prompt]')).toBeFocused();
   await root.locator("[name=prompt]").fill("the model");
   await root.locator("[data-machine-settings] summary").click();
   await root.locator("[data-lm-count]").fill(String(count));
@@ -248,6 +256,7 @@ async function auditFallback(browser, config, mode) {
   if (mode === "engine-unavailable") await page.route("**/vendor/three@*/**", (route) => route.abort());
   await page.goto(base + article.url, { waitUntil: "networkidle" });
   const root = page.locator(".article-model-machine");
+  await root.getByRole('button', { name: 'Show model', exact: true }).click();
   await root.locator(mode === "reduced-motion" ? "[data-model-quiet-load]" : "[data-model-start]").click();
   await expect(root).toHaveAttribute("data-lm-state", "ready", { timeout: 30000 });
   await generate(root, 4, 0);

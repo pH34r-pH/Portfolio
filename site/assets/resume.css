@@ -1,0 +1,14 @@
+@media print {
+  @page { margin: 16mm; }
+  html, body { background: white !important; color: black !important; }
+  body { padding: 0; font-size: 10pt; line-height: 1.4; }
+  .topbar, .skip-link, footer, .print-guidance { display: none !important; }
+  main.project-page { width: 100%; max-width: none; margin: 0; }
+  .project-page .project-intro { padding: 0 0 12pt; }
+  .project-page section { padding: 10pt 0; break-inside: avoid; }
+  .project-page h1 { font-size: 28pt; }
+  .project-page h2 { font-size: 17pt; }
+  .project-page h3 { font-size: 12pt; }
+  .project-page .lede, .project-page p, .project-page li { font-size: 10pt; color: black; }
+  a { color: black !important; text-decoration: none; }
+}

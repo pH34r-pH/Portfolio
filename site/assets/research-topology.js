@@ -5,6 +5,7 @@ if (root) {
   const edgesLayer = root.querySelector("[data-topology-edges]");
   const detail = document.querySelector("[data-topology-detail]");
   const list = document.querySelector("[data-topology-list]");
+  const disclosure = document.querySelector('[data-topology-disclosure]');
   let articles = [];
   let dependencies = new Map();
   let children = new Map();
@@ -52,7 +53,9 @@ if (root) {
     if (article.frontierOpen?.length || article.frontierNext?.length) button.dataset.frontier = "true";
     button.style.gridColumn = String(article.topologyDepth + 1);
     button.style.gridRow = String(row + 1);
-    button.innerHTML = `<span class="topology-node-sequence">${String(article.sequence || row + 1).padStart(2, "0")}</span><strong></strong><small></small>`;
+    button.innerHTML = '<span class="topology-node-sequence"></span><strong></strong><small></small>';
+    button.querySelector('.topology-node-sequence').textContent = article.milestone ?
+      `Milestone ${article.milestone}` : ({ essay: 'Essay', 'work-in-progress': 'Work in progress' }[article.articleKind] || 'Article');
     button.querySelector("strong").textContent = nodeLabel(article);
     const focus = [article.modelFocus, article.modelVariant].filter(Boolean).join(" / ");
     button.querySelector("small").textContent = focus || "research milestone";
@@ -69,7 +72,7 @@ if (root) {
       if (event.key === "End") nextIndex = ordered.length - 1;
       if (nextIndex === index || nextIndex < 0 || nextIndex >= ordered.length) return;
       event.preventDefault();
-      ordered[nextIndex].focus();
+      ordered[nextIndex].focus({ preventScroll: true });
       select(ordered[nextIndex].dataset.slug, false);
     });
     buttons.set(article.slug, button);
@@ -108,7 +111,8 @@ if (root) {
     const meta = document.createElement("p");
     meta.className = "eyebrow";
     meta.textContent = [
-      `MILESTONE ${String(article.sequence || "").padStart(3, "0")}`,
+      article.milestone ? `MILESTONE ${article.milestone}` :
+        ({ essay: 'ESSAY', 'work-in-progress': 'WORK IN PROGRESS' }[article.articleKind] || 'ARTICLE'),
       article.modelFocus ? article.modelFocus.toUpperCase() : null,
       article.date ? `PUBLISHED ${article.date}` : null,
     ].filter(Boolean).join(" / ");
@@ -123,14 +127,40 @@ if (root) {
   }
 
   function detailRelations(article) {
-    const relation = document.createElement("p");
+    const relation = document.createElement("div");
     relation.className = "topology-relations";
-    const deps = (dependencies.get(article.slug) || []).map((dep) => nodeLabel(articleBySlug(dep))).filter(Boolean);
-    const next = (children.get(article.slug) || []).map((child) => nodeLabel(articleBySlug(child))).filter(Boolean);
-    const builtOn = deps.length ? `Built on: ${deps.join(", ")}.` : "Declared root: no earlier article dependency.";
-    const feeds = next.length ? `Feeds: ${next.join(", ")}.` : "No published dependent article yet.";
-    relation.textContent = `${builtOn} ${feeds}`;
+    relation.append(relationGroup('Prerequisites', article.dependsOn || [], 'No declared prerequisite in this collection.'),
+      relationGroup('Used by', children.get(article.slug) || [], 'No published dependent article declared.'));
     return relation;
+  }
+
+  function relationGroup(label, slugs, empty) {
+    const group = document.createElement('p');
+    if (!slugs.length) { group.textContent = empty; return group; }
+    group.append(document.createTextNode(label + ': '));
+    slugs.forEach((slug, index) => {
+      if (index) group.append(document.createTextNode(', '));
+      const target = articleBySlug(slug);
+      if (!target) { group.append(document.createTextNode(slug + ' (not in this publication)')); return; }
+      const link = document.createElement('a');
+      link.href = target.url;
+      link.textContent = nodeLabel(target);
+      group.append(link);
+    });
+    return group;
+  }
+
+  function revealSelectedNode() {
+    const button = buttons.get(root.dataset.selected);
+    if (!button || !root.clientWidth || (disclosure && !disclosure.open)) return;
+    const box = button.getBoundingClientRect(), viewport = root.getBoundingClientRect();
+    // Scroll only the bounded map, never move the reader's document position.
+    if (box.left < viewport.left || box.right > viewport.right) {
+      root.scrollLeft += box.left - viewport.left - (root.clientWidth - box.width) / 2;
+    }
+    if (box.top < viewport.top || box.bottom > viewport.bottom) {
+      root.scrollTop += box.top - viewport.top - (root.clientHeight - box.height) / 2;
+    }
   }
 
   function detailActions(article) {
@@ -166,6 +196,7 @@ if (root) {
       history.replaceState(state, "", window.location.href);
     }
     drawEdges();
+    revealSelectedNode();
     if (moveFocus) {
       const behavior = matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
       detail.scrollIntoView?.({ block: "nearest", behavior });
@@ -244,10 +275,7 @@ if (root) {
       const link = document.createElement("a");
       link.href = article.url;
       link.textContent = nodeLabel(article);
-      const relation = document.createElement("span");
-      const deps = dependencies.get(article.slug) || [];
-      relation.textContent = deps.length ? ` — depends on ${deps.join(", ")}` : " — root";
-      li.append(link, relation);
+      li.append(link, detailRelations(article));
       return li;
     }));
   }
@@ -270,6 +298,7 @@ if (root) {
     resize.disconnect();resize.observe(nodesLayer);
     for(const button of buttons.values())resize.observe(button);
     renderAccessibleList();
+    if (disclosure && history.state?.topologyExpanded) disclosure.open = true;
 
     requestAnimationFrame(() => {
       drawEdges();
@@ -287,6 +316,14 @@ if (root) {
   resize.observe(nodesLayer);
   addEventListener("resize", scheduleEdges, { passive: true });
   document.fonts.ready.then(scheduleEdges);
+  disclosure?.addEventListener('toggle', () => {
+    history.replaceState({ ...history.state, topologyExpanded: disclosure.open }, '', location.href);
+    if (disclosure.open) { drawEdges(); revealSelectedNode(); }
+  });
+  addEventListener('popstate', () => {
+    if (history.state?.topologySelection) select(history.state.topologySelection, false);
+    if (disclosure) disclosure.open = Boolean(history.state?.topologyExpanded);
+  });
 
   if (window.PortfolioPublication) render(window.PortfolioPublication);
   else document.addEventListener("portfolio:publication", (event) => render(event.detail), { once: true });

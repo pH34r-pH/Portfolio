@@ -11,7 +11,7 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to content</a>
   <div class="moire" aria-hidden="true"></div>
-  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ about</span></a><nav class="primary-nav" aria-label="Primary"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a></nav><button class="search-toggle" type="button" aria-haspopup="dialog">Search <kbd>⌘K</kbd></button><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Theme"><span class="appearance-label">Environment</span><button type="button" data-theme-choice="auto" aria-pressed="true">Auto</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button></div></div><script src="/assets/appearance.js"></script></header>
+  <header class="topbar"><a class="wordmark" href="/">TJHG <span>/ about</span></a><nav class="primary-nav" aria-label="Primary"><a href="/projects/">Projects</a><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a></nav><button class="search-toggle" type="button" aria-haspopup="dialog">Search <kbd>⌘K</kbd></button><button class="menu-toggle" aria-expanded="false" aria-controls="site-menu">Menu</button><div id="site-menu" class="site-menu" hidden><nav aria-label="Site"><a href="/projects/">Projects</a><a href="/research/">Research</a><a href="https://experiments.tyharbin.com/">Experiments ↗</a><a href="/about/" aria-current="page">About</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></nav><div class="appearance" role="group" aria-label="Theme"><span class="appearance-label">Theme</span><button type="button" data-theme-choice="auto" aria-pressed="true">Auto</button><button type="button" data-theme-choice="light" aria-pressed="false">Light</button><button type="button" data-theme-choice="dark" aria-pressed="false">Dark</button></div></div><script src="/assets/appearance.js"></script></header>
   <main id="main-content" data-pagefind-body tabindex="-1" class="about-page">
     <header class="about-hero">
       <p class="eyebrow">ABOUT / TYLER J.H.G.</p>
@@ -20,33 +20,38 @@
         <p class="lede">I’m Tyler James Harbin-Giuntoli, a software engineer at Microsoft and an independent machine-learning researcher. I care about systems that keep working when the clean example stops being clean.</p>
         <p class="about-intro">That means production schedulers, agents that recover from broken tools, experiments designed to attack the reason I think something worked, and small models pushed until the hardware tells me no.</p>
       </div></div>
+      <div class="professional-summary">
+        <p><strong>Microsoft · Software engineer · 2019–present</strong><br>Three prior internships. Production scheduling, agent recovery and evaluation, and independent ML research tools.</p>
+        <div class="actions"><a href="/resume/">Résumé / print or save as PDF</a><a href="/projects/">Public projects</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></div>
+      </div>
     </header>
     <section class="impact-rail" aria-label="Selected engineering scale">
       <article><strong>Tens of billions</strong><span>monthly value flowing through work coordinated by a production scheduler I wrote</span></article>
-      <article><strong>1 hour</strong><span>the end-to-end SLA target we are driving that scheduling system toward</span></article>
+      <article><strong>35 → 3 hours</strong><span>a clearing workflow I shortened from roughly 35 hours to just over 3</span></article>
       <article><strong>Thousands</strong><span>of evaluations run through Micro Suite; about 850 were the focused prompt-stabilization pass</span></article>
     </section>
     <div class="about-sections">
+      <section aria-labelledby="production">
+        <p class="eyebrow">MICROSOFT / PRODUCTION SYSTEMS</p>
+        <h2 id="production">I learned engineering where being wrong is expensive.</h2>
+        <p>I joined Microsoft full-time in 2019 after three internships, initially working on commerce data pipelines, reconciliation, and automation. A late job, a bad join, or a plausible-looking number could have real downstream consequences.</p>
+        <p>I cut one clearing workflow from roughly 35 hours to just over 3 and built reporting around a reconciliation process covering about $360 million a month. The work later moved into shared cloud services, durable dependency-aware scheduling, observability, privileged operations, and auditability. Today, a scheduler I wrote coordinates workflows handling value measured in <strong>tens of billions of dollars per month</strong>.</p>
+        <p class="engineering-target"><strong>Future target:</strong> We are working toward a one-hour end-to-end SLA for the scheduling system. This is a target, not a reported achieved SLA.</p>
+        <p>That scale is useful training. “It usually works” stops sounding like an engineering argument very quickly.</p>
+      </section>
+      <section aria-labelledby="agents">
+        <p class="eyebrow">MICROSOFT / AGENTS AND EVALUATION</p>
+        <h2 id="agents">The agent has to survive the part after the demo.</h2>
+        <p>This is internal professional work at Microsoft; the implementation is not distributed on this site. My recent work is increasingly agent-shaped. Micro Suite is used across my team and has been through <strong>thousands of evaluations</strong>. About 850 of those were a focused stabilization pass to determine which prompt changes each model family and version actually required; that is one slice of the evaluation history, not the total.</p>
+        <p>I added same-session recovery so a failed tool call can be repaired instead of ending the job. Auto Research starts from a repository, an objective, and a measurable notion of improvement, then works through papers, experiment proposals, tests, and proofs of concept. I’m also building multi-agent livesite triage where the interesting problem is not merely automatic classification, but a reliable warm handoff between agents operating under different teams’ policies.</p>
+        <p>Completion is the easy screenshot. I care more about whether the system notices that reality diverged from the plan, repairs the state, and leaves evidence explaining what happened.</p>
+      </section>
       <section aria-labelledby="why-this-work">
         <p class="eyebrow">THE PIVOT</p>
         <h2 id="why-this-work">My daughter changed the accounting.</h2>
         <p>I had a safe trajectory. I had also become a parent, which made the fact that time is finite substantially less abstract. I stopped being willing to spend most of that time simply staying on the safest path because it was already working.</p>
         <p>I wanted the work to matter to me. That pushed me harder toward agents, machine learning, robotics, and research: places where I could use the production-engineering habits I already had, but aim them at questions I actually wanted answered.</p>
         <p>The independent work on this site is not a separate academic persona. It is what happened when I started applying the same standard outside production: <strong>define the claim, build the comparison, look for the failure case, and keep attacking the explanation until the weak version stops surviving.</strong></p>
-      </section>
-      <section aria-labelledby="production">
-        <p class="eyebrow">PRODUCTION / CONSEQUENCES</p>
-        <h2 id="production">I learned engineering where being wrong is expensive.</h2>
-        <p>I joined Microsoft full-time in 2019 after three internships, initially working on commerce data pipelines, reconciliation, and automation. A late job, a bad join, or a plausible-looking number could have real downstream consequences.</p>
-        <p>I cut one clearing workflow from roughly 35 hours to just over 3 and built reporting around a reconciliation process covering about $360 million a month. The work later moved into shared cloud services, durable dependency-aware scheduling, observability, privileged operations, and auditability. Today, a scheduler I wrote coordinates workflows handling value measured in <strong>tens of billions of dollars per month</strong>, and we are working to drive its end-to-end SLA toward <strong>one hour</strong>.</p>
-        <p>That scale is useful training. “It usually works” stops sounding like an engineering argument very quickly.</p>
-      </section>
-      <section aria-labelledby="agents">
-        <p class="eyebrow">AGENTS / EVALUATION</p>
-        <h2 id="agents">The agent has to survive the part after the demo.</h2>
-        <p>My recent work is increasingly agent-shaped. Micro Suite is used across my team and has been through <strong>thousands of evaluations</strong>. About 850 of those were a focused stabilization pass to determine which prompt changes each model family and version actually required; that is one slice of the evaluation history, not the total.</p>
-        <p>I added same-session recovery so a failed tool call can be repaired instead of ending the job. Auto Research starts from a repository, an objective, and a measurable notion of improvement, then works through papers, experiment proposals, tests, and proofs of concept. I’m also building multi-agent livesite triage where the interesting problem is not merely automatic classification, but a reliable warm handoff between agents operating under different teams’ policies.</p>
-        <p>Completion is the easy screenshot. I care more about whether the system notices that reality diverged from the plan, repairs the state, and leaves evidence explaining what happened.</p>
       </section>
       <section aria-labelledby="research-method">
         <p class="eyebrow">RESEARCH / METHOD</p>
@@ -66,7 +71,7 @@
         <p class="eyebrow">CONTINUE</p>
         <h2 id="find-my-work">Take the work apart.</h2>
         <p>The <a href="/research/">research map and articles</a> follow the current investigation. <a href="https://experiments.tyharbin.com/">Compiled Experiments</a> are the reproduction surface.</p>
-        <div class="actions"><a class="primary" href="/research/">Research</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="https://github.com/pH34r-pH" rel="me">GitHub ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></div>
+        <div class="actions"><a class="primary" href="/projects/">Public projects</a><a href="/research/">Research</a><a href="https://www.linkedin.com/in/tylerharbin" rel="me">LinkedIn ↗</a><a href="https://github.com/pH34r-pH" rel="me">GitHub ↗</a><a href="mailto:harbin.giuntoli@gmail.com">Email</a></div>
       </section>
     </div>
     <footer id="provenance">

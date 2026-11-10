@@ -204,6 +204,25 @@ try {
     throw error;
   }
 
+  const returnLink = home.locator('#portfolio-lab-return [data-lab-return]');
+  await expect(returnLink).toHaveText('← Return to notebook');
+  await expect(returnLink).toHaveAttribute('href', pageUrl(`/notebooks/${notebook.slug}/`));
+  await home.locator('#portfolio-lab-return summary').click();
+  await expect(home.locator('[data-lab-help]')).toContainText('Python (Pyodide)');
+  const pairedArticle = manifest.articles.find(item => item.notebookSlug === notebook.slug);
+  if (pairedArticle) await expect(home.locator('[data-lab-help] a')).toHaveAttribute('href', new URL(pairedArticle.url, base.origin).href);
+  await returnLink.click();
+  await expect(home).toHaveURL(pageUrl(`/notebooks/${notebook.slug}/`));
+  await expect(home.locator('main h1')).toHaveText(notebook.title);
+
+  await home.getByRole('button', { name: /Search/ }).click();
+  await home.getByRole('searchbox').fill('consumer');
+  await expect(home.locator('.search-results a').first()).toBeVisible();
+  const resultPaths = await home.locator('.search-results a').evaluateAll(links => links.map(link => new URL(link.href).pathname));
+  assert.ok(resultPaths.every(path => path.startsWith(`${basePath}/`)), 'Real search results retain the project prefix');
+  await expect(home.locator('.search-results')).toContainText('Article');
+  await home.getByRole('button', { name: 'Close search' }).click();
+
   const mobileContext = await browser.newContext({
     viewport: { width: 390, height: 844 },
     isMobile: true,

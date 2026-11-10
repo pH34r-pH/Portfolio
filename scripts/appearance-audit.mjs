@@ -8,7 +8,7 @@ const modes = ['auto', 'light', 'dark'];
 const shots = process.env.PORTFOLIO_STYLE_SCREENSHOTS;
 
 async function discoverPaths(context) {
-  const paths = ['/', '/research/', '/atlas/', '/about/'];
+  const paths = ['/', '/research/', '/atlas/', '/about/', '/projects/', '/projects/long-haul/', '/projects/experiment-compiler/', '/resume/'];
   const response = await context.request.get(base + '/publication.json');
   if (response.ok() && response.headers()['content-type']?.includes('json')) {
     const manifest = await response.json();
@@ -155,11 +155,24 @@ async function auditDeniedStorage(browser) {
   console.log('Storage-denied 2071 environment controls passed');
 }
 
+async function auditAboutIntermediateWidths(browser) {
+  const context = await browser.newContext({ reducedMotion: 'reduce' });
+  const page = await context.newPage();
+  for (const width of [901, 960, 1018, 1024, 1280, 1600]) {
+    await page.setViewportSize({ width, height: 900 });
+    await auditPath(page, width, '/about/');
+  }
+  await page.emulateMedia({ forcedColors: 'active' });
+  await auditPath(page, 1600, '/about/');
+  await context.close();
+}
+
 if (shots) await mkdir(shots, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 try {
   for (const width of [320, 412, 768, 1366]) await auditViewport(browser, width);
   await auditDeniedStorage(browser);
+  await auditAboutIntermediateWidths(browser);
 } finally {
   await browser.close();
 }

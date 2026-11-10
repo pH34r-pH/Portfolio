@@ -61,6 +61,9 @@ def _rewrite_reader_links(document, src: Path, notebook_paths: set[Path],
 
 
 def _mark_reader_regions(document) -> None:
+    # Explicit separators keep search excerpts from joining adjacent table cells.
+    for cell in document.select('td,th'):
+        cell.append(' ')
     for block in document.select(".highlight, .jp-OutputArea-output"):
         block["tabindex"] = "0"
         block["role"] = "region"
@@ -102,6 +105,9 @@ def copy_lab_contents(research_notes: Path, output: Path) -> None:
 
 
 _ARTICLE_METADATA_FIELDS = {
+    'milestone': 'milestone',
+    'source_notebook': 'notebookSlug',
+    'article_kind': 'articleKind',
     'short_title': 'shortTitle',
     'model_focus': 'modelFocus',
     'model_variant': 'modelVariant',
@@ -546,7 +552,7 @@ def article_downloads(slug: str) -> dict[str, str]:
 def render_article_source_links(slug: str, source_url: str) -> str:
     downloads = article_downloads(slug)
     return (
-        '<nav class="article-source-links" aria-label="Article source and downloads">'
+        '<nav id="article-resources" class="article-source-links" aria-label="Article source and downloads">'
         '<a href="/research/">← Research index</a>'
         '<span aria-hidden="true"> / </span>'
         f'<a href="{html.escape(source_url, quote=True)}" target="_blank" rel="noreferrer">Canonical MyST source ↗</a>'
@@ -559,11 +565,78 @@ def render_article_source_links(slug: str, source_url: str) -> str:
     )
 
 
+def add_article_contents(article, metadata: dict) -> None:
+    """Put a compact section index after the introduction, before the argument."""
+    headings = list(article.find_all('h2'))
+    if not headings:
+        return
+    markup = BeautifulSoup('', 'html.parser')
+    container = markup.new_tag('div', attrs={'class': 'article-reading-tools'})
+    details = markup.new_tag('details', attrs={'class': 'article-contents'})
+    summary = markup.new_tag('summary')
+    summary.string = f'On this page · {len(headings)} sections'
+    nav = markup.new_tag('nav', attrs={'aria-label': 'On this page'})
+    links = markup.new_tag('ol')
+    for index, heading in enumerate(headings, 1):
+        identifier = heading.get('id')
+        if not identifier:
+            identifier = 'reader-section-' + str(index)
+            while article.find(id=identifier):
+                identifier += '-section'
+            heading['id'] = identifier
+        item = markup.new_tag('li')
+        link = markup.new_tag('a', href='#' + identifier)
+        link.string = heading.get_text(' ', strip=True)
+        item.append(link)
+        links.append(item)
+    nav.append(links)
+    details.extend([summary, nav])
+    container.append(details)
+    resources = markup.new_tag('p', attrs={'class': 'article-resource-shortcuts'})
+    source_link = markup.new_tag('a', href='#article-resources')
+    source_link.string = 'Sources and downloads'
+    resources.append(source_link)
+    if metadata.get('notebookSlug'):
+        resources.append(' · ')
+        notebook = markup.new_tag('a', href='/notebooks/' + quote(metadata['notebookSlug']) + '/')
+        notebook.string = 'Preserved source notebook'
+        resources.append(notebook)
+    container.append(resources)
+    headings[0].insert_before(container)
+
+
+def article_reading_navigation(src: Path, metadata: dict, ordered_sources: list[Path]) -> str:
+    by_slug = {path.stem: path for path in ordered_sources}
+    def link(path, label):
+        title = _article_metadata(path.read_text(encoding='utf-8'), path)['title']
+        return f'<a href="/articles/{quote(path.stem)}/">{html.escape(label)}: {html.escape(title)}</a>'
+    prerequisites = [link(by_slug[slug], 'Prerequisite') for slug in metadata.get('dependsOn', []) if slug in by_slug]
+    index = ordered_sources.index(src)
+    chronological = []
+    if index > 0:
+        chronological.append(link(ordered_sources[index - 1], 'Previous in publication order'))
+    if index + 1 < len(ordered_sources):
+        chronological.append(link(ordered_sources[index + 1], 'Next in publication order'))
+    return ('<nav class="article-reading-navigation" aria-label="Continue reading">'
+            '<h2>Continue reading</h2><p>Publication order follows the investigation; conceptual prerequisites are listed separately.</p>'
+            '<div class="reading-order">' + ''.join(chronological) + '</div>'
+            + ('<div class="reading-prerequisites">' + ''.join(prerequisites) + '</div>' if prerequisites else '')
+            + '</nav>')
+
+
 def publish_article(src: Path, navigation, args: argparse.Namespace,
                     source_digests: dict[str, Path], sequence: int,
                     ordered_sources: list[Path]) -> dict:
     source_text = src.read_text(encoding="utf-8")
     metadata = _article_metadata(source_text, src)
+    if 'notebookSlug' in metadata:
+        notebook_slug = metadata['notebookSlug']
+        if not isinstance(notebook_slug, str) or not re.fullmatch(r'[a-z0-9_]+', notebook_slug):
+            raise ValueError(f'Invalid source_notebook in {src}')
+        if not (args.research_notes / 'notebooks' / f'{notebook_slug}.ipynb').is_file():
+            raise ValueError(f'Article source notebook does not exist: {src}')
+    if 'milestone' in metadata and not re.fullmatch(r'[0-9]{3}', str(metadata['milestone'])):
+        raise ValueError(f'Invalid milestone identity in {src}')
     article_html = _myst_article_html_path(args.myst_html, src, ordered_sources)
     document = BeautifulSoup(article_html.read_text(encoding="utf-8"), "html.parser")
     article = document.select_one("article.myst-article")
@@ -572,6 +645,9 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     article = BeautifulSoup(str(article), "html.parser").article
     _normalize_article_heading(article, source_text, metadata["title"])
     _rewrite_myst_article_routes(article, ordered_sources)
+    for cell in article.select('td,th'):
+        cell.append(' ')
+    add_article_contents(article, metadata)
     annotate_article_model_context(article, metadata)
     slug = src.stem
     canonical_url = f"https://tyharbin.com/articles/{quote(slug)}/"
@@ -590,7 +666,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
         f"https://github.com/pH34r-pH/research-notes/blob/{args.research_notes_sha}/"
         f"{quote(src.relative_to(args.research_notes.resolve()).as_posix())}"
     )
-    source_links = render_article_source_links(slug, article_source_url)
+    source_links = render_article_source_links(slug, article_source_url) + article_reading_navigation(src, metadata, ordered_sources)
     handoff = ''
     if 'compiled_experiment' in metadata:
         if args.compiler_projection_data is None:
@@ -621,6 +697,7 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
     for key in (
         'shortTitle', 'modelFocus', 'modelVariant', 'dependsOn', 'tags',
         'frontierObserved', 'frontierOpen', 'frontierNext',
+        'milestone', 'notebookSlug', 'articleKind',
     ):
         if key in metadata:
             entry[key] = metadata[key]
@@ -810,7 +887,12 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         "https://github.com/pH34r-pH/research-notes/blob/" + args.research_notes_sha
         + "/" + quote(src.relative_to(args.research_notes).as_posix(), safe="/")
     )
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" data-pagefind-body tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>Read the published notebook. <a href="/lab/lab/?path=notebooks%2F{quote(src.name)}">{lab_label}</a></p><aside aria-label="Notebook evidence and reproduction"><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/search.js"></script><script src="/assets/site.js"></script></body></html>'''
+    role_note = ("Preserved historical account with an illustrative browser example. The example is not a reproduction of the research experiment."
+                 if metadata.get("exampleKind") == "illustrative" else "Preserved historical notebook. Saved outputs belong to this source snapshot; running it is not independent reproduction.")
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" data-pagefind-body tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>{role_note}</p><div class="actions"><a href="/lab/lab/?path=notebooks%2F{quote(src.name)}">{lab_label}</a><a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a></div>
+<details class="notebook-run-guide"><summary>First time running a notebook?</summary><ol><li>Open Lab. If asked for a kernel, choose <strong>Python (Pyodide)</strong>, then wait for it to finish starting.</li><li>Find the illustrative example’s code cell, select it, and press <strong>Shift+Enter</strong> to run it. A busy indicator means it is still working.</li><li>Edit the example and run it again. Your session output is separate from the historical result and saved source output.</li><li>Use <strong>Return to notebook</strong> in Lab’s top bar to resume reading.</li></ol><p>Python runs in your browser after the runtime loads. Saved edits use this browser’s site storage (usually IndexedDB), not this repository, and may replace the local copy on your next visit. Clearing site data, private browsing, or storage limits can remove that copy. Download any work you want to keep. See <a href="https://jupyterlite.readthedocs.io/en/stable/quickstart/using.html">JupyterLite’s storage guide</a>.</p><p>If the kernel cannot start or a package is unavailable, return here for the readable notebook and preserved download. Execution is optional.</p></details>
+<aside aria-label="Notebook evidence and reproduction"><details><summary>Evidence boundaries and exact provenance</summary><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></details></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/search.js"></script><script src="/assets/site.js"></script></body></html>'''
+
     (reader / "index.html").write_text(page, encoding="utf-8")
     entry = {
         "path": f"publication/notebooks/{src.name}",
@@ -825,6 +907,66 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
         if key in metadata
     })
     return entry
+
+
+def write_research_catalog(output: Path, notebooks: list[dict], articles: list[dict]) -> None:
+    """Publish a usable reading path before JavaScript or the manifest loads."""
+    path = output / 'research/index.html'
+    if not path.is_file():
+        return
+    page = BeautifulSoup(path.read_text(encoding='utf-8'), 'html.parser')
+
+    def link(url, title):
+        return f'<a href="{html.escape(url, quote=True)}">{html.escape(title)}</a>'
+
+    def replace(selector, markup):
+        container = page.select_one(selector)
+        if container is not None:
+            container.clear()
+            container.append(BeautifulSoup(markup, 'html.parser'))
+
+    cards = []
+    ordered = sorted(articles, key=lambda article: article['sequence'])
+    for article in ordered:
+        label = ('Milestone ' + article['milestone']) if article.get('milestone') else {
+            'essay': 'Essay', 'work-in-progress': 'Work in progress',
+        }.get(article.get('articleKind'), 'Article')
+        resources = [link(article['url'], 'Read article')]
+        if article.get('notebookSlug'):
+            resources.append(link('/notebooks/' + quote(article['notebookSlug']) + '/', 'Preserved notebook'))
+        resources.append(link(article['url'] + '#article-resources', 'Sources & downloads'))
+        cards.append(f'<article class="card article-card" data-index="{html.escape(label, quote=True)}">'
+                     f'<h3>{link(article["url"], article["title"])}</h3>'
+                     f'<p class="card-question">{html.escape(article["description"])}</p>'
+                     f'<p class="card-meta">Published {html.escape(article["date"])}</p>'
+                     '<div class="links">' + ' '.join(resources) + '</div></article>')
+    replace('#article-list', ''.join(cards))
+    cards = []
+    for notebook in sorted(notebooks, key=lambda item: (item.get('sequence', 0), item['path'])):
+        if notebook.get('slug') == 'visual_intuition_atlas':
+            continue
+        slug = notebook.get('slug') or Path(notebook['path']).stem
+        label = f'Milestone {notebook["sequence"]:03d}' if notebook.get('sequence') else 'Companion notebook'
+        cards.append(f'<article class="card" data-index="{label}"><h3>{html.escape(notebook["title"])}</h3>'
+                     '<p class="card-meta">Chronological notebook · preserved source</p>'
+                     f'<p class="card-question">{html.escape(notebook.get("question", ""))}</p><div class="links">'
+                     + link('/notebooks/' + quote(slug) + '/', 'Read notebook') + '</div></article>')
+    replace('#notebook-list', ''.join(cards))
+    by_slug = {article['slug']: article for article in articles}
+    relations = []
+    for article in ordered:
+        prerequisites = []
+        for slug in article.get('dependsOn', []):
+            target = by_slug.get(slug)
+            prerequisites.append(link(target['url'], target['title']) if target else
+                                 html.escape(slug) + ' (not in this publication)')
+        relation = ' — Prerequisites: ' + ', '.join(prerequisites) if prerequisites else ' — No declared prerequisite.'
+        dependents = [link(item['url'], item['title']) for item in ordered
+                      if article['slug'] in item.get('dependsOn', [])]
+        relation += ' — Used by: ' + ', '.join(dependents) if dependents else ' — No declared dependent.'
+        relations.append('<li>' + link(article['url'], article['title']) + relation + '</li>')
+    replace('[data-topology-list]', ''.join(relations))
+    path.write_text(str(page), encoding='utf-8')
 
 
 def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], articles: list[dict]) -> None:
@@ -848,6 +990,7 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
     }
     if args.compiler_projection_receipt is not None:
         manifest["compilerProjection"] = args.compiler_projection_receipt
+    write_research_catalog(args.output, notebooks, articles)
     (args.output / "publication.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )

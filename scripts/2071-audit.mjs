@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { chromium, expect } from "@playwright/test";
-import { auditPhoneTopologySelection } from "./topology-browser-audit.mjs";
+import { auditPhoneTopologySelection, auditTopologyRelations } from "./topology-browser-audit.mjs";
 import { RENDERER_OBSERVATION_TIMEOUT_MS } from "./model-audit-host.mjs";
 
 const base = process.env.PORTFOLIO_AUDIT_URL || "http://127.0.0.1:4173";
@@ -49,7 +49,7 @@ async function auditSearchMetadataMatches(browser) {
     await expect(input).toBeFocused();
     await input.fill("metadata fixture");
     await expect(input).toHaveValue("metadata fixture");
-    await expect(page.locator(".search-status")).toHaveText("3 results.");
+    await expect(page.locator(".search-status")).toHaveText("Showing 3 of 3 results.");
     await expect(page.locator(".search-results strong")).toHaveText([
       "Title-only match", "Body match with image metadata", "Image description match",
     ]);
@@ -64,6 +64,59 @@ async function auditSearchMetadataMatches(browser) {
     console.error("Metadata search fixture failure:", JSON.stringify(state));
     throw error;
   } finally { await context.close(); }
+}
+
+async function auditSearchPaging(browser) {
+  for (const apple of [false, true]) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    await context.addInitScript(apple => {
+      Object.defineProperty(navigator, 'platform', { get: () => apple ? 'MacIntel' : 'Win32' });
+      Object.defineProperty(navigator, 'userAgentData', { get: () => undefined });
+    }, apple);
+    await context.route('**/pagefind/pagefind.js', route => route.fulfill({ contentType: 'text/javascript', body: `
+      export async function options() {} export async function init() {}
+      export async function search(term) {
+        if (term === 'failure') throw Error('fixture unavailable');
+        const count = term === 'consumer' || term === 'slow' ? 19 : term === 'empty' ? 0 : 2;
+        return { results: Array.from({length: count}, (_, i) => ({ words: [1], data: async () => {
+          if (term === 'slow' && i >= 8) await new Promise(resolve => setTimeout(resolve, 500));
+          return {url: '/Portfolio/' + (i % 2 ? 'notebooks/source/' : 'articles/result/') + '?n=' + i,
+            meta: {title: term + ' same title'}, excerpt: '<table><tr><th>Consumer</th><td>Evaluation</td></tr></table><img src=x onerror=alert(1)>'};
+        }}))};
+      }` }));
+    const page = await context.newPage();
+    await page.goto(base + '/about/');
+    await expect(page.locator('.search-toggle kbd')).toHaveText(apple ? '⌘K' : 'Ctrl+K');
+    await page.locator('.search-toggle').click();
+    const input = page.locator('#portfolio-search');
+    await input.fill('consumer');
+    await expect(page.locator('.search-status')).toHaveText('Showing 8 of 19 results.');
+    await expect(page.locator('.search-result-type').first()).toHaveText('Article');
+    await expect(page.locator('.search-result-type').nth(1)).toHaveText('Notebook');
+    await expect(page.locator('.search-results a').first()).toContainText('Consumer Evaluation');
+    await expect(page.locator('.search-results img')).toHaveCount(0);
+    await page.locator('.search-more').click();
+    await expect(page.locator('.search-status')).toHaveText('Showing 16 of 19 results.');
+    await page.locator('.search-more').click();
+    await expect(page.locator('.search-results li')).toHaveCount(19);
+    await expect(page.locator('.search-more')).toBeHidden();
+    await input.fill('slow');
+    await expect(page.locator('.search-status')).toHaveText('Showing 8 of 19 results.');
+    await page.locator('.search-more').click();
+    await input.fill('short');
+    await expect(page.locator('.search-status')).toHaveText('Showing 2 of 2 results.');
+    await page.waitForTimeout(600);
+    await expect(page.locator('.search-results li')).toHaveCount(2);
+    await expect(page.locator('.search-results strong')).toHaveText(['short same title', 'short same title']);
+    await input.fill('empty');
+    await expect(page.locator('.search-status')).toHaveText('No matching research.');
+    await input.fill('failure');
+    await expect(page.locator('.search-status')).toContainText('Search could not load.');
+    await expect(page.locator('.search-more')).toBeHidden();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.search-toggle')).toBeFocused();
+    await context.close();
+  }
 }
 
 async function auditSearchDialog(page, hasPagefind, manifest) {
@@ -247,6 +300,10 @@ async function auditPhoneTopology(page,nodes,layout,articles) {
 async function auditTopology(page, manifest) {
   if (!manifest?.articles?.length) return;
   await page.goto(base + "/research/", { waitUntil: "networkidle" });
+  const disclosure = page.locator('[data-topology-disclosure]');
+  await expect(disclosure).not.toHaveAttribute('open', '');
+  await expect(page.getByRole('navigation', { name: 'Choose a reading path' })).toBeVisible();
+  await disclosure.locator(':scope > summary').click();
   const nodes = page.locator(".topology-node");
   await expect(nodes).toHaveCount(manifest.articles.length);
   await expect(page.locator(".topology-edges path")).toHaveCount(expectedEdges(manifest.articles));
@@ -256,6 +313,7 @@ async function auditTopology(page, manifest) {
   assert.ok(!layout.background.includes("repeating-linear-gradient"), "the page field must not be a gridline texture");
   await auditFrontierSelection(page,manifest.articles);
   await auditPhoneTopology(page,nodes,layout,manifest.articles);
+  await auditTopologyRelations(page, manifest.articles);
 }
 
 async function auditArticleMachine(page, manifest) {
@@ -300,6 +358,9 @@ async function auditPagefindBoundaries(page, manifest) {
 const browser = await chromium.launch({ headless: true });
 
 try {
+  await auditSearchPaging(browser);
+  await auditSearchMetadataMatches(browser);
+  if (process.env.PORTFOLIO_AUDIT_FOCUS !== 'search') {
   const context = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   const manifest = await optionalJson(context, "/publication.json");
@@ -315,8 +376,8 @@ try {
   await context.close();
   await auditVisibleMachine(browser);
   await auditReducedMotionMachine(browser);
-  await auditSearchMetadataMatches(browser);
-  console.log(`2071 audit passed${manifest ? " for exact publication bundle" : " for source surface"}.`);
+  }
+  console.log(`2071 ${process.env.PORTFOLIO_AUDIT_FOCUS === 'search' ? 'search' : 'publication'} audit passed.`);
 } finally {
   await browser.close();
 }

@@ -13,7 +13,8 @@ from types import SimpleNamespace
 from unittest.mock import patch
 from bs4 import BeautifulSoup
 from jsonschema import Draft202012Validator, ValidationError
-from build_portfolio_bundle import (prepare_reader, publish_notebook, copy_lab_contents, apply_output_descriptions,
+from build_portfolio_bundle import (prepare_reader, publish_notebook, copy_lab_contents, apply_output_descriptions, write_research_catalog,
+                                    add_article_contents, article_reading_navigation,
                                     _myst_asset_path, _prepare_article_execution, copy_thebe_assets,
                                     _source_file_index, _rewrite_myst_article_routes, main as build_bundle)
 from digest_bundle import digest_tree
@@ -22,6 +23,53 @@ import nbformat
 
 
 class ReaderPublicationTest(unittest.TestCase):
+    def test_article_contents_preserves_anchors_and_escapes_titles(self):
+        article = BeautifulSoup('<article><h1>Title</h1><p>Reader introduction</p><h2 id="result">A &amp; B</h2><p>Evidence</p><h2>Limits &lt;script&gt;</h2></article>', 'html.parser').article
+        add_article_contents(article, {'notebookSlug': '013_source'})
+        links = article.select('.article-contents a')
+        self.assertEqual([link['href'] for link in links], ['#result', '#reader-section-2'])
+        self.assertEqual(links[1].get_text(), 'Limits <script>')
+        self.assertIsNone(links[1].find('script'))
+        for link in links:
+            self.assertIsNotNone(article.find(id=link['href'][1:]))
+        self.assertLess(str(article).index('Reader introduction'), str(article).index('article-reading-tools'))
+        self.assertEqual(article.select_one('.article-resource-shortcuts a')['href'], '#article-resources')
+
+    def test_reading_order_is_distinct_from_conceptual_prerequisites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = [Path(directory) / (slug + '.md') for slug in ['foundation', 'parallel', 'current', 'next']]
+            for path in paths:
+                path.write_text('---\ntitle: "' + path.stem + ' & <topic>"\ndescription: Example\ndate: 2026-09-29\n---\n', encoding='utf-8')
+            nav = BeautifulSoup(article_reading_navigation(paths[2], {'dependsOn': ['foundation']}, paths), 'html.parser')
+            self.assertEqual([link['href'] for link in nav.select('.reading-order a')], ['/articles/parallel/', '/articles/next/'])
+            self.assertEqual(nav.select_one('.reading-prerequisites a')['href'], '/articles/foundation/')
+            self.assertIn('Prerequisite: foundation & <topic>', nav.get_text())
+            self.assertIsNone(nav.find('topic'))
+
+    def test_research_catalog_is_readable_without_javascript(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'research').mkdir()
+            path = root / 'research/index.html'
+            path.write_text('<main><div id="article-list"></div><div id="notebook-list"></div><ol data-topology-list></ol></main>', encoding='utf-8')
+            articles = [
+                {'slug': 'second', 'title': 'Second <article>', 'sequence': 2, 'milestone': '002', 'notebookSlug': '002_source', 'url': '/articles/second/', 'description': 'A & B', 'date': '2026-09-29', 'dependsOn': ['first']},
+                {'slug': 'first', 'title': 'First', 'sequence': 1, 'milestone': '001', 'url': '/articles/first/', 'description': 'Start here', 'date': '2026-09-29'},
+                {'slug': 'plan', 'title': 'An open question', 'sequence': 3, 'articleKind': 'work-in-progress', 'url': '/articles/plan/', 'description': 'No new result', 'date': '2026-11-01'},
+            ]
+            notebooks = [{'title': 'Source two', 'path': 'publication/notebooks/002_source.ipynb', 'sequence': 2}]
+            write_research_catalog(root, notebooks, articles)
+            page = BeautifulSoup(path.read_text(encoding='utf-8'), 'html.parser')
+            cards = page.select('#article-list .card')
+            self.assertEqual([card['data-index'] for card in cards], ['Milestone 001', 'Milestone 002', 'Work in progress'])
+            self.assertEqual(cards[1].h3.get_text(), 'Second <article>')
+            self.assertIsNone(cards[1].h3.find('article'))
+            self.assertEqual(cards[1].select_one('a[href^="/notebooks/"]')['href'], '/notebooks/002_source/')
+            self.assertEqual(cards[1].select_one('a[href$="#article-resources"]')['href'], '/articles/second/#article-resources')
+            self.assertEqual(page.select_one('#notebook-list .card')['data-index'], 'Milestone 002')
+            relations = page.select('[data-topology-list] li')
+            self.assertEqual(relations[1].select('a')[1].get_text(), 'First')
+
     def test_exact_compiler_reference_contract(self):
         fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
         projection = fixture['projection']
@@ -261,7 +309,10 @@ class ReaderPublicationTest(unittest.TestCase):
                 self.assertEqual(note.select_one("a")["href"],
                                  "https://github.com/pH34r-pH/research-notes/blob/" + "a" * 40 +
                                  "/notebooks/illustrative_name.ipynb")
-                self.assertTrue(note.select_one("a[download]"))
+                self.assertTrue(page.select_one("header .actions a[download]"))
+                self.assertIn('Python (Pyodide)', page.select_one('.notebook-run-guide').get_text())
+                self.assertIn('Shift+Enter', page.select_one('.notebook-run-guide').get_text())
+                self.assertIsNotNone(note.select_one('details:not([open])'))
                 self.assertEqual(page.select_one('a[href^="/lab/lab/"]')['href'],
                                  '/lab/lab/?path=notebooks%2Fillustrative_name.ipynb')
                 self.assertEqual("Illustrative browser example" in text, kind == "illustrative")

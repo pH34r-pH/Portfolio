@@ -197,8 +197,8 @@ html body .article-model-machine[data-model-reader-layout=true] .machine-glass-p
     0 18px 38px var(--material-glass-shadow),0 0 16px rgba(34,164,255,.12);
   text-shadow:0 1px .6px rgba(247,254,255,.28),0 -1px .6px rgba(2,16,27,.20);
 }
-html body.digital-home .digital-pane,
-html body .article-model-machine .machine-glass-panel {
+html[data-theme=dark] body.digital-home .digital-pane,
+html[data-theme=dark] body .article-model-machine .machine-glass-panel {
   --ink:#e8f7ff; --muted:#adccdf; --accent:#50bbff; --accent-strong:#91d7ff; --bg:#04131f;
   --panel:rgba(3,24,39,.90); --material-glass-face:rgba(3,20,32,.59);
   --material-glass-reflection:rgba(211,243,255,.13); --material-glass-edge:rgba(190,239,255,.58);
@@ -296,4 +296,24 @@ html body.digital-home .digital-pane::after {
     color:black; text-shadow:none;
   }
   html body :is(.notebook-content,.card,.article-model-toolbar) { background:white; color:black; box-shadow:none; backdrop-filter:none; }
+}
+
+@media not all and (forced-colors:active) {
+  html[data-theme=light] body.digital-home .digital-model-background,
+  html[data-theme=light] body.digital-home .digital-visual {
+    background:radial-gradient(ellipse at 70% 38%,#d7edfc 0%,#edf6fc 62%,#f4f9fd 100%);
+  }
+  html[data-theme=light] body.digital-home .digital-pane,
+  html[data-theme=light] body .article-model-machine .machine-glass-panel {
+    --bg:#f4f9fd; --ink:#041a2e; --muted:#41617a; --accent:#0066b3; --accent-strong:#005b9f;
+    --panel:#eef6fc; --line:#9bb2c3; --material-glass-face:rgba(244,249,253,.94);
+    --material-glass-controls:#e8f3fb; --material-glass-edge:#91b6cf;
+    --material-glass-reflection:rgba(255,255,255,.6); --material-glass-shadow:rgba(3,35,55,.15);
+    color:var(--ink); text-shadow:none;
+  }
+  html[data-theme=light] body.digital-home .digital-pane :is(h1,h2,h3),
+  html[data-theme=light] body .article-model-machine .machine-glass-panel h3 { text-shadow:none; }
+  html[data-theme=light] body .article-model-machine.model-machine-replay .machine-glass-panel button {
+    color:var(--ink); background:var(--material-glass-controls); border-color:var(--line);
+  }
 }
