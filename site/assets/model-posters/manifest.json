@@ -4,9 +4,9 @@
   "capture": {
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
-    "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "38e3f422933992c941ddb1bd09fc3b8a2c9bdbff",
-    "sourceTreeSha256": "79b63dc93cab505210a0e97c427ba58fbb1f09c5edf19fad0a18da782c668198",
+    "sourceBase": "http://127.0.0.1:4178",
+    "sourceCommit": "c2942f08fdd4dc57f2c8b940ef8764c42d7af75d",
+    "sourceTreeSha256": "8c570bd2fbda3a7146203c990cc20443c75d18872b25f3406eb7d85399bb5679",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -31,7 +31,7 @@
       "model-light.js": "93f6c619621978f528bc3518ca095eb38a8a306e4d49f00d78fbb523ae00f36e",
       "model-gestures.js": "36c8ab8b8c59383f4d2e895ef1e9890fe1b6faeba8fd8ac7f19b11b5af8695ec",
       "model-render-metrics.js": "247b786c44ab076aec9bae66ce5dd01360628c570e8c67ee1f962ad209dab4ec",
-      "model-renderer.js": "178db06dc53b5851e44d81dc236c6f65e106d454cbc25143506bc5efe9f2e2fc",
+      "model-renderer.js": "6d89712f9af3a5ba81175bb31d89ca8a802fc3ff53164598ed3c0103c77e4462",
       "model-background-glass.js": "cfc93b3cb3ba78ae342945028edf460f21734b997ad3486523319262d239d2f8",
       "energy-architecture.js": "7d190464fa23736d44fdc3eca484ef935384e4be9e5815aa3a40a82c2e2c1808",
       "energy-optics.js": "81ebfe70804d57e1293437a4a37d9a78f8a5336c95b73a0258c0051c24236ca9",
@@ -39,7 +39,7 @@
       "homepage-native-model.js": "bbb659a1811ab75f1221b56320a0df8861ae9e14cb6cbc2ea32f5ac11fe10a38",
       "homepage-motion.js": "fa696c49a80a2b6ab228423960b25f570d1b47b3a0ab2623aae10aa167a4183f",
       "model-presentation-sampling.js": "99efc9a2f8f8045743b570af3c5096259bdb3fb9038475d8926014d9076ec01b",
-      "material-system.css": "7eb9e04ca2842b6b62df13fdc97e3409c17505f95c7101b4721361de1ae5fae5",
+      "material-system.css": "61b2e5381c7b172746dc96b03b42a4d88b5ab3a3a01c11761883050f537149ab",
       "material-light.js": "801be236fccb03421bb6680222bdd0e1de58b1739bc0f66989ee1c2053fc5fb8",
       "homepage-screens.js": "6f9e43e7eaaed5c53f1b39e67d90567a48b7095d7f93e85f5903ddc56a25a268",
       "model-architecture.json": "9154fad0ef792acf218f23d8b187ff0ea13c6f776df10c8ae3b7af8858ccc19e",
@@ -98,7 +98,7 @@
     "model-light.js": "93f6c619621978f528bc3518ca095eb38a8a306e4d49f00d78fbb523ae00f36e",
     "model-gestures.js": "36c8ab8b8c59383f4d2e895ef1e9890fe1b6faeba8fd8ac7f19b11b5af8695ec",
     "model-render-metrics.js": "247b786c44ab076aec9bae66ce5dd01360628c570e8c67ee1f962ad209dab4ec",
-    "model-renderer.js": "178db06dc53b5851e44d81dc236c6f65e106d454cbc25143506bc5efe9f2e2fc",
+    "model-renderer.js": "6d89712f9af3a5ba81175bb31d89ca8a802fc3ff53164598ed3c0103c77e4462",
     "model-background-glass.js": "cfc93b3cb3ba78ae342945028edf460f21734b997ad3486523319262d239d2f8",
     "energy-architecture.js": "7d190464fa23736d44fdc3eca484ef935384e4be9e5815aa3a40a82c2e2c1808",
     "energy-optics.js": "81ebfe70804d57e1293437a4a37d9a78f8a5336c95b73a0258c0051c24236ca9",
@@ -106,7 +106,7 @@
     "homepage-native-model.js": "bbb659a1811ab75f1221b56320a0df8861ae9e14cb6cbc2ea32f5ac11fe10a38",
     "homepage-motion.js": "fa696c49a80a2b6ab228423960b25f570d1b47b3a0ab2623aae10aa167a4183f",
     "model-presentation-sampling.js": "99efc9a2f8f8045743b570af3c5096259bdb3fb9038475d8926014d9076ec01b",
-    "material-system.css": "7eb9e04ca2842b6b62df13fdc97e3409c17505f95c7101b4721361de1ae5fae5",
+    "material-system.css": "61b2e5381c7b172746dc96b03b42a4d88b5ab3a3a01c11761883050f537149ab",
     "material-light.js": "801be236fccb03421bb6680222bdd0e1de58b1739bc0f66989ee1c2053fc5fb8",
     "homepage-screens.js": "6f9e43e7eaaed5c53f1b39e67d90567a48b7095d7f93e85f5903ddc56a25a268",
     "model-architecture.json": "9154fad0ef792acf218f23d8b187ff0ea13c6f776df10c8ae3b7af8858ccc19e",
@@ -228,8 +228,8 @@
       "bytes": 120492,
       "sha256": "e81a4bcf6e4933335c16dfcb5fbfbb11f168fdc270a55507af7199c797f5e8db",
       "avifFile": "powered-down-desktop-1x.avif",
-      "avifBytes": 89376,
-      "avifSha256": "f6388c5f0f3c0553d6ef1dc431f2f0df7d17c6718649d179b886727fdee29fc5",
+      "avifBytes": 87249,
+      "avifSha256": "25eb3b00369e51d790a5f54a10435cbc9813e6dddf7ae2b609b0b3d0d5c2875a",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.2839,
@@ -239,7 +239,7 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4554,
+          "meanAbsoluteChannelError": 0.4513,
           "p99AbsoluteChannelError": 5,
           "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 2841600,
@@ -528,8 +528,8 @@
       "bytes": 333020,
       "sha256": "7d998ccf93e4db7e727d536c8f6ffe1005ed10b8e1e61c88764e2344e9e7c5f9",
       "avifFile": "powered-down-desktop-2x.avif",
-      "avifBytes": 226162,
-      "avifSha256": "5853a7916c947c482cbe916268d75a2dd14d8626e6d3dd7296e9c5dc99f5089c",
+      "avifBytes": 221848,
+      "avifSha256": "f83c57e4cc56e6bb27248241a99e2126fe4996a33a6359e5646373f103e2da8d",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.0166,
@@ -539,9 +539,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3587,
+          "meanAbsoluteChannelError": 0.3582,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 34,
+          "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -828,8 +828,8 @@
       "bytes": 589058,
       "sha256": "e19aa3147abf94d8122ca9d34b3ecb39e85d526ed76cdf60e431467d08373926",
       "avifFile": "powered-down-desktop-3x.avif",
-      "avifBytes": 395010,
-      "avifSha256": "2a440802e395cb83aa2b8dd7b7b5d08e5c8e5225d31dd09906f811c8b6aa9296",
+      "avifBytes": 389344,
+      "avifSha256": "cf52029af241902e9952dc5979f24c99053038fd4e4d3d5a17b7fc481b49efd1",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 0.909,
@@ -839,9 +839,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3266,
+          "meanAbsoluteChannelError": 0.3258,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 36,
+          "maxAbsoluteChannelError": 40,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1128,8 +1128,8 @@
       "bytes": 120492,
       "sha256": "e81a4bcf6e4933335c16dfcb5fbfbb11f168fdc270a55507af7199c797f5e8db",
       "avifFile": "powered-down-desktop-dark-1x.avif",
-      "avifBytes": 89376,
-      "avifSha256": "f6388c5f0f3c0553d6ef1dc431f2f0df7d17c6718649d179b886727fdee29fc5",
+      "avifBytes": 87249,
+      "avifSha256": "25eb3b00369e51d790a5f54a10435cbc9813e6dddf7ae2b609b0b3d0d5c2875a",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.2839,
@@ -1139,7 +1139,7 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.4554,
+          "meanAbsoluteChannelError": 0.4513,
           "p99AbsoluteChannelError": 5,
           "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 2841600,
@@ -1428,8 +1428,8 @@
       "bytes": 333020,
       "sha256": "7d998ccf93e4db7e727d536c8f6ffe1005ed10b8e1e61c88764e2344e9e7c5f9",
       "avifFile": "powered-down-desktop-dark-2x.avif",
-      "avifBytes": 226162,
-      "avifSha256": "5853a7916c947c482cbe916268d75a2dd14d8626e6d3dd7296e9c5dc99f5089c",
+      "avifBytes": 221848,
+      "avifSha256": "f83c57e4cc56e6bb27248241a99e2126fe4996a33a6359e5646373f103e2da8d",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.0166,
@@ -1439,9 +1439,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3587,
+          "meanAbsoluteChannelError": 0.3582,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 34,
+          "maxAbsoluteChannelError": 31,
           "comparedChannelSamples": 11366400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -1728,8 +1728,8 @@
       "bytes": 589058,
       "sha256": "e19aa3147abf94d8122ca9d34b3ecb39e85d526ed76cdf60e431467d08373926",
       "avifFile": "powered-down-desktop-dark-3x.avif",
-      "avifBytes": 395010,
-      "avifSha256": "2a440802e395cb83aa2b8dd7b7b5d08e5c8e5225d31dd09906f811c8b6aa9296",
+      "avifBytes": 389344,
+      "avifSha256": "cf52029af241902e9952dc5979f24c99053038fd4e4d3d5a17b7fc481b49efd1",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 0.909,
@@ -1739,9 +1739,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3266,
+          "meanAbsoluteChannelError": 0.3258,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 36,
+          "maxAbsoluteChannelError": 40,
           "comparedChannelSamples": 25574400,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2028,8 +2028,8 @@
       "bytes": 17380,
       "sha256": "729393787e7f5d5f5885e3c1fa71a05fe96cd0fad09cf64520655e31581494b2",
       "avifFile": "powered-down-phone-1x.avif",
-      "avifBytes": 13609,
-      "avifSha256": "87e3b2fa71c19ba51e8d5ae44036411b7613b2e0e326683a7acb4c3b2a34582d",
+      "avifBytes": 13200,
+      "avifSha256": "afa3e3aec7df90164f4d13c491da3a91a2d27644a3015326281115dd069b0284",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.1426,
@@ -2039,9 +2039,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3697,
+          "meanAbsoluteChannelError": 0.3639,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 24,
+          "maxAbsoluteChannelError": 28,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2328,8 +2328,8 @@
       "bytes": 49786,
       "sha256": "f471e7450505fc01bc366074180b5856fb526554eee44d797e7c707a7cf637a1",
       "avifFile": "powered-down-phone-2x.avif",
-      "avifBytes": 38024,
-      "avifSha256": "c66d87f21ade7da213ed00059a6c7ec9d3883c1e59961e70d8eff8670e45f660",
+      "avifBytes": 36902,
+      "avifSha256": "2c99972fb00febc52b177d3ae11aa3152c05e15c004657faaa2ea09b5aab553b",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.0329,
@@ -2339,9 +2339,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.2943,
+          "meanAbsoluteChannelError": 0.2922,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 31,
+          "maxAbsoluteChannelError": 26,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2628,8 +2628,8 @@
       "bytes": 92372,
       "sha256": "536389b0abf766f8d2cc118edaf282e7c2cae344f8ca7bc1fcde86c1a81993b6",
       "avifFile": "powered-down-phone-3x.avif",
-      "avifBytes": 67915,
-      "avifSha256": "07ebe622dc3e169f20257a8c706f633ca967edaba4ee41db2e1894f7bcd18520",
+      "avifBytes": 66220,
+      "avifSha256": "a02d4464254aa0b0366f8e3ac1733ee1f7f63c6c75cd8f1f2d82606677291fca",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 0.9787,
@@ -2639,9 +2639,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.2603,
+          "meanAbsoluteChannelError": 0.2588,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 35,
+          "maxAbsoluteChannelError": 29,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -2928,8 +2928,8 @@
       "bytes": 17380,
       "sha256": "729393787e7f5d5f5885e3c1fa71a05fe96cd0fad09cf64520655e31581494b2",
       "avifFile": "powered-down-phone-dark-1x.avif",
-      "avifBytes": 13609,
-      "avifSha256": "87e3b2fa71c19ba51e8d5ae44036411b7613b2e0e326683a7acb4c3b2a34582d",
+      "avifBytes": 13200,
+      "avifSha256": "afa3e3aec7df90164f4d13c491da3a91a2d27644a3015326281115dd069b0284",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.1426,
@@ -2939,9 +2939,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.3697,
+          "meanAbsoluteChannelError": 0.3639,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 24,
+          "maxAbsoluteChannelError": 28,
           "comparedChannelSamples": 420000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -3228,8 +3228,8 @@
       "bytes": 49786,
       "sha256": "f471e7450505fc01bc366074180b5856fb526554eee44d797e7c707a7cf637a1",
       "avifFile": "powered-down-phone-dark-2x.avif",
-      "avifBytes": 38024,
-      "avifSha256": "c66d87f21ade7da213ed00059a6c7ec9d3883c1e59961e70d8eff8670e45f660",
+      "avifBytes": 36902,
+      "avifSha256": "2c99972fb00febc52b177d3ae11aa3152c05e15c004657faaa2ea09b5aab553b",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 1.0329,
@@ -3239,9 +3239,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.2943,
+          "meanAbsoluteChannelError": 0.2922,
           "p99AbsoluteChannelError": 5,
-          "maxAbsoluteChannelError": 31,
+          "maxAbsoluteChannelError": 26,
           "comparedChannelSamples": 1680000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }
@@ -3528,8 +3528,8 @@
       "bytes": 92372,
       "sha256": "536389b0abf766f8d2cc118edaf282e7c2cae344f8ca7bc1fcde86c1a81993b6",
       "avifFile": "powered-down-phone-dark-3x.avif",
-      "avifBytes": 67915,
-      "avifSha256": "07ebe622dc3e169f20257a8c706f633ca967edaba4ee41db2e1894f7bcd18520",
+      "avifBytes": 66220,
+      "avifSha256": "a02d4464254aa0b0366f8e3ac1733ee1f7f63c6c75cd8f1f2d82606677291fca",
       "compressionComparison": {
         "webp": {
           "meanAbsoluteChannelError": 0.9787,
@@ -3539,9 +3539,9 @@
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         },
         "avif": {
-          "meanAbsoluteChannelError": 0.2603,
+          "meanAbsoluteChannelError": 0.2588,
           "p99AbsoluteChannelError": 4,
-          "maxAbsoluteChannelError": 35,
+          "maxAbsoluteChannelError": 29,
           "comparedChannelSamples": 3780000,
           "percentileDefinition": "p99 over native-resolution 8-bit sRGB RGB channel absolute errors after background compositing"
         }

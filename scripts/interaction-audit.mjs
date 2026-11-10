@@ -378,7 +378,7 @@ async function auditNotebook(page, manifest, path, width) {
     await expect(page.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
     await auditJupyterLabCells(page, expectedCells, expectedJupyterPath, path);
     const kernelDialog = page.getByRole('dialog');
-    if (await kernelDialog.isVisible()) await kernelDialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    if (await kernelDialog.isVisible()) await kernelDialog.getByRole('button', { name: 'No Kernel', exact: true }).click();
     const returnLink = page.locator('#portfolio-lab-return [data-lab-return]');
     await expect(returnLink).toHaveText('← Return to notebook');
     await expect(returnLink).toHaveAttribute('href', base + path);
