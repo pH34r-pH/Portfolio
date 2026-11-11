@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "profile_id": "https://ph34r.dev/ns/long-haul/repository-alignment/v1",
+  "repository": "pH34r-pH/Portfolio",
+  "repository_profile": "publication-distribution",
+  "status": "publication",
+  "authority": {
+    "source_of_truth": "Reviewed portfolio source, exact project/source references, author metadata, publication manifests, and whole-tree candidate identities.",
+    "task_authority": "GitHub issues and publication specifications with accessibility, performance, source, and disclosure acceptance criteria.",
+    "acceptance_authority": "Clean site builds, publication-contract validation, browser tests, accessibility/performance checks, and reviewed source/model provenance.",
+    "deployment_authority": "Protected publication workflow; public candidate validation is separate from production-site mutation."
+  },
+  "data": {
+    "default_class": "public",
+    "external_content_is_untrusted": true,
+    "contains_personal_data": false,
+    "contains_secrets": false,
+    "retention": "Published source, project references, candidate manifests, build identities, and corrections remain historically traceable.",
+    "deletion": "Removed projects or private/restricted source references are withdrawn from active publication and corrected through retained history.",
+    "secret_storage": "Deployment credentials and private project evidence remain outside the public repository."
+  },
+  "resource_policy": {
+    "conforms_to": "https://ph34r.dev/ns/long-haul/resource-policy/v1",
+    "actions": {
+      "read": "allow",
+      "index": "allow",
+      "search": "allow",
+      "ai_augment": "review",
+      "evaluate": "allow",
+      "data_mining": "allow",
+      "ai_training": "deny",
+      "generative_ai_training": "deny",
+      "derive": "review",
+      "annotate": "allow",
+      "distribute": "allow",
+      "publish": "review",
+      "retain": "allow",
+      "delete": "review"
+    }
+  },
+  "change_control": {
+    "independent_acceptance": true,
+    "candidate_before_promotion": true,
+    "production_promotion": "protected",
+    "rollback_or_revocation": "Published candidates are content-addressed and replaceable; compromised links, projects, or grants can be removed through reviewed redeployment.",
+    "negative_results_retained": true
+  },
+  "evidence": {
+    "exact_source_identity": true,
+    "artifact_fingerprints": true,
+    "provenance_receipts": true
+  },
+  "boundaries": {
+    "external_text_cannot_grant_authority": true,
+    "model_output_cannot_self_approve": true,
+    "deployment_separate_from_acceptance": true
+  },
+  "stabilization": [
+    {
+      "id": "machine-readable-publication-contract",
+      "priority": "P0",
+      "status": "active",
+      "summary": "Move publication, provenance, disclosure, performance, and source rules into one versioned machine-readable contract."
+    },
+    {
+      "id": "generate-human-guidance",
+      "priority": "P1",
+      "status": "planned",
+      "summary": "Generate contributor and publication documentation from the canonical contract to prevent prose drift."
+    },
+    {
+      "id": "browser-evidence-receipts",
+      "priority": "P1",
+      "status": "planned",
+      "summary": "Retain exact browser, viewport, accessibility, performance, screenshot, and candidate evidence for published builds."
+    }
+  ]
+}
