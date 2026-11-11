@@ -242,14 +242,19 @@ async function auditArticle(page, context, manifest, path, width) {
   await auditArticleLinks(page, manifest, path);
   await auditWorklogDisclosures(page, width, path);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
-  await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
-  await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
-    .toHaveCount(1);
-  await expect(page.locator("article.myst-reader")).toContainText("Saved output:");
+  if (article.browserExecution) {
+    await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
+    await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
+      .toHaveCount(1);
+    await expect(page.locator("article.myst-reader")).toContainText("Saved output:");
+    await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
+  } else {
+    await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(0);
+  }
   await expect(page.locator('article.myst-reader a[aria-label="Link to this Section"]')).toHaveCount(0);
   await expect(page.locator('article.myst-reader button.myst-code-copy-icon')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to Article', exact: true })).toHaveCount(0);
-  await expect(page.locator('#what-this-does-not-show')).toHaveCount(1);
+  if (!article.articleKind) await expect(page.locator('#what-this-does-not-show')).toHaveCount(1);
   for (const icon of await page.locator('article.myst-reader svg[data-slot="icon"]').all()) {
     const box = await icon.boundingBox();
     assert.ok(box && box.width <= 32 && box.height <= 32, `${path}: inline icon exceeds text size`);
@@ -267,7 +272,6 @@ async function auditArticle(page, context, manifest, path, width) {
       `${path}: MathML accessibility layer must not duplicate the visible equation`);
     await expect(page.locator('article.myst-reader .katex-html').first()).toBeVisible();
   }
-  await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
   if (width === 1366 && article.url === manifest.articles[0].url) {
