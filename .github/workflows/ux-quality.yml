@@ -533,21 +533,31 @@ jobs:
       - name: Install Chromium for native homepage rendering
         run: Portfolio/node_modules/.bin/playwright install --with-deps chromium
       - name: Retrieve homepage media from this run's exact source build
+        id: homepage_transfer
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: homepage-media-${{ github.run_id }}-${{ github.run_attempt }}
           path: Portfolio/site/assets
+      # A failed-job-only rerun may not rerun ux, so that attempt has no media
+      # artifact. Rebuild from the exact checkout rather than trust older bytes.
+      - name: Rebuild homepage media if this attempt has no source artifact
+        if: steps.homepage_transfer.outcome != 'success'
+        run: node Portfolio/scripts/build-homepage-loop.mjs
       - name: Verify transferred homepage media and source identity
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.refs.outputs.portfolio }}
+          TRANSFER_OUTCOME: ${{ steps.homepage_transfer.outcome }}
         run: |
           set -euo pipefail
           cd Portfolio
-          test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
-          sha256sum --check site/assets/homepage-model-loop.sha256
+          if [ "$TRANSFER_OUTCOME" = success ]; then
+            test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
+            sha256sum --check site/assets/homepage-model-loop.sha256
+            rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
+          fi
           node scripts/verify-homepage-recording.mjs
-          rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
       - name: Prepare isolated article export sources
         run: |
           python3 Portfolio/scripts/prepare_article_exports.py \
