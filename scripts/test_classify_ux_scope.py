@@ -3,11 +3,17 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest.mock import patch
 
-from classify_ux_scope import documentation_path, text_only_change
+from classify_ux_scope import classify_paths, documentation_path, text_only_change
 
 
 class ScopeTests(unittest.TestCase):
+    def test_only_search_runtime_change_gets_search_scope(self):
+        with patch('classify_ux_scope.git', return_value=b'present'):
+            self.assertEqual(classify_paths(['site/assets/search.js'], 'base', 'head'), 'search')
+            self.assertIsNone(classify_paths(['site/assets/search.js', 'site/assets/site.css'], 'base', 'head'))
+
     def test_only_repository_documentation_is_scoped_as_documentation(self):
         self.assertTrue(documentation_path('README.md'))
         self.assertTrue(documentation_path('docs/design/example.md'))

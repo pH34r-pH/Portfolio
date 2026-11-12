@@ -17,6 +17,7 @@ ARTICLE_AUDITS = frozenset({
     'scripts/article-lm-browser-audit.mjs',
     'scripts/article-model-sticky-audit.mjs',
 })
+SEARCH_INPUTS = frozenset({'site/assets/search.js'})
 
 
 class Structure(HTMLParser):
@@ -89,7 +90,8 @@ def classify_paths(paths: list[str], base: str, head: str) -> str | None:
     if not paths:
         return None
     for predicate, result in ((documentation_path, 'documentation'),
-                              (ARTICLE_AUDITS.__contains__, 'article-audit')):
+                              (ARTICLE_AUDITS.__contains__, 'article-audit'),
+                              (SEARCH_INPUTS.__contains__, 'search')):
         if all(predicate(path) for path in paths):
             for path in paths:
                 git('show', f'{base}:{path}')

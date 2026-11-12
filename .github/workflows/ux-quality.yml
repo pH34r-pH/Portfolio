@@ -92,6 +92,7 @@ jobs:
               case "$candidate" in
                 page-text) review_scope=page-text; reason="text-only edits to existing static pages" ;;
                 article-audit) review_scope=article-audit; reason="only existing article-model audit scripts changed" ;;
+                search) review_scope=search; reason="only the search runtime changed" ;;
                 documentation) review_scope=documentation; fast_path=true; reason="only existing repository documentation changed" ;;
               esac
             fi
@@ -162,7 +163,7 @@ jobs:
             site/assets/homepage-model-loop.webm
             site/assets/homepage-model-loop-poster.webp
             site/assets/homepage-model-loop.json
-          key: portfolio-home-v1-${{ runner.os }}-${{ steps.media_env.outputs.signature }}-${{ hashFiles('site/assets/**', 'scripts/build-homepage-loop.mjs', 'scripts/render-homepage-recording.mjs', 'scripts/homepage-recorded-run.mjs', 'scripts/verify-homepage-recording.mjs', '.github/workflows/ux-quality.yml', 'package.json', 'package-lock.json') }}
+          key: portfolio-home-v1-${{ runner.os }}-${{ steps.media_env.outputs.signature }}-${{ hashFiles('site/assets/**', '!site/assets/search.js', 'scripts/build-homepage-loop.mjs', 'scripts/render-homepage-recording.mjs', 'scripts/homepage-recorded-run.mjs', 'scripts/verify-homepage-recording.mjs', '.github/workflows/ux-quality.yml', 'package.json', 'package-lock.json') }}
       - name: Render trained homepage model recording
         if: ${{ steps.scope.outputs.fast_path != 'true' && (github.event_name != 'pull_request' || steps.media_cache.outputs.cache-hit != 'true') }}
         run: node scripts/build-homepage-loop.mjs
@@ -379,6 +380,8 @@ jobs:
             echo "- Qualification mode: scoped PR text-only review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
           elif [ "${{ steps.scope.outputs.review_scope }}" = article-audit ]; then
             echo "- Qualification mode: focused PR article-model audit; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.scope.outputs.review_scope }}" = search ]; then
+            echo "- Qualification mode: scoped PR search review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- Qualification mode: full Portfolio UX suite." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -434,7 +437,7 @@ jobs:
     needs: ux
     outputs:
       pages_artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
-    # Scoped route/profile PRs need only the fast UX contract. Main and manual Pages builds use the exact candidate.
+    # Scoped routing and documentation PRs need only their contracts. Main and manual Pages builds use the exact candidate.
     if: ${{ needs.ux.result == 'success' && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 150
@@ -750,7 +753,7 @@ jobs:
             run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
             run_audit model-visual env PORTFOLIO_PUBLISHED_AUDIT_URL="$PORTFOLIO_AUDIT_URL" MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
           fi
-          if [ "$REVIEW_SCOPE" != page-text ]; then
+          if [ "$REVIEW_SCOPE" = full ] || [ "$REVIEW_SCOPE" = article-audit ]; then
             run_audit article-model-sticky node scripts/article-model-sticky-audit.mjs
           fi
           if [ "$REVIEW_SCOPE" != article-audit ]; then
