@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {readFile} from 'node:fs/promises';
+import {join, resolve} from 'node:path';
+import {fileURLToPath} from 'node:url';
+
+const assets = process.argv[2] || fileURLToPath(new URL('../site/assets/', import.meta.url));
+const bytes = name => readFile(join(assets, name));
+const sha256 = value => createHash('sha256').update(value).digest('hex');
+const manifest = JSON.parse(await bytes('homepage-model-loop.json'));
+const trained = JSON.parse(await bytes('lm/manifest.json'));
+const video = await bytes('homepage-model-loop.webm');
+const poster = await bytes('homepage-model-loop-poster.webp');
+assert.match(trained.sha256, /^[0-9a-f]{64}$/);
+assert.match(trained.trainedStateSha256, /^[0-9a-f]{64}$/);
+assert.equal(manifest.schemaVersion, 2);
+assert.equal(manifest.width, 1920);
+assert.equal(manifest.height, 1920);
+assert.equal(manifest.fps, 30);
+assert.equal(manifest.durationSeconds, 8.4);
+assert.equal(manifest.weightsSha256, trained.sha256);
+assert.equal(manifest.trainedStateSha256, trained.trainedStateSha256);
+assert.equal(manifest.bytes, video.length);
+assert.equal(manifest.posterBytes, poster.length);
+assert.equal(manifest.sha256, sha256(video));
+assert.equal(manifest.posterSha256, sha256(poster));
+assert.ok(video.length && poster.length, 'Homepage recording must be nonempty');
+console.log(`Verified homepage recording and trained-tensor provenance in ${resolve(assets)}.`);

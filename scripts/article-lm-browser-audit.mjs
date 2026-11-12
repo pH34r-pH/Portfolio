@@ -140,9 +140,12 @@ async function verifyFollowing(root, page) {
       const line = Math.min(innerHeight - 3, header + toolbar + 12 + height + (spatial ? 28 : 72));
       scrollBy(0, document.getElementById(id).getBoundingClientRect().top - line + 2);
     }, target.id);
+    // The renderer can delay requestAnimationFrame on software WebGL runners.
+    // The heading attribute may still reflect an earlier visit, so wait for the
+    // visible label itself to catch up before checking the scene and panes.
+    await expect(root.locator("[data-viewer-context]")).toContainText(target.text, { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
     await expect(root).toHaveAttribute("data-article-heading", target.id, { timeout: RENDERER_OBSERVATION_TIMEOUT_MS });
     await expect(root).toHaveAttribute("data-article-context", target.part);
-    await expect(root.locator("[data-viewer-context]")).toContainText(target.text);
     await expect(root.locator(`[data-glass-panel=${modelContext(target.part).instrument}]`)).toHaveAttribute("data-context-focus", "true");
     assert.equal(await root.evaluate((node) => node.machineController.scene.focus), target.part);
     assert.equal(await root.evaluate((node) => node.machineController.scene.contextPart), target.part);
