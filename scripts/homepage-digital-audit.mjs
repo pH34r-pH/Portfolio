@@ -12,11 +12,20 @@ const settle=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(
 
 async function open(options={}) {
   const context=await browser.newContext({colorScheme:'dark',...options});
-  const page=await context.newPage(),errors=[];let engineRequests=0;
+  const page=await context.newPage(),errors=[],failedRequests=[];let engineRequests=0;
   page.on('pageerror',error=>errors.push(error.message));
+  page.on('requestfailed',request=>failedRequests.push({url:request.url(),failure:request.failure()?.errorText}));
   page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
   await page.goto(base,{waitUntil:'networkidle'});
-  await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioHomepageBackground))).toBe(true);
+  try {
+    await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioHomepageBackground)),
+      {timeout:RENDERER_OBSERVATION_TIMEOUT_MS}).toBe(true);
+  } catch(error) {
+    const state=await page.evaluate(()=>({readyState:document.readyState,url:location.href,
+      backgroundScript:document.querySelector('script[src*="homepage-background"]')?.src})).catch(()=>null);
+    await writeFile(`${out}/startup-failure.json`,JSON.stringify({state,errors,failedRequests},null,2)+'\n');
+    await context.close();throw error;
+  }
   return {context,page,errors,engineRequests:()=>engineRequests};
 }
 async function accessibility(page) {

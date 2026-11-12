@@ -4,7 +4,7 @@ import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {IGNITION_DURATION_MS,PREPARATION_TIMEOUT_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
 import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
-import {resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
+import {observeQuietMedia,resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
@@ -200,13 +200,7 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
   const timing={startedWallTime:Date.now()};
   let release;const held=new Promise(resolve=>{release=resolve;});let requests=0;
   const {context,page,errors}=await open({},async page=>{
-    await page.addInitScript(()=>{
-      window.portfolioQuietMedia=['(prefers-reduced-motion:reduce)','(forced-colors:active)'].map(query=>{
-        const list=matchMedia(query),events=[];
-        list.addEventListener('change',event=>events.push({matches:event.matches,at:performance.now()}));
-        return {query,list,events};
-      });
-    });
+    await page.addInitScript(observeQuietMedia);
     page.on('request',request=>{if(request.url().includes('three@0.186.1')){requests++;timing.firstEngineRequestWallTime??=Date.now();}});
     await page.route('**/vendor/three@0.186.1/three.module.js',async route=>{await held;await route.continue();});
   });
