@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {mkdir,writeFile} from 'node:fs/promises';
 import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertSuppressedOpacityOrder,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
+import {articleHost,prepareArticleModel,startThenQuietArticle,screenshotModel,assertSuppressedOpacityOrder,assertEncasedRender,RENDERER_OBSERVATION_TIMEOUT_MS,NATIVE_SCREENSHOT_TIMEOUT_MS} from './model-audit-host.mjs';
 
 import {contextExitWaitsForTransition} from './model-glass-context-audit.mjs';
 import {contextReversalKeepsTabsValid,offscreenContextPause} from './model-glass-visibility-audit.mjs';
@@ -55,7 +55,7 @@ async function accessibility(page,root) {
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)<=1);
 }
 async function renderShot(page,root,path) {
-  await root.locator('[data-machine-stage]').screenshot({path,style:'.topbar,.skip-link{visibility:hidden!important}'});
+  await root.locator('[data-machine-stage]').screenshot({path,timeout:NATIVE_SCREENSHOT_TIMEOUT_MS,style:'.topbar,.skip-link{visibility:hidden!important}'});
 }
 async function motion(page,root,name,phone) {
   await root.evaluate(node=>node.machine.seek(145));const a=await diagnostics(root);

@@ -26,12 +26,14 @@ concurrency:
 
 jobs:
   ux:
-    runs-on: ubuntu-latest
+    # The locked Playwright release supports this image; ubuntu-latest now uses 26.04.
+    runs-on: ubuntu-24.04
     # Full-quality encased rendering on software GL needs additional wall time.
     # Keep the complete audit suite, native pixels, and media settings intact.
     timeout-minutes: 180
     outputs:
       fast_path: ${{ steps.scope.outputs.fast_path }}
+      review_scope: ${{ steps.scope.outputs.review_scope }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,6 +57,7 @@ jobs:
           fi
 
           fast_path=false
+          review_scope=full
           reason="full UX qualification required"
           if [[ "$base" =~ ^[0-9a-f]{40}$ ]] && [[ ! "$base" =~ ^0+$ ]] && [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
             mapfile -t changed < <(git diff --name-only "$base" "$HEAD_SHA")
@@ -84,12 +87,23 @@ jobs:
               reason="only ARCC route/profile/discovery files and their dedicated regression/CI definition changed"
             fi
 
+            if [ "$EVENT_NAME" = pull_request ] && [ "$fast_path" != true ]; then
+              candidate="$(python3 scripts/classify_ux_scope.py --event "$EVENT_NAME" "$base" "$HEAD_SHA" || true)"
+              case "$candidate" in
+                page-text) review_scope=page-text; reason="text-only edits to existing static pages" ;;
+                article-audit) review_scope=article-audit; reason="only existing article-model audit scripts changed" ;;
+                search) review_scope=search; reason="only the search runtime changed" ;;
+                documentation) review_scope=documentation; fast_path=true; reason="only existing repository documentation changed" ;;
+              esac
+            fi
+
             {
               echo "### UX scope classification"
               echo
               echo "- Base: `$base`"
               echo "- Head: `$HEAD_SHA`"
               echo "- Fast path: `$fast_path`"
+              echo "- Review scope: `$review_scope`"
               echo "- Reason: $reason"
               echo "- Changed paths:"
               printf '  - `%s`\n' "${changed[@]}"
@@ -97,9 +111,15 @@ jobs:
           fi
 
           echo "fast_path=$fast_path" >> "$GITHUB_OUTPUT"
+          echo "review_scope=$review_scope" >> "$GITHUB_OUTPUT"
+      - name: Test conservative UX scope classification
+        run: python3 -m unittest discover -s scripts -p test_classify_ux_scope.py -v
       - name: Validate scoped ARCC routing contract
-        if: ${{ steps.scope.outputs.fast_path == 'true' }}
+        if: ${{ steps.scope.outputs.fast_path == 'true' && steps.scope.outputs.review_scope != 'documentation' }}
         run: python3 scripts/test_static_webapp_config.py
+      - name: Check scoped documentation diff
+        if: ${{ steps.scope.outputs.review_scope == 'documentation' }}
+        run: git diff --check '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}'
       - uses: actions/setup-python@v5
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         with:
@@ -122,9 +142,66 @@ jobs:
       - name: Install Chromium
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: npx playwright install --with-deps chromium
+      # Cache only PR review media. The exact source, dependency files, browser,
+      # runner image and installed package versions all participate in the key.
+      # Main-push qualification always generates a fresh recording.
+      - name: Fingerprint PR media environment
+        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' }}
+        id: media_env
+        shell: bash
+        run: |
+          set -euo pipefail
+          browser="$(node -e "process.stdout.write(require('playwright').chromium.executablePath())")"
+          signature="$( { node --version; ffmpeg -version 2>&1 | sed -n '1p'; sha256sum "$browser"; printf '%s\n' "${ImageVersion:-unknown}"; dpkg-query -W -f='${Package} ${Version}\n'; } | sha256sum | cut -d' ' -f1)"
+          echo "signature=$signature" >> "$GITHUB_OUTPUT"
+      - name: Restore exact-input PR homepage media
+        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' }}
+        id: media_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+          key: portfolio-home-v1-${{ runner.os }}-${{ steps.media_env.outputs.signature }}-${{ hashFiles('site/assets/**', '!site/assets/search.js', 'scripts/build-homepage-loop.mjs', 'scripts/render-homepage-recording.mjs', 'scripts/homepage-recorded-run.mjs', 'scripts/verify-homepage-recording.mjs', '.github/workflows/ux-quality.yml', 'package.json', 'package-lock.json') }}
       - name: Render trained homepage model recording
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        if: ${{ steps.scope.outputs.fast_path != 'true' && (github.event_name != 'pull_request' || steps.media_cache.outputs.cache-hit != 'true') }}
         run: node scripts/build-homepage-loop.mjs
+      - name: Verify homepage media bytes and trained tensors
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        run: node scripts/verify-homepage-recording.mjs
+      - name: Save exact-input PR homepage media
+        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' && steps.media_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+          key: ${{ steps.media_cache.outputs.cache-primary-key }}
+      - name: Record homepage media source and checksums
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          printf '%s\n' "$SOURCE_SHA" > site/assets/homepage-model-loop.source
+          sha256sum site/assets/homepage-model-loop.webm site/assets/homepage-model-loop-poster.webp site/assets/homepage-model-loop.json > site/assets/homepage-model-loop.sha256
+      - name: Share exact-run homepage media with publication build
+        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: homepage-media-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+            site/assets/homepage-model-loop.source
+            site/assets/homepage-model-loop.sha256
+          if-no-files-found: error
+          retention-days: 1
       - name: Check UX environment
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: python3 scripts/preflight_env.py ux
@@ -134,6 +211,7 @@ jobs:
         run: |
           set -euo pipefail
           node --check scripts/build-homepage-loop.mjs
+          python3 -m unittest discover -s scripts -p test_verify_homepage_recording.py -v
           for asset in site appearance article-runtime article-model-loader article-model-context article-model-presentation article-lm-session model-context model-inference model-inference-backend model-presentation-sampling model-linear-webnn model-linear-webgpu model-lm-worker model-machine model-scene model-encased-materials model-encased-housing model-encased-routes model-renderer model-background-glass model-topology model-light model-gestures material-light energy-architecture energy-optics homepage-background homepage-motion homepage-native-model homepage-model-loader homepage-digital research-topology search; do
             node --check "site/assets/$asset.js"
           done
@@ -149,6 +227,8 @@ jobs:
           node scripts/test-serve-lhci.mjs
       - name: Run responsive, accessibility, interaction and model audits
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
+        env:
+          REVIEW_SCOPE: ${{ steps.scope.outputs.review_scope }}
         shell: bash
         run: |
           set -euo pipefail
@@ -178,28 +258,37 @@ jobs:
               return 1
             fi
           }
-          run_audit model-posters node scripts/capture-model-posters.mjs
-          run_audit model-startup-regressions node scripts/test-model-startup.mjs
-          run_audit model-visual env MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
-          run_audit ux node scripts/ux-audit.mjs
-          run_audit interaction node scripts/interaction-audit.mjs
-          run_audit 2071 node scripts/2071-audit.mjs
-          run_audit model-machine node scripts/model-machine-audit.mjs
-          run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
-          run_audit model-startup node scripts/model-startup-audit.mjs
-          # The homepage audit invokes homepageLifecycle and native finger-scroll checks.
-          run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
-          run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
-          run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          if [ "$REVIEW_SCOPE" = full ]; then
+            run_audit model-posters node scripts/capture-model-posters.mjs
+            run_audit model-startup-regressions node scripts/test-model-startup.mjs
+            run_audit model-visual env MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
+          fi
+          if [ "$REVIEW_SCOPE" != article-audit ]; then
+            run_audit ux node scripts/ux-audit.mjs
+            run_audit interaction node scripts/interaction-audit.mjs
+            run_audit 2071 node scripts/2071-audit.mjs
+          else
+            printf 'source-ui\tNOT_APPLICABLE\n' >> "$audit_status_file"
+          fi
+          if [ "$REVIEW_SCOPE" = full ]; then
+            run_audit model-machine node scripts/model-machine-audit.mjs
+            run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
+            run_audit model-startup node scripts/model-startup-audit.mjs
+            run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
+          fi
+          if [ "$REVIEW_SCOPE" != article-audit ]; then
+            run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
+            run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          fi
           exit 0
       - name: Prepare bounded V2 model visual review evidence
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope == 'full' }}
         shell: bash
         env:
           PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: node scripts/prepare-model-visual-evidence.mjs
       - name: Enforce Lighthouse budgets (mobile and desktop)
-        if: ${{ success() && steps.scope.outputs.fast_path != 'true' }}
+        if: ${{ success() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope != 'article-audit' }}
         shell: bash
         run: |
           set -uo pipefail
@@ -263,7 +352,7 @@ jobs:
             exit 1
           fi
       - name: Check initial-page transfer policy
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope != 'article-audit' }}
         run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
       - name: Retain raw Lighthouse reports
         if: ${{ always() && steps.scope.outputs.fast_path != 'true' && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
@@ -283,8 +372,16 @@ jobs:
         env:
           FAST_PATH: ${{ steps.scope.outputs.fast_path }}
         run: |
-          if [ "$FAST_PATH" = true ]; then
+          if [ "${{ steps.scope.outputs.review_scope }}" = documentation ]; then
+            echo "- Qualification mode: documentation-only PR review; site runtime is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$FAST_PATH" = true ]; then
             echo "- Qualification mode: scoped ARCC routing fast path; visual, interaction, model, screenshot, and Lighthouse audits were not applicable to the changed paths." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.scope.outputs.review_scope }}" = page-text ]; then
+            echo "- Qualification mode: scoped PR text-only review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.scope.outputs.review_scope }}" = article-audit ]; then
+            echo "- Qualification mode: focused PR article-model audit; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ steps.scope.outputs.review_scope }}" = search ]; then
+            echo "- Qualification mode: scoped PR search review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "- Qualification mode: full Portfolio UX suite." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -340,9 +437,9 @@ jobs:
     needs: ux
     outputs:
       pages_artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
-    # Scoped route/profile PRs need only the fast UX contract. Main and manual Pages builds use the exact candidate.
+    # Scoped routing and documentation PRs need only their contracts. Main and manual Pages builds use the exact candidate.
     if: ${{ needs.ux.result == 'success' && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 150
     permissions:
       contents: read
@@ -435,8 +532,32 @@ jobs:
         run: node Portfolio/scripts/test-model-startup.mjs
       - name: Install Chromium for native homepage rendering
         run: Portfolio/node_modules/.bin/playwright install --with-deps chromium
-      - name: Render pre-built homepage model loop
+      - name: Retrieve homepage media from this run's exact source build
+        id: homepage_transfer
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: homepage-media-${{ github.run_id }}-${{ github.run_attempt }}
+          path: Portfolio/site/assets
+      # A failed-job-only rerun may not rerun ux, so that attempt has no media
+      # artifact. Rebuild from the exact checkout rather than trust older bytes.
+      - name: Rebuild homepage media if this attempt has no source artifact
+        if: steps.homepage_transfer.outcome != 'success'
         run: node Portfolio/scripts/build-homepage-loop.mjs
+      - name: Verify transferred homepage media and source identity
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ steps.refs.outputs.portfolio }}
+          TRANSFER_OUTCOME: ${{ steps.homepage_transfer.outcome }}
+        run: |
+          set -euo pipefail
+          cd Portfolio
+          if [ "$TRANSFER_OUTCOME" = success ]; then
+            test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
+            sha256sum --check site/assets/homepage-model-loop.sha256
+            rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
+          fi
+          node scripts/verify-homepage-recording.mjs
       - name: Prepare isolated article export sources
         run: |
           python3 Portfolio/scripts/prepare_article_exports.py \
@@ -596,6 +717,8 @@ jobs:
           print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
           PY
       - name: Exercise article, notebook and model routes in the exact bundle
+        env:
+          REVIEW_SCOPE: ${{ needs.ux.outputs.review_scope }}
         shell: bash
         run: |
           set -euo pipefail
@@ -627,21 +750,29 @@ jobs:
               return 1
             fi
           }
-          run_audit ux node scripts/ux-audit.mjs
-          # interaction-audit invokes the real article and JupyterLite notebook audits.
-          run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
-          run_audit 2071 node scripts/2071-audit.mjs
-          run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
-          run_audit model-startup node scripts/model-startup-audit.mjs
-          run_audit model-machine node scripts/model-machine-audit.mjs
-          run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
-          run_audit model-visual env PORTFOLIO_PUBLISHED_AUDIT_URL="$PORTFOLIO_AUDIT_URL" MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
-          run_audit article-model-sticky node scripts/article-model-sticky-audit.mjs
-          run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
-          run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          if [ "$REVIEW_SCOPE" != article-audit ]; then
+            run_audit ux node scripts/ux-audit.mjs
+            # interaction-audit invokes the real article and JupyterLite notebook audits.
+            run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
+            run_audit 2071 node scripts/2071-audit.mjs
+          fi
+          if [ "$REVIEW_SCOPE" = full ]; then
+            run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
+            run_audit model-startup node scripts/model-startup-audit.mjs
+            run_audit model-machine node scripts/model-machine-audit.mjs
+            run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
+            run_audit model-visual env PORTFOLIO_PUBLISHED_AUDIT_URL="$PORTFOLIO_AUDIT_URL" MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
+          fi
+          if [ "$REVIEW_SCOPE" = full ] || [ "$REVIEW_SCOPE" = article-audit ]; then
+            run_audit article-model-sticky node scripts/article-model-sticky-audit.mjs
+          fi
+          if [ "$REVIEW_SCOPE" != article-audit ]; then
+            run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
+            run_audit screenshots node scripts/capture-ux-screenshots.mjs
+          fi
           exit 0
       - name: Prepare and test the project-path Pages copy
-        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.ux.outputs.review_scope != 'article-audit')
         id: pages_preview
         shell: bash
         env:
@@ -669,7 +800,7 @@ jobs:
           export PORTFOLIO_PAGES_AUDIT_URL="http://127.0.0.1:4174$base_path/"
           node Portfolio/scripts/pages-path-browser-audit.mjs
       - name: Upload the reviewable Pages copy
-        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.ux.outputs.review_scope != 'article-audit')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.pages_preview.outputs.artifact_name }}

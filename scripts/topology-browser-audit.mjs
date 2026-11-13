@@ -6,6 +6,10 @@ function currentTopologySelection() {
 }
 
 export async function auditPhoneTopologySelection(page,articles,base) {
+  const disclosure = page.locator('[data-topology-disclosure]');
+  if (await disclosure.count() && !(await disclosure.getAttribute('open') !== null)) {
+    await disclosure.locator(':scope > summary').click();
+  }
   const selectedArticle = articles.find(article => (article.dependsOn && article.dependsOn.length)
     || articles.some(candidate => candidate.dependsOn && candidate.dependsOn.includes(article.slug))) || articles[0];
   const node = page.locator('.topology-node[data-slug="' + selectedArticle.slug + '"]');
@@ -32,4 +36,21 @@ export async function auditPhoneTopologySelection(page,articles,base) {
     "Back restores the selected research milestone in its history entry");
   assert.ok(await page.locator(".topology-edges path.is-active").count() > 0,
     "Back restores active dependency edges for the selected milestone");
+  await expect(disclosure).toHaveAttribute('open', '');
+}
+
+export async function auditTopologyRelations(page, articles) {
+  const bySlug = new Map(articles.map(article => [article.slug, article]));
+  for (const article of articles) {
+    await page.locator(`.topology-node[data-slug="${article.slug}"]`).click();
+    const relation = page.locator('[data-topology-detail] .topology-relations');
+    const expected = [...(article.dependsOn || []), ...articles.filter(item => item.dependsOn?.includes(article.slug)).map(item => item.slug)];
+    await expect(relation.locator('a')).toHaveCount(expected.filter(slug => bySlug.has(slug)).length);
+    for (const slug of expected) {
+      const target = bySlug.get(slug);
+      if (!target) continue;
+      const link = relation.locator(`a[href="${target.url}"]`);
+      await expect(link).toHaveText(target.shortTitle || target.title.replace(/^Milestone\s+\d+\s+[—-]\s+/i, ''));
+    }
+  }
 }

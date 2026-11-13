@@ -4,7 +4,7 @@ import {chromium,expect} from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import {IGNITION_DURATION_MS,PREPARATION_TIMEOUT_MS,STARTUP_SCHEMA_VERSION,STARTUP_STATE_KEY} from '../site/assets/model-startup.js';
 import {articleHost,assertUnstartedArticle,startArticleModel,auditArticleQuietModeRestore,RENDERER_OBSERVATION_TIMEOUT_MS} from './model-audit-host.mjs';
-import {resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
+import {observeQuietMedia,resumedImportArmed,resumedImportObservation} from './model-startup-observation.mjs';
 
 const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const homePath='/?model-audit=1',homeUrl=base+homePath;
@@ -190,7 +190,8 @@ async function interruptedImportFailure(page,details,timing) {
     const root=document.querySelector('[data-model-machine]'),startup=root?.modelStartup;
     return {observedAt:performance.now(),observedWallTime:Date.now(),dataset:{...root?.dataset},
       startedAt:startup?.startedAt,deadlineAt:startup?.deadlineAt,
-      deadlineCount:portfolioStartupDeadlines.length,phases:portfolioStartupPhases};
+      deadlineCount:portfolioStartupDeadlines.length,phases:portfolioStartupPhases,
+      quietMedia:window.portfolioQuietMedia?.map(({query,list,events})=>({query,matches:list.matches,events}))};
   }).catch(error=>({diagnosticError:error.message}));
   return {...failure,timing,controller};
 }
@@ -199,6 +200,7 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
   const timing={startedWallTime:Date.now()};
   let release;const held=new Promise(resolve=>{release=resolve;});let requests=0;
   const {context,page,errors}=await open({},async page=>{
+    await page.addInitScript(observeQuietMedia);
     page.on('request',request=>{if(request.url().includes('three@0.186.1')){requests++;timing.firstEngineRequestWallTime??=Date.now();}});
     await page.route('**/vendor/three@0.186.1/three.module.js',async route=>{await held;await route.continue();});
   });
@@ -210,12 +212,14 @@ async function quietInterruptedPendingImport(mode,quietOptions,clearOptions) {
     assert.equal(await page.evaluate(()=>PortfolioModelStartup.start()===window.pendingStartup),true,
       'The initial pending start remains deduplicated');
 
+    timing.quietRequestedWallTime=Date.now();
     await page.emulateMedia(quietOptions);
     const root=page.locator('[data-model-machine]');
-    await expect(root).toHaveAttribute('data-startup','quiet');
-    await expect(root).toHaveAttribute('data-render','fallback');
-    await expect(page.locator('[data-machine-fallback] svg')).toBeVisible();
-    await expect(page.getByRole('button',{name:/interactive model/})).toBeHidden();
+    await expect(root).toHaveAttribute('data-startup','quiet',{timeout:RENDERER_READINESS_TIMEOUT_MS});
+    timing.quietObservedWallTime=Date.now();
+    await expect(root).toHaveAttribute('data-render','fallback',{timeout:RENDERER_READINESS_TIMEOUT_MS});
+    await expect(page.locator('[data-machine-fallback] svg')).toBeVisible({timeout:RENDERER_READINESS_TIMEOUT_MS});
+    await expect(page.getByRole('button',{name:/interactive model/})).toBeHidden({timeout:RENDERER_READINESS_TIMEOUT_MS});
     const quiet=await snapshot(page);
     assert.equal(quiet.started,true);assert.equal(quiet.phase,'quiet');assert.equal(quiet.scheduled,false);
     assert.equal(quiet.handoffs,0);assert.equal(quiet.ignitionComplete,false);assert.equal(requests,1);

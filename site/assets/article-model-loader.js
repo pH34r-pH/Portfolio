@@ -34,6 +34,24 @@ if (root) {
     else if (!quiet && startup.started&&root.dataset.viewerHidden!=='true') startup.start({ retained: true });
   };
 
+  root.addEventListener('portfolio:model-prompt',async()=>{
+    const button=root.querySelector('[data-viewer-prompt]');
+    button.disabled=true;button.textContent='Loading prompt…';
+    try {
+      if(startup.quiet)await loadLM();else await startup.start();
+      await root.lmSession?.prepared;
+      if(root.dataset.viewerHidden==='true')return;
+      root.querySelector('[data-instrument="input"]')?.click();
+      root.machineController?.input?.focus();
+    } catch {
+      button.textContent='Retry prompt';
+      return;
+    } finally {
+      button.disabled=false;
+      if(button.textContent==='Loading prompt…')button.textContent='Try a prompt';
+    }
+  });
+
   root.addEventListener('portfolio:model-visibility',event=>{if(event.detail.visible&&!startup.quiet&&startup.started)startup.start({retained:true});});
   if (!startup.quiet && startup.started&&root.dataset.viewerHidden!=='true') startup.start({ retained: true });
 }

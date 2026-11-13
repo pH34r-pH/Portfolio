@@ -1,12 +1,32 @@
 import('./material-light.js').catch(()=>{});
+
+function restoreArticleContents() {
+  const contents = document.querySelector('.article-contents');
+  if (!contents) return;
+  const restore = () => {
+    if (typeof history.state?.articleContentsOpen === 'boolean') {
+      contents.open = history.state.articleContentsOpen;
+    }
+  };
+  const remember = () => history.replaceState(
+    { ...history.state, articleContentsOpen: contents.open }, '', location.href,
+  );
+  restore();
+  contents.addEventListener('toggle', remember);
+  addEventListener('hashchange', remember);
+  addEventListener('popstate', restore);
+}
+restoreArticleContents();
+
 function renderArticleList(container, articles) {
   if (!articles?.length) return;
   const cards = [...articles]
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    .map((article, index) => {
+    .sort((a, b) => a.sequence - b.sequence)
+    .map((article) => {
       const card = document.createElement("article");
       card.className = "card article-card";
-      card.dataset.index = String(index + 1).padStart(2, "0");
+      card.dataset.index = article.milestone ? `Milestone ${article.milestone}` :
+        ({ essay: 'Essay', 'work-in-progress': 'Work in progress' }[article.articleKind] || 'Article');
       const heading = document.createElement("h3");
       const titleLink = document.createElement("a");
       titleLink.href = article.url;
@@ -17,23 +37,33 @@ function renderArticleList(container, articles) {
       summary.textContent = article.description || "";
       const meta = document.createElement("p");
       meta.className = "card-meta";
-      meta.textContent = `Reviewed article · ${article.date || ""}`;
+      meta.textContent = `Published ${article.date || "—"}`;
       const links = document.createElement("div");
       links.className = "links";
       const read = document.createElement("a");
       read.href = article.url;
       read.textContent = "Read article";
       links.append(read);
+      if (article.notebookSlug) {
+        const notebook = document.createElement('a');
+        notebook.href = '/notebooks/' + encodeURIComponent(article.notebookSlug) + '/';
+        notebook.textContent = 'Preserved notebook';
+        links.append(notebook);
+      }
+      const resources = document.createElement('a');
+      resources.href = article.url + '#article-resources';
+      resources.textContent = 'Sources & downloads';
+      links.append(resources);
       card.append(heading, summary, meta, links);
       return card;
     });
   container.replaceChildren(...cards);
 }
 
-function notebookCard(notebook, index) {
+function notebookCard(notebook) {
   const card = document.createElement("article");
   card.className = "card";
-  card.dataset.index = String(index + 1).padStart(2, "0");
+  card.dataset.index = notebook.sequence ? `Milestone ${String(notebook.sequence).padStart(3, '0')}` : 'Companion notebook';
   const heading = document.createElement("h3");
   heading.textContent = notebook.title || notebook.path;
   const meta = document.createElement("p");
@@ -64,8 +94,8 @@ function renderNotebookList(container, notebooks) {
   const ordered = [...notebooks]
     .filter((notebook) => notebook.slug !== "visual_intuition_atlas")
     .sort((a, b) => {
-      if (a.sequence && b.sequence && a.sequence !== b.sequence) return b.sequence - a.sequence;
-      return (b.path || "").localeCompare(a.path || "", undefined, { numeric: true });
+      if (a.sequence && b.sequence && a.sequence !== b.sequence) return a.sequence - b.sequence;
+      return (a.path || "").localeCompare(b.path || "", undefined, { numeric: true });
     });
   container.replaceChildren(...ordered.map(notebookCard));
 }
@@ -82,8 +112,9 @@ function renderProvenance(sources, target, build) {
 }
 
 function showCatalogUnavailable(list, articleList, target) {
-  if (list) list.innerHTML = "<p>Publication catalog unavailable.</p>";
-  if (articleList) articleList.innerHTML = "<p>Article catalog unavailable.</p>";
+  // The bundle contains the full readable catalog. Keep it if refresh fails.
+  if (list && !list.querySelector('.card')) list.innerHTML = '<p>Notebook catalog unavailable. <a href="https://github.com/pH34r-pH/research-notes/tree/main/notebooks">Read the source archive</a>.</p>';
+  if (articleList && !articleList.querySelector('.card')) articleList.innerHTML = '<p>Article catalog unavailable. <a href="/articles/001-text-as-signal/">Start with the first article</a> or <a href="/articles/accessible-does-not-imply-used/">read the current result</a>.</p>';
   if (target) target.textContent = "Build metadata unavailable.";
 }
 

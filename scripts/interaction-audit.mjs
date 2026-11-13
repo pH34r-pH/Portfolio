@@ -17,7 +17,7 @@ async function loadManifest(context) {
 }
 
 function routePaths(manifest) {
-  const paths = ["/", "/research/", "/atlas/"];
+  const paths = ["/", "/research/", "/atlas/", "/about/", "/projects/", "/projects/long-haul/", "/projects/experiment-compiler/", "/resume/"];
   if (!manifest?.notebooks?.length) return paths;
   paths.push("/notebooks/" + manifest.notebooks[0].slug + "/");
   if (manifest.notebooks.some(n => n.slug === "visual_intuition_atlas")) {
@@ -180,7 +180,8 @@ async function auditPublishedArticleHistory(page, manifest) {
   await expect(page).toHaveURL(base + article.url);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
 
-  const fragment = page.locator('article.myst-reader a[href^="#"]').first();
+  await page.locator('.article-contents > summary').click();
+  const fragment = page.locator('.article-contents a[href^="#"]').first();
   await expect(fragment).toBeVisible();
   const hashHref = await fragment.getAttribute("href");
   assert.ok(hashHref && hashHref.length > 1, `${article.url}: same-page anchor has a fragment`);
@@ -236,20 +237,28 @@ async function auditWorklogDisclosures(page, width, path) {
   }
 }
 
+async function auditArticleExecutionControls(page, article) {
+  const executableCount = article.browserExecution ? 1 : 0;
+  await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(executableCount);
+  await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
+    .toHaveCount(executableCount);
+  if (article.browserExecution) await expect(page.locator("article.myst-reader")).toContainText("Saved output:");
+  if (article.browserExecution) {
+    await expect(page.locator('#what-this-does-not-show')).toHaveCount(1);
+    await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
+  } else await expect(page.getByRole("button", { name: "Load browser Python" })).toHaveCount(0);
+}
+
 async function auditArticle(page, context, manifest, path, width) {
   const article = manifest.articles.find(item => item.url === path);
   assert.ok(article, `${path}: article must exist in the exact publication manifest`);
   await auditArticleLinks(page, manifest, path);
   await auditWorklogDisclosures(page, width, path);
   await expect(page.locator("article.myst-reader h1")).toHaveText(article.title);
-  await expect(page.locator("article.myst-reader [data-executable]")).toHaveCount(1);
-  await expect(page.locator("article.myst-reader [data-output][aria-label^='Your session output']"))
-    .toHaveCount(1);
-  await expect(page.locator("article.myst-reader")).toContainText("Saved output:");
+  await auditArticleExecutionControls(page, article);
   await expect(page.locator('article.myst-reader a[aria-label="Link to this Section"]')).toHaveCount(0);
   await expect(page.locator('article.myst-reader button.myst-code-copy-icon')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to Article', exact: true })).toHaveCount(0);
-  await expect(page.locator('#what-this-does-not-show')).toHaveCount(1);
   for (const icon of await page.locator('article.myst-reader svg[data-slot="icon"]').all()) {
     const box = await icon.boundingBox();
     assert.ok(box && box.width <= 32 && box.height <= 32, `${path}: inline icon exceeds text size`);
@@ -267,7 +276,6 @@ async function auditArticle(page, context, manifest, path, width) {
       `${path}: MathML accessibility layer must not duplicate the visible equation`);
     await expect(page.locator('article.myst-reader .katex-html').first()).toBeVisible();
   }
-  await expect(page.getByRole("button", { name: "Load browser Python" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Canonical MyST source ↗" }))
     .toHaveAttribute("href", new RegExp("research-notes/blob/" + manifest.sources.researchNotes.commit));
   if (width === 1366 && article.url === manifest.articles[0].url) {
@@ -370,11 +378,12 @@ async function auditNotebook(page, manifest, path, width) {
     await expect(page.locator("#jupyter-config-data")).toHaveCount(1);
     await expect(page.locator(".jp-NotebookPanel")).toBeVisible({ timeout: 30000 });
     await auditJupyterLabCells(page, expectedCells, expectedJupyterPath, path);
-    await page.goBack();
-    if (new URL(page.url()).pathname === "/lab/lab/") {
-      // JupyterLite replaces its query-route with the canonical app URL; Back must unwind both entries.
-      await page.goBack();
-    }
+    const kernelDialog = page.getByRole('dialog');
+    if (await kernelDialog.isVisible()) await kernelDialog.getByRole('button', { name: 'No Kernel', exact: true }).click();
+    const returnLink = page.locator('#portfolio-lab-return [data-lab-return]');
+    await expect(returnLink).toHaveText('← Return to notebook');
+    await expect(returnLink).toHaveAttribute('href', base + path);
+    await returnLink.click();
     await expect(page).toHaveURL(base + path);
     await expect(page.locator("main h1")).toHaveText(notebook.title);
   }
@@ -387,13 +396,15 @@ async function auditNotebook(page, manifest, path, width) {
 }
 
 async function auditResearch(page, manifest) {
-  await expect(page.getByRole("link", { name: /publication map and Atlas-to-article crosswalk/ }))
+  await expect(page.getByRole("link", { name: /How the articles relate to their source records/ }))
     .toHaveAttribute("href", "https://github.com/pH34r-pH/research-notes/blob/main/PUBLICATION-DISPOSITIONS.md");
   if (!manifest?.notebooks?.length) return;
   await expect(page.locator("#notebook-list")).not.toContainText("Updated");
-  if (manifest.notebooks[0].question) {
+  const first = [...manifest.notebooks].filter(item => item.slug !== 'visual_intuition_atlas')
+    .sort((a, b) => a.sequence - b.sequence)[0];
+  if (first?.question) {
     await expect(page.locator("#notebook-list .card-question").first())
-      .toHaveText(manifest.notebooks[0].question);
+      .toHaveText(first.question);
   }
 }
 

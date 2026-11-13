@@ -8,15 +8,20 @@ const base=process.env.PORTFOLIO_AUDIT_URL||'http://127.0.0.1:4173';
 const out=process.env.HOMEPAGE_EVIDENCE_DIR||'ux-screenshots/homepage';
 await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true}),evidence=[];
+const observation={timeout:RENDERER_OBSERVATION_TIMEOUT_MS};
+let startupDiagnostics;
 const settle=page=>page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
 
 async function open(options={}) {
   const context=await browser.newContext({colorScheme:'dark',...options});
-  const page=await context.newPage(),errors=[];let engineRequests=0;
+  const page=await context.newPage(),errors=[],failedRequests=[];let engineRequests=0;
   page.on('pageerror',error=>errors.push(error.message));
+  page.on('requestfailed',request=>failedRequests.push({url:request.url(),failure:request.failure()?.errorText}));
+  startupDiagnostics={page,errors,failedRequests};
   page.on('request',request=>{if(request.url().includes('three@0.186.1'))engineRequests++;});
   await page.goto(base,{waitUntil:'networkidle'});
-  await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioHomepageBackground))).toBe(true);
+  await expect.poll(()=>page.evaluate(()=>Boolean(window.PortfolioHomepageBackground)),observation).toBe(true);
+  startupDiagnostics=undefined;
   return {context,page,errors,engineRequests:()=>engineRequests};
 }
 async function accessibility(page) {
@@ -121,4 +126,12 @@ try {
   await quietProfile('forced-colors',{forcedColors:'active'});
   await writeFile(`${out}/audit.json`,JSON.stringify({schemaVersion:2,evidence},null,2)+'\n');
   console.log('Homepage pass: native tensor playback, unloaded video, sticky background, research-blue dark palette, navigation, accessibility and quiet fallbacks passed.');
+} catch(error) {
+  if(startupDiagnostics) {
+    const {page,errors,failedRequests}=startupDiagnostics;
+    const state=await page.evaluate(()=>({readyState:document.readyState,url:location.href,
+      backgroundScript:document.querySelector('script[src*="homepage-background"]')?.src})).catch(()=>null);
+    await writeFile(`${out}/startup-failure.json`,JSON.stringify({state,errors,failedRequests},null,2)+'\n');
+  }
+  throw error;
 } finally {await browser.close();}

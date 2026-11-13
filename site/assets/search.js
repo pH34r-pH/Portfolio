@@ -3,6 +3,15 @@ const triggers = [...document.querySelectorAll(".search-toggle")];
 if (triggers.length) {
   let pagefindPromise;
   let sequence = 0;
+  let matches = [];
+  let displayed = 0;
+  let loading = false;
+  const pageSize = 8;
+  const isApple = /Mac|iPhone|iPad/.test(navigator.userAgentData?.platform || navigator.platform || '');
+  triggers.forEach(trigger => {
+    const shortcut = trigger.querySelector('kbd');
+    if (shortcut) shortcut.textContent = isApple ? '⌘K' : 'Ctrl+K';
+  });
 
   function createSearchDialog() {
     const dialog = document.createElement("dialog");
@@ -17,6 +26,7 @@ if (triggers.length) {
         <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="consumer, hypersphere, normalization…">
         <p class="search-status" role="status" aria-live="polite">Type at least two characters.</p>
         <ol class="search-results"></ol>
+        <button class="search-more" type="button" hidden>Load more results</button>
       </div>`;
     dialog.setAttribute("aria-labelledby", "search-title");
     document.body.append(dialog);
@@ -36,6 +46,7 @@ if (triggers.length) {
   const input = dialog.querySelector("#portfolio-search");
   const status = dialog.querySelector(".search-status");
   const results = dialog.querySelector(".search-results");
+  const more = dialog.querySelector('.search-more');
 
   function loadPagefind() {
     pagefindPromise ??= import("/pagefind/pagefind.js").then(async (pagefind) => {
@@ -43,12 +54,14 @@ if (triggers.length) {
       await pagefind.options({ baseUrl: "/", highlightParam: "highlight", ranking: { metaWeights: { image: 0 } } });
       await pagefind.init();
       return pagefind;
-    });
+    }).catch(error => { pagefindPromise = undefined; throw error; });
     return pagefindPromise;
   }
 
   function plainExcerpt(excerpt = "") {
     const doc = new DOMParser().parseFromString(excerpt, "text/html");
+    doc.querySelectorAll('script,style').forEach(node => node.remove());
+    doc.querySelectorAll('td,th,p,div,li,br').forEach(node => node.after(' '));
     return doc.body.textContent?.replace(/\s+/g, " ").trim() || "";
   }
 
@@ -60,12 +73,21 @@ if (triggers.length) {
     title.textContent = data.meta?.title || data.url;
     const excerpt = document.createElement("span");
     excerpt.textContent = plainExcerpt(data.excerpt);
-    link.append(title, excerpt);
+    const kind = document.createElement('span');
+    kind.className = 'search-result-type';
+    const path = new URL(data.url, location.href).pathname;
+    // Published route segments remain stable under a GitHub Pages project prefix.
+    kind.textContent = /\/articles\//.test(path) ? 'Article' : /\/notebooks\//.test(path) ? 'Notebook'
+      : /\/projects\//.test(path) ? 'Project' : 'Page';
+    link.append(kind, title, excerpt);
     item.append(link);
     return item;
   }
 
   async function search(term, requestId) {
+    matches = []; displayed = 0; loading = false;
+    more.hidden = true; more.disabled = false;
+    results.replaceChildren();
     if (term.length < 2) {
       results.replaceChildren();
       status.textContent = "Type at least two characters.";
@@ -77,26 +99,50 @@ if (triggers.length) {
       const response = await pagefind.search(term);
       // Pagefind 1.5 searches metadata and can return image-only matches even
       // with zero image weight. Keep body and textual metadata matches.
-      const matches = response.results.filter((result) => result.words?.length
+      if (requestId !== sequence) return;
+      matches = response.results.filter((result) => result.words?.length
         || !result.matchedMetaFields?.length
         || result.matchedMetaFields.some((field) => field !== "image"));
-      const data = await Promise.all(matches.slice(0, 8).map((result) => result.data()));
-      if (requestId !== sequence) return;
-      results.replaceChildren(...data.map(resultItem));
-      status.textContent = data.length ? `${matches.length} result${matches.length === 1 ? "" : "s"}.` : "No matching research.";
+      await loadMore(requestId);
     } catch (error) {
       if (requestId !== sequence) return;
       results.replaceChildren();
-      status.textContent = "Search is available in the published site.";
+      status.textContent = "Search could not load. Try again, or browse Research and Projects from the site menu.";
       console.warn("Portfolio search unavailable.", error);
     }
   }
+
+  async function loadMore(requestId = sequence) {
+    if (loading || requestId !== sequence) return;
+    loading = true; more.disabled = true;
+    const start = displayed;
+    status.textContent = start ? `Loading more results… ${start} of ${matches.length} shown.` : 'Loading results…';
+    try {
+      const data = await Promise.all(matches.slice(start, start + pageSize).map(result => result.data()));
+      if (requestId !== sequence) return;
+      results.append(...data.map(resultItem));
+      displayed += data.length;
+      status.textContent = matches.length ? `Showing ${displayed} of ${matches.length} results.` : 'No matching research.';
+      more.hidden = displayed >= matches.length;
+      if (start && data.length) results.children[start].querySelector('a').focus();
+    } catch (error) {
+      if (requestId !== sequence) return;
+      status.textContent = `Could not load results. Showing ${displayed} of ${matches.length}. Use Load more to retry.`;
+      more.hidden = false;
+    } finally {
+      if (requestId === sequence) { loading = false; more.disabled = false; }
+    }
+  }
+  more.addEventListener('click', () => loadMore());
 
   let timer;
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const term = input.value.trim();
     const requestId = ++sequence;
+    more.hidden = true;
+    results.replaceChildren();
+    status.textContent = term.length < 2 ? 'Type at least two characters.' : 'Searching…';
     timer = setTimeout(() => search(term, requestId), 120);
   });
 

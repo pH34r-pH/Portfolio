@@ -1,6 +1,6 @@
 import { ModelQuality } from "./model-quality.js";
 
-const THREE_BASE = "/assets/vendor/three@0.186.1/";
+const THREE_BASE = new URL("./vendor/three@0.186.1/", import.meta.url).href;
 
 export function webGLRendering(T, canvas, fallbackReasons = []) {
   const options = { alpha: true, antialias: true, powerPreference: "high-performance" };

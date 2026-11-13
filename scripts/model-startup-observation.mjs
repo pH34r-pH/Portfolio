@@ -3,6 +3,14 @@ export function resumedImportArmed() {
   return Boolean(startup&&!startup.quiet&&portfolioStartupDeadlines.length>=2);
 }
 
+export function observeQuietMedia() {
+  window.portfolioQuietMedia=['(prefers-reduced-motion:reduce)','(forced-colors:active)'].map(query=>{
+    const list=matchMedia(query),events=[];
+    list.addEventListener('change',event=>events.push({matches:event.matches,at:performance.now()}));
+    return {query,list,events};
+  });
+}
+
 export async function resumedImportObservation() {
   const root=document.querySelector('[data-model-machine]'),startup=root.modelStartup;
   window.resumedStartup=PortfolioModelStartup.start({retained:true});
