@@ -423,6 +423,14 @@ jobs:
           path: ${{ runner.temp }}/portfolio-ux-audit-summary.tsv
           if-no-files-found: warn
           retention-days: 14
+      - name: Select latest source audit screenshot on failure
+        if: ${{ failure() && steps.scope.outputs.fast_path != 'true' }}
+        shell: bash
+        run: |
+          if [ -d ux-screenshots ]; then
+            latest="$(find ux-screenshots -type f -name '*.png' -printf '%T@\t%p\n' | sort -rn | sed -n '1s/^[^[:space:]]*[[:space:]]//p')"
+            if [ -n "$latest" ]; then cp -- "$latest" "$RUNNER_TEMP/portfolio-failure-last.png"; fi
+          fi
       - name: Upload compact source failure diagnostics
         continue-on-error: true
         if: ${{ failure() && steps.scope.outputs.fast_path != 'true' }}
@@ -434,6 +442,7 @@ jobs:
             ux-screenshots/**/*.log
             ux-screenshots/**/*failure*.png
             ux-screenshots/**/*error*.png
+            ${{ runner.temp }}/portfolio-failure-last.png
           if-no-files-found: warn
           retention-days: 3
       - name: Upload detailed source audit diagnostics for manual review
