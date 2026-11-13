@@ -423,8 +423,30 @@ jobs:
           path: ${{ runner.temp }}/portfolio-ux-audit-summary.tsv
           if-no-files-found: warn
           retention-days: 14
-      - name: Upload detailed source audit diagnostics on failure or manual review
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && (failure() || (github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence)) }}
+      - name: Select latest source audit screenshot on failure
+        if: ${{ failure() && steps.scope.outputs.fast_path != 'true' }}
+        shell: bash
+        run: |
+          if [ -d ux-screenshots ]; then
+            latest="$(find ux-screenshots -type f -name '*.png' -printf '%T@\t%p\n' | sort -rn | sed -n '1s/^[^[:space:]]*[[:space:]]//p')"
+            if [ -n "$latest" ]; then cp -- "$latest" "$RUNNER_TEMP/portfolio-failure-last.png"; fi
+          fi
+      - name: Upload compact source failure diagnostics
+        continue-on-error: true
+        if: ${{ failure() && steps.scope.outputs.fast_path != 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ux-audit-failure-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ux-screenshots/**/*.json
+            ux-screenshots/**/*.log
+            ux-screenshots/**/*failure*.png
+            ux-screenshots/**/*error*.png
+            ${{ runner.temp }}/portfolio-failure-last.png
+          if-no-files-found: warn
+          retention-days: 3
+      - name: Upload detailed source audit diagnostics for manual review
+        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: ux-audit-evidence-${{ github.event.pull_request.head.sha || github.sha }}
