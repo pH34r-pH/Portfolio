@@ -17,6 +17,9 @@ html[data-theme=dark] .digital-home { --bg:#00070d; --panel:rgba(1,17,29,.78); -
 .digital-native-model canvas { display:block; width:100%; height:100%; }
 html[data-theme=dark] .digital-native-model { opacity:.90; }
 [data-background-backend=native] .digital-native-model { visibility:visible; }
+/* Preserve the metal's shadow tones on a light page and its specular highlights in both themes. */
+.digital-native-model[data-finish=studio] { mix-blend-mode:normal; opacity:1; }
+html[data-theme=dark] .digital-native-model[data-finish=studio] { opacity:1; }
 [data-background-backend=native] :is(.digital-model-loop,.digital-model-loop-poster) { visibility:hidden; }
 [data-background-motion=static] .digital-native-model { visibility:hidden; }
 [data-background-motion=static] .digital-model-loop-poster { visibility:visible; }
@@ -134,3 +137,5 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
  .digital-home .digital-visual .machine-fallback { color:CanvasText; }
  .digital-home .digital-visual .machine-fallback svg circle { fill:CanvasText; }
 }
+
+html[data-theme=light] body.digital-home .digital-pane p.eyebrow { color:var(--accent-strong); text-shadow:none; }

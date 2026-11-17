@@ -62,6 +62,7 @@ export class StudioFinish {
 
   apply(enabled) {
     const {T, materials, glass} = this.scene;
+    this.scene.root.dataset.finish = enabled ? "studio" : "native";
     const steel = glass.architecture.materials.steel;
     if (enabled) this.grain ??= brushedFinish(T);
     // The recorded node colors, replay lighting and camera remain data-driven.
