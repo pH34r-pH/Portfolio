@@ -22,8 +22,8 @@ if (triggers.length) {
           <div><p class="eyebrow">SEARCH / PUBLICATION</p><h2 id="search-title">Find the mechanism.</h2></div>
           <button type="button" class="search-close" aria-label="Close search">Close</button>
         </header>
-        <label for="portfolio-search">Search the r�sum�, projects, articles, and notebooks</label>
-        <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="consumer, hypersphere, normalization…">
+        <label for="portfolio-search">Search the résumé, projects, articles, and notebooks</label>
+        <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="résumé, scheduler, hypersphere…">
         <p class="search-status" role="status" aria-live="polite">Type at least two characters.</p>
         <ol class="search-results"></ol>
         <button class="search-more" type="button" hidden>Load more results</button>
