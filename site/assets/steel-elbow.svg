@@ -8,6 +8,6 @@
   <path d="M6 32V23A17 17 0 0 1 23 6H32" fill="none" stroke="#00111e" stroke-width="8"/>
   <path d="M6 32V23A17 17 0 0 1 23 6H32" fill="none" stroke="url(#steel)" stroke-width="6"/>
   <path d="M4.5 32V23A18.5 18.5 0 0 1 23 4.5H32" fill="none" stroke="#d7f6ff" stroke-opacity=".6" stroke-width=".65"/>
-  <path d="M2 28H10M28 2V10" fill="none" stroke="#001320" stroke-width="3"/>
-  <path d="M2 27H10M27 2V10" fill="none" stroke="#b0ccd6" stroke-width="1"/>
+  <path d="M2.8 28H9.2M28 2.8V9.2" fill="none" stroke="#001320" stroke-width="1.5"/>
+  <path d="M2.8 27.5H9.2M27.5 2.8V9.2" fill="none" stroke="#b0ccd6" stroke-width="1"/>
 </svg>

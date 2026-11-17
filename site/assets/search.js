@@ -22,8 +22,9 @@ if (triggers.length) {
           <div><p class="eyebrow">SEARCH / PUBLICATION</p><h2 id="search-title">Find the mechanism.</h2></div>
           <button type="button" class="search-close" aria-label="Close search">Close</button>
         </header>
-        <label for="portfolio-search">Articles, concepts, experiments, and notebooks</label>
-        <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="consumer, hypersphere, normalization…">
+        <label for="portfolio-search">Search the résumé, projects, articles, and notebooks</label>
+        <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="résumé, scheduler, hypersphere…">
+        <p class="resume-shortcut" hidden><a>View Tyler Harbin-Giuntoli’s résumé</a></p>
         <p class="search-status" role="status" aria-live="polite">Type at least two characters.</p>
         <ol class="search-results"></ol>
         <button class="search-more" type="button" hidden>Load more results</button>
@@ -47,6 +48,10 @@ if (triggers.length) {
   const status = dialog.querySelector(".search-status");
   const results = dialog.querySelector(".search-results");
   const more = dialog.querySelector('.search-more');
+
+  const shortcut = dialog.querySelector(".resume-shortcut");
+  const resume = document.querySelector('nav a[href$="/resume/"]');
+  if (resume) shortcut.querySelector("a").href = resume.href;
 
   function loadPagefind() {
     pagefindPromise ??= import("/pagefind/pagefind.js").then(async (pagefind) => {
@@ -122,7 +127,7 @@ if (triggers.length) {
       if (requestId !== sequence) return;
       results.append(...data.map(resultItem));
       displayed += data.length;
-      status.textContent = matches.length ? `Showing ${displayed} of ${matches.length} results.` : 'No matching research.';
+      status.textContent = matches.length ? `Showing ${displayed} of ${matches.length} results.` : 'No matching pages.';
       more.hidden = displayed >= matches.length;
       if (start && data.length) results.children[start].querySelector('a').focus();
     } catch (error) {
@@ -139,6 +144,7 @@ if (triggers.length) {
   input.addEventListener("input", () => {
     clearTimeout(timer);
     const term = input.value.trim();
+    shortcut.hidden = !resume || !/^(résumé|resume|cv|experience)$/i.test(term);
     const requestId = ++sequence;
     more.hidden = true;
     results.replaceChildren();

@@ -1,3 +1,4 @@
+import {FrameBudget} from '../site/assets/homepage-studio.js';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -74,3 +75,18 @@ for(const [name,hash] of Object.entries(engineHashes)) {
 const lock=JSON.parse(readFileSync(new URL('../package-lock.json',import.meta.url)));
 assert.equal(lock.packages['node_modules/three'].version,'0.186.1');
 console.log('Vendored engine matches the locked upstream package and license.');
+const budget = new FrameBudget();
+const frames = (count, interval) => {
+  let transitions = 0;
+  for (let i = 0; i < count; i++) if (budget.observe(interval)) transitions++;
+  return transitions;
+};
+assert.equal(frames(120, 33), 0, 'a busy device retains native quality');
+assert.equal(frames(119, 16), 0, 'promotion requires a sustained sample');
+assert.equal(frames(1, 16), 1);
+assert.equal(budget.enhanced, true);
+assert.equal(frames(240, 20), 0, 'ordinary jitter retains the studio finish');
+assert.equal(frames(240, 32), 1, 'sustained load restores native shading');
+assert.equal(budget.enhanced, false);
+assert.equal(frames(120, 16), 0, 'the next promotion waits for recovery');
+console.log('Adaptive studio promotion, hysteresis, fallback and retry delay passed.');

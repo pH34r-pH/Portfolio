@@ -5,6 +5,8 @@ import { samplePresentation } from "./model-presentation-sampling.js";
 import { EnergyArchitecture } from "./energy-architecture.js";
 import { BACKGROUND_PLAYBACK_RATE } from "./homepage-motion.js";
 
+import { StudioFinish } from "./homepage-studio.js";
+
 async function recordedRun() {
   const response = await fetch(new URL("./homepage-model-trace.json", import.meta.url));
   if (!response.ok) throw new Error("Activation recording unavailable");
@@ -65,6 +67,7 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
 class NativePlayback {
   constructor(scene, surface, run, metadata, journey) {
     this.scene = scene;
+    this.studio = new StudioFinish(scene);
     this.journey = journey;
     this.surface = surface;
     this.run = run;
@@ -91,6 +94,7 @@ class NativePlayback {
       cancelAnimationFrame(this.raf);
       this.raf = 0;
       this.last = null;
+      this.studio.budget.samples.length = 0;
     } else if (!this.raf) this.raf = requestAnimationFrame((time) => this.tick(time));
   }
   tick(time) {
@@ -99,6 +103,7 @@ class NativePlayback {
     const delta = this.last === null ? 0 : time - this.last;
     this.last = time;
     if (delta > 0) {
+      this.studio.observe(delta);
       this.intervals.push(delta);
       if (this.intervals.length > 180) this.intervals.shift();
     }
@@ -115,6 +120,7 @@ class NativePlayback {
     const sorted = [...this.intervals].sort((a, b) => a - b);
     return {
       kind: "recorded-tensors",
+      finish: this.studio.budget.enhanced ? "studio" : "native",
       trainedStateSha256: this.metadata.trainedStateSha256,
       frames: this.frames,
       time: this.elapsed,
@@ -129,6 +135,7 @@ class NativePlayback {
     this.sync(false);
     this.disposed = true;
     this.journey.removeEventListener("portfolio:reading", this.relayout);
+    this.studio.dispose();
     this.scene.dispose();
     this.surface.remove();
   }
