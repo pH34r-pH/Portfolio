@@ -22,7 +22,7 @@ if (triggers.length) {
           <div><p class="eyebrow">SEARCH / PUBLICATION</p><h2 id="search-title">Find the mechanism.</h2></div>
           <button type="button" class="search-close" aria-label="Close search">Close</button>
         </header>
-        <label for="portfolio-search">Articles, concepts, experiments, and notebooks</label>
+        <label for="portfolio-search">Search the r�sum�, projects, articles, and notebooks</label>
         <input id="portfolio-search" type="search" autocomplete="off" spellcheck="false" placeholder="consumer, hypersphere, normalization…">
         <p class="search-status" role="status" aria-live="polite">Type at least two characters.</p>
         <ol class="search-results"></ol>
@@ -88,6 +88,12 @@ if (triggers.length) {
     matches = []; displayed = 0; loading = false;
     more.hidden = true; more.disabled = false;
     results.replaceChildren();
+    const resume = document.querySelector('nav a[href$="/resume/"]');
+    if (resume && /^(résumé|resume|cv|experience)$/i.test(term.trim())) {
+      results.append(resultItem({url: resume.href, meta: {title: "Tyler Harbin-Giuntoli · Résumé"}, excerpt: "Professional experience, independent projects, and a printable résumé."}));
+      status.textContent = "1 result.";
+      return;
+    }
     if (term.length < 2) {
       results.replaceChildren();
       status.textContent = "Type at least two characters.";

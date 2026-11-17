@@ -1237,7 +1237,7 @@ section {
 
 
 /* About: production scale and a treated optical portrait. */
-.about-hero{padding:clamp(58px,8vw,100px) 0 36px}.about-hero .page-title{max-width:13ch}
+.about-hero{padding:clamp(24px,4vw,52px) clamp(12px,3vw,48px) 28px}.about-hero .page-title{max-width:22ch;font-size:clamp(2.5rem,5.2vw,5rem);margin-block:.28em}
 .portrait-optic{position:relative;flex:none;margin:0;border-radius:50%}
 .portrait-optic:before,.portrait-optic:after,.portrait-optic>span{content:"";position:absolute;z-index:2;border-radius:50%;pointer-events:none}
 .portrait-optic:before{inset:-11px;border:1px solid var(--line);background:conic-gradient(from 90deg,transparent 0 23%,var(--accent) 23% 24%,transparent 24% 48%,var(--accent) 48% 49%,transparent 49% 73%,var(--accent) 73% 74%,transparent 74%);mask:radial-gradient(circle,transparent 72%,#000 73% 76%,transparent 77%);opacity:.74}

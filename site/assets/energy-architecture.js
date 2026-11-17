@@ -11,7 +11,7 @@ export class EnergyArchitecture {
     this.texture = beamGlowTexture(T); this.materials = energyMaterials(T, this.texture);
     this.geometry = {tube: new T.CylinderGeometry(1, 1, 1, 64), glow: new T.PlaneGeometry(1, 1),
       elbow: new T.TorusGeometry(18, 3.5, 32, 64, Math.PI / 2),
-      collar: new T.CylinderGeometry(4.2, 4.2, 5, 48)};
+      collar: new T.CylinderGeometry(3.68, 3.68, 2.2, 48)};
     this.batch = {
       filament: this.instances(this.geometry.tube, this.materials.filament, 12),
       core: this.instances(this.geometry.tube, this.materials.core, 12),
