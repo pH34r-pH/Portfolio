@@ -50,6 +50,23 @@ function brushedFinish(T) {
   return map;
 }
 
+function studioRim(scene) {
+  const light = new scene.T.DirectionalLight(0xffd4a3, 1.7);
+  light.position.set(-10, 8, -9);
+  light.castShadow = true;
+  const shadow = light.shadow;
+  const size = Math.min(2048, scene.quality.limits.maxTargetDimension);
+  shadow.mapSize.set(size, size);
+  Object.assign(shadow.camera, {left: -9, right: 9, top: 7, bottom: -7, near: .5, far: 38});
+  shadow.camera.updateProjectionMatrix();
+  shadow.normalBias = .018;
+  // Only the fixed housing casts shadows. The recorded signal can move every
+  // frame without rendering any of its 1,668 nodes into a shadow map.
+  shadow.autoUpdate = false;
+  shadow.needsUpdate = true;
+  return light;
+}
+
 export class StudioFinish {
   constructor(scene) {
     this.scene = scene;
@@ -76,12 +93,18 @@ export class StudioFinish {
     materials.node.dispersion = enabled ? .22 : 0;
     materials.glazing.clearcoat = enabled ? .85 : 0;
     materials.glazing.clearcoatRoughness = enabled ? .045 : 0;
+    this.scene.renderer.shadowMap.enabled = enabled;
+    this.scene.housing.group.traverse(object => {
+      if (!object.isMesh || object.material === materials.glazing) return;
+      object.castShadow = object.receiveShadow = enabled;
+    });
     if (enabled) {
-      this.rim ??= new T.DirectionalLight(0xffd4a3, 1.7);
-      this.rim.position.set(-5, 2, -4);
+      this.rim ??= studioRim(this.scene);
       this.scene.scene.add(this.rim);
     } else {
       this.rim?.removeFromParent();
+      this.rim?.dispose();
+      this.rim = null;
     }
   }
 
