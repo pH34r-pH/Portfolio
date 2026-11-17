@@ -109,7 +109,7 @@ async function auditSearchPaging(browser) {
     await expect(page.locator('.search-results li')).toHaveCount(2);
     await expect(page.locator('.search-results strong')).toHaveText(['short same title', 'short same title']);
     await input.fill('empty');
-    await expect(page.locator('.search-status')).toHaveText('No matching research.');
+    await expect(page.locator('.search-status')).toHaveText('No matching pages.');
     await input.fill('failure');
     await expect(page.locator('.search-status')).toContainText('Search could not load.');
     await expect(page.locator('.search-more')).toBeHidden();
@@ -132,7 +132,7 @@ async function auditSearchDialog(page, hasPagefind, manifest) {
       await input.fill("");
       await expect(page.locator(".search-status")).toHaveText("Type at least two characters.");
       await input.fill(query);
-      await expect(page.locator(".search-status")).toHaveText("No matching research.", { timeout: 10000 });
+      await expect(page.locator(".search-status")).toHaveText("No matching pages.", { timeout: 10000 });
       await expect(results.locator("li")).toHaveCount(0);
     }
     await input.fill("");
