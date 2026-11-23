@@ -137,11 +137,6 @@ jobs:
       - name: Install homepage media renderer
         if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: |
-          # This GitHub-hosted image's us-east-2 mirror can stall during index
-          # fetches. Use its existing official fallback on the disposable runner.
-          if [ -f /etc/apt/apt-mirrors.txt ] && grep -Fq 'http://us-east-2.ec2.archive.ubuntu.com/ubuntu' /etc/apt/apt-mirrors.txt; then
-            printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
-          fi
           sudo apt-get update
           sudo apt-get install -y ffmpeg
       - name: Install Chromium
