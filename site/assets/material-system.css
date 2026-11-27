@@ -317,3 +317,11 @@ html body.digital-home .digital-pane::after {
     color:var(--ink); background:var(--material-glass-controls); border-color:var(--line);
   }
 }
+/* Physical stage: the lit slab supplies edges, thickness and shadow; the native
+   pane keeps an opaque-enough scrim so its text contrast never depends on WebGL. */
+html body.digital-home [data-physical-stage=active] .digital-pane {
+  background:linear-gradient(127deg,rgba(214,242,255,.06),transparent 36%),rgba(3,10,18,.6);
+  box-shadow:none; border-color:transparent; will-change:transform;
+}
+html body.digital-home [data-physical-stage=active] .digital-pane::before,
+html body.digital-home [data-physical-stage=active] .digital-pane::after { display:none; }

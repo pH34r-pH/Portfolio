@@ -3,6 +3,7 @@ import { MachineScene } from "./model-scene.js";
 import { createInferenceRun, sampleReplay } from "./model-topology.js";
 import { samplePresentation } from "./model-presentation-sampling.js";
 import { EnergyArchitecture } from "./energy-architecture.js";
+import { PhysicalStage } from "./physical-stage.js";
 import { BACKGROUND_PLAYBACK_RATE } from "./homepage-motion.js";
 
 async function recordedRun() {
@@ -22,6 +23,11 @@ async function recordedRun() {
     return { ...item, values: Array.from(tensor) };
   });
   return { run, metadata };
+}
+
+// Opt out with ?stage=off; the static document and poster paths never build a stage.
+function physicalStageEnabled() {
+  return new URLSearchParams(location.search).get("stage") !== "off";
 }
 
 export async function createNativeBackground(journey, fail, {current=()=>true}={}) {
@@ -49,6 +55,10 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
       { rendering },
     );
     scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
+    if (physicalStageEnabled()) {
+      scene.glass.stage = new PhysicalStage(rendering.T, scene, journey, {lightweight: scene.quality.lightweight});
+      scene.glass.architecture.paneFrames = false;
+    }
     scene.render(true);
     await scene.renderer.compileAsync(scene.scene, scene.camera);
     retain();
