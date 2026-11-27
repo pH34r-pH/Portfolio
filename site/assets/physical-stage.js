@@ -5,7 +5,9 @@
 // the words are always the real, selectable, accessible text.
 import {studioEnvironment} from './physical-studio.js';
 
-const PANE_DISTANCE = 12, STIFFNESS = 86, DAMPING = 14.5, REST = 1e-3;
+// Springs integrate real elapsed time in fixed substeps, so settling takes the same
+// wall-clock time at 4 fps (software GL) as at 120 fps.
+const PANE_DISTANCE = 12, STIFFNESS = 86, DAMPING = 14.5, REST = 1e-3, SUBSTEP = 1 / 120, MAX_FRAME = .25;
 const CAMERA_PATH = [[0, 0], [-.13, .035], [.12, -.02], [-.05, .045], [0, .02]];
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -189,7 +191,7 @@ export class PhysicalStage {
     const distance = (center - innerHeight / 2) / innerHeight, side = rect.left + rect.width / 2 < innerWidth / 2 ? 1 : -1;
     const target = poseTargets(distance, side, this.frozen(pane)), state = pane.state;
     let error = 0;
-    for (let t = 0; t < dt; t += 1 / 120) for (const key of Object.keys(target)) error = Math.max(error, spring(state, key, target[key], Math.min(1 / 120, dt - t)));
+    for (let t = 0; t < dt; t += SUBSTEP) for (const key of Object.keys(target)) error = Math.max(error, spring(state, key, target[key], Math.min(SUBSTEP, dt - t)));
     const settled = error < REST && Object.values(target).every(value => value === 0);
     if (settled) for (const key of Object.keys(target)) { state[key] = 0; state[`v${key}`] = 0; }
     const object = this.ensureObject(pane, unit), size = {width: rect.width * unit, height: rect.height * unit};
@@ -202,13 +204,17 @@ export class PhysicalStage {
     if (this.phone) return true;
     const index = Math.max(0, this.panes.findIndex(pane => pane.chapter.id === this.journey.dataset.chapter));
     const [yaw, pitch] = CAMERA_PATH[Math.min(index, CAMERA_PATH.length - 1)], state = this.cameraState;
-    const error = Math.max(spring(state, 'yaw', yaw, Math.min(dt, .05)), spring(state, 'pitch', pitch, Math.min(dt, .05)));
+    let error = 0;
+    for (let t = 0; t < dt; t += SUBSTEP) {
+      const step = Math.min(SUBSTEP, dt - t);
+      error = Math.max(spring(state, 'yaw', yaw, step), spring(state, 'pitch', pitch, step));
+    }
     this.machine.yaw = this.base.yaw + state.yaw; this.machine.pitch = this.base.pitch + state.pitch; this.machine.updateCamera();
     return error < REST;
   }
   sync(camera) {
     if (this.disposed) return;
-    const now = performance.now(), dt = this.last ? Math.min(.05, (now - this.last) / 1000) : 0;
+    const now = performance.now(), dt = this.last ? Math.min(MAX_FRAME, (now - this.last) / 1000) : 0;
     this.last = now; if (!this.measured) this.measure();
     let settled = this.steerCamera(dt);
     camera.updateMatrixWorld(); this.forward.copy(camera.getWorldDirection(this.vector));
