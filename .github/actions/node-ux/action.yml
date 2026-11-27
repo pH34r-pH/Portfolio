@@ -1,0 +1,35 @@
+name: Portfolio Node UX toolchain
+description: Node 22 with the locked npm tree and, optionally, a cached Playwright Chromium.
+
+inputs:
+  directory:
+    description: Directory holding package.json and package-lock.json.
+    default: '.'
+  browser:
+    description: Install Playwright Chromium and its system libraries.
+    default: 'true'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: npm
+        cache-dependency-path: ${{ inputs.directory == '.' && 'package-lock.json' || format('{0}/package-lock.json', inputs.directory) }}
+    - name: Install locked audit tooling
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      run: npm ci
+    # The browser build is fixed by the locked Playwright release, so the lockfile is the key.
+    - name: Restore Playwright browsers
+      if: ${{ inputs.browser == 'true' }}
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: playwright-${{ runner.os }}-${{ hashFiles(inputs.directory == '.' && 'package-lock.json' || format('{0}/package-lock.json', inputs.directory)) }}
+    - name: Install Chromium
+      if: ${{ inputs.browser == 'true' }}
+      shell: bash
+      working-directory: ${{ inputs.directory }}
+      run: npx playwright install --with-deps chromium
