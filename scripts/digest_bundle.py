@@ -13,7 +13,9 @@ def digest_tree(root: Path) -> str:
         raise ValueError("Publication root must be a real directory")
     digest = hashlib.sha256(b"fleet-bundle-v1\0")
     count = 0
-    for path in sorted(root.rglob("*")):
+    # Retain the producer's POSIX component order on every host. WindowsPath
+    # comparisons otherwise fold case and can change a verified tree's identity.
+    for path in sorted(root.rglob("*"), key=lambda path: path.relative_to(root).parts):
         if path.is_symlink():
             raise ValueError(f"Publication cannot contain a symlink: {path}")
         if path.is_dir():
