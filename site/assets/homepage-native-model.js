@@ -26,8 +26,12 @@ async function recordedRun() {
 }
 
 // Opt out with ?stage=off; the static document and poster paths never build a stage.
-function physicalStageEnabled() {
-  return new URLSearchParams(location.search).get("stage") !== "off";
+// Shadows and transmission glass are not worth building on CPU rasterizers (SwiftShader,
+// llvmpipe): frames take seconds and the plain panes read better. ?stage=on forces it.
+const SOFTWARE_DRIVER = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+function physicalStageEnabled(driver) {
+  const flag = new URLSearchParams(location.search).get("stage");
+  return flag === "on" || (flag !== "off" && !SOFTWARE_DRIVER.test(driver || ""));
 }
 
 export async function createNativeBackground(journey, fail, {current=()=>true}={}) {
@@ -55,7 +59,7 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
       { rendering },
     );
     scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
-    if (physicalStageEnabled()) {
+    if (physicalStageEnabled(scene.quality.driver)) {
       scene.glass.stage = new PhysicalStage(rendering.T, scene, journey, {lightweight: scene.quality.lightweight, onSlow: () => {
         scene.glass.stage = null; scene.glass.architecture.paneFrames = true;
       }});
