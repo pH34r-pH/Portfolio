@@ -7,7 +7,10 @@ import {studioEnvironment} from './physical-studio.js';
 
 // Springs integrate real elapsed time in fixed substeps, so settling takes the same
 // wall-clock time at 4 fps (software GL) as at 120 fps.
-const PANE_DISTANCE = 12, STIFFNESS = 86, DAMPING = 14.5, REST = 1e-3, SUBSTEP = 1 / 120, MAX_FRAME = .25;
+const PANE_DISTANCE = 12, STIFFNESS = 86, DAMPING = 14.5, REST = 1e-3, SUBSTEP = 1 / 120, MAX_FRAME = .25, SNAP_FRAME = .12, SLOW_FRAME = .2, STALLED_FRAME = 1, SLOW_LIMIT = 3;
+// Below ~8 fps animation reads as stutter and keeps text moving under the pointer, so the
+// stage jumps straight to each target pose. Sustained slow frames (software GL, weak GPUs)
+// mean shadows and transmission cost too much: the stage withdraws and the plain panes remain.
 const CAMERA_PATH = [[0, 0], [-.13, .035], [.12, -.02], [-.05, .045], [0, .02]];
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
@@ -83,8 +86,8 @@ export function quadMatrix(width, height, quad) {
 }
 
 export class PhysicalStage {
-  constructor(T, machine, journey, {lightweight = false} = {}) {
-    Object.assign(this, {T, machine, journey, lightweight});
+  constructor(T, machine, journey, {lightweight = false, onSlow = () => {}} = {}) {
+    Object.assign(this, {T, machine, journey, lightweight, onSlow});
     this.phoneQuery = matchMedia('(max-width:720px)');
     this.scene = machine.scene; this.group = new T.Group(); this.scene.add(this.group);
     this.materials = stageMaterials(T, lightweight);
@@ -102,6 +105,7 @@ export class PhysicalStage {
   }
   buildStudio() {
     const T = this.T, renderer = this.machine.renderer;
+    this.previous = {environment: this.scene.environment, fog: this.scene.fog, shadows: renderer.shadowMap.enabled};
     this.environment = studioEnvironment(T, renderer); this.scene.environment = this.environment.texture;
     this.scene.fog = new T.Fog(0x02080e, 30, 62);
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = this.machine.backend === 'webgpu' ? T.PCFShadowMap : T.PCFSoftShadowMap;
@@ -191,7 +195,8 @@ export class PhysicalStage {
     const distance = (center - innerHeight / 2) / innerHeight, side = rect.left + rect.width / 2 < innerWidth / 2 ? 1 : -1;
     const target = poseTargets(distance, side, this.frozen(pane)), state = pane.state;
     let error = 0;
-    for (let t = 0; t < dt; t += SUBSTEP) for (const key of Object.keys(target)) error = Math.max(error, spring(state, key, target[key], Math.min(SUBSTEP, dt - t)));
+    if (this.snap) for (const key of Object.keys(target)) { state[key] = target[key]; state[`v${key}`] = 0; }
+    else for (let t = 0; t < dt; t += SUBSTEP) for (const key of Object.keys(target)) error = Math.max(error, spring(state, key, target[key], Math.min(SUBSTEP, dt - t)));
     const settled = error < REST && Object.values(target).every(value => value === 0);
     if (settled) for (const key of Object.keys(target)) { state[key] = 0; state[`v${key}`] = 0; }
     const object = this.ensureObject(pane, unit), size = {width: rect.width * unit, height: rect.height * unit};
@@ -205,6 +210,7 @@ export class PhysicalStage {
     const index = Math.max(0, this.panes.findIndex(pane => pane.chapter.id === this.journey.dataset.chapter));
     const [yaw, pitch] = CAMERA_PATH[Math.min(index, CAMERA_PATH.length - 1)], state = this.cameraState;
     let error = 0;
+    if (this.snap) { Object.assign(state, {yaw, pitch, vyaw: 0, vpitch: 0}); dt = 0; }
     for (let t = 0; t < dt; t += SUBSTEP) {
       const step = Math.min(SUBSTEP, dt - t);
       error = Math.max(spring(state, 'yaw', yaw, step), spring(state, 'pitch', pitch, step));
@@ -215,15 +221,31 @@ export class PhysicalStage {
   sync(camera) {
     if (this.disposed) return;
     const now = performance.now(), dt = this.last ? Math.min(MAX_FRAME, (now - this.last) / 1000) : 0;
-    this.last = now; if (!this.measured) this.measure();
+    this.snap = dt > SNAP_FRAME; this.last = now;
+    this.probe(); if (!this.measured) this.measure();
     let settled = this.steerCamera(dt);
     camera.updateMatrixWorld(); this.forward.copy(camera.getWorldDirection(this.vector));
     const canvas = this.machine.canvas.getBoundingClientRect();
     if (!canvas.width || !canvas.height) return;
     const unit = 2 * PANE_DISTANCE * Math.tan(camera.fov * Math.PI / 360) / canvas.height;
     for (const pane of this.panes) settled = this.stepPane(pane, camera, canvas, unit, dt) && settled;
-    if (!settled) this.kick();
+    if (settled) this.last = 0; // after an idle gap the first frame must not read as a slow one
+    else this.kick();
   }
+  // Watch the frame cadence for a few frames after each sync; idle pages cost nothing.
+  probe() {
+    if (this.probing || this.disposed) return;
+    this.probing = true; let frames = 0, previous = performance.now(), strikes = 0;
+    const tick = now => {
+      const gap = (now - previous) / 1000; previous = now;
+      strikes = gap > SLOW_FRAME ? strikes + (gap > STALLED_FRAME ? 2 : 1) : 0;
+      if (this.disposed || ++frames >= 8) { this.probing = false; return; }
+      if (strikes >= SLOW_LIMIT) { this.probing = false; this.withdraw(); return; }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  withdraw() { this.dispose(); this.onSlow(); dispatchEvent(new Event('scroll')); }
   // Keep springs moving while background playback is paused.
   kick() {
     if (this.disposed || this.raf) return;
@@ -242,6 +264,8 @@ export class PhysicalStage {
     this.disposed = true; cancelAnimationFrame(this.raf); removeEventListener('scroll', this.onScroll); this.resizeObserver.disconnect();
     for (const pane of this.panes) { this.disposeObject(pane); pane.node.style.transform = ''; pane.node.style.transformOrigin = ''; }
     this.scene.remove(this.group); this.floor.geometry.dispose(); this.materials.floor.alphaMap.dispose(); Object.values(this.materials).forEach(material => material.dispose());
-    this.environment.dispose(); this.scene.fog = null; delete this.journey.dataset.physicalStage;
+    this.environment.dispose(); this.scene.environment = this.previous.environment; this.scene.fog = this.previous.fog;
+    this.machine.renderer.shadowMap.enabled = this.previous.shadows; delete this.journey.dataset.physicalStage;
+    this.machine.yaw = this.base.yaw; this.machine.pitch = this.base.pitch; this.machine.updateCamera();
   }
 }

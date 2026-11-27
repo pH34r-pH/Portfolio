@@ -56,7 +56,9 @@ export async function createNativeBackground(journey, fail, {current=()=>true}={
     );
     scene.glass.architecture = new EnergyArchitecture(rendering.T, scene.scene, journey, surface);
     if (physicalStageEnabled()) {
-      scene.glass.stage = new PhysicalStage(rendering.T, scene, journey, {lightweight: scene.quality.lightweight});
+      scene.glass.stage = new PhysicalStage(rendering.T, scene, journey, {lightweight: scene.quality.lightweight, onSlow: () => {
+        scene.glass.stage = null; scene.glass.architecture.paneFrames = true;
+      }});
       scene.glass.architecture.paneFrames = false;
     }
     scene.render(true);
