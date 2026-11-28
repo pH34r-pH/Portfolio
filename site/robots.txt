@@ -24,3 +24,5 @@ Allow: /
 Allow: /llms.txt
 Allow: /card
 Allow: /card.md
+
+Sitemap: https://tyharbin.com/sitemap.xml

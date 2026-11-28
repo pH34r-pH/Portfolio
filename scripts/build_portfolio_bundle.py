@@ -23,6 +23,54 @@ from bs4 import BeautifulSoup
 
 AUTHOR_NAME = "Tyler James Harbin-Giuntoli"
 AUTHOR_ORCID = "https://orcid.org/0009-0006-9153-2759"
+SITE_ORIGIN = "https://tyharbin.com"
+SOCIAL_IMAGE_URL = f"{SITE_ORIGIN}/assets/images/tyler-harbin-giuntoli.jpg"
+STATIC_SITEMAP_ROUTES = (
+    "/",
+    "/about/",
+    "/projects/",
+    "/projects/experiment-compiler/",
+    "/projects/long-haul/",
+    "/research/",
+    "/resume/",
+    "/atlas/",
+)
+
+
+def _social_meta_tags(title: str, description: str, canonical_url: str, og_type: str) -> str:
+    esc_title = html.escape(title, quote=True)
+    esc_desc = html.escape(description, quote=True)
+    esc_url = html.escape(canonical_url, quote=True)
+    esc_img = html.escape(SOCIAL_IMAGE_URL, quote=True)
+    return (
+        f'<meta property="og:type" content="{og_type}">'
+        '<meta property="og:site_name" content="Tyler J.H.G.">'
+        f'<meta property="og:title" content="{esc_title}">'
+        f'<meta property="og:description" content="{esc_desc}">'
+        f'<meta property="og:url" content="{esc_url}">'
+        f'<meta property="og:image" content="{esc_img}">'
+        '<meta name="twitter:card" content="summary">'
+    )
+
+
+def write_sitemap(output: Path, articles: list[dict], notebooks: list[dict]) -> None:
+    entries = []
+    for route in STATIC_SITEMAP_ROUTES:
+        entries.append(f"  <url><loc>{SITE_ORIGIN}{route}</loc></url>")
+    for article in sorted(articles, key=lambda item: item["sequence"]):
+        loc = html.escape(SITE_ORIGIN + article["url"])
+        lastmod = f"<lastmod>{html.escape(article['date'])}</lastmod>" if article.get("date") else ""
+        entries.append(f"  <url><loc>{loc}</loc>{lastmod}</url>")
+    for notebook in sorted(notebooks, key=lambda item: (item.get("sequence", 0), item["slug"])):
+        loc = html.escape(f"{SITE_ORIGIN}/notebooks/{quote(notebook['slug'])}/")
+        entries.append(f"  <url><loc>{loc}</loc></url>")
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(entries)
+        + "\n</urlset>\n"
+    )
+    (output / "sitemap.xml").write_text(xml, encoding="utf-8")
 
 
 def _strip_reader_structure(document, src: Path) -> str:
@@ -679,7 +727,9 @@ def publish_article(src: Path, navigation, args: argparse.Namespace,
                                    args.compiler_projection_data,
                                    canonical_url, args.research_notes_sha)
         handoff = render_handoff(record)
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(metadata['title'])} — Tyler J.H.G.</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
+    page_title = f"{metadata['title']} — Tyler J.H.G."
+    social_tags = _social_meta_tags(page_title, metadata["description"], canonical_url, "article")
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(metadata['description'], quote=True)}"><meta name="author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author" content="{html.escape(AUTHOR_NAME, quote=True)}"><meta name="citation_author_orcid" content="{html.escape(AUTHOR_ORCID, quote=True)}"><link rel="author" href="{html.escape(AUTHOR_ORCID, quote=True)}"><title>{html.escape(page_title)}</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{social_tags}{math_style}<link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/model-machine.css" data-machine-style><link rel="stylesheet" href="/assets/model-glass.css"><link rel="stylesheet" href="/assets/article-model-sticky.css"></head><body><a class="skip-link" href="#article-main">Skip to article</a>{navigation}<main id="article-main" data-pagefind-body data-pagefind-weight="3" tabindex="-1" class="notebook-reader"><p class="eyebrow">RESEARCH ARTICLE · PUBLISHED {html.escape(metadata['date'])}</p><article class="notebook-content myst-reader article-sticky-reader">{str(article)}</article>{handoff}{source_links}</main><script src="/assets/search.js"></script><script src="/assets/site.js"></script><script type="module" src="/assets/article-model-loader.js"></script><script type="module" src="/assets/article-model-context.js"></script>{'<script src="/assets/article-runtime.js"></script>' if has_executable else ''}</body></html>'''
     (reader / "index.html").write_text(page, encoding="utf-8")
     rendered_article = reader / "index.html"
     entry = {
@@ -893,7 +943,11 @@ def publish_notebook(src: Path, publication: Path, reader_root: Path, navigation
     )
     role_note = ("Preserved historical account with an illustrative browser example. The example is not a reproduction of the research experiment."
                  if metadata.get("exampleKind") == "illustrative" else "Preserved historical notebook. Saved outputs belong to this source snapshot; running it is not independent reproduction.")
-    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{html.escape(title)} — Tyler J.H.G.</title><link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" data-pagefind-body tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>{role_note}</p><div class="actions"><a href="/lab/lab/?path=notebooks%2F{quote(src.name)}">{lab_label}</a><a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a></div>
+    canonical_url = f"{SITE_ORIGIN}/notebooks/{quote(slug)}/"
+    page_title = f"{title} — Tyler J.H.G."
+    description = metadata.get("question") or f"{title}. {role_note}"
+    social_tags = _social_meta_tags(page_title, description, canonical_url, "article")
+    page = f'''<!doctype html><html lang="en"><head><link rel="icon" href="/favicon.svg" type="image/svg+xml"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="{html.escape(description, quote=True)}"><title>{html.escape(page_title)}</title><link rel="canonical" href="{html.escape(canonical_url, quote=True)}">{social_tags}<link rel="stylesheet" href="/assets/site.css"></head><body><a class="skip-link" href="#notebook-main">Skip to notebook</a>{navigation}<main id="notebook-main" data-pagefind-body data-pagefind-weight="1" tabindex="-1" class="notebook-reader"><a class="back" href="/research/">← Research index</a><header><p class="eyebrow">RESEARCH NOTEBOOK</p><h1>{html.escape(title)}</h1><p>{role_note}</p><div class="actions"><a href="/lab/lab/?path=notebooks%2F{quote(src.name)}">{lab_label}</a><a href="/publication/notebooks/{quote(src.name)}" download>Download preserved notebook</a></div>
 <details class="notebook-run-guide"><summary>First time running a notebook?</summary><ol><li>Open Lab. If asked for a kernel, choose <strong>Python (Pyodide)</strong>, then wait for it to finish starting.</li><li>Find the illustrative example’s code cell, select it, and press <strong>Shift+Enter</strong> to run it. A busy indicator means it is still working.</li><li>Edit the example and run it again. Your session output is separate from the historical result and saved source output.</li><li>Use <strong>Return to notebook</strong> in Lab’s top bar to resume reading.</li></ol><p>Python runs in your browser after the runtime loads. Saved edits use this browser’s site storage (usually IndexedDB), not this repository, and may replace the local copy on your next visit. Clearing site data, private browsing, or storage limits can remove that copy. Download any work you want to keep. See <a href="https://jupyterlite.readthedocs.io/en/stable/quickstart/using.html">JupyterLite’s storage guide</a>.</p><p>If the kernel cannot start or a package is unavailable, return here for the readable notebook and preserved download. Execution is optional.</p></details>
 <aside aria-label="Notebook evidence and reproduction"><details><summary>Evidence boundaries and exact provenance</summary><p>{html.escape(evidence_note)}</p><p><a href="{html.escape(source_url, quote=True)}">Exact source revision</a> · <a href="https://experiments.tyharbin.com/">Authoritative experiment catalog</a></p><p>Notebook SHA-256: <code style="overflow-wrap:anywhere">{sha256(dst)}</code></p></details></aside></header><article class="notebook-content">{rendered}</article><p><a class="back" href="/research/">← Research index</a></p></main><script src="/assets/search.js"></script><script src="/assets/site.js"></script></body></html>'''
 
@@ -999,6 +1053,7 @@ def write_publication_metadata(args: argparse.Namespace, notebooks: list[dict], 
     if args.compiler_projection_receipt is not None:
         manifest["compilerProjection"] = args.compiler_projection_receipt
     write_research_catalog(args.output, notebooks, articles)
+    write_sitemap(args.output, articles, notebooks)
     (args.output / "publication.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )

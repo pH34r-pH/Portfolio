@@ -170,9 +170,19 @@ class ReaderPublicationTest(unittest.TestCase):
             self.assertIn(value,text)
         self.assertEqual(page.select_one('a[download]')['href'],
                          'https://experiments.tyharbin.com/packages/' + record['package']['sha256'] + '.zip')
+        self.assertIsNotNone(page.select_one('a[href^="https://github.com/pH34r-pH/experiment-compiler/tree/"]'))
         self.assertTrue(page.select_one('details > summary'))
         self.assertEqual(page.pre['tabindex'],'0')
         self.assertNotIn('0%',text)
+
+    def test_worklog_omits_public_github_link_for_private_source_repository(self):
+        record = self._worklog_record()
+        record['source'] = {'repository': 'pH34r-pH/domain-scaling-lab', 'commit': 'a' * 40}
+        page = BeautifulSoup(render_handoff(record), 'html.parser')
+        self.assertIsNone(page.select_one('a[href*="domain-scaling-lab"]'))
+        text = page.get_text(' ', strip=True)
+        self.assertIn('Scientific source repository is private', text)
+        self.assertIn('pH34r-pH/domain-scaling-lab@' + 'a' * 40, text)
 
     def test_worklog_missing_plan_and_failed_attempts_do_not_become_success(self):
         fixture = json.loads((Path(__file__).parent/'fixtures/article-reference-v1.json').read_text())
@@ -487,6 +497,20 @@ class ReaderPublicationTest(unittest.TestCase):
                              'https://orcid.org/0009-0006-9153-2759')
             self.assertEqual(article_document.select_one('link[rel="canonical"]')['href'],
                              'https://tyharbin.com/articles/sample-article/')
+            self.assertEqual(article_document.select_one('meta[property="og:type"]')['content'], 'article')
+            self.assertEqual(article_document.select_one('meta[property="og:url"]')['content'],
+                             'https://tyharbin.com/articles/sample-article/')
+            self.assertEqual(article_document.select_one('main')['data-pagefind-weight'], '3')
+            notebook_document = BeautifulSoup((bundle/'notebooks/001_reader/index.html').read_text(), 'html.parser')
+            self.assertEqual(notebook_document.select_one('link[rel="canonical"]')['href'],
+                             'https://tyharbin.com/notebooks/001_reader/')
+            self.assertTrue(notebook_document.select_one('meta[name="description"]')['content'])
+            self.assertEqual(notebook_document.select_one('meta[property="og:url"]')['content'],
+                             'https://tyharbin.com/notebooks/001_reader/')
+            sitemap = (bundle/'sitemap.xml').read_text(encoding='utf-8')
+            self.assertIn('https://tyharbin.com/articles/sample-article/', sitemap)
+            self.assertIn('https://tyharbin.com/notebooks/001_reader/', sitemap)
+            self.assertIn('https://tyharbin.com/resume/', sitemap)
             self.assertIn('<h1 id="sample-article">Sample article</h1>', article_page)
             self.assertIn('href="/notebooks/001_reader/"', article_page)
             self.assertIn('href="/articles/sample-article-second/"', article_page)
