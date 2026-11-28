@@ -71,9 +71,9 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
 .digital-home .selected-impact li + li { margin-top:6px; }
 .digital-home .professional-scope { margin:6px 0 0; }
 .digital-home .actions { margin-top:14px; }
-.digital-home .actions a { font-size:11px; line-height:1.4; min-height:44px; padding:9px 13px; }
+.digital-home .actions a { font-size:11px; line-height:1.4; min-height:48px; padding:10px 13px; }
 .digital-home .actions .primary { background:var(--accent-strong); color:var(--bg); border-color:var(--accent-strong); }
-.digital-next { display:inline-flex; gap:20px; align-items:center; min-height:44px; margin-top:12px; color:var(--muted); text-decoration:none; font-size:13px; }
+.digital-next { display:inline-flex; gap:20px; align-items:center; min-height:48px; margin-top:12px; color:var(--muted); text-decoration:none; font-size:13px; }
 .digital-next span { color:var(--accent-strong); }
 .digital-home .machine-heading { display:block; margin:0; padding:0; border:0; }
 .digital-home .machine-heading h2,.digital-pane>h2,.digital-home .program-preview h2,.digital-contact h2 { font-family:"Portfolio Long Measure","Arial Narrow",sans-serif; font-size:clamp(44px,4.8vw,64px); line-height:1; font-weight:400; letter-spacing:-.025em; margin:12px 0 22px; }
@@ -99,7 +99,7 @@ html[data-theme=dark] .machine-poster { background-image:url('/assets/model-post
 .digital-home .digital-pane .program-grid article::before,.digital-home .digital-pane .program-grid article::after { display:none; }
 .digital-home .program-grid h3 { font-size:32px; }
 .digital-home .program-grid p { color:var(--ink); font-size:16px; }
-.digital-home .program-grid a { font-size:11px; display:inline-flex; min-height:44px; align-items:center; }
+.digital-home .program-grid a { font-size:11px; display:inline-flex; min-height:48px; align-items:center; }
 .digital-contact { position:relative; padding:70px 0 20px; width:min(760px,calc(100% - 40px)); margin-inline:auto; scroll-margin-top:80px; background:var(--bg); }
 .digital-contact p { color:var(--ink); }
 .digital-home footer { position:relative; width:min(1180px,calc(100% - 40px)); margin-inline:auto; color:var(--ink); background:var(--bg); }
