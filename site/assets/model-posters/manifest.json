@@ -5,8 +5,8 @@
     "method": "WebGL2 canvas native drawing-buffer PNG; one browser context per density; no resize/upscale/transcode before source capture",
     "browser": "Headless Chromium / local software-WebGL observation",
     "sourceBase": "http://127.0.0.1:4173",
-    "sourceCommit": "b18402d43a5559fee233a11471fec9f43caa3793",
-    "sourceTreeSha256": "fcbc70349c40273ef4b3f0c5c0abe9bacf64869cd8746b382ef29bc553418330",
+    "sourceCommit": "a918283fceb76b917eb0e02a9cc1a81be119a3d5",
+    "sourceTreeSha256": "f82efb549ac958ea899ee8d0f1650b56ea338862831d489739943824e41772fb",
     "sourceWorkingTreeClean": true,
     "densityVariants": [
       1,
@@ -50,7 +50,7 @@
       "vendor/three@0.186.1/three.core.js": "9edde002b066a9a05676a6127f67735b62baf399bdea529f2f7e31657da769e6"
     },
     "pipelineHashes": {
-      "scripts/capture-model-posters.mjs": "10ebbab2ba4ce580e9ec9a2a428a2b040ef0670907609d5cd8eb16be4305b5de",
+      "scripts/capture-model-posters.mjs": "77a10bb8192f20633bd024da8ff52b1ba614a081e8ce2d7c1620c5e985a7901c",
       "scripts/model-pixel-fidelity.mjs": "014e2c7baa3a713a81e8d44d42daef819ae29834957a74be13ea3ff400593f32",
       "scripts/model-pixel-fidelity-worker.mjs": "1d4c7b5302c41a5217df131ac4c475cd32f2c9bcbea8fef89d04a239a5721270",
       "scripts/test-model-pixel-fidelity.mjs": "31f857cf43f965a066bb2b72067399f61c7f298414d79a76accfe02b0b5b1c68",
@@ -60,7 +60,6 @@
       "scripts/model-startup-audit.mjs": "cf28b66fa82489673a8c55191451d0d4c3bca12d5786786c4312fa513eb574af",
       "scripts/model-startup-observation.mjs": "2d9afce22b968db17a67dc6122c9a0b6bdf140f441183441c80cc2a67d123ec0",
       "scripts/prepare-model-visual-evidence.mjs": "9675d5b3bd0fe81d3d6b23f49ba702d1b9601aadae25fc6bd374812e027fb1a7",
-      ".github/workflows/ux-quality.yml": "8c8b6ed506f0fbf9f50823cf5bcde2e96049edd623235007e367a05b87948528",
       "package.json": "5130a475509b9566ca9a80750880097fcd273254c4060210ef66ad1f6cd5f37a",
       "package-lock.json": "079df1e1ab5142a4efcd68013f1c9781b6ab66532153be41d7e62e86318cdd4d"
     }

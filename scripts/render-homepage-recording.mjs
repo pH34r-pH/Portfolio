@@ -10,6 +10,7 @@ import {chromium} from '@playwright/test';
 import sharp from 'sharp';
 import {GRAPH,TOPOLOGY} from '../site/assets/model-topology.js';
 import {recordHomepageRun} from './homepage-recorded-run.mjs';
+import {homepageMediaInputs} from './homepage-media-inputs.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..'),site=join(root,'site'),assets=join(site,'assets');
 const work=join(tmpdir(),'portfolio-homepage-recording'),width=1920,height=1920,fps=30,duration=8.4,loopStart=1.8;
@@ -24,13 +25,14 @@ html,body{margin:0;padding:0;width:100%;height:100%;background:#00070d;--bg:#000
 <header class="machine-heading"><h2 id="recording-heading">Recorded research LM</h2><p>Real activation recording</p></header><div class="machine-stage" data-machine-stage><canvas data-machine-canvas class="machine-canvas"></canvas><div data-machine-fallback class="machine-fallback"></div>
 <form data-machine-form><input name="prompt" value="the model learned a useful distinction"><button type="submit">Generate</button><div data-machine-token-readout></div></form><div class="machine-output"><span class="machine-console-label">Generated continuation</span><p data-machine-output></p></div><p data-machine-status></p></div></section><script type="module" src="/assets/model-machine.js"></script></body></html>`;
 const mime={'.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.woff2':'font/woff2'};
+const served=new Set();
 const server=createServer(async(req,res)=>{
   try {
     const path=new URL(req.url,'http://localhost').pathname;
     if(path==='/__recording__/'){res.writeHead(200,{'Content-Type':'text/html'});res.end(html);return;}
     const file=resolve(site,'.'+decodeURIComponent(path));
     if(!file.startsWith(site+sep)){res.writeHead(403);res.end();return;}
-    const content=await readFile(file);res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream'});res.end(content);
+    const content=await readFile(file);served.add(file.slice(root.length+1).split(sep).join('/'));res.writeHead(200,{'Content-Type':mime[extname(file)]||'application/octet-stream'});res.end(content);
   }catch{res.writeHead(404);res.end();}
 });
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -70,6 +72,9 @@ try {
     if(index%60===0)console.log(`Recorded ${index}/${frames} native Three.js frames`);
   }
   if(errors.length)throw new Error(errors.join('; '));
+  // CI caches this recording on homepage-media-inputs.mjs; a request outside that set means the cache key is stale.
+  const declared=new Set(await homepageMediaInputs()),unlisted=[...served].filter(file=>!declared.has(file));
+  if(unlisted.length)throw new Error(`Recording page loaded files outside homepage-media-inputs.mjs: ${unlisted.join(', ')}`);
   const output=join(assets,'homepage-model-loop.webm');
   const encoded=spawnSync('ffmpeg',['-y','-hide_banner','-loglevel','error','-framerate',String(fps),'-i',join(work,'%04d.png'),'-an','-c:v','libvpx-vp9','-pix_fmt','yuv420p','-b:v','0','-crf','20','-deadline','good','-cpu-used','4','-row-mt','1',output],{encoding:'utf8'});
   if(encoded.error||encoded.status!==0)throw new Error(`ffmpeg failed: ${encoded.error?.message||encoded.stderr}`);

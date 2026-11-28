@@ -25,15 +25,20 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ux:
-    # The locked Playwright release supports this image; ubuntu-latest now uses 26.04.
+  # Classifies the change and decides, in one tested place, which jobs and audits it needs.
+  scope:
+    name: scope
     runs-on: ubuntu-24.04
-    # Full-quality encased rendering on software GL needs additional wall time.
-    # Keep the complete audit suite, native pixels, and media settings intact.
-    timeout-minutes: 180
+    timeout-minutes: 10
     outputs:
       fast_path: ${{ steps.scope.outputs.fast_path }}
       review_scope: ${{ steps.scope.outputs.review_scope }}
+      checks: ${{ steps.select.outputs.checks }}
+      media: ${{ steps.select.outputs.media }}
+      lighthouse: ${{ steps.select.outputs.lighthouse }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      pages: ${{ steps.select.outputs.pages }}
+      audits: ${{ steps.select.outputs.audits }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -114,99 +119,42 @@ jobs:
           echo "review_scope=$review_scope" >> "$GITHUB_OUTPUT"
       - name: Test conservative UX scope classification
         run: python3 -m unittest discover -s scripts -p test_classify_ux_scope.py -v
+      - name: Select the jobs and audits this change needs
+        id: select
+        shell: bash
+        env:
+          FAST_PATH: ${{ steps.scope.outputs.fast_path }}
+          REVIEW_SCOPE: ${{ steps.scope.outputs.review_scope }}
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p test_select_ux_audits.py -v
+          python3 -m unittest discover -s scripts -p test_require_ux_jobs.py -v
+          python3 scripts/select_ux_audits.py --event "$GITHUB_EVENT_NAME" --fast-path "$FAST_PATH" --scope "$REVIEW_SCOPE" | tee -a "$GITHUB_OUTPUT"
       - name: Validate scoped ARCC routing contract
         if: ${{ steps.scope.outputs.fast_path == 'true' && steps.scope.outputs.review_scope != 'documentation' }}
         run: python3 scripts/test_static_webapp_config.py
       - name: Check scoped documentation diff
         if: ${{ steps.scope.outputs.review_scope == 'documentation' }}
         run: git diff --check '${{ github.event.pull_request.base.sha }}' '${{ github.event.pull_request.head.sha }}'
-      - uses: actions/setup-python@v5
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
+
+  # Source-level checks: syntax, unit tests and the committed poster provenance. No bundle needed.
+  checks:
+    name: checks
+    needs: scope
+    if: ${{ needs.scope.outputs.checks == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.12'
-      - uses: actions/setup-node@v4
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        with:
-          node-version: '22'
-      - name: Install locked audit tooling
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: npm ci
-      - name: Verify committed native poster provenance
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: node scripts/test-model-startup.mjs
-      - name: Install homepage media renderer
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-      - name: Install Chromium
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: npx playwright install --with-deps chromium
-      # Cache only PR review media. The exact source, dependency files, browser,
-      # runner image and installed package versions all participate in the key.
-      # Main-push qualification always generates a fresh recording.
-      - name: Fingerprint PR media environment
-        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' }}
-        id: media_env
-        shell: bash
-        run: |
-          set -euo pipefail
-          browser="$(node -e "process.stdout.write(require('playwright').chromium.executablePath())")"
-          signature="$( { node --version; ffmpeg -version 2>&1 | sed -n '1p'; sha256sum "$browser"; printf '%s\n' "${ImageVersion:-unknown}"; dpkg-query -W -f='${Package} ${Version}\n'; } | sha256sum | cut -d' ' -f1)"
-          echo "signature=$signature" >> "$GITHUB_OUTPUT"
-      - name: Restore exact-input PR homepage media
-        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' }}
-        id: media_cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            site/assets/homepage-model-loop.webm
-            site/assets/homepage-model-loop-poster.webp
-            site/assets/homepage-model-loop.json
-          key: portfolio-home-v1-${{ runner.os }}-${{ steps.media_env.outputs.signature }}-${{ hashFiles('site/assets/**', '!site/assets/search.js', 'scripts/build-homepage-loop.mjs', 'scripts/render-homepage-recording.mjs', 'scripts/homepage-recorded-run.mjs', 'scripts/verify-homepage-recording.mjs', '.github/workflows/ux-quality.yml', 'package.json', 'package-lock.json') }}
-      - name: Render trained homepage model recording
-        if: ${{ steps.scope.outputs.fast_path != 'true' && (github.event_name != 'pull_request' || steps.media_cache.outputs.cache-hit != 'true') }}
-        run: node scripts/build-homepage-loop.mjs
-      - name: Verify homepage media bytes and trained tensors
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        run: node scripts/verify-homepage-recording.mjs
-      - name: Save exact-input PR homepage media
-        if: ${{ steps.scope.outputs.fast_path != 'true' && github.event_name == 'pull_request' && steps.media_cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            site/assets/homepage-model-loop.webm
-            site/assets/homepage-model-loop-poster.webp
-            site/assets/homepage-model-loop.json
-          key: ${{ steps.media_cache.outputs.cache-primary-key }}
-      - name: Record homepage media source and checksums
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        shell: bash
-        env:
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          printf '%s\n' "$SOURCE_SHA" > site/assets/homepage-model-loop.source
-          sha256sum site/assets/homepage-model-loop.webm site/assets/homepage-model-loop-poster.webp site/assets/homepage-model-loop.json > site/assets/homepage-model-loop.sha256
-      - name: Share exact-run homepage media with publication build
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: homepage-media-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            site/assets/homepage-model-loop.webm
-            site/assets/homepage-model-loop-poster.webp
-            site/assets/homepage-model-loop.json
-            site/assets/homepage-model-loop.source
-            site/assets/homepage-model-loop.sha256
-          if-no-files-found: error
-          retention-days: 1
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-ux
       - name: Check UX environment
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         run: python3 scripts/preflight_env.py ux
+      - name: Verify committed native poster provenance
+        run: node scripts/test-model-startup.mjs
       - name: Check source syntax and audit regressions
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -215,6 +163,7 @@ jobs:
           for asset in site appearance article-runtime article-model-loader article-model-context article-model-presentation article-lm-session model-context model-inference model-inference-backend model-presentation-sampling model-linear-webnn model-linear-webgpu model-lm-worker model-machine model-scene model-encased-materials model-encased-housing model-encased-routes model-renderer model-background-glass model-topology model-light model-gestures material-light energy-architecture energy-optics homepage-background homepage-motion homepage-native-model physical-stage physical-studio homepage-model-loader homepage-digital research-topology search; do
             node --check "site/assets/$asset.js"
           done
+          node scripts/test-homepage-media-inputs.mjs
           node scripts/test-model-replay.mjs
           node scripts/test-model-inference.mjs
           node scripts/test-model-instrument-orientation.mjs
@@ -225,70 +174,120 @@ jobs:
           node scripts/test-jupyterlite-notebook-audit.mjs
           node scripts/test-lighthouse-transfer-budget.mjs
           node scripts/test-serve-lhci.mjs
-      - name: Run responsive, accessibility, interaction and model audits
-        if: ${{ steps.scope.outputs.fast_path != 'true' }}
-        env:
-          REVIEW_SCOPE: ${{ steps.scope.outputs.review_scope }}
+
+  # Renders the homepage recording once. PR runs reuse it when its exact inputs are unchanged.
+  record:
+    name: record
+    needs: scope
+    if: ${{ needs.scope.outputs.media == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      media_artifact: ${{ steps.names.outputs.media }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-ux
+      - name: Install homepage media renderer
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+      - name: Check UX environment
+        run: python3 scripts/preflight_env.py ux
+      - name: Name the media artifact
+        id: names
+        run: echo "media=homepage-media-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+      # Cache only PR review media. The recording's exact input files (see
+      # scripts/homepage-media-inputs.mjs), browser, runner image and installed package
+      # versions all participate in the key. UI-only edits therefore keep the cache.
+      # Main-push qualification always generates a fresh recording.
+      - name: Fingerprint media inputs and environment
+        id: media_env
         shell: bash
         run: |
           set -euo pipefail
-          ./node_modules/.bin/serve site -l tcp://127.0.0.1:4173 >/tmp/portfolio-serve.log 2>&1 &
-          server=$!
-          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
-          for i in {1..30}; do
-            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
-            sleep 1
-          done
-          kill -0 "$server"
-          curl -fsS http://127.0.0.1:4173/ >/dev/null
-          export PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173
-          mkdir -p ux-screenshots/logs
-          audit_status_file="$RUNNER_TEMP/portfolio-ux-audit-status.tsv"
-          printf 'audit\tstatus\n' > "$audit_status_file" || true
-          # Preserve the failing audit's evidence and stop a blocked release early.
-          run_audit() {
-            local name="$1"
-            shift
-            if "$@" 2>&1 | tee "ux-screenshots/logs/$name.log"; then
-              printf '%s\tPASS\n' "$name" >> "$audit_status_file" || true
-              return 0
-            else
-              printf '%s\tFAIL\n' "$name" >> "$audit_status_file" || true
-              echo "Audit failed: $name" >&2
-              return 1
-            fi
-          }
-          if [ "$REVIEW_SCOPE" = full ]; then
-            run_audit model-posters node scripts/capture-model-posters.mjs
-            run_audit model-startup-regressions node scripts/test-model-startup.mjs
-            run_audit model-visual env MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
-          fi
-          if [ "$REVIEW_SCOPE" != article-audit ]; then
-            run_audit ux node scripts/ux-audit.mjs
-            run_audit interaction node scripts/interaction-audit.mjs
-            run_audit 2071 node scripts/2071-audit.mjs
-          else
-            printf 'source-ui\tNOT_APPLICABLE\n' >> "$audit_status_file"
-          fi
-          if [ "$REVIEW_SCOPE" = full ]; then
-            run_audit model-machine node scripts/model-machine-audit.mjs
-            run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
-            run_audit model-startup node scripts/model-startup-audit.mjs
-            run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
-          fi
-          if [ "$REVIEW_SCOPE" != article-audit ]; then
-            run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
-            run_audit screenshots node scripts/capture-ux-screenshots.mjs
-          fi
-          exit 0
-      - name: Prepare bounded V2 model visual review evidence
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope == 'full' }}
+          browser="$(node -e "process.stdout.write(require('playwright').chromium.executablePath())")"
+          signature="$( { node --version; ffmpeg -version 2>&1 | sed -n '1p'; sha256sum "$browser"; printf '%s\n' "${ImageVersion:-unknown}"; dpkg-query -W -f='${Package} ${Version}\n'; } | sha256sum | cut -d' ' -f1)"
+          echo "signature=$signature" >> "$GITHUB_OUTPUT"
+          echo "inputs=$(node scripts/homepage-media-inputs.mjs)" >> "$GITHUB_OUTPUT"
+      - name: Restore exact-input PR homepage media
+        if: ${{ github.event_name == 'pull_request' }}
+        id: media_cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+          key: portfolio-home-v2-${{ runner.os }}-${{ steps.media_env.outputs.signature }}-${{ steps.media_env.outputs.inputs }}
+      - name: Render trained homepage model recording
+        if: ${{ github.event_name != 'pull_request' || steps.media_cache.outputs.cache-hit != 'true' }}
+        run: node scripts/build-homepage-loop.mjs
+      - name: Verify homepage media bytes and trained tensors
+        run: node scripts/verify-homepage-recording.mjs
+      - name: Save exact-input PR homepage media
+        if: ${{ github.event_name == 'pull_request' && steps.media_cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+          key: ${{ steps.media_cache.outputs.cache-primary-key }}
+      - name: Record homepage media source and checksums
         shell: bash
         env:
-          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-        run: node scripts/prepare-model-visual-evidence.mjs
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          printf '%s\n' "$SOURCE_SHA" > site/assets/homepage-model-loop.source
+          sha256sum site/assets/homepage-model-loop.webm site/assets/homepage-model-loop-poster.webp site/assets/homepage-model-loop.json > site/assets/homepage-model-loop.sha256
+      - name: Share exact-run homepage media with the build and audit jobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.names.outputs.media }}
+          path: |
+            site/assets/homepage-model-loop.webm
+            site/assets/homepage-model-loop-poster.webp
+            site/assets/homepage-model-loop.json
+            site/assets/homepage-model-loop.source
+            site/assets/homepage-model-loop.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  # Lighthouse budgets for the source site. Independent of the bundle, so it runs beside it.
+  lighthouse:
+    name: lighthouse
+    needs: [scope, record]
+    if: ${{ needs.scope.outputs.lighthouse == 'true' && needs.record.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-ux
+        with:
+          browser: 'false'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.record.outputs.media_artifact }}
+          path: site/assets
+      - name: Verify transferred homepage media and source identity
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
+          sha256sum --check site/assets/homepage-model-loop.sha256
+          rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
+          node scripts/verify-homepage-recording.mjs
       - name: Enforce Lighthouse budgets (mobile and desktop)
-        if: ${{ success() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope != 'article-audit' }}
         shell: bash
         run: |
           set -uo pipefail
@@ -352,10 +351,9 @@ jobs:
             exit 1
           fi
       - name: Check initial-page transfer policy
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && steps.scope.outputs.review_scope != 'article-audit' }}
         run: node scripts/lighthouse-transfer-budget.mjs --dir ./lighthouse-results --dir ./lighthouse-results-desktop
       - name: Retain raw Lighthouse reports
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse-reports-${{ github.event.pull_request.head.sha || github.sha }}
@@ -367,82 +365,19 @@ jobs:
             ${{ runner.temp }}/portfolio-lhci-*-first-state/
           if-no-files-found: warn
           retention-days: 30
-      - name: Summarize public source qualification
-        shell: bash
-        env:
-          FAST_PATH: ${{ steps.scope.outputs.fast_path }}
-        run: |
-          if [ "${{ steps.scope.outputs.review_scope }}" = documentation ]; then
-            echo "- Qualification mode: documentation-only PR review; site runtime is unchanged." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$FAST_PATH" = true ]; then
-            echo "- Qualification mode: scoped ARCC routing fast path; visual, interaction, model, screenshot, and Lighthouse audits were not applicable to the changed paths." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ steps.scope.outputs.review_scope }}" = page-text ]; then
-            echo "- Qualification mode: scoped PR text-only review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ steps.scope.outputs.review_scope }}" = article-audit ]; then
-            echo "- Qualification mode: focused PR article-model audit; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
-          elif [ "${{ steps.scope.outputs.review_scope }}" = search ]; then
-            echo "- Qualification mode: scoped PR search review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "- Qualification mode: full Portfolio UX suite." >> "$GITHUB_STEP_SUMMARY"
-          fi
-          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
-            {
-              echo "## Portfolio source qualified for Fleet review"
-              echo
-              echo "- Source: pH34r-pH/Portfolio@$GITHUB_SHA"
-              echo '- Gate: Portfolio UX quality / ux passed for this exact main SHA.'
-              echo "- Private publication: Fleet verifies this run and all pinned research inputs, then records a separate deployment receipt."
-            } >> "$GITHUB_STEP_SUMMARY"
-          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
-            echo "PR UX result is review evidence; Fleet requires a separate passing main SHA." >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "Manual Pages build is review evidence; it does not qualify a Fleet publication candidate." >> "$GITHUB_STEP_SUMMARY"
-          fi
 
-      - name: Prepare compact source UX audit summary
-        continue-on-error: true
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
-        shell: bash
-        env:
-          JOB_OUTCOME: ${{ job.status }}
-        run: |
-          set -euo pipefail
-          summary="$RUNNER_TEMP/portfolio-ux-audit-summary.tsv"
-          printf 'qualification_status\t%s\n' "$JOB_OUTCOME" > "$summary"
-          if [ -f "$RUNNER_TEMP/portfolio-ux-audit-status.tsv" ]; then
-            sed -n '2,$p' "$RUNNER_TEMP/portfolio-ux-audit-status.tsv" >> "$summary"
-          else
-            printf 'audit_status\tNOT_RUN\n' >> "$summary"
-          fi
-      - name: Upload compact source UX audit summary
-        continue-on-error: true
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ux-audit-summary-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/portfolio-ux-audit-summary.tsv
-          if-no-files-found: warn
-          retention-days: 14
-      - name: Upload detailed source audit diagnostics on failure or manual review
-        if: ${{ always() && steps.scope.outputs.fast_path != 'true' && (failure() || (github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence)) }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ux-audit-evidence-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ux-screenshots/
-          if-no-files-found: warn
-          retention-days: 3
-
-  bundle:
+  # Builds the exact public bundle once. On main it is the candidate Fleet consumes;
+  # elsewhere it is short-lived staging for the audit jobs.
+  build:
     name: Public publication candidate
-    needs: ux
-    outputs:
-      pages_artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
-    # Scoped routing and documentation PRs need only their contracts. Main and manual Pages builds use the exact candidate.
-    if: ${{ needs.ux.result == 'success' && ((github.event_name == 'pull_request' && needs.ux.outputs.fast_path != 'true') || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
+    needs: [scope, record]
+    if: ${{ needs.scope.outputs.bundle == 'true' && needs.record.result == 'success' }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 150
+    timeout-minutes: 90
     permissions:
       contents: read
+    outputs:
+      bundle_artifact: ${{ steps.names.outputs.bundle }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -525,38 +460,24 @@ jobs:
       - name: Install document export image conversion
         run: |
           sudo apt-get update
-          sudo apt-get install -y inkscape ffmpeg
+          sudo apt-get install -y inkscape
       - name: Install pinned Portfolio and MyST browser tooling
         run: npm ci --prefix Portfolio
-      - name: Verify pinned native poster provenance
-        run: node Portfolio/scripts/test-model-startup.mjs
-      - name: Install Chromium for native homepage rendering
-        run: Portfolio/node_modules/.bin/playwright install --with-deps chromium
-      - name: Retrieve homepage media from this run's exact source build
-        id: homepage_transfer
-        continue-on-error: true
+      - name: Retrieve homepage media from this run's recording job
         uses: actions/download-artifact@v4
         with:
-          name: homepage-media-${{ github.run_id }}-${{ github.run_attempt }}
+          name: ${{ needs.record.outputs.media_artifact }}
           path: Portfolio/site/assets
-      # A failed-job-only rerun may not rerun ux, so that attempt has no media
-      # artifact. Rebuild from the exact checkout rather than trust older bytes.
-      - name: Rebuild homepage media if this attempt has no source artifact
-        if: steps.homepage_transfer.outcome != 'success'
-        run: node Portfolio/scripts/build-homepage-loop.mjs
       - name: Verify transferred homepage media and source identity
         shell: bash
         env:
           SOURCE_SHA: ${{ steps.refs.outputs.portfolio }}
-          TRANSFER_OUTCOME: ${{ steps.homepage_transfer.outcome }}
         run: |
           set -euo pipefail
           cd Portfolio
-          if [ "$TRANSFER_OUTCOME" = success ]; then
-            test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
-            sha256sum --check site/assets/homepage-model-loop.sha256
-            rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
-          fi
+          test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
+          sha256sum --check site/assets/homepage-model-loop.sha256
+          rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
           node scripts/verify-homepage-recording.mjs
       - name: Prepare isolated article export sources
         run: |
@@ -716,63 +637,173 @@ jobs:
                   assert (root / 'lab/lab/index.html').is_file()
           print(f"Qualified {len(manifest['notebooks'])} source notebooks and {len(articles)} canonical articles")
           PY
-      - name: Exercise article, notebook and model routes in the exact bundle
-        env:
-          REVIEW_SCOPE: ${{ needs.ux.outputs.review_scope }}
+      - name: Name the bundle artifact
+        id: names
         shell: bash
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
         run: |
           set -euo pipefail
-          Portfolio/node_modules/.bin/playwright install --with-deps chromium
-          Portfolio/node_modules/.bin/serve bundle -l tcp://127.0.0.1:4173 >/tmp/portfolio-candidate-serve.log 2>&1 &
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            name="portfolio-candidate-${PORTFOLIO_SHA}-${RESEARCH_NOTES_SHA}-${THEOREM_LIBRARY_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          else
+            name="bundle-staging-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          fi
+          echo "bundle=$name" >> "$GITHUB_OUTPUT"
+      - name: Hash exact upload bytes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: digest
+        shell: bash
+        run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
+      - name: Upload public publication candidate
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.names.outputs.bundle }}
+          path: bundle/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: ${{ github.event_name == 'push' && 7 || 1 }}
+      - name: Summarize public candidate for private verification
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
+          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
+          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
+          COMPILER_SHA: ${{ steps.compiler.outputs.commit }}
+          COMPILER_PROJECTION_SHA256: ${{ steps.compiler.outputs.sha256 }}
+          BUNDLE_SHA256: ${{ steps.digest.outputs.sha256 }}
+          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
+          ARTIFACT_SHA256: ${{ steps.upload.outputs.artifact-digest }}
+        shell: bash
+        run: |
+          {
+            echo '## Public Portfolio publication candidate'
+            echo
+            echo "- Portfolio source: $PORTFOLIO_SHA"
+            echo "- research-notes source: $RESEARCH_NOTES_SHA"
+            echo "- theorem-library source: $THEOREM_LIBRARY_SHA"
+            echo "- Compiler public projection source: $COMPILER_SHA"
+            echo "- Compiler public projection SHA-256: $COMPILER_PROJECTION_SHA256"
+            echo "- Full bundle tree SHA-256: $BUNDLE_SHA256"
+            echo "- Exact artifact ID: $ARTIFACT_ID"
+            echo "- GitHub artifact ZIP SHA-256: $ARTIFACT_SHA256"
+            echo "- Public source and producer run/attempt: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
+            echo '- Private Fleet must recheck all source gates and the downloaded bundle digest before publication.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+
+  # One job per audit, all against the finished bundle, in parallel. The matrix comes from scripts/select_ux_audits.py.
+  audit:
+    name: audit (${{ matrix.name }})
+    needs: [scope, record, build]
+    if: ${{ needs.build.result == 'success' && needs.scope.outputs.audits != '[]' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.scope.outputs.audits) }}
+    env:
+      PORTFOLIO_AUDIT_URL: http://127.0.0.1:4173
+      PORTFOLIO_PUBLICATION_BUNDLE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: Portfolio
+          persist-credentials: false
+      - uses: ./Portfolio/.github/actions/node-ux
+        with:
+          directory: Portfolio
+      - name: Retrieve homepage media from this run's recording job
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.record.outputs.media_artifact }}
+          path: Portfolio/site/assets
+      - name: Verify transferred homepage media and source identity
+        shell: bash
+        env:
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          cd Portfolio
+          test "$(cat site/assets/homepage-model-loop.source)" = "$SOURCE_SHA"
+          sha256sum --check site/assets/homepage-model-loop.sha256
+          rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
+      - name: Retrieve the exact bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.bundle_artifact }}
+          path: bundle
+      - name: Check UX environment
+        working-directory: Portfolio
+        run: python3 scripts/preflight_env.py ux
+      - name: Run ${{ matrix.name }}
+        working-directory: Portfolio
+        shell: bash
+        env:
+          AUDIT_NAME: ${{ matrix.name }}
+          AUDIT_RUN: ${{ matrix.run }}
+        run: |
+          set -uo pipefail
+          node_modules/.bin/serve ../bundle -l tcp://127.0.0.1:4173 >"$RUNNER_TEMP/portfolio-bundle-serve.log" 2>&1 &
           server_pid=$!
           trap 'kill "$server_pid" 2>/dev/null || true; wait "$server_pid" 2>/dev/null || true' EXIT
-          for i in {1..30}; do
+          for _ in {1..30}; do
             if curl -fsS http://127.0.0.1:4173/ >/dev/null; then break; fi
             sleep 1
           done
           kill -0 "$server_pid"
           curl -fsS http://127.0.0.1:4173/publication.json >/dev/null
-          cd Portfolio
-          export PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173
-          export PORTFOLIO_PUBLICATION_BUNDLE=1
           mkdir -p ux-screenshots/logs
-          audit_status_file="$RUNNER_TEMP/portfolio-bundle-ux-audit-status.tsv"
-          printf 'audit\tstatus\n' > "$audit_status_file" || true
-          run_audit() {
-            local name="$1"
-            shift
-            if "$@" 2>&1 | tee "ux-screenshots/logs/$name.log"; then
-              printf '%s\tPASS\n' "$name" >> "$audit_status_file" || true
-              return 0
-            else
-              printf '%s\tFAIL\n' "$name" >> "$audit_status_file" || true
-              echo "Audit failed: $name" >&2
-              return 1
-            fi
-          }
-          if [ "$REVIEW_SCOPE" != article-audit ]; then
-            run_audit ux node scripts/ux-audit.mjs
-            # interaction-audit invokes the real article and JupyterLite notebook audits.
-            run_audit interaction-articles-and-notebooks node scripts/interaction-audit.mjs
-            run_audit 2071 node scripts/2071-audit.mjs
-          fi
-          if [ "$REVIEW_SCOPE" = full ]; then
-            run_audit homepage-digital-and-lifecycle node scripts/homepage-digital-audit.mjs
-            run_audit model-startup node scripts/model-startup-audit.mjs
-            run_audit model-machine node scripts/model-machine-audit.mjs
-            run_audit model-glass env GLASS_EVIDENCE_DIR=ux-screenshots/leaf03-glass node scripts/model-glass-audit.mjs
-            run_audit model-visual env PORTFOLIO_PUBLISHED_AUDIT_URL="$PORTFOLIO_AUDIT_URL" MODEL_VISUAL_EVIDENCE_DIR=ux-screenshots/visual-v2/visual-audit node scripts/model-visual-audit.mjs
-          fi
-          if [ "$REVIEW_SCOPE" = full ] || [ "$REVIEW_SCOPE" = article-audit ]; then
-            run_audit article-model-sticky node scripts/article-model-sticky-audit.mjs
-          fi
-          if [ "$REVIEW_SCOPE" != article-audit ]; then
-            run_audit appearance env PORTFOLIO_STYLE_SCREENSHOTS=ux-screenshots/appearance node scripts/appearance-audit.mjs
-            run_audit screenshots node scripts/capture-ux-screenshots.mjs
-          fi
-          exit 0
+          started=$SECONDS
+          bash -c "$AUDIT_RUN" 2>&1 | tee "ux-screenshots/logs/$AUDIT_NAME.log"
+          status=${PIPESTATUS[0]}
+          result=PASS; [ "$status" -eq 0 ] || result=FAIL
+          printf '| %s | %s | %ss |\n' "$AUDIT_NAME" "$result" "$((SECONDS - started))" >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+      - name: Upload audit evidence on failure or manual review
+        if: ${{ failure() || (always() && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-evidence-${{ matrix.name }}-${{ github.event.pull_request.head.sha || github.sha }}
+          path: Portfolio/ux-screenshots/
+          if-no-files-found: warn
+          retention-days: 3
+
+  # Project-path GitHub Pages copy of the bundle: reviewed on PRs, deployable on manual runs.
+  pages-copy:
+    name: pages-copy
+    needs: [scope, build]
+    if: ${{ needs.build.result == 'success' && needs.scope.outputs.pages == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      artifact_name: ${{ steps.pages_preview.outputs.artifact_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          path: Portfolio
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+      - uses: ./Portfolio/.github/actions/node-ux
+        with:
+          directory: Portfolio
+      - name: Install locked publication tooling
+        run: uv sync --project Portfolio --locked --no-dev
+      - name: Retrieve the exact bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.build.outputs.bundle_artifact }}
+          path: bundle
       - name: Prepare and test the project-path Pages copy
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.ux.outputs.review_scope != 'article-audit')
         id: pages_preview
         shell: bash
         env:
@@ -800,7 +831,6 @@ jobs:
           export PORTFOLIO_PAGES_AUDIT_URL="http://127.0.0.1:4174$base_path/"
           node Portfolio/scripts/pages-path-browser-audit.mjs
       - name: Upload the reviewable Pages copy
-        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && needs.ux.outputs.review_scope != 'article-audit')
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.pages_preview.outputs.artifact_name }}
@@ -808,97 +838,108 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 3
-      - name: Hash exact upload bytes
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
-        id: digest
-        shell: bash
-        run: echo "sha256=$(uv run --project Portfolio --no-sync python Portfolio/scripts/digest_bundle.py bundle)" >> "$GITHUB_OUTPUT"
-      - name: Upload public publication candidate
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
-        id: upload
-        uses: actions/upload-artifact@v4
-        with:
-          name: portfolio-candidate-${{ steps.refs.outputs.portfolio }}-${{ steps.refs.outputs.research_notes }}-${{ steps.refs.outputs.theorem_library }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: bundle/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 7
-      - name: Summarize public candidate for private verification
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ux.result == 'success'
-        env:
-          PORTFOLIO_SHA: ${{ steps.refs.outputs.portfolio }}
-          RESEARCH_NOTES_SHA: ${{ steps.refs.outputs.research_notes }}
-          THEOREM_LIBRARY_SHA: ${{ steps.refs.outputs.theorem_library }}
-          COMPILER_SHA: ${{ steps.compiler.outputs.commit }}
-          COMPILER_PROJECTION_SHA256: ${{ steps.compiler.outputs.sha256 }}
-          BUNDLE_SHA256: ${{ steps.digest.outputs.sha256 }}
-          ARTIFACT_ID: ${{ steps.upload.outputs.artifact-id }}
-          ARTIFACT_SHA256: ${{ steps.upload.outputs.artifact-digest }}
-        shell: bash
-        run: |
-          {
-            echo '## Public Portfolio publication candidate'
-            echo
-            echo "- Portfolio source: $PORTFOLIO_SHA"
-            echo "- research-notes source: $RESEARCH_NOTES_SHA"
-            echo "- theorem-library source: $THEOREM_LIBRARY_SHA"
-            echo "- Compiler public projection source: $COMPILER_SHA"
-            echo "- Compiler public projection SHA-256: $COMPILER_PROJECTION_SHA256"
-            echo "- Full bundle tree SHA-256: $BUNDLE_SHA256"
-            echo "- Exact artifact ID: $ARTIFACT_ID"
-            echo "- GitHub artifact ZIP SHA-256: $ARTIFACT_SHA256"
-            echo "- Public source and producer run/attempt: $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT"
-            echo '- Private Fleet must recheck all source gates and the downloaded bundle digest before publication.'
-          } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Prepare compact finished-bundle UX audit summary
-        continue-on-error: true
-        if: always()
+  # Deliberate manual review only: native poster capture, V2 visual evidence and full-page screenshots.
+  # These produce review artifacts rather than assertions, so they are not part of the qualification gate.
+  evidence:
+    name: evidence
+    needs: [scope, record]
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence && needs.record.result == 'success' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: ./.github/actions/node-ux
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.record.outputs.media_artifact }}
+          path: site/assets
+      - name: Capture review evidence
         shell: bash
         env:
-          JOB_OUTCOME: ${{ job.status }}
+          PORTFOLIO_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          set -euo pipefail
-          summary="$RUNNER_TEMP/portfolio-bundle-ux-audit-summary.tsv"
-          printf 'qualification_status\t%s\n' "$JOB_OUTCOME" > "$summary"
-          if [ -f "$RUNNER_TEMP/portfolio-bundle-ux-audit-status.tsv" ]; then
-            sed -n '2,$p' "$RUNNER_TEMP/portfolio-bundle-ux-audit-status.tsv" >> "$summary"
-          else
-            printf 'audit_status\tNOT_RUN\n' >> "$summary"
-          fi
-          if [ "$JOB_OUTCOME" != success ]; then
-            if [ -f Portfolio/ux-screenshots/startup/audit.json ]; then
-              cp Portfolio/ux-screenshots/startup/audit.json "$RUNNER_TEMP/portfolio-bundle-startup-failure.json"
-            fi
-            for receipt in Portfolio/ux-screenshots/article-lm/*-failure.json; do
-              [ -f "$receipt" ] || continue
-              cp "$receipt" "$RUNNER_TEMP/portfolio-bundle-article-$(basename "$receipt")"
-            done
-          fi
-      - name: Upload compact finished-bundle UX audit summary
-        continue-on-error: true
-        if: always()
-        uses: actions/upload-artifact@v4
+          set -uo pipefail
+          rm -- site/assets/homepage-model-loop.source site/assets/homepage-model-loop.sha256
+          ./node_modules/.bin/serve site -l tcp://127.0.0.1:4173 >/tmp/portfolio-serve.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true; wait "$server" 2>/dev/null || true' EXIT
+          for _ in {1..30}; do curl -fsS http://127.0.0.1:4173/ >/dev/null && break; sleep 1; done
+          export PORTFOLIO_AUDIT_URL=http://127.0.0.1:4173
+          mkdir -p ux-screenshots/logs
+          node scripts/capture-model-posters.mjs || true
+          node scripts/prepare-model-visual-evidence.mjs || true
+          node scripts/capture-ux-screenshots.mjs || true
+      - uses: actions/upload-artifact@v4
         with:
-          name: bundle-ux-audit-summary-${{ github.event.pull_request.head.sha || github.sha }}
-          path: |
-            ${{ runner.temp }}/portfolio-bundle-ux-audit-summary.tsv
-            ${{ runner.temp }}/portfolio-bundle-*-failure.json
-          if-no-files-found: warn
-          retention-days: 14
-      - name: Upload detailed finished-bundle audit diagnostics on failure or manual review
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.retain_detailed_evidence }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: bundle-ux-review-${{ github.event.pull_request.head.sha || github.sha }}
-          path: Portfolio/ux-screenshots/
+          name: ux-review-evidence-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ux-screenshots/
           if-no-files-found: warn
           retention-days: 3
 
+  # The qualification gate Fleet reads by name. It succeeds only if every job this change
+  # needed succeeded (see scripts/require_ux_jobs.py), so one required check covers the run.
+  ux:
+    name: ux
+    needs: [scope, checks, record, lighthouse, build, audit, pages-copy]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Require every qualification job
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+          CHECKS: ${{ needs.scope.outputs.checks }}
+          MEDIA: ${{ needs.scope.outputs.media }}
+          LIGHTHOUSE: ${{ needs.scope.outputs.lighthouse }}
+          BUNDLE: ${{ needs.scope.outputs.bundle }}
+          PAGES: ${{ needs.scope.outputs.pages }}
+          AUDITS: ${{ needs.scope.outputs.audits }}
+        run: python3 scripts/require_ux_jobs.py
+      - name: Summarize public source qualification
+        shell: bash
+        env:
+          FAST_PATH: ${{ needs.scope.outputs.fast_path }}
+        run: |
+          if [ "${{ needs.scope.outputs.review_scope }}" = documentation ]; then
+            echo "- Qualification mode: documentation-only PR review; site runtime is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$FAST_PATH" = true ]; then
+            echo "- Qualification mode: scoped ARCC routing fast path; visual, interaction, model, screenshot, and Lighthouse audits were not applicable to the changed paths." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ needs.scope.outputs.review_scope }}" = page-text ]; then
+            echo "- Qualification mode: scoped PR text-only review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ needs.scope.outputs.review_scope }}" = article-audit ]; then
+            echo "- Qualification mode: focused PR article-model audit; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "${{ needs.scope.outputs.review_scope }}" = search ]; then
+            echo "- Qualification mode: scoped PR search review; existing main-push qualification is unchanged." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Qualification mode: full Portfolio UX suite." >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            {
+              echo "## Portfolio source qualified for Fleet review"
+              echo
+              echo "- Source: pH34r-pH/Portfolio@$GITHUB_SHA"
+              echo '- Gate: Portfolio UX quality / ux passed for this exact main SHA.'
+              echo "- Private publication: Fleet verifies this run and all pinned research inputs, then records a separate deployment receipt."
+            } >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            echo "PR UX result is review evidence; Fleet requires a separate passing main SHA." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Manual Pages build is review evidence; it does not qualify a Fleet publication candidate." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+
   deploy-pages:
     name: Deploy reviewed Pages build
-    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_pages }}
-    needs: bundle
+    if: ${{ github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy_pages && needs.ux.result == 'success' }}
+    needs: [ux, pages-copy]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -929,7 +970,7 @@ jobs:
       - name: Download the exact Pages copy from the build job
         uses: actions/download-artifact@v4
         with:
-          name: ${{ needs.bundle.outputs.pages_artifact_name }}
+          name: ${{ needs.pages-copy.outputs.artifact_name }}
           path: pages-site
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
