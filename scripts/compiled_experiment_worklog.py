@@ -4,6 +4,14 @@ import math
 from urllib.parse import quote
 
 ORIGIN = 'https://experiments.tyharbin.com'
+_PUBLIC_SOURCE_REPOSITORIES = frozenset({
+    'pH34r-pH/experiment-compiler',
+    'pH34r-pH/compiled-experiments',
+    'pH34r-pH/research-notes',
+    'pH34r-pH/theorem-library',
+    'pH34r-pH/long-haul',
+    'pH34r-pH/Portfolio',
+})
 STATUSES = {
     'https://schema.org/ActiveActionStatus': 'Active',
     'https://schema.org/CompletedActionStatus': 'Completed',
@@ -137,9 +145,13 @@ def _identity(record):
     package, source = record['package'], record['source']
     digest = html.escape(package['sha256'])
     repository, commit = source['repository'], source['commit']
-    source_url = f'https://github.com/{quote(repository, safe="/")}/tree/{commit}'
+    if repository in _PUBLIC_SOURCE_REPOSITORIES:
+        source_url = f'https://github.com/{quote(repository, safe="/")}/tree/{commit}'
+        source_ref = f'<a href="{source_url}">Exact scientific source</a>'
+    else:
+        source_ref = '<span>Scientific source repository is private</span>'
     return (f'<p><a href="{ORIGIN}/packages/{digest}.zip" download>Download exact package</a>'
-            f' · <a href="{source_url}">Exact scientific source</a></p>'
+            f' · {source_ref}</p>'
             f'<p>Package SHA-256: <code>{digest}</code><br>'
             f'Scientific source: <code>{html.escape(repository)}@{html.escape(commit)}</code><br>'
             f'Package profile: <code>{html.escape(record["profile"])}</code></p>')

@@ -142,6 +142,7 @@ a:hover { text-decoration-color: var(--accent); }
 .wordmark {
   display: inline-flex;
   align-items: center;
+  min-height: 44px;
   gap: 8px;
   font-weight: 800;
   letter-spacing: .11em;
@@ -1237,13 +1238,13 @@ section {
 
 
 /* About: production scale and a treated optical portrait. */
-.about-hero{padding:clamp(58px,8vw,100px) 0 36px}.about-hero .page-title{max-width:13ch}
+.about-hero{padding:clamp(28px,4.5vw,52px) 0 28px}.about-hero .page-title{max-width:13ch}
 .portrait-optic{position:relative;flex:none;margin:0;border-radius:50%}
 .portrait-optic:before,.portrait-optic:after,.portrait-optic>span{content:"";position:absolute;z-index:2;border-radius:50%;pointer-events:none}
 .portrait-optic:before{inset:-11px;border:1px solid var(--line);background:conic-gradient(from 90deg,transparent 0 23%,var(--accent) 23% 24%,transparent 24% 48%,var(--accent) 48% 49%,transparent 49% 73%,var(--accent) 73% 74%,transparent 74%);mask:radial-gradient(circle,transparent 72%,#000 73% 76%,transparent 77%);opacity:.74}
 .portrait-optic:after{inset:4px;background:repeating-linear-gradient(0deg,transparent 0 3px,color-mix(in srgb,var(--accent) 15%,transparent) 3px 4px);mix-blend-mode:multiply;opacity:.35}
 html[data-theme=dark] .portrait-optic:after{mix-blend-mode:screen;opacity:.2}
-.portrait-optic>span{right:-17px;top:50%;width:7px;height:7px;margin-top:-3px;border:1px solid var(--accent);background:var(--bg);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 56%,transparent)}
+.portrait-optic>span{display:none}
 .impact-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;padding:1px;border:0;background:var(--line)}
 .impact-rail article{position:relative;min-width:0;padding:clamp(20px,3vw,34px);background:var(--bg)}
 .impact-rail article:before{content:"";position:absolute;top:0;left:0;width:46px;height:1px;background:var(--accent);box-shadow:0 0 10px color-mix(in srgb,var(--accent) 38%,transparent)}
@@ -1690,7 +1691,7 @@ html body .primary-nav a, html body .menu-toggle, html body .search-toggle { min
 html body .search-toggle kbd { font-size:11px; }
 html body :is(.eyebrow,.card-meta,.article-download-label,.register,.nb-cell-head) { font-size:12px; line-height:1.5; letter-spacing:.035em; }
 html body .search-status, html body .search-shell>label, html body .search-close { font-size:12px; letter-spacing:.02em; }
-html body:not(.digital-home)::before { border:1px solid var(--line); box-shadow:none; opacity:.45; }
+html body:not(.digital-home)::before { inset:72px max(16px,calc((100vw - 1200px)/2)) 24px; border:1px solid var(--line); box-shadow:none; opacity:.45; }
 html body:not(.digital-home) :is(.card,.notebook-content,.impact-rail article,.topology-detail,.topology-accessible,.article-execution) {
   background:var(--bg); border:1px solid var(--line); box-shadow:none; text-shadow:none;
   backdrop-filter:none; -webkit-backdrop-filter:none;
@@ -1700,17 +1701,24 @@ html body:not(.digital-home) .notebook-content::before { display:none; }
 html body:not(.digital-home) :is(.card,.notebook-content) > .material-edge { display:none; }
 html body .notebook-content { padding:clamp(20px,4vw,42px); }
 html body .research-index, html body .about-page, html body .project-page { padding-inline:20px; }
-html body .about-page .page-title { font-size:clamp(2.8rem,7vw,5.5rem); line-height:1.04; margin-block:28px; }
+html body .about-page .page-title { font-size:clamp(2.5rem,5.5vw,4.6rem); line-height:1.04; margin-block:14px 18px; }
+html body .about-hero .person-intro { margin:16px 0; }
+html body .about-hero .professional-summary { margin-block:16px 0; padding-block:14px; }
+html body .card .links { gap:4px 16px; margin-top:8px; }
+html body .card .links a, html body .program-grid a { display:inline-flex; align-items:center; min-height:44px; padding-block:4px; }
+html body .resume-shortcut { margin:12px 0 4px; font-size:.95rem; }
+html body .resume-shortcut a { display:inline-flex; align-items:center; min-height:44px; font-weight:600; }
 html body :is(.notebook-run-guide,aside[aria-label="Notebook evidence and reproduction"]) summary { min-height:48px; padding:12px 0; cursor:pointer; font-weight:600; }
 html body :is(.notebook-run-guide,aside[aria-label="Notebook evidence and reproduction"]) { margin-block:16px; }
 html body .page-title, html body .project-intro h1, html body .myst-reader h1 { text-wrap:balance; overflow-wrap:break-word; }
 html body .about-sections h2 { max-width:24ch; font-size:clamp(2.2rem,4.5vw,3.8rem); line-height:1.06; }
 @media(max-width:900px) { html body .search-toggle { font-size:0; } }
 @media(max-width:720px) {
+  html body:not(.digital-home)::before { inset:64px 8px 16px; border-radius:20px; }
   html body .page-title, html body .project-intro h1, html body .myst-reader h1 { font-size:clamp(2.6rem,10.5vw,4rem); line-height:1.05; }
   html body .page-title br { display:none; }
   html body .about-page .title-line { display:inline; }
-  html body .notebook-reader { width:calc(100% - 40px); }
+  html body .notebook-reader { width:calc(100% - 40px); padding-top:30px; padding-inline:4px; }
   html body .notebook-content { padding:20px 16px; }
 }
 @media(forced-colors:active) {
