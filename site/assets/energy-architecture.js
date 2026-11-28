@@ -99,7 +99,8 @@ export class EnergyArchitecture {
     if (!this.bounds.width || !this.bounds.height) return;
     this.distance = 12; this.forward = camera.getWorldDirection(new this.T.Vector3());
     this.unit = (2 * this.distance * Math.tan(camera.fov * Math.PI / 360)) / this.bounds.height;
-    const panes = [...this.journey.querySelectorAll('[data-digital-pane]')]
+    // A physical stage supplies its own machined slab edges for each pane.
+    const panes = this.paneFrames === false ? [] : [...this.journey.querySelectorAll('[data-digital-pane]')]
       .filter(pane => {const rect = pane.getBoundingClientRect(); return rect.bottom > this.bounds.top && rect.top < this.bounds.bottom;}).slice(0, 2);
     const key = JSON.stringify([this.bounds.width, this.bounds.height, camera.fov, ...camera.position.toArray(),
       ...camera.quaternion.toArray(), ...panes.map(pane => {const rect = pane.getBoundingClientRect();
