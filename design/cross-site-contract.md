@@ -48,3 +48,24 @@ Compiler owns the backlink projection and its escaping/validation tests; the
 Portfolio candidate audit checks generated article routes, canonical source
 pins, and the presence or absence of the correct experiment links. Both source
 and generated output are reviewed before protected publication.
+
+
+## Archival release relation
+
+The cross-site contract may carry one optional immutable archival relation for an exact experiment:
+
+```text
+exact Experiment Compiler identity
+  -> exact pH34r-pH/compiled-experiments GitHub Release/tag
+  -> exact Zenodo DOI/record (after archival publication)
+```
+
+This relation is derived from authoritative archive/source metadata and is never resolved through a mutable `latest` release. It is optional: an experiment can remain a valid live reproduction object without an archival DOI.
+
+The relation does not change the existing ownership boundary:
+- Portfolio owns explanation and article URLs;
+- Experiment Compiler / `experiments.tyharbin.com` owns live reproduction identity/presentation;
+- `compiled-experiments` owns the exact reviewed archival copy and GitHub Release lineage;
+- Zenodo supplies the external DOI record after the human publication step.
+
+A release or DOI must never be interpreted as scientific acceptance, successful independent reproduction, or Portfolio/Fleet deployment state.

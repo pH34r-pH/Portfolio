@@ -13,3 +13,12 @@ Code blocks and saved outputs also receive keyboard focus and region labels so w
 Pull requests build and audit the complete article bundle before merge. Candidate artifacts for Fleet are uploaded only by successful main-branch pushes.
 
 MyST's native article URLs are rewritten to the canonical `/articles/…/` routes, preserving queries and section fragments. The bundle audit follows local article links and verifies that linked articles resolve to article pages.
+
+
+## Archival experiment boundary
+
+The Portfolio publication candidate does not package or mint the scholarly archive for a Compiled Experiment. Its article references resolve through the exact Experiment Compiler projection and `experiments.tyharbin.com`.
+
+When that experiment has separately passed source-owner disclosure/finalization review and has an immutable release in `pH34r-pH/compiled-experiments`, the verified projection may carry the exact release/Zenodo DOI relation for rendering. Portfolio must not discover archival identity from mutable live state or manufacture a DOI record itself.
+
+The archive receives exact finalized package bytes without a Portfolio rebuild. Fleet remains the protected site-deployment authority; the archive/Zenodo step is a separate human-reviewed scientific-publication boundary.
